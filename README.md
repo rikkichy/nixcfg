@@ -5,30 +5,127 @@ Migrated off CachyOS. Clone to **`/home/ri/nixcfg`** — that exact path is
 hardcoded in two places (`system.autoUpgrade.flake`, and the Hyprland
 `mkOutOfStoreSymlink` in `home.nix`).
 
-## Install order
+## Install, step by step
 
-1. Install NixOS. LUKS on the NVMe, ESP ≥ 2 GB (`boot.loader.limine.maxGenerations = 10`
-   keeps ~150 MB per generation in there).
-2. `git clone <this repo> /home/ri/nixcfg`
-3. **Copy in the generated `hardware-configuration.nix`.** It is not in this
-   repo — it is machine-specific and produced by `nixos-generate-config`.
-   `flake.nix` imports it, so evaluation fails until it exists.
-4. In `configuration.nix`, uncomment `boot.initrd.luks.devices."luks-XXXX".allowDiscards`
-   and paste the real device name from `hardware-configuration.nix`. Without
-   it `services.fstrim` runs but no discard ever reaches the SSD through the
-   crypt layer.
-5. `sudo nixos-rebuild boot --flake /home/ri/nixcfg#nix` (first build also
-   writes `flake.lock` — commit it).
-6. Reboot, then one time only:
-   ```
-   flatpak remote-add --user --if-not-exists flathub \
-     https://flathub.org/repo/flathub.flatpakrepo
-   flatpak install --user flathub org.vinegarhq.Sober
-   flatpak install --user flathub me.amankhanna.opendeck
-   ```
-7. At the first keyring prompt, leave the password **empty** and confirm —
-   autologin types no password, so a non-blank keyring would stay locked
-   forever. At rest it is protected by LUKS.
+Boot the NixOS 26.05 minimal ISO. **Secure Boot must be OFF** — the ISO is not
+signed with custom keys, and the stick simply will not appear in the boot menu
+otherwise.
+
+### 0. Get a network + become root
+
+```
+sudo -i
+# wifi only: wpa_passphrase SSID PASS > /tmp/w.conf && wpa_supplicant -B -c /tmp/w.conf -i <iface>
+ping -c1 github.com
+```
+
+### 1. Partition and encrypt
+
+Target is the 1 TB NVMe. **This destroys it.** `lsblk` first and confirm the
+name — it is `nvme0n1` on this box.
+
+```
+parted /dev/nvme0n1 -- mklabel gpt
+parted /dev/nvme0n1 -- mkpart ESP fat32 1MiB 4GiB
+parted /dev/nvme0n1 -- set 1 esp on
+parted /dev/nvme0n1 -- mkpart primary 4GiB 100%
+
+mkfs.fat -F32 -n BOOT /dev/nvme0n1p1
+
+cryptsetup luksFormat /dev/nvme0n1p2          # type YES, then a passphrase
+cryptsetup open /dev/nvme0n1p2 cryptroot
+mkfs.xfs -L nixos /dev/mapper/cryptroot
+```
+
+4 GiB ESP is deliberate: `boot.loader.limine.maxGenerations = 10` keeps roughly
+150 MB per generation in there.
+
+### 2. Mount
+
+```
+mount /dev/mapper/cryptroot /mnt
+mkdir -p /mnt/boot
+mount /dev/nvme0n1p1 /mnt/boot
+```
+
+### 3. Generate hardware config, then clone this repo
+
+```
+nixos-generate-config --root /mnt
+
+nix-shell -p git --run '
+  git clone https://github.com/rikkichy/nixcfg /mnt/home/ri/nixcfg
+'
+cp /mnt/etc/nixos/hardware-configuration.nix /mnt/home/ri/nixcfg/
+```
+
+`hardware-configuration.nix` is **not** in this repo and never will be — it
+describes *this machine's* filesystem and LUKS UUIDs, which do not exist until
+step 1 has run. `flake.nix` imports it from the flake root, so it must sit next
+to `flake.nix`. Ignore the `configuration.nix` that `nixos-generate-config`
+also drops in `/mnt/etc/nixos`; yours comes from this repo.
+
+### 4. Fill in the LUKS device name
+
+Open `/mnt/home/ri/nixcfg/configuration.nix`, find the commented
+`boot.initrd.luks.devices` line, uncomment it and paste the real name — the
+UUID is in the `hardware-configuration.nix` you just copied:
+
+```
+boot.initrd.luks.devices."luks-<uuid>".allowDiscards = true;
+```
+
+Without this, `services.fstrim` runs but no discard ever reaches the SSD
+through the crypt layer.
+
+### 5. **`git add` before installing — this is not optional**
+
+Nix reads a git checkout through git. Files that are untracked are invisible to
+it, so an uncommitted `hardware-configuration.nix` produces a confusing "file
+not found" at eval even though the file is plainly sitting there.
+
+```
+cd /mnt/home/ri/nixcfg
+git add -A
+git -c user.email=ri@nix -c user.name=ri commit -m "Add hardware-configuration.nix"
+```
+
+### 6. Install
+
+```
+nixos-install --flake /mnt/home/ri/nixcfg#nix
+```
+
+It prompts for a **root** password at the end. Set one you remember.
+
+### 7. Set a password for `ri` — you cannot sudo without it
+
+The config declares `users.users.ri` with no password, so the account has none
+after install. Autologin still works (greetd needs no password), but `sudo`
+will reject you. Before rebooting, while still in the installer:
+
+```
+nixos-enter --root /mnt -c 'passwd ri'
+```
+
+Or after first boot: log in on a TTY as `root` and run `passwd ri`.
+No password is set in the config on purpose — this repo is public.
+
+### 8. Reboot, then one time only
+
+```
+flatpak remote-add --user --if-not-exists flathub \
+  https://flathub.org/repo/flathub.flatpakrepo
+flatpak install --user flathub org.vinegarhq.Sober
+flatpak install --user flathub me.amankhanna.opendeck
+```
+
+At the first keyring prompt leave the password **empty** and confirm —
+autologin types no password, so a non-blank keyring would stay locked forever.
+At rest it is protected by LUKS.
+
+Later changes are `sudo nixos-rebuild switch --flake /home/ri/nixcfg#nix`
+(first build also writes `flake.lock` — commit it).
 
 ## Layout
 
