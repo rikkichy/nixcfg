@@ -4,3 +4,6 @@ result-*
 
 # hardware-configuration.nix is deliberately NOT ignored -- it belongs in the
 # repo once generated. It is simply absent until the first install.
+
+# luac artefact (luac -l writes this unless -p is given)
+luac.out
