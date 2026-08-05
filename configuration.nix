@@ -23,6 +23,7 @@
       "--update-input" "caelestia-shell"
       "--update-input" "vhelper"
       "--update-input" "openwave"
+      "--update-input" "tg-ws-proxy"
     ];
     dates = "daily";
     randomizedDelaySec = "10min";
@@ -273,6 +274,8 @@
     xdg-user-dirs
 
     starship direnv zoxide eza fzf bat ripgrep lazygit jq fastfetch micro
+
+    tg-ws-proxy
   ];
 
   environment.sessionVariables = {

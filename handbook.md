@@ -127,6 +127,32 @@ At rest it is protected by LUKS.
 Later changes are `sudo nixos-rebuild switch --flake /home/ri/nixcfg#nix`
 (first build also writes `flake.lock` — commit it).
 
+## Telegram proxy (tg-ws-proxy)
+
+`Flowseal/tg-ws-proxy` is packaged from source in `pkgs/tg-ws-proxy.nix` and
+pulled in as a `flake = false` input, so the nightly `autoUpgrade` bumps it
+like everything else.
+
+A systemd **user** service runs it headless on `127.0.0.1:1443`. The secret is
+generated once on first start and kept in
+`~/.local/state/tg-ws-proxy/secret` (mode 600) — deliberately *not* in this
+repo, which is public, and persisted so the value stays stable across restarts
+instead of changing every time the service comes up.
+
+Read it with:
+
+```
+cat ~/.local/state/tg-ws-proxy/secret
+systemctl --user status tg-ws-proxy
+```
+
+Then in Telegram Desktop: **Settings → Advanced → Connection type → Proxy**,
+add an **MTProto** proxy, server `127.0.0.1`, port `1443`, and paste that
+secret.
+
+The GUI tray version is also on PATH as `tg-ws-proxy-tray-linux` if you prefer
+it; stop the user service first so the two do not both bind 1443.
+
 ## Layout
 
 | Path | What |

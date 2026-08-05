@@ -22,6 +22,11 @@
       url = "github:rikkichy/openwave";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    tg-ws-proxy = {
+      url = "github:Flowseal/tg-ws-proxy";
+      flake = false;
+    };
   };
 
   outputs =
@@ -33,6 +38,16 @@
         modules = [
           ./hardware-configuration.nix
           ./configuration.nix
+
+          {
+            nixpkgs.overlays = [
+              (final: prev: {
+                tg-ws-proxy = final.callPackage ./pkgs/tg-ws-proxy.nix {
+                  src = inputs.tg-ws-proxy;
+                };
+              })
+            ];
+          }
 
           home-manager.nixosModules.home-manager
           {

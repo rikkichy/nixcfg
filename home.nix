@@ -102,6 +102,32 @@
     Install.WantedBy = [ "graphical-session.target" ];
   };
 
+  systemd.user.services.tg-ws-proxy = {
+    Unit = {
+      Description = "Local MTProto proxy for Telegram";
+      After = [ "network-online.target" ];
+      Wants = [ "network-online.target" ];
+    };
+    Service = {
+      Type = "simple";
+      ExecStart = toString (pkgs.writeShellScript "tg-ws-proxy-start" ''
+        set -eu
+        dir="''${XDG_STATE_HOME:-$HOME/.local/state}/tg-ws-proxy"
+        mkdir -p "$dir"
+        if [ ! -s "$dir/secret" ]; then
+          ${pkgs.openssl}/bin/openssl rand -hex 16 > "$dir/secret"
+          chmod 600 "$dir/secret"
+        fi
+        exec ${pkgs.tg-ws-proxy}/bin/tg-ws-proxy \
+          --host 127.0.0.1 --port 1443 --secret "$(cat "$dir/secret")"
+      '');
+      Restart = "on-failure";
+      RestartSec = "5s";
+      Slice = "session.slice";
+    };
+    Install.WantedBy = [ "default.target" ];
+  };
+
   programs.foot = {
     enable = true;
     settings = {
