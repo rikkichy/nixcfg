@@ -1,0 +1,6 @@
+# scheme/current.lua is REGENERATED at runtime -- `caelestia scheme set ...`
+# rewrites it (and fuzzel.ini, btop's theme, gtk.css, cava, htoprc) every time
+# you change colours. It is bootstrapped from scheme/default.lua by
+# hyprland.lua on first start, so it must never be tracked or the working tree
+# is dirty after every colour change.
+scheme/current.lua
