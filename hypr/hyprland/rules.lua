@@ -1,14 +1,9 @@
 local vars = require("variables")
 
-----------------------
----- Window rules ----
-----------------------
-
 hl.window_rule({ match = { fullscreen = false }, opacity = vars.windowOpacity .. " override" })
 
-hl.window_rule({ match = { float = true, xwayland = false }, center = true }) -- Center all floating windows (not xwayland cause popups)
+hl.window_rule({ match = { float = true, xwayland = false }, center = true })
 
--- Floating Applications
 hl.window_rule({
     match = {
         class =
@@ -29,7 +24,6 @@ hl.window_rule({ match = { class = "PandoraLauncher", title = "Minecraft Game Ou
 
 hl.window_rule({ match = { tag = "float" }, float = true })
 
--- Opaque Apps (Terminal, Image Viewers, Creative Software, Games) as they prefer native transparency as required
 hl.window_rule({
     match = {
         class =
@@ -40,7 +34,6 @@ hl.window_rule({
 
 hl.window_rule({ match = { tag = "opaque_app" }, opaque = true })
 
--- Sized & Centered Floaters
 hl.window_rule({ match = { class = "foot", title = "nmtui" }, tag = "+float_60_70" })
 hl.window_rule({ match = { class = "org.pulseaudio.pavucontrol|yad-icon-browser" }, tag = "+float_60_70" })
 hl.window_rule({ match = { class = "org.gnome.Settings" }, tag = "+float_70_80" })
@@ -65,17 +58,14 @@ hl.window_rule({
     center = true,
 })
 
--- Games (Steam, Lutris/Wine, Gamescope)
 hl.window_rule({
     match        = { class = "(steam_app_(default|[0-9]+))|gamescope" },
     immediate    = true,
     idle_inhibit = "always",
 })
 
--- Steam
 hl.window_rule({ match = { class = "steam" }, rounding = 10 })
 
--- Picture in picture (resize and move done via script)
 hl.window_rule({
     match             = { title = "Picture(-| )in(-| )[Pp]icture" },
     move              = "(monitor_w*0.98-window_w) (monitor_h*0.97-window_h)",
@@ -84,13 +74,10 @@ hl.window_rule({
     keep_aspect_ratio = true,
 })
 
--- Ueberzugpp
 hl.window_rule({ match = { class = "^(ueberzugpp_.*)$" }, float = true, no_initial_focus = true })
 
--- Autodesk Fusion 360
 hl.window_rule({ match = { class = "fusion360.exe", title = "Fusion360|(Marking Menu)" }, no_blur = true })
 
--- Ugh xwayland popups
 hl.window_rule({ match = { xwayland = true, title = "win[0-9]+" }, tag = "+xwl_popup" })
 hl.window_rule({
     match = { xwayland = true, title = "", class = "", initial_title = "", initial_class = "" },
@@ -105,7 +92,6 @@ hl.window_rule({
     rounding  = 10,
 })
 
--- Special workspaces
 hl.window_rule({ match = { class = "btop" }, workspace = "special:sysmon" })
 hl.window_rule({
     match     = {
@@ -113,44 +99,21 @@ hl.window_rule({
     },
     workspace = "special:music",
 })
-hl.window_rule({ match = { initial_title = "Spotify( %(?Free%)?)?" }, workspace = "special:music" }) -- Spotify wayland, it has no class for some reason
+hl.window_rule({ match = { initial_title = "Spotify( %(?Free%)?)?" }, workspace = "special:music" })
 hl.window_rule({ match = { class = "discord|equibop|vesktop|whatsapp" }, workspace = "special:communication" })
 hl.window_rule({ match = { class = "Todoist" }, workspace = "special:todo" })
 
--- Chromium web apps (see xdg.desktopEntries in home.nix). Spotify and Discord
--- are no longer native clients here, so none of the class matches above can
--- fire for them: `chromium --app=URL` derives its own class from the URL,
--- shaped `chrome-<host><path with / as _>-<profile>`. Match that instead, or
--- both special workspaces stay empty and the windows land on whatever
--- workspace happened to be focused.
---   --app=https://open.spotify.com   -> chrome-open.spotify.com__-Default
---   --app=https://discord.com/app    -> chrome-discord.com__app-Default
---   --app=https://vault.bitwarden.com-> chrome-vault.bitwarden.com__-Default
--- Verify with `hyprctl clients | grep class` if a rule ever stops matching
--- (the profile suffix changes if you run chromium with a non-Default profile).
 hl.window_rule({ match = { class = "^chrome-open%.spotify%.com.*$" }, workspace = "special:music" })
 hl.window_rule({ match = { class = "^chrome-discord%.com.*$" }, workspace = "special:communication" })
-
--- The Bitwarden resizer in execs.lua keys off the window TITLE ("Bitwarden"),
--- which the web app still sets, so that keeps working untouched.
-
--------------------------
----- Workspace rules ----
--------------------------
 
 hl.workspace_rule({ workspace = "w[tv1]s[false]", gaps_out = vars.singleWindowGapsOut })
 hl.workspace_rule({ workspace = "f[1]s[false]", gaps_out = vars.singleWindowGapsOut })
 
----------------------
----- Layer rules ----
----------------------
+hl.layer_rule({ match = { namespace = "hyprpicker" }, animation = "fade" })
+hl.layer_rule({ match = { namespace = "logout_dialog" }, animation = "fade" })
+hl.layer_rule({ match = { namespace = "selection" }, animation = "fade" })
+hl.layer_rule({ match = { namespace = "wayfreeze" }, animation = "fade" })
+hl.layer_rule({ match = { namespace = "launcher" }, animation = "popin 80%", blur = true })
 
-hl.layer_rule({ match = { namespace = "hyprpicker" }, animation = "fade" })                 -- Colour picker out animation
-hl.layer_rule({ match = { namespace = "logout_dialog" }, animation = "fade" })              -- wlogout
-hl.layer_rule({ match = { namespace = "selection" }, animation = "fade" })                  -- slurp
-hl.layer_rule({ match = { namespace = "wayfreeze" }, animation = "fade" })                  -- wayfreeze
-hl.layer_rule({ match = { namespace = "launcher" }, animation = "popin 80%", blur = true }) -- Fuzzel
-
--- Shell
 hl.layer_rule({ match = { namespace = "caelestia-(border-exclusion|area-picker)" }, no_anim = true })
 hl.layer_rule({ match = { namespace = "caelestia-(drawers|background)" }, animation = "fade" })

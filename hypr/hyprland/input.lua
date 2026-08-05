@@ -9,7 +9,6 @@ hl.config({
         repeat_rate        = 35,
         focus_on_close     = 1,
 
-        -- Disable mouse acceleration
         accel_profile      = "flat",
         force_no_accel     = true,
         sensitivity        = 0,
