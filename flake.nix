@@ -53,6 +53,11 @@
                 tg-ws-proxy = final.callPackage ./pkgs/tg-ws-proxy.nix {
                   src = inputs.tg-ws-proxy;
                 };
+
+                # No flake input: this one pins an upstream release asset by
+                # hash inside the package, so there is nothing for the nightly
+                # autoUpgrade to bump. Version changes are a manual edit.
+                flclashx = final.callPackage ./pkgs/flclashx.nix { };
               })
             ];
           }

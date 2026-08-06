@@ -354,6 +354,7 @@
     starship direnv zoxide eza fzf bat ripgrep lazygit jq fastfetch micro
 
     tg-ws-proxy
+    flclashx
   ];
 
   environment.sessionVariables = {
