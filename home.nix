@@ -1,60 +1,90 @@
-{ config, pkgs, inputs, nixcfgPath, ... }:
+{ config, pkgs, lib, inputs, nixcfgPath, ... }:
 
+let
+  # Seeded into ~/.config/caelestia/shell.json below rather than passed to
+  # programs.caelestia.settings. That option writes the file as a read-only
+  # store symlink, and Caelestia rewrites its merged config on every start --
+  # so it logged "Failed to write .../shell.json: Read-only file system" each
+  # time and nothing changed in the GUI could ever be saved. These are defaults
+  # for a fresh install; once the file exists it belongs to Caelestia, so
+  # editing them here will not affect a machine that already has one.
+  caelestiaDefaults = {
+    general.idle.timeouts = [ ];
+
+    general.apps.explorer = [ "nautilus" ];
+
+    dashboard.showWeather = false;
+
+    notifs.fullscreen = "off";
+
+    bar.tray.recolour = true;
+
+    background.desktopClock.enabled = true;
+
+    lock.useWallpaper = true;
+    lock.hideNotifs = true;
+
+    utilities.toasts.capsLockChanged = false;
+    utilities.toasts.numLockChanged = false;
+
+    services.playerAliases = [ { from = "chromium"; to = "Spotify"; } ];
+
+    services.lyricsBackend = "Local";
+
+    appearance.transparency.enabled = false;
+    background.wallpaperEnabled = true;
+
+    bar.persistent = true;
+    bar.showOnHover = true;
+    bar.workspaces = {
+      activeIndicator = true;
+      activeTrail = false;
+      maxWindowIcons = 5;
+      occupiedBg = true;
+      showWindows = false;
+      shown = 4;
+    };
+
+    launcher.maxShown = 4;
+    launcher.showOnHover = false;
+    launcher.useFuzzy.apps = true;
+
+    services.visualiserBars = 20;
+
+    sidebar.enabled = true;
+  };
+
+  caelestiaSeed = pkgs.writeText "caelestia-shell.json"
+    (builtins.toJSON caelestiaDefaults);
+in
 {
   imports = [ inputs.caelestia-shell.homeManagerModules.default ];
 
   home.stateVersion = "26.05";
 
+  # Leaving settings unset matters: the module gates the file on
+  # `extraConfig != "" || settings != {}`, so an empty set means it writes no
+  # shell.json at all and the seed below owns the path.
   programs.caelestia = {
     enable = true;
     cli.enable = true;
-
-    settings = {
-      general.idle.timeouts = [ ];
-
-      general.apps.explorer = [ "nautilus" ];
-
-      dashboard.showWeather = false;
-
-      notifs.fullscreen = "off";
-
-      bar.tray.recolour = true;
-
-      background.desktopClock.enabled = true;
-
-      lock.useWallpaper = true;
-      lock.hideNotifs = true;
-
-      utilities.toasts.capsLockChanged = false;
-      utilities.toasts.numLockChanged = false;
-
-      services.playerAliases = [ { from = "chromium"; to = "Spotify"; } ];
-
-      services.lyricsBackend = "Local";
-
-      appearance.transparency.enabled = false;
-      background.wallpaperEnabled = true;
-
-      bar.persistent = true;
-      bar.showOnHover = true;
-      bar.workspaces = {
-        activeIndicator = true;
-        activeTrail = false;
-        maxWindowIcons = 5;
-        occupiedBg = true;
-        showWindows = false;
-        shown = 4;
-      };
-
-      launcher.maxShown = 4;
-      launcher.showOnHover = false;
-      launcher.useFuzzy.apps = true;
-
-      services.visualiserBars = 20;
-
-      sidebar.enabled = true;
-    };
   };
+
+  # Write a real, writable file, but only when there is not one already, so the
+  # GUI keeps whatever the user changes. Runs after writeBoundary so
+  # home-manager has finished removing the store symlink it used to place here.
+  home.activation.seedCaelestiaShell =
+    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      target="${config.xdg.configHome}/caelestia/shell.json"
+      if [ -L "$target" ]; then
+        $DRY_RUN_CMD rm -f "$target"       # leftover read-only store symlink
+      fi
+      if [ ! -e "$target" ]; then
+        $DRY_RUN_CMD mkdir -p "$(dirname "$target")"
+        $DRY_RUN_CMD cp ${caelestiaSeed} "$target"
+        $DRY_RUN_CMD chmod 644 "$target"
+      fi
+    '';
 
   # `chromium --app=URL` gives its window a WM_CLASS of its own -- for
   # https://open.spotify.com that is chrome-open.spotify.com__-Default, i.e.
