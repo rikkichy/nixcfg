@@ -200,7 +200,7 @@
   services.udev.packages = [
     pkgs.yubikey-personalization
 
-    inputs.openwave.packages.${pkgs.system}.default
+    inputs.openwave.packages.${pkgs.stdenv.hostPlatform.system}.default
 
     (pkgs.runCommand "streamdeck-udev-rules" { } ''
       mkdir -p $out/lib/udev/rules.d
@@ -270,9 +270,9 @@
 
   environment.systemPackages = with pkgs; [
     chromium
-    inputs.vhelper.packages.${pkgs.system}.default
+    inputs.vhelper.packages.${pkgs.stdenv.hostPlatform.system}.default
 
-    inputs.openwave.packages.${pkgs.system}.default
+    inputs.openwave.packages.${pkgs.stdenv.hostPlatform.system}.default
 
     filen-desktop
 
