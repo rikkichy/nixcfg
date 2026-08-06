@@ -53,8 +53,12 @@ hl.monitor({
     scale    = 1,
 })
 
+-- Matched by description, not connector: the port name moves (this was "DP-1"
+-- and the panel came up on DP-4, so the rule silently never fired and the
+-- fallback rule above dropped it to its preferred 60Hz). Description comes from
+-- `hyprctl monitors`, minus the trailing (portname).
 hl.monitor({
-    output   = "DP-1",
+    output   = "desc:Invalid Vendor Codename - RTK HG645J41 0x10101010",
     mode     = "1920x1080@240",
     position = "auto",
     scale    = 1,
