@@ -180,30 +180,27 @@
     };
   };
 
-  # FlClashX needs CAP_NET_ADMIN to open /dev/net/tun, and `sudo` is the only
-  # way its Linux build can get it -- the Dart bundle has no systemd/setcap/
-  # install-service path, unlike macOS (one-time helper) and Android (VpnService
-  # granted once). So with tun enabled it re-elevates on every launch and
-  # prompts every time. This lets that one call through without a password.
+  # FlClashX needs CAP_NET_ADMIN to open /dev/net/tun. Its Linux build has no
+  # install-service path -- unlike macOS (helper installed once) and Android
+  # (VpnService granted once) -- so with tun enabled it re-elevates via sudo on
+  # every launch and prompts each time.
   #
-  # Scoped to the single binary rather than a blanket NOPASSWD, and the path is
-  # interpolated so it follows the package: bumping flclashx regenerates this
-  # rule, instead of leaving a stale store path that silently stops matching.
+  # Grant the capability instead of passwordless root. The core then runs as ri
+  # with CAP_NET_ADMIN and nothing else, rather than as uid 0 with the full set;
+  # no writes as root, no setuid, no module loading. The package ships
+  # FlClashCore as a dispatcher that prefers this wrapper, so the app picks it
+  # up without knowing about it.
   #
-  # Worth being clear about the trade-off: anything running as ri can now start
-  # that core as root with arguments of its choosing. That is strictly more than
-  # "no password prompt for me", and is the cost of not typing the password.
-  security.sudo.extraRules = [
-    {
-      users = [ "ri" ];
-      commands = [
-        {
-          command = "${pkgs.flclashx}/share/flclashx/FlClashCore";
-          options = [ "NOPASSWD" ];
-        }
-      ];
-    }
-  ];
+  # Still not free: any process running as ri can exec this and manipulate
+  # routing and firewall state. That is the floor for userspace TUN, and it is
+  # far short of root.
+  security.wrappers.flclash-core = {
+    owner = "root";
+    group = "users";
+    permissions = "u+rx,g+x,o-rwx";
+    capabilities = "cap_net_admin,cap_net_raw+ep";
+    source = "${pkgs.flclashx}/${pkgs.flclashx.corePath}";
+  };
 
   programs.ydotool.enable = true;
 

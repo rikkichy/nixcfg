@@ -91,6 +91,24 @@ stdenv.mkDerivation {
 
     chmod -R u+w $out/share/${pname}
 
+    # FlClashX execs the sibling named FlClashCore to run the proxy core, and
+    # that core needs CAP_NET_ADMIN to open /dev/net/tun. Capabilities are
+    # xattrs and the store is read-only, so the real binary cannot carry them.
+    # Move it aside and put a dispatcher in its place that prefers the setcap'd
+    # copy security.wrappers builds, falling back to the plain binary when
+    # there is no wrapper (non-NixOS, or `nix run` of this package alone) --
+    # which then works for everything except TUN.
+    mv $out/share/${pname}/FlClashCore $out/share/${pname}/FlClashCore.real
+    cat > $out/share/${pname}/FlClashCore <<EOF
+    #!/bin/sh
+    if [ -x /run/wrappers/bin/flclash-core ]; then
+      exec /run/wrappers/bin/flclash-core "\$@"
+    fi
+    exec $out/share/${pname}/FlClashCore.real "\$@"
+    EOF
+    sed -i 's/^    //' $out/share/${pname}/FlClashCore
+    chmod 555 $out/share/${pname}/FlClashCore
+
     install -Dm444 $src/com.follow.clashx.desktop \
       $out/share/applications/com.follow.clashx.desktop
     substituteInPlace $out/share/applications/com.follow.clashx.desktop \
@@ -102,14 +120,16 @@ stdenv.mkDerivation {
     runHook postInstall
   '';
 
-  # The helper FlClashX elevates is a sibling of the main binary, so both need
-  # to be on PATH-adjacent paths it can find; it looks beside itself.
   postFixup = ''
     makeWrapper $out/share/${pname}/FlClashX $out/bin/${pname} \
       "''${gappsWrapperArgs[@]}"
 
     ln -s $out/share/${pname}/FlClashCore $out/bin/FlClashCore
   '';
+
+  # security.wrappers points at this; exposed so configuration.nix does not
+  # have to hardcode the layout.
+  passthru.corePath = "share/${pname}/FlClashCore.real";
 
   meta = {
     description = "Fork of FlClash, a multi-platform Mihomo-based proxy client";
