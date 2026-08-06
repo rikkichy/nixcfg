@@ -56,17 +56,29 @@
     };
   };
 
+  # `chromium --app=URL` gives its window a WM_CLASS of its own -- for
+  # https://open.spotify.com that is chrome-open.spotify.com__-Default, i.e.
+  # "chrome-" + host + "__" + path (slashes as underscores) + "-Default". That
+  # never matches the desktop file's own id, so a running web app falls back to
+  # the generic Chromium icon in the bar and alt-tab even though the launcher
+  # entry looks right. StartupWMClass is what ties the window back to the entry,
+  # so the icon below is used in both places. Verify a class with `hyprctl
+  # clients` after launching the app; a wrong string fails silently.
   xdg.desktopEntries = let
-    webApp = name: url: icon: {
+    webApp = name: url: icon: wmClass: {
       inherit name icon;
       exec = "${pkgs.chromium}/bin/chromium --app=${url}";
       terminal = false;
       categories = [ "Network" ];
+      settings.StartupWMClass = wmClass;
     };
   in {
-    bitwarden = webApp "Bitwarden" "https://vault.bitwarden.com" "bitwarden";
-    discord = webApp "Discord" "https://discord.com/app" "discord";
-    spotify = webApp "Spotify" "https://open.spotify.com" "spotify";
+    bitwarden = webApp "Bitwarden" "https://vault.bitwarden.com" "bitwarden"
+      "chrome-vault.bitwarden.com__-Default";
+    discord = webApp "Discord" "https://discord.com/app" "discord"
+      "chrome-discord.com__app-Default";
+    spotify = webApp "Spotify" "https://open.spotify.com" "spotify"
+      "chrome-open.spotify.com__-Default";
   };
 
   home.packages = with pkgs; [ papirus-icon-theme adw-gtk3 ];
