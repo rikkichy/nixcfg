@@ -1,6 +1,21 @@
-{ config, pkgs, inputs, ... }:
+{ config, pkgs, inputs, nixcfgPath, ... }:
 
 {
+  # The installer clones this repo as root, so without this it stays root-owned
+  # and `ri` cannot write to it. That matters because home.nix maps hypr/ into
+  # ~/.config/hypr with mkOutOfStoreSymlink specifically so Caelestia can
+  # rewrite hypr/scheme/current.lua at runtime -- and Caelestia swallows the
+  # resulting PermissionError, so it fails silently and takes most of the
+  # Hyprland config down with it. Reasserted on every boot rather than left to
+  # a step in the handbook that is easy to skip.
+  #
+  # Z is the recursive form; the "-" fields leave permission bits and age
+  # alone, so this only ever corrects ownership. A path that does not exist is
+  # a no-op, so this is harmless before the first clone.
+  systemd.tmpfiles.rules = [
+    "Z ${nixcfgPath} - ri users - -"
+  ];
+
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
     auto-optimise-store = true;
@@ -15,7 +30,7 @@
   system.autoUpgrade = {
     enable = true;
     operation = "boot";
-    flake = "/home/ri/nixcfg";
+    flake = nixcfgPath;
 
     flags = [
       "--update-input" "nixpkgs"
@@ -217,6 +232,27 @@
   };
 
   services.flatpak.enable = true;
+
+  # Flatpak has no declarative install in nixpkgs, so this replaces the
+  # "reboot, then one time only" step in the handbook. Idempotent: remote-add
+  # is --if-not-exists and install is a no-op once the ref is present, so it
+  # simply exits on every later boot. Failures are tolerated (`|| true`) --
+  # Flathub being unreachable at login must not leave a failed unit behind.
+  systemd.user.services.flatpak-bootstrap = {
+    description = "Install the Flatpak apps this config expects";
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+    wantedBy = [ "default.target" ];
+    serviceConfig.Type = "oneshot";
+    script = ''
+      flatpak=${pkgs.flatpak}/bin/flatpak
+      $flatpak remote-add --user --if-not-exists flathub \
+        https://flathub.org/repo/flathub.flatpakrepo || true
+      for app in org.vinegarhq.Sober me.amankhanna.opendeck; do
+        $flatpak install --user -y --noninteractive flathub "$app" || true
+      done
+    '';
+  };
 
   systemd.user.services.flatpak-update = {
     description = "Update Flatpak apps";

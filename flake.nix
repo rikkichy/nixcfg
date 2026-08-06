@@ -31,10 +31,18 @@
 
   outputs =
     { nixpkgs, home-manager, ... }@inputs:
+    let
+      # Where this repo lives on the installed system. It cannot be derived --
+      # the flake is evaluated from wherever it happens to sit (/mnt/... during
+      # install) while autoUpgrade, the Hyprland out-of-store symlink and the
+      # ownership rule all need the final path. Defined once here rather than
+      # repeated across modules.
+      nixcfgPath = "/home/ri/nixcfg";
+    in
     {
       nixosConfigurations.nix = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
-        specialArgs = { inherit inputs; };
+        specialArgs = { inherit inputs nixcfgPath; };
         modules = [
           ./hardware-configuration.nix
           ./configuration.nix
@@ -53,7 +61,7 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
-            home-manager.extraSpecialArgs = { inherit inputs; };
+            home-manager.extraSpecialArgs = { inherit inputs nixcfgPath; };
             home-manager.users.ri = import ./home.nix;
           }
         ];

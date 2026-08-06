@@ -1,4 +1,4 @@
-{ config, pkgs, inputs, ... }:
+{ config, pkgs, inputs, nixcfgPath, ... }:
 
 {
   imports = [ inputs.caelestia-shell.homeManagerModules.default ];
@@ -250,6 +250,6 @@
     '';
 
     "hypr".source =
-      config.lib.file.mkOutOfStoreSymlink "/home/ri/nixcfg/hypr";
+      config.lib.file.mkOutOfStoreSymlink "${nixcfgPath}/hypr";
   };
 }

@@ -57,21 +57,24 @@ nix-shell -p git --run '
   git clone https://github.com/rikkichy/nixcfg /mnt/home/ri/nixcfg
 '
 cp /mnt/etc/nixos/hardware-configuration.nix /mnt/home/ri/nixcfg/
-chown -R 1000:100 /mnt/home/ri/nixcfg
 ```
 
-That `chown` is **not** cosmetic. You are root in the installer, so the clone
-lands as `root:root` and `ri` cannot write to it. `home.nix` maps `hypr/` into
-`~/.config/hypr` with `mkOutOfStoreSymlink` precisely so Caelestia can rewrite
-`hypr/scheme/current.lua` at runtime (see *Two rules that are easy to break*).
-Leave it root-owned and that write silently fails — `hyprland.lua` cannot
-bootstrap `current.lua` from `default.lua` on first start, `require` of it
-fails, and because `variables.lua` interpolates colours into strings the whole
-`variables` module comes back empty. Every `vars.*` is then `nil`, which throws
-a dozen `hl.*` argument errors and makes `keybinds.lua` abort partway, silently
-dropping most of the binds. `caelestia scheme set` never works either.
-`1000:100` is `ri:users`; the account does not exist yet at this point, so
-`chown ri:users` would fail here.
+You are root in the installer, so this clone lands as `root:root` and `ri`
+cannot write to it. **You do not need to fix that by hand** — `configuration.nix`
+carries a `systemd.tmpfiles` rule that reasserts `ri:users` on the tree at every
+boot, and `systemd-tmpfiles-setup.service` is ordered under `sysinit.target`,
+well before greetd, so ownership is already correct by the time Hyprland starts.
+
+It is worth knowing *why* that rule exists, because the failure is silent.
+`home.nix` maps `hypr/` into `~/.config/hypr` with `mkOutOfStoreSymlink`
+precisely so Caelestia can rewrite `hypr/scheme/current.lua` at runtime (see
+*Two rules that are easy to break*). If the tree is root-owned, that write
+fails, Caelestia swallows the `PermissionError`, `hyprland.lua` cannot bootstrap
+`current.lua` from `default.lua`, and `require` of it fails. Because
+`variables.lua` interpolates colours into strings, the whole `variables` module
+then comes back empty and every `vars.*` is `nil` — a dozen `hl.*` argument
+errors, `keybinds.lua` aborting partway with most binds gone, and `rules.lua`
+aborting on its first line so no window rule applies at all.
 
 `hardware-configuration.nix` is **not** in this repo and never will be — it
 describes *this machine's* filesystem and LUKS UUIDs, which do not exist until
@@ -125,14 +128,17 @@ nixos-enter --root /mnt -c 'passwd ri'
 Or after first boot: log in on a TTY as `root` and run `passwd ri`.
 No password is set in the config on purpose — this repo is public.
 
-### 8. Reboot, then one time only
+### 8. Reboot
 
-```
-flatpak remote-add --user --if-not-exists flathub \
-  https://flathub.org/repo/flathub.flatpakrepo
-flatpak install --user flathub org.vinegarhq.Sober
-flatpak install --user flathub me.amankhanna.opendeck
-```
+Flatpak apps install themselves. `flatpak-bootstrap.service` (user unit, after
+`network-online.target`) adds the Flathub remote and installs `org.vinegarhq.Sober`
+and `me.amankhanna.opendeck` on first login. It is idempotent and re-runs as a
+no-op on later boots, so adding an app to that list in `configuration.nix` and
+rebuilding is all it takes to get it. Failures are non-fatal — Flathub being
+unreachable at login does not leave a failed unit behind — so if an app is
+missing, check `journalctl --user -u flatpak-bootstrap`.
+
+There is still one thing you must do by hand:
 
 At the first keyring prompt leave the password **empty** and confirm —
 autologin types no password, so a non-blank keyring would stay locked forever.
