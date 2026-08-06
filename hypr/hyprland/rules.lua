@@ -99,12 +99,13 @@ hl.window_rule({
     },
     workspace = "special:music",
 })
-hl.window_rule({ match = { initial_title = "Spotify( %(?Free%)?)?" }, workspace = "special:music" })
+-- Rules are matched with RE2, not Lua patterns, so parens escape as \( not %(.
+hl.window_rule({ match = { initial_title = "Spotify( \\(Free\\))?" }, workspace = "special:music" })
 hl.window_rule({ match = { class = "discord|equibop|vesktop|whatsapp" }, workspace = "special:communication" })
 hl.window_rule({ match = { class = "Todoist" }, workspace = "special:todo" })
 
-hl.window_rule({ match = { class = "^chrome-open%.spotify%.com.*$" }, workspace = "special:music" })
-hl.window_rule({ match = { class = "^chrome-discord%.com.*$" }, workspace = "special:communication" })
+hl.window_rule({ match = { class = "^chrome-open\\.spotify\\.com.*$" }, workspace = "special:music" })
+hl.window_rule({ match = { class = "^chrome-discord\\.com.*$" }, workspace = "special:communication" })
 
 hl.workspace_rule({ workspace = "w[tv1]s[false]", gaps_out = vars.singleWindowGapsOut })
 hl.workspace_rule({ workspace = "f[1]s[false]", gaps_out = vars.singleWindowGapsOut })
