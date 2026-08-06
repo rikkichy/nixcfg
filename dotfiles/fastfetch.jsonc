@@ -42,17 +42,6 @@
             "format": "{$3}{>22}{$1} │"
         },
         {
-            "type": "packages",
-            "key": "│   pkgs  ",
-            "format": "{all>22} │"
-        },
-        {
-            "type": "command",
-            "key": "│ {$2}{$1}  user  ",
-            "text": "echo $USER",
-            "format": "{$2}{>22}{$1} │"
-        },
-        {
             "type": "command",
             "key": "│   hname ",
             "text": "hostnamectl hostname",
