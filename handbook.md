@@ -201,11 +201,18 @@ read-only store symlinks, so **do not** put any of those under
 home-manager's `gtk` module is not used (it emits `gtk-4.0/gtk.css` and
 fights Caelestia over the same dconf keys).
 
-**`shell.json` is declarative now.** `programs.caelestia.settings` in
-`home.nix` writes `~/.config/caelestia/shell.json` as a read-only symlink, so
-settings changed in the Caelestia GUI can no longer be saved. Change them
-here and rebuild. Per-monitor overrides in
-`~/.config/caelestia/monitors/<name>/` stay writable.
+**`shell.json` is seeded, not managed.** `home.nix` copies
+`caelestiaDefaults` into `~/.config/caelestia/shell.json` on activation, but
+only when the file is absent. Change settings in the Caelestia GUI as normal —
+they save and survive rebuilds.
+
+The flip side is that `caelestiaDefaults` is only the starting point for a
+fresh install. Editing it will *not* change a machine that already has the
+file; for that, delete `~/.config/caelestia/shell.json` and rebuild, which
+loses whatever you had set. It also means your live settings are not in this
+repo and are not restored by a reinstall.
+
+Per-monitor overrides in `~/.config/caelestia/monitors/<name>/` are untouched.
 
 ## Auto-updates
 

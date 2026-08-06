@@ -91,6 +91,15 @@ whether or not those apps are installed. Consequences:
 - **Never put those paths under `xdg.configFile`.** Home-manager files are
   read-only store symlinks; every colour change would start failing.
   Home-manager's `gtk` module is unused for the same reason.
+- `shell.json` is the same trap one level up: Caelestia rewrites its *own*
+  merged config on every start, so `programs.caelestia.settings` made that write
+  fail every time and silently discarded anything changed in the GUI. It is now
+  seeded by a `home.activation` script that only writes when the file is absent,
+  and `settings` is deliberately left unset — the module gates the file on
+  `extraConfig != "" || settings != {}`, so setting it at all would put the
+  symlink back. Consequence to keep in mind: `caelestiaDefaults` in `home.nix`
+  is first-install state, not live config, and editing it does nothing on a
+  machine that already has the file.
 - `hypr/` is mapped in with `mkOutOfStoreSymlink`, not copied, specifically so
   `scheme/current.lua` stays writable. That in turn requires the repo to be
   owned by `ri` — the installer clones as root, so `configuration.nix` carries a
