@@ -1,4 +1,4 @@
-local scheme = require("scheme.current")
+local scheme = require("current_scheme")
 
 hl.config({
     misc = {
