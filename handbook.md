@@ -57,7 +57,21 @@ nix-shell -p git --run '
   git clone https://github.com/rikkichy/nixcfg /mnt/home/ri/nixcfg
 '
 cp /mnt/etc/nixos/hardware-configuration.nix /mnt/home/ri/nixcfg/
+chown -R 1000:100 /mnt/home/ri/nixcfg
 ```
+
+That `chown` is **not** cosmetic. You are root in the installer, so the clone
+lands as `root:root` and `ri` cannot write to it. `home.nix` maps `hypr/` into
+`~/.config/hypr` with `mkOutOfStoreSymlink` precisely so Caelestia can rewrite
+`hypr/scheme/current.lua` at runtime (see *Two rules that are easy to break*).
+Leave it root-owned and that write silently fails — `hyprland.lua` cannot
+bootstrap `current.lua` from `default.lua` on first start, `require` of it
+fails, and because `variables.lua` interpolates colours into strings the whole
+`variables` module comes back empty. Every `vars.*` is then `nil`, which throws
+a dozen `hl.*` argument errors and makes `keybinds.lua` abort partway, silently
+dropping most of the binds. `caelestia scheme set` never works either.
+`1000:100` is `ri:users`; the account does not exist yet at this point, so
+`chown ri:users` would fail here.
 
 `hardware-configuration.nix` is **not** in this repo and never will be — it
 describes *this machine's* filesystem and LUKS UUIDs, which do not exist until
@@ -190,6 +204,17 @@ here and rebuild. Per-monitor overrides in
 update → pick the previous generation in the Limine menu.
 Watch it with `journalctl -u nixos-upgrade.service`.
 
-Once this is a git repo, `--flake /home/ri/nixcfg` evaluates **committed
-content only**. An uncommitted edit is not an error — the nightly build just
-silently rebuilds the last commit. Commit, or use `path:/home/ri/nixcfg`.
+Once this is a git repo, `--flake /home/ri/nixcfg` reads the tree **through
+git**, and the rule is about *tracking*, not committing:
+
+| State | Seen by Nix? |
+|---|---|
+| tracked, committed | yes |
+| tracked, edited but uncommitted | yes — the dirty working tree is used, with a `warning: Git tree is dirty` |
+| **untracked** | **no** — silently absent, as if the file did not exist |
+
+So an uncommitted edit to a file already in git does take effect on the next
+rebuild. A **new** file does not, until `git add`. That is the same trap as
+step 5 above, and it fails the same way: not an error, just a build that
+quietly ignores the file. `git status` before rebuilding, or use
+`path:/home/ri/nixcfg`, which ignores git entirely and reads the directory.
