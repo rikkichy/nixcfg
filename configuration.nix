@@ -194,23 +194,32 @@
   # Still not free: any process running as ri can exec this and manipulate
   # routing and firewall state. That is the floor for userspace TUN, and it is
   # far short of root.
-  # Restricted to its own group rather than users/world: only ri can exec it,
-  # so the setuid surface is one account rather than every local process.
-  users.groups.flclash = { };
-
-  security.wrappers.flclash-core = {
-    owner = "root";
-    group = "flclash";
-    setuid = true;
-    # u+w is load-bearing, not sloppiness. checkIsAdmin() in the app runs
-    #   stat -c '%U:%G %A' <core>
-    # and requires the mode string to contain "rws" -- owner read, WRITE and
-    # setuid. Without the write bit the mode reads "r-s", the check fails on
-    # every launch, and it prompts for the password forever even though the
-    # binary is already setuid root and TUN works. Costs nothing: the owner is
-    # root, which could write the file regardless.
-    permissions = "u+rwx,g+x,o-rwx";
-    source = "${pkgs.flclashx}/${pkgs.flclashx.corePath}";
+  # FlClashX makes its own core setuid to get TUN, then re-checks that with
+  # stat on every launch. That cannot work from /nix/store, which is read-only
+  # and mounted nosuid. Stage a writable copy and let the app do what it does
+  # on every other distro: ask once, chmod, never ask again.
+  #
+  # Re-staged only when the store path changes, so the setuid bit the app sets
+  # survives reboots and is refreshed on upgrade.
+  systemd.services.flclashx-install = {
+    description = "Stage FlClashX where it can make its core setuid";
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      src=${pkgs.flclashx}/share/flclashx
+      dst=${pkgs.flclashx.stagedDir}
+      if [ "$(cat "$dst/.store-path" 2>/dev/null)" = "$src" ]; then
+        exit 0
+      fi
+      rm -rf "$dst"
+      mkdir -p "$dst"
+      cp -r "$src"/. "$dst"/
+      chmod -R u+w "$dst"
+      echo "$src" > "$dst/.store-path"
+    '';
   };
 
   programs.ydotool.enable = true;
@@ -416,7 +425,7 @@
     isNormalUser = true;
     shell = pkgs.fish;
 
-    extraGroups = [ "wheel" "networkmanager" "gamemode" "ydotool" "flclash" ];
+    extraGroups = [ "wheel" "networkmanager" "gamemode" "ydotool" ];
   };
 
   services.printing.enable = true;

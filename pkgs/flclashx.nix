@@ -40,6 +40,11 @@ let
   pname = "flclashx";
   version = "0.4.2";
 
+  # Where flclashx-install stages a writable copy. Must be on a filesystem that
+  # is neither read-only nor nosuid -- the whole point is that the app can make
+  # its core setuid there and have it stay that way.
+  stagedDir = "/var/lib/flclashx";
+
   src = fetchurl {
     url = "https://github.com/pluralplay/FlClashX/releases/download/v${version}/FlClashX-linux-amd64.AppImage";
     # Matches the SHA256 upstream publishes next to the asset.
@@ -91,25 +96,12 @@ stdenv.mkDerivation {
 
     chmod -R u+w $out/share/${pname}
 
-    # FlClashX enables TUN by making its core setuid root -- it shells out to
-    # `chown root:root "$1" && chmod +sx "$1"` under sudo, once, and thereafter
-    # runs it directly. On NixOS the store is immutable, so that chmod can
-    # never stick: the app re-asks for the password on every launch, the bit
-    # never appears, and it refuses to bring TUN up at all.
+    # Nothing clever here on purpose -- see the launcher below. The core stays
+    # a plain file next to FlClashX, which is where the app looks for it:
     #
-    # Capabilities do not help. The app gates on the setuid bit *before* it
-    # will try, so a cap_net_admin core is simply never exercised -- measured:
-    # the capability core ran, and no tun device or route was ever created.
+    #   String get corePath => join(executableDirPath, "FlClashCore...")
     #
-    # So point the name the app looks for at security.wrappers' setuid copy.
-    # stat() through the symlink sees the bit and the check passes; exec runs
-    # the wrapper, which is root and execs the real binary below.
-    #
-    # This drops the non-NixOS fallback the previous dispatcher had. A setuid
-    # binary cannot live in the store, and a shell script cannot be setuid, so
-    # there is no form that satisfies the check and still works standalone.
-    mv $out/share/${pname}/FlClashCore $out/share/${pname}/FlClashCore.real
-    ln -s /run/wrappers/bin/flclash-core $out/share/${pname}/FlClashCore
+    # and it makes that file setuid itself, via sudo, on first run.
 
     install -Dm444 $src/com.follow.clashx.desktop \
       $out/share/applications/com.follow.clashx.desktop
@@ -122,18 +114,44 @@ stdenv.mkDerivation {
     runHook postInstall
   '';
 
-  # No bin/FlClashCore symlink: share/flclashx/FlClashCore now points at
-  # /run/wrappers/bin, so a second hop through it is dangling inside $out and
-  # noBrokenSymlinks fails the build. Nothing needs the core on PATH -- the app
-  # execs it by its own sibling path.
+  # Launch from a writable copy, not from the store.
+  #
+  # FlClashX enables TUN by making its own core setuid -- `sudo sh -c 'chown
+  # root:root "$1" && chmod +sx "$1"'` -- once, then running it directly.
+  # checkIsAdmin() re-tests that with `stat -c '%U:%G %A'`, requiring the mode
+  # to contain "rws". The store is read-only *and* mounted nosuid, so the chmod
+  # can never stick and setuid would be ignored even if it did: the app asks
+  # for the password on every single launch, forever.
+  #
+  # Neither indirection works either. A symlink to a setuid wrapper fails
+  # because GNU stat does not dereference by default, so checkIsAdmin sees
+  # "lrwxrwxrwx". Capabilities fail because the check runs before the core is
+  # ever tried, so a cap_net_admin core is never exercised.
+  #
+  # macOS has the same design and solves it by copying the core somewhere
+  # writable on launch. Do the same: flclashx-install stages this tree into
+  # /var/lib/flclashx, and the app then does exactly what upstream intends --
+  # prompt once, chmod, never again. RPATHs are absolute into the store, so the
+  # copy still resolves its libraries; data/ and lib/libapp.so resolve relative
+  # to the executable and are part of the copy.
+  # Wraps a launcher rather than ${stagedDir}/FlClashX directly: makeWrapper
+  # refuses a target that does not exist at build time, and the staged copy is
+  # created at boot. The wrapper still sets the GTK/GI environment, then hands
+  # over to the copy.
   postFixup = ''
-    makeWrapper $out/share/${pname}/FlClashX $out/bin/${pname} \
+    cat > $out/share/${pname}/launch <<EOF
+    #!/bin/sh
+    exec ${stagedDir}/FlClashX "\$@"
+    EOF
+    sed -i 's/^    //' $out/share/${pname}/launch
+    chmod 555 $out/share/${pname}/launch
+
+    makeWrapper $out/share/${pname}/launch $out/bin/${pname} \
       "''${gappsWrapperArgs[@]}"
   '';
 
-  # security.wrappers points at this; exposed so configuration.nix does not
-  # have to hardcode the layout.
-  passthru.corePath = "share/${pname}/FlClashCore.real";
+  # Consumed by the staging service in configuration.nix.
+  passthru.stagedDir = stagedDir;
 
   meta = {
     description = "Fork of FlClash, a multi-platform Mihomo-based proxy client";
