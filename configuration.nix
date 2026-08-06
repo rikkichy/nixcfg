@@ -121,6 +121,16 @@
     xwayland.enable = true;
   };
 
+  # Use the unit hyprpolkitagent ships rather than hand-writing one. A local
+  # copy pointed ExecStart at $out/bin/hyprpolkitagent, which does not exist --
+  # the binary is in $out/libexec and the package has no bin/ at all. The unit
+  # failed 203/EXEC and restarted forever, so no polkit agent was ever
+  # registered and every authorisation prompt fell back to pkexec's text mode.
+  # systemd.packages installs it; NixOS does not act on a packaged unit's
+  # [Install], so wantedBy still has to be stated.
+  systemd.packages = [ pkgs.hyprpolkitagent ];
+  systemd.user.services.hyprpolkitagent.wantedBy = [ "graphical-session.target" ];
+
   programs.dconf.enable = true;
 
   xdg.portal = {

@@ -98,22 +98,6 @@
     };
   };
 
-  systemd.user.services.hyprpolkitagent = {
-    Unit = {
-      Description = "Hyprland polkit authentication agent";
-      After = [ "graphical-session.target" ];
-      PartOf = [ "graphical-session.target" ];
-    };
-    Service = {
-      Type = "simple";
-      ExecStart = "${pkgs.hyprpolkitagent}/bin/hyprpolkitagent";
-      Restart = "on-failure";
-      RestartSec = "3s";
-      Slice = "session.slice";
-    };
-    Install.WantedBy = [ "graphical-session.target" ];
-  };
-
   systemd.user.services.tg-ws-proxy = {
     Unit = {
       Description = "Local MTProto proxy for Telegram";

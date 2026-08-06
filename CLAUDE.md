@@ -162,6 +162,15 @@ blocks wedges the entire switch with no indication of why —
 them fail visibly rather than `|| true`, which produces green units that did
 nothing.
 
+Prefer a unit the package already ships (`systemd.packages = [ pkg ]`, plus an
+explicit `wantedBy` — NixOS does not act on a packaged unit's `[Install]`) over
+hand-writing one with an interpolated `ExecStart`. A local copy of
+hyprpolkitagent's unit pointed at `$out/bin/hyprpolkitagent`; the binary lives in
+`$out/libexec` and the package ships no `bin/` at all, so it failed `203/EXEC`
+and restarted **2673 times** without anything surfacing. Check `$out` before
+interpolating a path, and treat `Restart=on-failure` as something that hides
+this class of bug rather than mitigating it.
+
 Network note: `flathub.org` is unreachable from this machine and `flatpak
 remote-add` hangs on it indefinitely rather than failing; use `dl.flathub.org`.
 `tg-ws-proxy` exists for similar reasons.
