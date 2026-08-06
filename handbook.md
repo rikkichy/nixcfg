@@ -157,10 +157,14 @@ Later changes are `sudo nixos-rebuild switch --flake /home/ri/nixcfg#nix`
 **<http://127.0.0.1:9090/ui/>** — that is where you pick a node. It starts at
 boot; there is no app to launch.
 
-The config lives in `dotfiles/mihomo.yaml`. One line of it cannot: your
-subscription URL is a credential and this repo is public. So a fresh install
-needs exactly one command, before the first rebuild — the URL is spliced into
-the config at boot, and mihomo will not start without it:
+The config lives in `dotfiles/mihomo.yaml`. Two values cannot: the subscription
+URL is a credential and the device id is machine-specific, and this repo is
+public. Both live in `/etc/mihomo/` and are spliced into the config at boot.
+
+### On a fresh install
+
+Write the subscription URL **before the first rebuild** — `mihomo-config`
+refuses to run without it, and mihomo will not start:
 
 ```
 sudo install -d -m 755 /etc/mihomo
@@ -168,8 +172,20 @@ printf '%s\n' 'https://…your subscription link…' | sudo tee /etc/mihomo/subs
 sudo chmod 600 /etc/mihomo/subscription.url
 ```
 
-Keep that link in your password manager — losing it means re-fetching the
-subscription. Everything else about the VPN is in the flake. Then:
+If you have a backup of `/etc/mihomo/hwid` from the old system, restore it in
+the same step. Otherwise it is seeded from `/etc/machine-id` on first boot,
+which a fresh install regenerates — and the panel caps how many devices a
+subscription may have, so a reinstall silently consumes another slot and the
+VPN stays dead until you free one in the panel by hand. Two small files, both
+`0600`; back up the pair, not just the link.
+
+Forgot, and rebuilt anyway? Nothing is broken — write the file and:
+
+```
+sudo systemctl restart mihomo
+```
+
+`mihomo-config` is pulled in as a dependency, so that re-runs it. Then:
 
 ```
 systemctl status mihomo
