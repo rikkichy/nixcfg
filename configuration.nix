@@ -102,6 +102,12 @@
     "vm.max_map_count" = 2147483642;
     "vm.swappiness" = 180;
     "vm.page-cluster" = 0;
+
+    # FlClashX's TUN mode routes the machine's traffic through its own
+    # interface; without forwarding the packets are dropped and the network
+    # simply goes dead the moment TUN comes up.
+    "net.ipv4.ip_forward" = 1;
+    "net.ipv6.conf.all.forwarding" = 1;
   };
 
   zramSwap.enable = true;
@@ -415,6 +421,11 @@
 
   networking.hostName = "nix";
   networking.networkmanager.enable = true;
+
+  # The TUN interface FlClashX creates -- the name comes from its own config
+  # ("device": "FlClashX"). The firewall otherwise drops what arrives on it, so
+  # enabling TUN kills connectivity rather than tunnelling it.
+  networking.firewall.trustedInterfaces = [ "FlClashX" ];
 
   time.timeZone = "Europe/Moscow";
   i18n.defaultLocale = "en_US.UTF-8";
