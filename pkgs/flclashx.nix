@@ -10,6 +10,7 @@
   lib,
   appimageTools,
   fetchurl,
+  runCommand,
 }:
 
 let
@@ -25,9 +26,29 @@ let
   # Unpacked separately so the .desktop entry and icons can be lifted out --
   # wrapType2 only installs the binary itself.
   contents = appimageTools.extractType2 { inherit pname version src; };
+
+  # Flutter's GTK embedder derives the AOT blob path from the executable's own
+  # directory -- <exe dir>/lib/libapp.so. This bundle puts the binary in
+  # usr/bin but libapp.so in usr/lib, so the engine looks for usr/bin/lib and
+  # finds nothing:
+  #
+  #   'FlutterEngineCreateAOTData' returned 'kInvalidArguments'.
+  #     Invalid ELF path specified.
+  #   Failed to start Flutter engine: Failed to create AOT data
+  #
+  # The window still opens, so this presents as a blank app rather than a
+  # crash. Give the engine the path it expects; usr/bin/data (the assets, which
+  # it resolves the same way) is already in the right place.
+  patched = runCommand "${pname}-${version}-patched" { } ''
+    cp -r ${contents} $out
+    chmod -R u+w $out
+    test -e $out/usr/lib/libapp.so   # fail loudly if upstream moves it
+    ln -s ../lib $out/usr/bin/lib
+  '';
 in
-appimageTools.wrapType2 {
-  inherit pname version src;
+appimageTools.wrapAppImage {
+  inherit pname version;
+  src = patched;
 
   # The AppImage does not bundle these. libayatana-appindicator is the tray
   # icon; without it the binary fails to start at all rather than degrading.
