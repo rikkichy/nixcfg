@@ -22,6 +22,15 @@ Use `path:.#` while iterating: a plain `.#` flake ref reads through git, and
 until `git add`. Tracked-but-modified files *are* picked up (with a dirty-tree
 warning), so the rule is about tracking, not committing.
 
+`gh` is authenticated (keyring, account `rikkichy`), but no git credential
+helper is configured, so a bare `git push` cannot authenticate. Either run
+`gh auth setup-git` once, or push with the token inline:
+
+```sh
+git -c credential.helper="!f() { echo username=rikkichy; echo password=$(gh auth token); }; f" \
+  push origin main
+```
+
 ## Architecture
 
 `flake.nix` → `nixosConfigurations.nix`, composing `configuration.nix` (system)
@@ -34,6 +43,18 @@ path.
 `hardware-configuration.nix` is tracked but machine-specific, and the repo is
 **public** — do not add secrets. `pkgs/` holds locally packaged software
 (`tg-ws-proxy`), pulled in as a `flake = false` input plus an overlay.
+
+Two home-manager behaviours that waste time if assumed otherwise:
+
+- **`xdg.desktopEntries` are installed as packages, not files.** They land in
+  `/etc/profiles/per-user/ri/share/applications/`, *not*
+  `~/.local/share/applications/`, and the module gates only on
+  `desktopEntries != {}` — it is unaffected by `xdg.enable` (which is `false`
+  here). An empty `~/.local/share/applications` proves nothing.
+- **`find` will not traverse symlinks into the store.** Profile directories are
+  symlink farms, so `find /etc/profiles/... -name foo.svg` reports nothing for
+  files that plainly exist. Use `find -L`. This produces very convincing false
+  evidence that a package or icon is missing.
 
 ### Caelestia owns files at runtime — this drives most design decisions
 
@@ -74,10 +95,41 @@ Two gotchas worth not rediscovering:
   and `\.`, never `%(` / `%.` — `%` is not an RE2 metacharacter, so `%.` silently
   matches a literal `%` and the rule never fires.
 - Monitors are matched by `desc:` (from `hyprctl monitors`, minus the trailing
-  portname), not connector name. A rule matching nothing is not an error; the
-  fallback `output = ""` rule takes over and drops the display to its preferred
-  mode. `mode = "highrr"` sorts refresh rate over resolution, so it is wrong as a
-  blanket fallback.
+  portname — though `hyprctl` already prints it without), not connector name. A
+  rule matching nothing is not an error; the fallback `output = ""` rule takes
+  over and drops the display to its preferred mode. `mode = "highrr"` sorts
+  refresh rate over resolution, so it is wrong as a blanket fallback.
+
+#### Verifying hypr/ changes — most of the obvious signals lie
+
+Nearly every quick check here returns a false negative. Assume a change is
+unverified until `--verify-config` says so.
+
+- **`hyprctl reload` writes nothing to `hyprland.log`.** The log only grows at
+  startup, so "no new errors after reload" is meaningless — there are no new
+  lines at all. Errors from a reload are simply not recorded anywhere.
+- **`hyprctl configerrors` stays empty on reload even for a definitely-broken
+  config.** Verified by deliberately setting `hl.env("XCURSOR_SIZE", nil)`,
+  reloading, and getting an empty result. It only reflects startup parsing.
+- **`pcall` cannot see `hl.*` argument errors.** They are reported to Hyprland's
+  own error collector rather than raised, so `pcall(hl.env, k, v)` returns
+  `ok=true` for a value the config loader would reject. Do not use the repl to
+  type-check `hl.*` calls.
+- **`hl.env`'s "must be a string" means the value was `nil`, not a number.**
+  `CLuaConfigString::parse` gates on `lua_isstring`, which accepts numbers.
+  Misreading this sends you after a type bug that does not exist.
+- **A wrong `desc:` fails silently**, so confirm a monitor rule discriminates:
+  set a deliberately wrong description, reload, and check the mode actually
+  drops to the fallback. If it does not change, the rule was never the thing
+  under test.
+- **`hyprctl dispatch` takes Lua as of 0.56.** `hyprctl dispatch closewindow
+  address:0x…` is a syntax error now; use
+  `hyprctl repl 'hl.dispatch(hl.dsp.window.close({ window = "address:0x…" }))'`.
+
+Useful ground truth instead: `hyprctl binds -j | grep -c '"key"'` (a truncated
+keybinds.lua shows up as a low count), `hyprctl getoption <opt>` for a value set
+*after* a suspected abort point, and `hyprctl repl 'return require("variables").x'`
+to see what the live config actually holds.
 
 ### Web app desktop entries
 
@@ -86,6 +138,15 @@ The Chromium web apps in `home.nix` need `settings.StartupWMClass`. `chromium
 which never matches the desktop file id, so without it a running app falls back
 to the generic Chromium icon even though `Icon=` is correct. Read the real value
 off `hyprctl clients` with the app running — a wrong string fails silently.
+
+`StartupWMClass` only affects the icon of a **running window** (bar, alt-tab).
+It does nothing for the launcher entry, whose icon comes from `Icon=` resolved
+against the icon theme — a separate problem with a separate fix. Establish which
+one is actually wrong before changing anything.
+
+Chromium is single-instance: `chromium --app=URL` hands off to the running
+browser and the launcher process exits immediately. There is no process to
+`pkill` — close such a window through the compositor.
 
 ### systemd units in `configuration.nix`
 
