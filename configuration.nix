@@ -202,7 +202,14 @@
     owner = "root";
     group = "flclash";
     setuid = true;
-    permissions = "u+rx,g+x,o-rwx";
+    # u+w is load-bearing, not sloppiness. checkIsAdmin() in the app runs
+    #   stat -c '%U:%G %A' <core>
+    # and requires the mode string to contain "rws" -- owner read, WRITE and
+    # setuid. Without the write bit the mode reads "r-s", the check fails on
+    # every launch, and it prompts for the password forever even though the
+    # binary is already setuid root and TUN works. Costs nothing: the owner is
+    # root, which could write the file regardless.
+    permissions = "u+rwx,g+x,o-rwx";
     source = "${pkgs.flclashx}/${pkgs.flclashx.corePath}";
   };
 
