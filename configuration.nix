@@ -243,6 +243,7 @@
     heroic
     foot
     yubioath-flutter
+    claude-code
 
     nautilus
     file-roller
@@ -258,7 +259,7 @@
 
     wineWow64Packages.stable
 
-    wl-clipboard mangohud btop nvtopPackages.nvidia git wget
+    wl-clipboard mangohud btop nvtopPackages.nvidia git gh wget
 
     cliphist
 
