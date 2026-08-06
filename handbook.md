@@ -71,16 +71,32 @@ also drops in `/mnt/etc/nixos`; yours comes from this repo.
 
 ### 4. Fill in the LUKS device name
 
-Open `/mnt/home/ri/nixcfg/configuration.nix`, find the commented
-`boot.initrd.luks.devices` line, uncomment it and paste the real name — the
-UUID is in the `hardware-configuration.nix` you just copied:
+`nixos-generate-config` already wrote the LUKS device into
+`hardware-configuration.nix`, named after the mapping you opened in step 1:
 
 ```
-boot.initrd.luks.devices."luks-<uuid>".allowDiscards = true;
+boot.initrd.luks.devices."cryptroot".device = "/dev/disk/by-uuid/<uuid>";
 ```
 
-Without this, `services.fstrim` runs but no discard ever reaches the SSD
-through the crypt layer.
+`configuration.nix` only adds `allowDiscards` to it. Check the name matches:
+
+```
+boot.initrd.luks.devices."cryptroot".allowDiscards = true;
+```
+
+Without it, `services.fstrim` runs but no discard ever reaches the SSD through
+the crypt layer.
+
+**Use the name that is already there — do not invent a second one.** These are
+attribute names, not device paths, so declaring `"luks-<uuid>"` alongside
+`"cryptroot"` does not override it, it defines a *second* mapping of the same
+partition. initrd then races two `systemd-cryptsetup@` units for
+`/dev/nvme0n1p2`; the loser finds it busy, and when the loser is `cryptroot`,
+`/dev/mapper/cryptroot` never appears and the boot hangs waiting for root. It
+is a race, so it can boot fine several times before stranding you in the
+initrd — recovery is a live USB, `cryptsetup open`, chroot, and edit. Verify
+with `nix eval '.#nixosConfigurations.nix.config.boot.initrd.luks.devices'`
+before rebooting; there must be exactly one entry.
 
 ### 5. **`git add` before installing — this is not optional**
 

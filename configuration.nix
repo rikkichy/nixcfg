@@ -85,10 +85,15 @@
   };
   boot.loader.efi.canTouchEfiVariables = true;
   boot.initrd.systemd.enable = true;
-  boot.initrd.luks.devices."luks-7f0ee47d-3794-4ec0-a006-f8eea8fc471a" = {
-    device = "/dev/disk/by-uuid/7f0ee47d-3794-4ec0-a006-f8eea8fc471a";
-    allowDiscards = true;
-  };
+  # Adds to the mapping hardware-configuration.nix already declares -- it must
+  # not introduce a second one. Naming a different device that points at the
+  # same partition makes initrd generate two systemd-cryptsetup@ units racing
+  # for /dev/nvme0n1p2; the loser finds it busy, and when the loser was the one
+  # named "cryptroot", /dev/mapper/cryptroot never appeared and the boot died
+  # waiting for root. That is a race, so it survived three boots before failing.
+  # Without allowDiscards, services.fstrim runs but no discard reaches the SSD
+  # through the crypt layer.
+  boot.initrd.luks.devices."cryptroot".allowDiscards = true;
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
   boot.kernelParams = [ "amd_pstate=active" ];

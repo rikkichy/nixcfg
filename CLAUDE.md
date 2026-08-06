@@ -38,7 +38,15 @@ because the flake is evaluated from `/mnt/...` during install while
 path.
 
 `hardware-configuration.nix` is tracked but machine-specific, and the repo is
-**public** — do not add secrets. `pkgs/` holds locally packaged software
+**public** — do not add secrets. It already declares the LUKS device as
+`boot.initrd.luks.devices."cryptroot"`; `configuration.nix` may only *add* to
+that attribute. A differently-named entry pointing at the same partition is a
+second mapping, not an override, and yields two racing `systemd-cryptsetup@`
+units — an unbootable system, intermittently, recoverable only from a live USB.
+After touching anything under `boot.initrd.*`, check
+`nix eval '.#…config.boot.initrd.luks.devices'` and the generated
+`boot.initrd.systemd.contents."/etc/crypttab".source`, and remember initrd
+changes take effect only on reboot, so `switch` succeeding proves nothing. `pkgs/` holds locally packaged software
 (`tg-ws-proxy`), pulled in as a `flake = false` input plus an overlay.
 
 Two home-manager behaviours that waste time if assumed otherwise:
