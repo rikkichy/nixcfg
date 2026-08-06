@@ -151,6 +151,46 @@ At rest it is protected by LUKS.
 Later changes are `sudo nixos-rebuild switch --flake /home/ri/nixcfg#nix`
 (first build also writes `flake.lock` — commit it).
 
+## VPN (mihomo)
+
+`services.mihomo` runs the tunnel as a system service, with the dashboard at
+**<http://127.0.0.1:9090/ui/>** — that is where you pick a node. It starts at
+boot; there is no app to launch.
+
+The config lives in `dotfiles/mihomo.yaml`. One line of it cannot: your
+subscription URL is a credential and this repo is public. So a fresh install
+needs exactly one command, before the first rebuild — the URL is spliced into
+the config at boot, and mihomo will not start without it:
+
+```
+sudo install -d -m 755 /etc/mihomo
+printf '%s\n' 'https://…your subscription link…' | sudo tee /etc/mihomo/subscription.url
+sudo chmod 600 /etc/mihomo/subscription.url
+```
+
+Keep that link in your password manager — losing it means re-fetching the
+subscription. Everything else about the VPN is in the flake. Then:
+
+```
+systemctl status mihomo
+journalctl -u mihomo -f
+```
+
+Two settings in `configuration.nix` are tied to `tun.device: mihomo` inside that
+file — `networking.firewall.trustedInterfaces` and
+`networking.networkmanager.unmanaged`. Rename the device in one place and all
+three need to change together.
+
+If the VPN looks connected but traffic is not tunnelled, do not trust the
+dashboard — check that the interface actually has its IPv4 address:
+
+```
+ip -br addr show mihomo
+```
+
+A link that is `UP` with only a link-local v6 address is a tunnel that is not
+carrying anything.
+
 ## Telegram proxy (tg-ws-proxy)
 
 `Flowseal/tg-ws-proxy` is packaged from source in `pkgs/tg-ws-proxy.nix` and
@@ -185,7 +225,7 @@ it; stop the user service first so the two do not both bind 1443.
 | `configuration.nix` | system: boot, GPU, Hyprland, gaming, packages |
 | `home.nix` | home-manager: Caelestia, dotfiles, web apps |
 | `hypr/` | Hyprland Lua config, symlinked live into `~/.config/hypr` |
-| `dotfiles/` | verbatim files copied in by `home.nix` |
+| `dotfiles/` | verbatim files copied in by `home.nix` (plus `mihomo.yaml`, used by `configuration.nix`) |
 
 `vhelper` and `openwave` are separate flake inputs and live in their own
 repos (`rikkichy/vhelper`, `rikkichy/openwave`) — edit them there, not here.
