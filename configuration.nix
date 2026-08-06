@@ -70,7 +70,10 @@
   };
   boot.loader.efi.canTouchEfiVariables = true;
   boot.initrd.systemd.enable = true;
-  boot.initrd.luks.devices."luks-7f0ee47d-3794-4ec0-a006-f8eea8fc471a".allowDiscards = true;
+  boot.initrd.luks.devices."luks-7f0ee47d-3794-4ec0-a006-f8eea8fc471a" = {
+    device = "/dev/disk/by-uuid/7f0ee47d-3794-4ec0-a006-f8eea8fc471a";
+    allowDiscards = true;
+  };
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
   boot.kernelParams = [ "amd_pstate=active" ];
