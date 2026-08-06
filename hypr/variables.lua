@@ -5,7 +5,10 @@ return {
 
     browser                    = "chromium",
     editor                     = "zeditor",
-    fileExplorer               = "nautilus",
+    -- --new-window is required, not cosmetic: nautilus is a GApplication, so a
+    -- second bare `nautilus` just activates the existing primary instance and
+    -- the keybind appears dead until you close the first window.
+    fileExplorer               = "nautilus --new-window",
     audioSettings              = "pavucontrol",
 
     touchpadDisableTyping      = true,

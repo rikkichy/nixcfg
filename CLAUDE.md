@@ -22,14 +22,11 @@ Use `path:.#` while iterating: a plain `.#` flake ref reads through git, and
 until `git add`. Tracked-but-modified files *are* picked up (with a dirty-tree
 warning), so the rule is about tracking, not committing.
 
-`gh` is authenticated (keyring, account `rikkichy`), but no git credential
-helper is configured, so a bare `git push` cannot authenticate. Either run
-`gh auth setup-git` once, or push with the token inline:
-
-```sh
-git -c credential.helper="!f() { echo username=rikkichy; echo password=$(gh auth token); }; f" \
-  push origin main
-```
+`gh` is authenticated against this account via the keyring, but no git
+credential helper is configured, so a bare `git push` cannot authenticate. Run
+`gh auth setup-git` once to wire gh in as the helper. Do not pass a token
+through `git -c credential.helper=...` — that expands the credential into
+`argv`, where it is visible in `ps` for the lifetime of the command.
 
 ## Architecture
 
@@ -147,6 +144,13 @@ one is actually wrong before changing anything.
 Chromium is single-instance: `chromium --app=URL` hands off to the running
 browser and the launcher process exits immediately. There is no process to
 `pkill` — close such a window through the compositor.
+
+GTK apps are single-instance too, which makes a launcher keybind look broken
+rather than misconfigured. A bare second `nautilus` activates the existing
+`GApplication` primary instance instead of opening a window, so `SUPER + E`
+appears dead until the first window is closed; `vars.fileExplorer` therefore
+carries `--new-window`. Expect the same from any `GApplication` bound to a
+spawn key.
 
 ### systemd units in `configuration.nix`
 
