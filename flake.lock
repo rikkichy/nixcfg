@@ -107,11 +107,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1786014160,
-        "narHash": "sha256-m97w+RDDUi4ogrih6TcEB+xoovwNU21m5NCoDUOOFu0=",
+        "lastModified": 1786014469,
+        "narHash": "sha256-QWZBFR6E23xvF4P+cUCcgOCOx28/jIt9auKhcav53UQ=",
         "owner": "rikkichy",
         "repo": "openwave",
-        "rev": "0463f8bdfa6c867c27812cfc30c2d1d36cb4ae79",
+        "rev": "794d243aa48b017b06f04ba1c46e8242908b4037",
         "type": "github"
       },
       "original": {
