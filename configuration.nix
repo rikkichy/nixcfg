@@ -235,23 +235,39 @@
 
   # Flatpak has no declarative install in nixpkgs, so this replaces the
   # "reboot, then one time only" step in the handbook. Idempotent: remote-add
-  # is --if-not-exists and install is a no-op once the ref is present, so it
-  # simply exits on every later boot. Failures are tolerated (`|| true`) --
-  # Flathub being unreachable at login must not leave a failed unit behind.
+  # is --if-not-exists and install is a no-op once the ref is present, so later
+  # boots exit immediately.
+  #
+  # Driven by a timer rather than default.target on purpose. Pulling this into
+  # the login target puts it in the path of "reloading user units for ri"
+  # during nixos-rebuild, so a slow or hung flatpak wedges the whole switch --
+  # which is exactly what happened. Off the target and behind TimeoutStartSec
+  # it cannot stall activation no matter how badly the network behaves.
+  #
+  # dl.flathub.org, not flathub.org: the latter is unreachable from here and
+  # remote-add hangs on it indefinitely rather than failing. Same repo.
   systemd.user.services.flatpak-bootstrap = {
     description = "Install the Flatpak apps this config expects";
-    after = [ "network-online.target" ];
-    wants = [ "network-online.target" ];
-    wantedBy = [ "default.target" ];
-    serviceConfig.Type = "oneshot";
+    serviceConfig = {
+      Type = "oneshot";
+      TimeoutStartSec = "10min";
+    };
     script = ''
       flatpak=${pkgs.flatpak}/bin/flatpak
       $flatpak remote-add --user --if-not-exists flathub \
-        https://flathub.org/repo/flathub.flatpakrepo || true
+        https://dl.flathub.org/repo/flathub.flatpakrepo || true
       for app in org.vinegarhq.Sober me.amankhanna.opendeck; do
         $flatpak install --user -y --noninteractive flathub "$app" || true
       done
     '';
+  };
+
+  systemd.user.timers.flatpak-bootstrap = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnStartupSec = "2min";
+      AccuracySec = "1min";
+    };
   };
 
   systemd.user.services.flatpak-update = {

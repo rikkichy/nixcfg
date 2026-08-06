@@ -130,13 +130,26 @@ No password is set in the config on purpose — this repo is public.
 
 ### 8. Reboot
 
-Flatpak apps install themselves. `flatpak-bootstrap.service` (user unit, after
-`network-online.target`) adds the Flathub remote and installs `org.vinegarhq.Sober`
-and `me.amankhanna.opendeck` on first login. It is idempotent and re-runs as a
-no-op on later boots, so adding an app to that list in `configuration.nix` and
-rebuilding is all it takes to get it. Failures are non-fatal — Flathub being
-unreachable at login does not leave a failed unit behind — so if an app is
-missing, check `journalctl --user -u flatpak-bootstrap`.
+Flatpak apps install themselves. `flatpak-bootstrap.timer` fires two minutes
+after the user session starts and runs `flatpak-bootstrap.service`, which adds
+the Flathub remote and installs `org.vinegarhq.Sober` and
+`me.amankhanna.opendeck`. It is idempotent and re-runs as a no-op afterwards,
+so adding an app to that list in `configuration.nix` and rebuilding is all it
+takes to get it. Check it with `journalctl --user -u flatpak-bootstrap`.
+
+Two things about that unit are deliberate and should not be "simplified":
+
+**It is driven by a timer, not `default.target`.** A user unit in the login
+target sits in the path of `reloading user units for ri` during
+`nixos-rebuild switch`. If it blocks, the whole switch hangs with no
+indication of why. That is not hypothetical — it is how this unit was first
+written, and a hung `flatpak` wedged a rebuild. `TimeoutStartSec` bounds it as
+a second line of defence.
+
+**The remote URL is `dl.flathub.org`, not `flathub.org`.** The latter is
+unreachable from this machine's network, and `flatpak remote-add` hangs on it
+indefinitely rather than failing — which is what did the wedging. Same repo,
+different host.
 
 There is still one thing you must do by hand:
 
