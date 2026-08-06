@@ -38,16 +38,35 @@ because the flake is evaluated from `/mnt/...` during install while
 path.
 
 `hardware-configuration.nix` is tracked but machine-specific, and the repo is
-**public** — do not add secrets. It already declares the LUKS device as
-`boot.initrd.luks.devices."cryptroot"`; `configuration.nix` may only *add* to
-that attribute. A differently-named entry pointing at the same partition is a
-second mapping, not an override, and yields two racing `systemd-cryptsetup@`
-units — an unbootable system, intermittently, recoverable only from a live USB.
-After touching anything under `boot.initrd.*`, check
-`nix eval '.#…config.boot.initrd.luks.devices'` and the generated
-`boot.initrd.systemd.contents."/etc/crypttab".source`, and remember initrd
-changes take effect only on reboot, so `switch` succeeding proves nothing. `pkgs/` holds locally packaged software
+**public** — do not add secrets. `pkgs/` holds locally packaged software
 (`tg-ws-proxy`), pulled in as a `flake = false` input plus an overlay.
+
+### boot.initrd — the one place a mistake costs a live USB
+
+`hardware-configuration.nix` already declares the root LUKS device as
+`boot.initrd.luks.devices."cryptroot"`, named after the mapping opened during
+install, and `fileSystems."/"` mounts `/dev/mapper/cryptroot`.
+`configuration.nix` may only *add* to that attribute
+(`…devices."cryptroot".allowDiscards = true`). These are attribute names, not
+device paths, so a differently-named entry aimed at the same partition defines a
+**second mapping** rather than overriding the first. The generated crypttab then
+carries two lines, systemd emits one `systemd-cryptsetup@` unit per line, and
+they race for the partition; the loser finds it busy, and when the loser is
+`cryptroot` the root device never appears. Being a race, it booted three times
+before stranding the machine.
+
+Verifying a change here needs care, because the usual signals do not apply:
+
+- **initrd changes take effect only on reboot**, so a successful `switch` proves
+  nothing about them. Read the generated crypttab directly:
+  `cat $(nix eval --raw '.#…config.boot.initrd.systemd.contents."/etc/crypttab".source')`.
+- **Never infer the current generation from `ls`** — it sorts lexically, so
+  `system-10-link` lands *above* `system-7-link` and a `tail` silently shows a
+  stale one. This produced a confident, wrong "the fix was never applied".
+  `readlink /nix/var/nix/profiles/system` is the authority.
+- Ground truth for what will actually boot is `/boot/limine/limine.conf`:
+  each `//Generation N` block names its own `module_path` initrd, so comparing
+  those store hashes shows exactly which generations carry the change.
 
 Two home-manager behaviours that waste time if assumed otherwise:
 
