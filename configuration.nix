@@ -194,11 +194,15 @@
   # Still not free: any process running as ri can exec this and manipulate
   # routing and firewall state. That is the floor for userspace TUN, and it is
   # far short of root.
+  # Restricted to its own group rather than users/world: only ri can exec it,
+  # so the setuid surface is one account rather than every local process.
+  users.groups.flclash = { };
+
   security.wrappers.flclash-core = {
     owner = "root";
-    group = "users";
+    group = "flclash";
+    setuid = true;
     permissions = "u+rx,g+x,o-rwx";
-    capabilities = "cap_net_admin,cap_net_raw+ep";
     source = "${pkgs.flclashx}/${pkgs.flclashx.corePath}";
   };
 
@@ -405,7 +409,7 @@
     isNormalUser = true;
     shell = pkgs.fish;
 
-    extraGroups = [ "wheel" "networkmanager" "gamemode" "ydotool" ];
+    extraGroups = [ "wheel" "networkmanager" "gamemode" "ydotool" "flclash" ];
   };
 
   services.printing.enable = true;
