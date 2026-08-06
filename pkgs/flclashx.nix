@@ -122,11 +122,13 @@ stdenv.mkDerivation {
     runHook postInstall
   '';
 
+  # No bin/FlClashCore symlink: share/flclashx/FlClashCore now points at
+  # /run/wrappers/bin, so a second hop through it is dangling inside $out and
+  # noBrokenSymlinks fails the build. Nothing needs the core on PATH -- the app
+  # execs it by its own sibling path.
   postFixup = ''
     makeWrapper $out/share/${pname}/FlClashX $out/bin/${pname} \
       "''${gappsWrapperArgs[@]}"
-
-    ln -s $out/share/${pname}/FlClashCore $out/bin/FlClashCore
   '';
 
   # security.wrappers points at this; exposed so configuration.nix does not
