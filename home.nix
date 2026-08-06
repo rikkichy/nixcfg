@@ -56,6 +56,12 @@ let
 
   caelestiaSeed = pkgs.writeText "caelestia-shell.json"
     (builtins.toJSON caelestiaDefaults);
+
+  # Defined once: the desktop entry and the SUPER+D toggle below must launch
+  # the same thing, or the toggle spawns a second window instead of raising
+  # the one already open.
+  discordUrl = "https://discord.com/app";
+  discordCmd = [ "${pkgs.chromium}/bin/chromium" "--app=${discordUrl}" ];
 in
 {
   imports = [ inputs.caelestia-shell.homeManagerModules.default ];
@@ -68,6 +74,20 @@ in
   programs.caelestia = {
     enable = true;
     cli.enable = true;
+
+    # cli.json, unlike shell.json, is only ever read by Caelestia -- nothing
+    # writes it back -- so it is safe to manage declaratively as a store
+    # symlink.
+    #
+    # SUPER+D runs `caelestia toggle communication`, whose built-in config
+    # spawns `discord`. There is no such binary here (Discord is a Chromium web
+    # app), so shutil.which() failed, nothing spawned, and the keybind only
+    # toggled an empty workspace unless Discord was already running. Override
+    # just the command; enable/match/move still come from the defaults via the
+    # module's DeepChainMap. The default match is `class` containing "discord",
+    # which the web app's chrome-discord.com__app-Default satisfies, so the
+    # already-open check and the move keep working.
+    cli.settings.toggles.communication.discord.command = discordCmd;
   };
 
   # Write a real, writable file, but only when there is not one already, so the
@@ -105,7 +125,7 @@ in
   in {
     bitwarden = webApp "Bitwarden" "https://vault.bitwarden.com" "bitwarden"
       "chrome-vault.bitwarden.com__-Default";
-    discord = webApp "Discord" "https://discord.com/app" "discord"
+    discord = webApp "Discord" discordUrl "discord"
       "chrome-discord.com__app-Default";
     spotify = webApp "Spotify" "https://open.spotify.com" "spotify"
       "chrome-open.spotify.com__-Default";
