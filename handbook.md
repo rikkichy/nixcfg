@@ -59,22 +59,9 @@ nix-shell -p git --run '
 cp /mnt/etc/nixos/hardware-configuration.nix /mnt/home/ri/nixcfg/
 ```
 
-You are root in the installer, so this clone lands as `root:root` and `ri`
-cannot write to it. **You do not need to fix that by hand** — `configuration.nix`
-carries a `systemd.tmpfiles` rule that reasserts `ri:users` on the tree at every
-boot, and `systemd-tmpfiles-setup.service` is ordered under `sysinit.target`,
-well before greetd, so ownership is already correct by the time Hyprland starts.
-
-It is worth knowing *why* that rule exists, because the failure is silent.
-`home.nix` maps `hypr/` into `~/.config/hypr` with `mkOutOfStoreSymlink`
-precisely so Caelestia can rewrite `hypr/scheme/current.lua` at runtime (see
-*Two rules that are easy to break*). If the tree is root-owned, that write
-fails, Caelestia swallows the `PermissionError`, `hyprland.lua` cannot bootstrap
-`current.lua` from `default.lua`, and `require` of it fails. Because
-`variables.lua` interpolates colours into strings, the whole `variables` module
-then comes back empty and every `vars.*` is `nil` — a dozen `hl.*` argument
-errors, `keybinds.lua` aborting partway with most binds gone, and `rules.lua`
-aborting on its first line so no window rule applies at all.
+The clone lands as `root:root` because you are root here. You do not need to fix
+that — `configuration.nix` reasserts `ri:users` on the tree at every boot,
+before the desktop starts.
 
 `hardware-configuration.nix` is **not** in this repo and never will be — it
 describes *this machine's* filesystem and LUKS UUIDs, which do not exist until
@@ -130,26 +117,14 @@ No password is set in the config on purpose — this repo is public.
 
 ### 8. Reboot
 
-Flatpak apps install themselves. `flatpak-bootstrap.timer` fires two minutes
-after the user session starts and runs `flatpak-bootstrap.service`, which adds
-the Flathub remote and installs `org.vinegarhq.Sober` and
-`me.amankhanna.opendeck`. It is idempotent and re-runs as a no-op afterwards,
-so adding an app to that list in `configuration.nix` and rebuilding is all it
-takes to get it. Check it with `journalctl --user -u flatpak-bootstrap`.
+Flatpak apps install themselves a couple of minutes after you log in — Flathub
+plus `org.vinegarhq.Sober` and `me.amankhanna.opendeck`. To add another, put it
+in the list in `configuration.nix` and rebuild. If one is missing:
 
-Two things about that unit are deliberate and should not be "simplified":
-
-**It is driven by a timer, not `default.target`.** A user unit in the login
-target sits in the path of `reloading user units for ri` during
-`nixos-rebuild switch`. If it blocks, the whole switch hangs with no
-indication of why. That is not hypothetical — it is how this unit was first
-written, and a hung `flatpak` wedged a rebuild. `TimeoutStartSec` bounds it as
-a second line of defence.
-
-**The remote URL is `dl.flathub.org`, not `flathub.org`.** The latter is
-unreachable from this machine's network, and `flatpak remote-add` hangs on it
-indefinitely rather than failing — which is what did the wedging. Same repo,
-different host.
+```
+systemctl --user start flatpak-bootstrap
+journalctl --user -u flatpak-bootstrap
+```
 
 There is still one thing you must do by hand:
 
@@ -223,17 +198,8 @@ here and rebuild. Per-monitor overrides in
 update → pick the previous generation in the Limine menu.
 Watch it with `journalctl -u nixos-upgrade.service`.
 
-Once this is a git repo, `--flake /home/ri/nixcfg` reads the tree **through
-git**, and the rule is about *tracking*, not committing:
-
-| State | Seen by Nix? |
-|---|---|
-| tracked, committed | yes |
-| tracked, edited but uncommitted | yes — the dirty working tree is used, with a `warning: Git tree is dirty` |
-| **untracked** | **no** — silently absent, as if the file did not exist |
-
-So an uncommitted edit to a file already in git does take effect on the next
-rebuild. A **new** file does not, until `git add`. That is the same trap as
-step 5 above, and it fails the same way: not an error, just a build that
-quietly ignores the file. `git status` before rebuilding, or use
-`path:/home/ri/nixcfg`, which ignores git entirely and reads the directory.
+`--flake /home/ri/nixcfg` reads the tree through git, so the rule is about
+tracking, not committing. Editing a file that is already in git works without
+committing. A **new** file is invisible until `git add` — no error, it is just
+silently ignored, the same trap as step 5. `git add -A` before rebuilding, or
+use `path:/home/ri/nixcfg` to bypass git entirely.

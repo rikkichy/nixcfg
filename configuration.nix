@@ -252,12 +252,19 @@
       Type = "oneshot";
       TimeoutStartSec = "10min";
     };
+    # Deliberately not `|| true`. The first version swallowed every error, so
+    # when remote-add quietly produced a remote with no refs both installs died
+    # with "No remote refs found" and the unit still reported success -- it went
+    # green having installed nothing, which is how this went unnoticed. Off the
+    # activation path a failed unit costs nothing and shows up in
+    # `systemctl --user --failed`, so let it fail.
     script = ''
+      set -eu
       flatpak=${pkgs.flatpak}/bin/flatpak
       $flatpak remote-add --user --if-not-exists flathub \
-        https://dl.flathub.org/repo/flathub.flatpakrepo || true
+        https://dl.flathub.org/repo/flathub.flatpakrepo
       for app in org.vinegarhq.Sober me.amankhanna.opendeck; do
-        $flatpak install --user -y --noninteractive flathub "$app" || true
+        $flatpak install --user -y --noninteractive flathub "$app"
       done
     '';
   };

@@ -7,3 +7,6 @@ result-*
 
 # luac artefact (luac -l writes this unless -p is given)
 luac.out
+
+# Claude Code session state, settings and local agent files
+.claude/
