@@ -81,6 +81,9 @@ return {
     kbEditor                   = "SUPER + C",
     kbFileExplorer             = "SUPER + E",
 
+    -- `vpn` comes from configuration.nix, not from a package
+    kbVpnToggle                = "SUPER + SHIFT + V",
+
     kbSession                  = "CTRL + ALT + Delete",
     kbShowSidebar              = "SUPER + N",
     kbClearNotifs              = "CTRL + ALT + C",

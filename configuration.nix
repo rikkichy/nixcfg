@@ -1,5 +1,130 @@
 { config, pkgs, inputs, nixcfgPath, ... }:
 
+let
+  # `vpn on|off|toggle|status` -- the tunnel's whole user interface, so that
+  # switching it does not mean opening a browser tab. It drives the same
+  # external-controller API the dashboard does: flipping the PROXY group to
+  # DIRECT, which keeps the TUN up and dials out the physical interface. There
+  # is deliberately no start/stop of the unit here -- stopping mihomo also
+  # takes down the DNS hijack, which is a much bigger hammer than "not today".
+  #
+  # Turning it off records the node that was live so turning it back on returns
+  # to that node rather than always AUTO. mihomo persists its own selection
+  # (profile.store-selected), so this file only exists to remember the *other*
+  # side of the toggle.
+  #
+  # Node names come from the subscription and are full of emoji, Cyrillic and
+  # spaces, so the PUT body is built with jq rather than string-interpolated.
+  vpn = pkgs.writeShellApplication {
+    name = "vpn";
+    runtimeInputs = with pkgs; [ curl jq libnotify gnugrep gnused coreutils ];
+    text = ''
+      api=http://127.0.0.1:9090
+      group=PROXY
+      state="''${XDG_STATE_HOME:-$HOME/.local/state}/vpn"
+      last="$state/last-node"
+
+      # --noproxy matters: this must reach mihomo even when http_proxy points
+      # at mihomo's own mixed-port.
+      api_get() { curl -fsS --noproxy '*' --max-time 3 "$api/proxies/$group"; }
+      api_put() {
+        curl -fsS --noproxy '*' --max-time 3 -X PUT "$api/proxies/$group" \
+          --data "$(jq -nc --arg n "$1" '{name:$n}')"
+      }
+
+      api_providers() { curl -fsS --noproxy '*' --max-time 5 "$api/providers/proxies"; }
+
+      say() {
+        printf '%s\n' "$2"
+        notify-send -a VPN -i "$1" VPN "$2" 2>/dev/null || true
+      }
+
+      # Every node the group currently offers, minus the pseudo-entries, sorted
+      # fastest first, as "delay<TAB>name". Delay 0 means the health check has
+      # never succeeded -- a dead node -- so those sort last rather than first.
+      #
+      # Two endpoints, because they hold different halves: /proxies/PROXY knows
+      # which nodes the group offers but carries no history for them (only the
+      # nine built-ins like DIRECT and AUTO are top-level entries there), while
+      # /providers/proxies carries the health-check history but not group
+      # membership. Reading only the first is why every latency showed as "--".
+      #
+      # Delays are merged across *all* providers, so a second subscription is
+      # picked up with no change here and no change on the Stream Deck.
+      nodes() {
+        jq -rn --argjson g "$(api_get)" --argjson p "$(api_providers)" '
+          ($p.providers | to_entries | map(.value.proxies // []) | flatten
+            | map({key: .name, value: ((.history | last | .delay) // 0)})
+            | from_entries) as $d
+          | ($g.all // [])
+          | map(select(. as $n
+              | ["AUTO","DIRECT","GLOBAL","REJECT","REJECT-DROP","PROXY","COMPATIBLE","PASS","PASS-RULE"]
+              | index($n) | not))
+          | map({n: ., d: ($d[.] // 0)})
+          | (map(select(.d > 0)) | sort_by(.d)) + map(select(.d == 0))
+          | .[] | "\(.d)\t\(.n)"
+        '
+      }
+
+      if ! cur=$(api_get | jq -er '.now'); then
+        say network-error-symbolic "mihomo is not answering on $api"
+        exit 1
+      fi
+
+      turn_on() {
+        target=AUTO
+        if [ -r "$last" ]; then
+          saved=$(cat "$last")
+          if [ -n "$saved" ] && [ "$saved" != DIRECT ]; then target=$saved; fi
+        fi
+        api_put "$target"
+        say network-vpn-symbolic "on -- $target"
+      }
+
+      turn_off() {
+        if [ "$cur" != DIRECT ]; then
+          mkdir -p "$state"
+          printf '%s\n' "$cur" > "$last"
+        fi
+        api_put DIRECT
+        say network-offline-symbolic "off -- direct connection"
+      }
+
+      # `vpn use sweden` etc. The argument is a case-insensitive regex matched
+      # against live node names, and the fastest match wins -- deliberately not
+      # an exact name. Subscription node names carry flags, Cyrillic, numbering
+      # and trailing spaces that change without notice, so a Stream Deck key
+      # pinned to one literal name would break the next time the provider
+      # renamed anything.
+      use_node() {
+        if [ -z "''${1:-}" ]; then
+          echo "usage: vpn use <pattern>" >&2; exit 2
+        fi
+        target=$(nodes | grep -iP -m1 "\t.*$1" | cut -f2- || true)
+        if [ -z "$target" ]; then
+          say network-error-symbolic "no node matching '$1'"
+          exit 1
+        fi
+        api_put "$target"
+        say network-vpn-symbolic "$target"
+      }
+
+      case "''${1:-toggle}" in
+        on)     turn_on ;;
+        off)    turn_off ;;
+        toggle) if [ "$cur" = DIRECT ]; then turn_on; else turn_off; fi ;;
+        use)    use_node "''${2:-}" ;;
+        status) printf '%s\n' "$cur" ;;
+        list)   printf 'current: %s\n\n' "$cur"; nodes | while IFS=$'\t' read -r d n; do
+                  if [ "$d" = 0 ]; then printf '   --   %s\n' "$n"; else printf '%5dms %s\n' "$d" "$n"; fi
+                done ;;
+        ip)     curl -fsS --max-time 15 https://cloudflare.com/cdn-cgi/trace \
+                  | sed -n 's/^ip=//p;s/^loc=/ /p' | tr -d '\n'; echo ;;
+        *)      echo "usage: vpn [toggle|on|off|use <pattern>|status|list|ip]" >&2; exit 2 ;;
+      esac
+    '';
+  };
+in
 {
   # The installer clones this repo as root, so without this it stays root-owned
   # and `ri` cannot write to it. That matters because home.nix maps hypr/ into
@@ -307,6 +432,8 @@
   };
 
   environment.systemPackages = with pkgs; [
+    vpn # defined at the top of this file; bound to SUPER + SHIFT + V in hypr/
+
     chromium
     inputs.vhelper.packages.${pkgs.stdenv.hostPlatform.system}.default
 

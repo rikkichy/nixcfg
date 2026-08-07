@@ -159,10 +159,35 @@ boot; there is no app to launch.
 
 ### Turning it off
 
-Open the dashboard, click the **PROXY** group, pick **DIRECT**. That is the off
-switch. Traffic still goes through the TUN, mihomo just dials it out the
-physical interface instead of a node, so nothing has to be stopped or started
-and nothing drops while you switch.
+**`SUPER + SHIFT + V`** toggles it, with a notification saying which way it
+went. Same thing from a terminal:
+
+```
+vpn                  # toggle
+vpn on               # back to the node you were last on
+vpn off              # direct connection
+vpn status           # prints the current node, or DIRECT
+vpn list             # every node, fastest first, with latency
+vpn use <pattern>    # switch to the fastest node matching <pattern>
+vpn ip               # exit IP and country, to confirm where you leave from
+```
+
+Off records the node that was live, so `vpn on` returns to *that* node rather
+than resetting to AUTO (kept in `~/.local/state/vpn/last-node`).
+
+`vpn use` takes a case-insensitive regex, not a node name — `vpn use швец`
+picks the fastest Swedish node. **Match on the flag emoji** (`vpn use 🇸🇪`) when
+you want something durable: node names carry numbering, `WlFl`/`LTE` suffixes
+and trailing spaces that the provider changes without notice, and a second
+subscription would name its nodes differently again. The node list is read live
+from the proxy group, so adding another `proxy-providers` entry needs no change
+here — its nodes just join the pool and get considered on latency like the
+rest.
+
+Or do it by hand: dashboard → **PROXY** group → **DIRECT**. Either way it is
+the same switch. Traffic still goes through the TUN, mihomo just dials it out
+the physical interface instead of a node, so nothing has to be stopped or
+started and nothing drops while you switch.
 
 **The choice sticks across reboots** (`profile.store-selected`, cached in
 `/var/lib/private/mihomo/cache.db`). So the VPN is not on because it insists —

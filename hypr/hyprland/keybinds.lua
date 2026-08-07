@@ -123,6 +123,7 @@ hl.bind(vars.kbBrowser, hl.dsp.exec_cmd(vars.browser))
 hl.bind(vars.kbEditor, hl.dsp.exec_cmd(vars.editor))
 hl.bind(vars.kbFileExplorer, hl.dsp.exec_cmd(vars.fileExplorer))
 hl.bind("CTRL + ALT + V", hl.dsp.exec_cmd(vars.audioSettings))
+hl.bind(vars.kbVpnToggle, hl.dsp.exec_cmd("vpn toggle"))
 
 hl.bind("Print", hl.dsp.exec_cmd("caelestia screenshot"), { locked = true })
 hl.bind("SUPER + SHIFT + S", hl.dsp.global("caelestia:screenshotFreeze"))
