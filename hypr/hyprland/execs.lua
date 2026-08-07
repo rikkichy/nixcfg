@@ -16,6 +16,15 @@ hl.on("hyprland.start", function()
 
     hl.exec_cmd("mpris-proxy")
 
+    -- Both start straight into the tray with --hide rather than opening a
+    -- window. They are staggered behind the shell because the tray itself is a
+    -- Caelestia surface: an app that registers its StatusNotifierItem before
+    -- the bar's watcher exists gets no icon and no error, leaving a running
+    -- process with nothing to click. OpenDeck goes last -- it is a Flatpak, so
+    -- it pays a sandbox start on top, and it talks to 127.0.0.1:9090.
+    hl.exec_cmd("sleep 3 && openwave --hide")
+    hl.exec_cmd("sleep 5 && flatpak run me.amankhanna.opendeck --hide")
+
 end)
 
 hl.on("window.title", function(win)
