@@ -213,3 +213,70 @@ remote-add` hangs on it indefinitely rather than failing; use `dl.flathub.org`.
 
 `system.autoUpgrade` builds daily and **stages for next boot**
 (`operation = "boot"`), so upgrades never disturb a running session.
+
+### The VPN (mihomo) — failures here all look like "the internet is broken"
+
+`services.mihomo` is a `DynamicUser` unit whose only privilege is
+`CAP_NET_ADMIN`, granted by `tunMode`. Config is `dotfiles/mihomo.yaml` with two
+placeholders spliced in at boot from `/etc/mihomo/` — the subscription URL is a
+credential and the repo is public, so **it must never be committed, quoted in a
+commit message, or pasted into this file**.
+
+Three things here produce no log line anywhere:
+
+- **The panel gates on device id, and failure is silent and valid.** Without an
+  `x-hwid` header the subscription answers `200 OK` with a well-formed 1.4 KB
+  profile containing a single node named `App not supported` pointed at
+  `0.0.0.0:1`. mihomo starts happily, `MATCH,PROXY` selects it, and every
+  connection dies with `connection refused` — so the *internet* looks broken
+  while the subscription looks healthy. With the header the same URL returns 46
+  nodes. User-Agent is a different axis entirely: it controls response *format*
+  (`clash.meta` → YAML, generic → base64), not access. Chasing the UA is a dead
+  end; check `x-hwid` first.
+- **mihomo fetches its own subscription through its own tunnel** unless the
+  provider carries `proxy: DIRECT`. `MATCH,PROXY` routes the update into the
+  very nodes it is trying to download, so a bad update can never repair itself.
+  It works exactly once, on first start, by racing the routing rules into
+  place, and then surfaces as a bare `EOF`.
+- **Node latency needs two endpoints merged.** `/proxies/PROXY` knows which
+  nodes the group offers but holds no history for them — only the nine
+  built-ins (`DIRECT`, `AUTO`, `REJECT`, …) are top-level entries in
+  `/proxies`. `/providers/proxies` holds the health-check history but not group
+  membership. Reading either alone gives a complete-looking, wrong answer.
+
+**Run `vpn off` before any network-heavy work.** Through a node, `nixos-rebuild`
+hangs on substituter fetches until it is killed and `git push` fails with a TLS
+`unexpected eof`. Neither failure names the tunnel, and the rebuild one reads
+convincingly as a broken derivation.
+
+The off switch is `DIRECT` as an explicit member of the `PROXY` select group,
+not stopping the unit — stopping mihomo also drops the DNS hijack.
+`profile.store-selected` makes the choice survive reboot, cached in `cache.db`
+under the unit's `StateDirectory`. Without it the group silently resets to its
+first member on every start, which reads as the VPN switching itself back on.
+
+`vpn` is a `writeShellApplication` in `environment.systemPackages`, deliberately
+not a shell alias: the same command has to work from fish, from the Hyprland
+keybind, and from the Stream Deck via `flatpak-spawn`. It selects nodes by
+regex against live group membership (`vpn use 🇸🇪`) rather than by literal name,
+because node names carry numbering and suffixes the provider changes without
+notice — and because a second subscription would name things differently again.
+
+### OpenDeck (Stream Deck MK.2)
+
+Installed as a Flatpak, so two sandbox facts decide what is possible:
+`shared=network` means `127.0.0.1:9090` is reachable from inside, and
+`org.freedesktop.Flatpak=talk` means `flatpak-spawn --host vpn …` works and
+passes Unicode through intact.
+
+**Its profile JSON is GUI-owned — do not hand-author it.** A key entry written
+by hand into `profiles/<serial>/Default.json` is discarded on startup and the
+file reset to the empty 15-null form, with nothing logged either way. The
+on-disk `DiskActionInstance` shape is not in the published source, so its
+fields cannot be derived — create one key in the GUI and copy the exact shape,
+then seed the file the way `shell.json` is seeded.
+
+Two built-in actions exist that no plugin manifest lists: `opendeck.multiaction`
+and `opendeck.toggleaction` (the two-state toggle). Plugins are **native
+binaries**, and the sandbox has no `/nix/store`, so anything shipped from this
+repo would have to be statically linked.
