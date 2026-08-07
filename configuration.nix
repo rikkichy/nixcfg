@@ -445,6 +445,7 @@ in
     filen-desktop
 
     heroic
+    protonplus
     foot
     yubioath-flutter
     claude-code
