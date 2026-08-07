@@ -155,6 +155,19 @@ in
     options = "--delete-older-than 30d";
   };
 
+  # nixos-upgrade.service runs as root, while the repo is owned by ri -- the
+  # tmpfiles Z rule below reasserts that ownership so Caelestia can rewrite
+  # hypr/scheme/current.lua at runtime. libgit2 refuses to open a repository
+  # owned by another user (GIT_EOWNER), so the flake input
+  # git+file:///home/ri/nixcfg cannot be fetched and the upgrade exits 1 before
+  # it builds anything. Listing the path as safe is what lets those two
+  # requirements coexist; the alternative, a `path:` flake ref, sidesteps git
+  # entirely but would build the working tree, uncommitted changes included.
+  programs.git = {
+    enable = true;
+    config.safe.directory = nixcfgPath;
+  };
+
   system.autoUpgrade = {
     enable = true;
     operation = "boot";
@@ -183,8 +196,13 @@ in
           DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$uid/bus \
           ${pkgs.libnotify}/bin/notify-send "$@"
       }
-      booted="$(readlink /run/booted-system/{initrd,kernel,kernel-modules})"
-      built="$(readlink /nix/var/nix/profiles/system/{initrd,kernel,kernel-modules})"
+      # The whole generation, not its kernel. `operation = "boot"` stages every
+      # upgrade for next boot, so a pending reboot is the normal outcome even
+      # when nothing kernel-side moved -- comparing initrd/kernel/kernel-modules
+      # instead reports success for any upgrade that only touched userspace,
+      # which is most of them.
+      booted="$(readlink -f /run/booted-system)"
+      built="$(readlink -f /nix/var/nix/profiles/system)"
       if [ "$booted" = "$built" ]; then
         notify "HalruneNix" "Update successful." || true
       else
@@ -201,6 +219,24 @@ in
     '';
   };
   systemd.services.nixos-upgrade.onSuccess = [ "nixos-upgrade-notify.service" ];
+
+  # A failed upgrade is otherwise indistinguishable from no upgrade at all:
+  # nothing runs, nothing is staged, and the success notification is wired to
+  # onSuccess so it stays quiet too. The unit is the only thing that reports
+  # the difference, so it names the command that shows why.
+  systemd.services.nixos-upgrade-failed = {
+    description = "HalruneNix upgrade failure notification";
+    serviceConfig.Type = "oneshot";
+    script = ''
+      user=ri
+      uid=$(${pkgs.coreutils}/bin/id -u "$user")
+      ${pkgs.util-linux}/bin/runuser -u "$user" -- ${pkgs.coreutils}/bin/env \
+        DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$uid/bus \
+        ${pkgs.libnotify}/bin/notify-send -u critical \
+          "HalruneNix" "Update failed — journalctl -u nixos-upgrade" || true
+    '';
+  };
+  systemd.services.nixos-upgrade.onFailure = [ "nixos-upgrade-failed.service" ];
 
   nixpkgs.config.allowUnfree = true;
 
@@ -454,6 +490,8 @@ in
     file-roller
     mpv
     anytype
+
+    discord
 
     pavucontrol
     zed-editor
