@@ -32,6 +32,13 @@ let
     services.lyricsBackend = "Local";
 
     appearance.transparency.enabled = false;
+
+    # Every shell animation duration is `token * scale`, so this is the only
+    # writable speed control -- the per-size durations (small 200, normal 400,
+    # large 600, extraLarge 1000 ms) are read-only properties derived from it.
+    # Lower is faster, the inverse of Hyprland's `speed` in hypr/hyprland/
+    # animations.lua, which is a separate system this does not touch.
+    appearance.anim.durations.scale = 0.6;
     background.wallpaperEnabled = true;
 
     bar.persistent = true;
@@ -57,11 +64,17 @@ let
   caelestiaSeed = pkgs.writeText "caelestia-shell.json"
     (builtins.toJSON caelestiaDefaults);
 
-  # Defined once: the desktop entry and the SUPER+D toggle below must launch
-  # the same thing, or the toggle spawns a second window instead of raising
-  # the one already open.
-  discordUrl = "https://discord.com/app";
-  discordCmd = [ "${pkgs.chromium}/bin/chromium" "--app=${discordUrl}" ];
+  # The colour scheme, applied by the activation script below.
+  #
+  # `dynamic` generates the palette from the current wallpaper rather than
+  # reading one of the bundled scheme files, so what is declared here is which
+  # generator runs, not a set of colours -- the colours themselves change every
+  # time the wallpaper does. `flavour` picks the generator's contrast (`default`
+  # or `hard`); `mode` and `variant` are left out on purpose, because
+  # `services.smartScheme` derives both from the wallpaper on the dynamic path
+  # and setting them here would fight that on every rebuild.
+  caelestiaScheme = { name = "dynamic"; flavour = "default"; };
+
 in
 {
   imports = [ inputs.caelestia-shell.homeManagerModules.default ];
@@ -75,19 +88,11 @@ in
     enable = true;
     cli.enable = true;
 
-    # cli.json, unlike shell.json, is only ever read by Caelestia -- nothing
-    # writes it back -- so it is safe to manage declaratively as a store
-    # symlink.
-    #
     # SUPER+D runs `caelestia toggle communication`, whose built-in config
-    # spawns `discord`. There is no such binary here (Discord is a Chromium web
-    # app), so shutil.which() failed, nothing spawned, and the keybind only
-    # toggled an empty workspace unless Discord was already running. Override
-    # just the command; enable/match/move still come from the defaults via the
-    # module's DeepChainMap. The default match is `class` containing "discord",
-    # which the web app's chrome-discord.com__app-Default satisfies, so the
-    # already-open check and the move keep working.
-    cli.settings.toggles.communication.discord.command = discordCmd;
+    # spawns `discord` and matches windows whose `class` contains "discord".
+    # The native client satisfies both: the binary is on PATH from
+    # systemPackages, so shutil.which() resolves it, and its window class is
+    # plain "discord". Nothing needs overriding.
   };
 
   # Write a real, writable file, but only when there is not one already, so the
@@ -105,6 +110,40 @@ in
         $DRY_RUN_CMD chmod 644 "$target"
       fi
     '';
+
+  # Caelestia owns ~/.local/state/caelestia/scheme.json outright -- it rewrites
+  # the whole file, colours included, on `scheme set`, on every wallpaper
+  # change, and on the dark/light toggle in the shell -- so the scheme is
+  # applied by invoking the CLI rather than by placing a file. Writing that JSON
+  # directly relabels the scheme and repaints nothing: the template pass that
+  # produces hypr/scheme/current.lua, gtk.css, fuzzel.ini, the btop/htop/cava
+  # themes and the terminal escape sequences runs inside `scheme set` and
+  # nowhere else.
+  #
+  # The guard is what keeps this out of the rebuild's critical path. `scheme
+  # set` re-runs that whole template pass unconditionally, even when every
+  # property already matches, so it is only worth calling when something
+  # differs; `scheme get -nf` prints name and flavour on separate lines in that
+  # fixed order.
+  #
+  # A dynamic scheme cannot be generated before a wallpaper exists -- the CLI
+  # raises and exits non-zero -- which is the state of a machine that has been
+  # installed but never logged into. Skipping explicitly keeps that from failing
+  # activation midway through the install; the shell sets its bundled wallpaper
+  # on first start, and the next activation applies the scheme.
+  home.activation.caelestiaScheme =
+    lib.hm.dag.entryAfter [ "writeBoundary" ] (
+      let
+        cli = "${config.programs.caelestia.cli.package}/bin/caelestia";
+        inherit (caelestiaScheme) name flavour;
+      in ''
+        if [ ! -e "${config.xdg.stateHome}/caelestia/wallpaper/current" ]; then
+          echo "caelestiaScheme: no wallpaper set yet, leaving the scheme alone"
+        elif [ "$(${cli} scheme get -nf)" != $'${name}\n${flavour}' ]; then
+          $DRY_RUN_CMD ${cli} scheme set -n ${name} -f ${flavour}
+        fi
+      ''
+    );
 
   # `chromium --app=URL` gives its window a WM_CLASS of its own -- for
   # https://open.spotify.com that is chrome-open.spotify.com__-Default, i.e.
@@ -125,8 +164,6 @@ in
   in {
     bitwarden = webApp "Bitwarden" "https://vault.bitwarden.com" "bitwarden"
       "chrome-vault.bitwarden.com__-Default";
-    discord = webApp "Discord" discordUrl "discord"
-      "chrome-discord.com__app-Default";
     spotify = webApp "Spotify" "https://open.spotify.com" "spotify"
       "chrome-open.spotify.com__-Default";
   };
