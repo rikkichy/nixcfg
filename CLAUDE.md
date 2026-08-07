@@ -6,6 +6,15 @@ Single-machine NixOS config (host `nix`): 9950X3D / RTX 3090 / LUKS / Hyprland +
 Caelestia. `handbook.md` is the human install guide — keep it install-facing and
 put engineering rationale here instead.
 
+**Write this file as a description of how things are, never as a changelog.**
+Git history already records what changed and when. An entry here states what is
+true and why it is built that way; it does not say what something was before,
+what replaced what, what a previous attempt got wrong, or what was just fixed.
+Phrasings like "now falls back to", "used to", "this is why X exists", and
+"X, not Y" where Y is a superseded approach all leak the history back in and
+belong in the commit message. A reader arriving cold must not be able to tell
+which parts are recent.
+
 ## Commands
 
 ```sh
@@ -92,13 +101,13 @@ whether or not those apps are installed. Consequences:
   read-only store symlinks; every colour change would start failing.
   Home-manager's `gtk` module is unused for the same reason.
 - `shell.json` is the same trap one level up: Caelestia rewrites its *own*
-  merged config on every start, so `programs.caelestia.settings` made that write
-  fail every time and silently discarded anything changed in the GUI. It is now
-  seeded by a `home.activation` script that only writes when the file is absent,
-  and `settings` is deliberately left unset — the module gates the file on
-  `extraConfig != "" || settings != {}`, so setting it at all would put the
-  symlink back. Consequence to keep in mind: `caelestiaDefaults` in `home.nix`
-  is first-install state, not live config, and editing it does nothing on a
+  merged config on every start, so `programs.caelestia.settings` makes that
+  write fail every time and silently discards anything changed in the GUI. It
+  is seeded by a `home.activation` script that only writes when the file is
+  absent, and `settings` must stay unset — the module gates the file on
+  `extraConfig != "" || settings != {}`, so setting it at all puts the symlink
+  back. Consequence to keep in mind: `caelestiaDefaults` in `home.nix` is
+  first-install state, not live config, and editing it does nothing on a
   machine that already has the file.
 - `hypr/` is mapped in with `mkOutOfStoreSymlink`, not copied, specifically so
   `scheme/current.lua` stays writable. That in turn requires the repo to be
@@ -116,11 +125,11 @@ symlink; `hyprctl reload` suffices.
 Failure mode to understand before touching this: a raw Lua error **aborts the
 rest of the file with no log line**, while bad `hl.*` arguments log and continue.
 So a single broken value silently truncates a config file. `variables.lua`
-interpolates scheme colours into strings, so a missing `scheme/current.lua` used
-to empty the entire module and take ~85 keybinds and *all* window rules with it;
-`current_scheme.lua` now falls back to `scheme/default.lua` to stop that class of
-failure. `--verify-config` is the only reliable check — `hyprctl configerrors`
-returns empty even for a definitely-broken config on reload.
+interpolates scheme colours into strings, so a missing `scheme/current.lua` would
+empty the entire module and take ~85 keybinds and *all* window rules with it —
+`current_scheme.lua` falls back to `scheme/default.lua` to keep that class of
+failure out of reach. `--verify-config` is the only reliable check — `hyprctl
+configerrors` returns empty even for a definitely-broken config on reload.
 
 Two gotchas worth not rediscovering:
 
@@ -156,7 +165,7 @@ unverified until `--verify-config` says so.
   drops to the fallback. If it does not change, the rule was never the thing
   under test.
 - **`hyprctl dispatch` takes Lua as of 0.56.** `hyprctl dispatch closewindow
-  address:0x…` is a syntax error now; use
+  address:0x…` is a syntax error; use
   `hyprctl repl 'hl.dispatch(hl.dsp.window.close({ window = "address:0x…" }))'`.
 
 Useful ground truth instead: `hyprctl binds -j | grep -c '"key"'` (a truncated
@@ -268,17 +277,16 @@ first member on every start, which reads as the VPN switching itself back on.
 
 `vpn` is a `writeShellApplication` in `environment.systemPackages`, deliberately
 not a shell alias: the same command has to work from fish, from the Hyprland
-keybind, and from the Stream Deck via `flatpak-spawn`. It selects nodes by
+keybind, and from the Stream Deck. It selects nodes by
 regex against live group membership (`vpn use 🇸🇪`) rather than by literal name,
 because node names carry numbering and suffixes the provider changes without
 notice — and because a second subscription would name things differently again.
 
 ### OpenDeck (Stream Deck MK.2)
 
-Installed as a Flatpak, so two sandbox facts decide what is possible:
-`shared=network` means `127.0.0.1:9090` is reachable from inside, and
-`org.freedesktop.Flatpak=talk` means `flatpak-spawn --host vpn …` works and
-passes Unicode through intact.
+Installed as a Flatpak, so two sandbox permissions decide what is possible:
+`shared=network` makes `127.0.0.1:9090` reachable from inside, and
+`org.freedesktop.Flatpak=talk` allows host commands, Unicode intact.
 
 **Its profile JSON is GUI-owned — do not hand-author it.** A key entry written
 by hand into `profiles/<serial>/Default.json` is discarded on startup and the
@@ -290,15 +298,14 @@ then seed the file the way `shell.json` is seeded.
 Two built-in actions exist that no plugin manifest lists: `opendeck.multiaction`
 and `opendeck.toggleaction` (the two-state toggle).
 
-**Type deck commands plainly — `vpn toggle`, not `flatpak-spawn --host vpn
-toggle`.** The Run Command action checks `FLATPAK_ID`/`CONTAINER_ID` and wraps
-the command in `flatpak-spawn --host` (or `distrobox-host-exec`) itself, so it
-already runs on the host. Adding the prefix by hand is redundant.
+A key's command is written plainly: `vpn toggle`. The Run Command action checks
+`FLATPAK_ID`/`CONTAINER_ID` and wraps what it runs in `flatpak-spawn --host`
+(or `distrobox-host-exec`), so it lands on the host already.
 
-This is easy to get backwards, because a shell started in the sandbox really
-does fail: `vpn` is not on its PATH, and its absolute store path does not exist
-there either. `/nix/store` *is* present inside the sandbox — flatpak's own,
-roughly 38 entries — so `ls /nix` looks reassuring and proves nothing. Test with
-a full path to a known host binary. That gap matters only for a plugin shipped
-from this repo, which would be a **native binary** unable to see the host store
-and would therefore have to be statically linked.
+A shell started in the sandbox behaves differently, and taking it as evidence
+gives the wrong answer for the keys: there `vpn` is off PATH and its absolute
+store path does not resolve. `/nix/store` exists inside the sandbox — flatpak's
+own, roughly 38 entries — so `ls /nix` looks reassuring and proves nothing; test
+with a full path to a known host binary. This gap constrains only a plugin
+shipped from this repo, which is a **native binary** that cannot see the host
+store and so has to be statically linked.

@@ -56,8 +56,8 @@ dns:
 # 0.0.0.0:1 -- so mihomo starts happily, matches MATCH,PROXY, and every
 # connection dies with "connect: connection refused". The internet appears to
 # break rather than the subscription appearing to fail. With the header the
-# same URL returns 46 real nodes. This is why FlClashX exists as a fork: it
-# sends these headers and stock clients do not.
+# same URL returns 46 real nodes. Stock clients send no such header, so the
+# panel is only usable from a client that can set one.
 #
 # User-Agent is a separate axis and is about *format*, not access: `clash.meta`
 # gets Clash YAML, a generic UA gets base64 links. mihomo's default is already
