@@ -290,11 +290,15 @@ then seed the file the way `shell.json` is seeded.
 Two built-in actions exist that no plugin manifest lists: `opendeck.multiaction`
 and `opendeck.toggleaction` (the two-state toggle).
 
-Plugins are **native binaries**, and the sandbox cannot see the host's store, so
-anything shipped from this repo would have to be statically linked. `/nix/store`
-does exist inside the sandbox, which makes this confusing to check — but it is
-flatpak's own, roughly 38 entries, not the host's. A host store path is simply
-absent there, so an `ls /nix` that looks reassuring proves nothing; test with a
-full path to a known binary. This is also why deck keys invoke
-`flatpak-spawn --host vpn …` rather than `vpn` — the command is not on the
-sandbox's PATH, and pointing at its absolute store path does not help either.
+**Type deck commands plainly — `vpn toggle`, not `flatpak-spawn --host vpn
+toggle`.** The Run Command action checks `FLATPAK_ID`/`CONTAINER_ID` and wraps
+the command in `flatpak-spawn --host` (or `distrobox-host-exec`) itself, so it
+already runs on the host. Adding the prefix by hand is redundant.
+
+This is easy to get backwards, because a shell started in the sandbox really
+does fail: `vpn` is not on its PATH, and its absolute store path does not exist
+there either. `/nix/store` *is* present inside the sandbox — flatpak's own,
+roughly 38 entries — so `ls /nix` looks reassuring and proves nothing. Test with
+a full path to a known host binary. That gap matters only for a plugin shipped
+from this repo, which would be a **native binary** unable to see the host store
+and would therefore have to be statically linked.
