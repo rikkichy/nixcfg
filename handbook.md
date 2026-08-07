@@ -157,6 +157,25 @@ Later changes are `sudo nixos-rebuild switch --flake /home/ri/nixcfg#nix`
 **<http://127.0.0.1:9090/ui/>** — that is where you pick a node. It starts at
 boot; there is no app to launch.
 
+### Turning it off
+
+Open the dashboard, click the **PROXY** group, pick **DIRECT**. That is the off
+switch. Traffic still goes through the TUN, mihomo just dials it out the
+physical interface instead of a node, so nothing has to be stopped or started
+and nothing drops while you switch.
+
+**The choice sticks across reboots** (`profile.store-selected`, cached in
+`/var/lib/private/mihomo/cache.db`). So the VPN is not on because it insists —
+it is on because that is what was last selected. Pick DIRECT once and it stays
+DIRECT until you change it. Pick **AUTO** to go back and let latency choose the
+node.
+
+Deleting `cache.db` resets the selection to AUTO, i.e. VPN on.
+
+To stop the service outright — `systemctl stop mihomo` — you do not need it for
+this, and it also takes the DNS hijack down with it. DIRECT is the toggle you
+want.
+
 The config lives in `dotfiles/mihomo.yaml`. Two values cannot: the subscription
 URL is a credential and the device id is machine-specific, and this repo is
 public. Both live in `/etc/mihomo/` and are spliced into the config at boot.

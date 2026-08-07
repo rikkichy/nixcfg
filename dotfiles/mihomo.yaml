@@ -91,13 +91,20 @@ proxy-providers:
       interval: 300
 
 proxy-groups:
-  # Pick a specific node here in the dashboard.
+  # The one switch that matters, in the dashboard. DIRECT is the off position:
+  # traffic still enters the TUN, mihomo just dials it out the physical
+  # interface instead of a node, so there is nothing to stop and nothing to
+  # start. AUTO is first so it is the default on a machine with no saved
+  # selection yet (a fresh install).
   - name: PROXY
     type: select
+    proxies:
+      - AUTO
+      - DIRECT
     use:
       - subscription
 
-  # Or leave PROXY on AUTO and let latency decide.
+  # Leave PROXY on AUTO and let latency decide which node.
   - name: AUTO
     type: url-test
     use:
@@ -105,6 +112,13 @@ proxy-groups:
     url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
+
+# Remember what PROXY is set to across restarts, in cache.db under the
+# service's StateDirectory (/var/lib/private/mihomo). Without this every boot
+# silently resets PROXY to its first member, so choosing DIRECT would last
+# until the next reboot and the VPN would look like it re-enables itself.
+profile:
+  store-selected: true
 
 rules:
   - MATCH,PROXY
