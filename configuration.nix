@@ -114,13 +114,16 @@ let
         off)    turn_off ;;
         toggle) if [ "$cur" = DIRECT ]; then turn_on; else turn_off; fi ;;
         use)    use_node "''${2:-}" ;;
+        # AUTO is excluded from `use` (it is a group, not a node), so it needs
+        # its own verb -- a Stream Deck key has nothing else to call.
+        auto)   api_put AUTO; say network-vpn-symbolic "AUTO" ;;
         status) printf '%s\n' "$cur" ;;
         list)   printf 'current: %s\n\n' "$cur"; nodes | while IFS=$'\t' read -r d n; do
                   if [ "$d" = 0 ]; then printf '   --   %s\n' "$n"; else printf '%5dms %s\n' "$d" "$n"; fi
                 done ;;
         ip)     curl -fsS --max-time 15 https://cloudflare.com/cdn-cgi/trace \
                   | sed -n 's/^ip=//p;s/^loc=/ /p' | tr -d '\n'; echo ;;
-        *)      echo "usage: vpn [toggle|on|off|use <pattern>|status|list|ip]" >&2; exit 2 ;;
+        *)      echo "usage: vpn [toggle|on|off|auto|use <pattern>|status|list|ip]" >&2; exit 2 ;;
       esac
     '';
   };
