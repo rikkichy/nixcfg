@@ -166,6 +166,17 @@ to see what the live config actually holds.
 
 ### Web app desktop entries
 
+Chromium is overridden with `enableWideVine = true` in the `flake.nix` overlay,
+because nixpkgs ships it without the Widevine CDM and every streaming web app
+here is DRM-gated. Without it Spotify loads, searches and browses normally and
+then refuses to play any track, with nothing in the UI or the logs naming a
+missing decryption module — it presents as broken audio, so the sink and mute
+state get investigated first and are always fine. The override is not a source
+build: it adds one derivation that copies the already-compiled
+`chromium-unwrapped` and drops `WidevineCdm` into `libexec`. It belongs in the
+overlay rather than on `systemPackages` so the web apps in `home.nix`, which
+reference `pkgs.chromium` directly, resolve to the same binary.
+
 The Chromium web apps in `home.nix` need `settings.StartupWMClass`. `chromium
 --app=URL` gives the window its own WM_CLASS (`chrome-<host>__<path>-Default`)
 which never matches the desktop file id, so without it a running app falls back
