@@ -144,6 +144,11 @@ in
     fuzzel
     wayle
 
+    # Screenshots, replacing the caelestia CLI for that job. It carries grim,
+    # slurp, jq and wl-clipboard on an injected PATH, so none of those need
+    # installing here -- none of them are on this user's PATH at all.
+    hyprshot
+
     # wayle's own bar/popover colours. theme-provider = matugen makes it shell
     # out to a `matugen` binary by name, exactly as it does to `swww-daemon`,
     # and the failure is the same shape: it logs `cannot execute color
@@ -233,7 +238,8 @@ in
           for f in "''${files[@]}"; do
             base="''${f##*/}"
             printf '%s\x00icon\x1f%s\n' "$base" "$cache/$base.png"
-          done | fuzzel --dmenu --index --prompt "wp> " --line-height=64px --lines 8
+          done | fuzzel --dmenu --index --prompt "wp> " \
+            --font "Google Sans Flex Rounded:size=17" --line-height=64px --lines 8
         ) || exit 0
 
         case "$idx" in
@@ -256,7 +262,7 @@ in
         # -v alone keeps the name and mode, so light/dark still follows the
         # wallpaper the way it always did.
         caelestia wallpaper -f "$chosen" || true
-        caelestia scheme set -v expressive || true
+        caelestia scheme set -v content || true
       '';
     })
     (runCommand "swww-compat" { } ''
@@ -418,6 +424,132 @@ in
   };
 
   xdg.configFile = {
+    # Wayle splits its configuration in two, which is what makes this one
+    # safe to own from here when caelestia's shell.json was not: config.toml
+    # is read and never written, while `wayle config set` and anything changed
+    # in the GUI land in runtime.toml beside it. A read-only store symlink here
+    # therefore breaks nothing.
+    #
+    # The catch is precedence -- runtime.toml wins. Verified by putting
+    # matugen-scheme = "vibrant" here against "expressive" there and restarting:
+    # expressive won. So a key that has ever been set at runtime shadows the
+    # value declared below, silently and with nothing logged. When a change
+    # here appears to do nothing, that file is the reason.
+    #
+    # config.toml.example in the same directory lists the full surface, and it
+    # is 16 KB, so this covers only what is deliberately chosen.
+    # force, because wayle writes a stub config.toml on first run if the file
+    # is absent. Without it home-manager refuses to clobber that stub and the
+    # whole switch fails at activation, which is a rebuild broken by a file
+    # nothing has ever edited.
+    "wayle/config.toml".force = true;
+    "wayle/config.toml".text = ''
+      # Managed by home-manager. Runtime overrides live in runtime.toml and
+      # take precedence over everything here.
+
+      [general]
+      # "Google Sans Flex Rounded", not "Google Sans Rounded": every weight in
+      # the package registers the shared family "Google Sans Flex" plus its own
+      # "<Weight> Rounded" name, and the archive's name matches neither. A name
+      # that matches nothing falls back to the default sans silently.
+      font-sans = "Google Sans Flex Rounded"
+      font-mono = "JetBrains Mono NF"
+      tearing-mode = true
+
+      # A bar that clears the screen edge on all sides, is rounded off and
+      # casts a shadow, rather than a full-width strip welded to the bottom.
+      # inset-* is what detaches it; rounding without them just rounds corners
+      # that nothing can be seen behind.
+      [bar]
+      location = "left"
+      scale = 0.95
+      # Flush against the left edge and running the full height, rather than an
+      # island. inset-edge is the gap from the attached edge and inset-ends the
+      # gap at top and bottom; both at zero is what makes it a docked strip.
+      # rounding and shadow come off with them -- a rounded corner against a
+      # screen edge shows the desktop through the notch, and "floating" casts a
+      # shadow on three sides that no longer have anything behind them.
+      inset-edge = 0.0
+      inset-ends = 0.0
+      rounding = "none"
+      shadow = "none"
+      button-rounding = "full"
+
+      # button-group-rounding defaults to "sm" and is easy to miss: with the
+      # bar and the buttons both at "full", the grouped modules -- the systray
+      # cluster especially -- kept visibly squarer corners than everything
+      # around them.
+      button-group-rounding = "full"
+
+      # basic is "icon + label, minimal background". block-prefix, the default,
+      # is "icon in colored pill container", which is the filled blob behind
+      # every icon. Dropping to basic removes the container so the icon glyph
+      # itself carries the colour.
+      button-variant = "basic"
+
+      # Workspaces were the thing missing. The left slot was empty, which is
+      # most of why this read as a status strip rather than a shell.
+      #
+      # The slot names do not follow the orientation: on a vertical bar `left`
+      # is the top section and `right` is the bottom. media is left out here
+      # because a track title has nowhere to go in a column.
+      [[bar.layout]]
+      monitor = "*"
+      show = true
+      left = ["hyprland-workspaces", "notifications", "clock"]
+      center = []
+      right = [
+          "systray",
+          "microphone",
+          "volume",
+          "network",
+          "bluetooth",
+          "power",
+      ]
+
+      [styling]
+      theme-provider = "matugen"
+      matugen-scheme = "content"
+      rounding = "full"
+
+      # min-workspace-count keeps four pills present when the workspaces behind
+      # them are empty, which is what bar.workspaces.shown = 4 did before.
+      # show-special = false because Hyprland's special workspaces carry
+      # negative ids, and with it on they render as pills labelled -98 and -95
+      # -- which are special:communication and special:special, the Discord and
+      # scratchpad overlays, sitting in the bar next to real workspaces 1 and 3.
+      # They are toggled by keybind and have no business being numbered here.
+      [modules.hyprland-workspaces]
+      show-special = false
+      min-workspace-count = 4
+      display-mode = "label"
+      workspace-padding = 0.6
+
+      # A vertical bar is as wide as its widest module, and the clock defaults
+      # to "%a %b %d %I:%M %p" -- "Sun Aug 09 06:46 PM", about nineteen
+      # characters, which was setting the width for everything else. %H:%M is
+      # five, and 24-hour drops the AM/PM suffix along with the date.
+      # Hours over minutes on two lines. TOML reads the \n in a basic string as
+      # a real newline before wayle ever sees it, so this is one string with a
+      # break in it rather than an escape wayle has to interpret.
+      [modules.clock]
+      format = "%H\n%M"
+
+      [modules.bluetooth]
+      label-show = false
+
+      # The icons already say these; the text was width for nothing. Volume
+      # keeps its percentage because the number is the point there.
+      [modules.network]
+      label-show = false
+
+      [modules.microphone]
+      label-show = false
+
+      [wallpaper]
+      transition-fps = 240
+    '';
+
     "starship.toml".source = ./dotfiles/starship.toml;
     "btop/btop.conf".source = ./dotfiles/btop.conf;
     "fastfetch/config.jsonc".source = ./dotfiles/fastfetch.jsonc;

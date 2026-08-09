@@ -5,7 +5,25 @@ local fn   = require("hyprland.functions")
 -- overlay layer but does not stop the compositor seeing SUPER, and it has no
 -- single-instance guard of its own, so a plain `fuzzel` here piles up windows.
 -- pkill exits 0 when it killed something, which is what makes || a toggle.
-hl.bind("SUPER + SUPER_L", hl.dsp.exec_cmd("pkill -x fuzzel || fuzzel"), { release = true })
+-- The font is passed as a flag rather than written into fuzzel.ini, because
+-- that file is not managed here: the caelestia CLI regenerates it on every
+-- colour change. It preserves the font line today, but a hand-edit there is
+-- outside the flake and would not survive a reinstall.
+--
+-- line-height is how the icons get bigger: fuzzel has no icon-size option and
+-- draws them at the row height, which otherwise comes from font metrics --
+-- 22.67px at this size. 40px roughly doubles them and puts the window at 684px
+-- of 1080; 48px was tried and reaches 812px, which starts owning the screen.
+-- lines stays at the 15 from fuzzel.ini, so the window grows rather than
+-- showing fewer entries.
+hl.bind(
+    "SUPER + SUPER_L",
+    hl.dsp.exec_cmd(
+        "pkill -x fuzzel || fuzzel --font 'Google Sans Flex Rounded:size=17'"
+            .. " --line-height=40px --lines 5"
+    ),
+    { release = true }
+)
 
 hl.bind(vars.kbSession, hl.dsp.global("caelestia:session"))
 hl.bind(vars.kbShowSidebar, hl.dsp.global("caelestia:sidebar"))
@@ -160,9 +178,29 @@ hl.bind(vars.kbFileExplorer, hl.dsp.exec_cmd(vars.fileExplorer))
 hl.bind("CTRL + ALT + V", hl.dsp.exec_cmd(vars.audioSettings))
 hl.bind(vars.kbVpnToggle, hl.dsp.exec_cmd("vpn toggle"))
 
-hl.bind("Print", hl.dsp.exec_cmd("caelestia screenshot"), { locked = true })
-hl.bind("SUPER + SHIFT + S", hl.dsp.global("caelestia:screenshotFreeze"))
-hl.bind("SUPER + SHIFT + ALT + S", hl.dsp.global("caelestia:screenshot"))
+-- hyprshot rather than the caelestia CLI, so screenshots do not depend on a
+-- shell this machine no longer runs. -z freezes the screen before the region
+-- is dragged, which is the only way to capture a menu or a hover state without
+-- it changing under the selection -- that is what the old screenshotFreeze
+-- global did.
+--
+-- -o is passed explicitly because hyprshot's default is
+-- SAVEDIR=${XDG_PICTURES_DIR:=~}: that variable is unset in this session, and
+-- had xdg-user-dir not been installed to resolve it, every screenshot would
+-- have landed loose in the home directory. hyprshot mkdir -p's the target.
+local screenshotDir = "$HOME/Pictures/Screenshots"
+
+-- "-m output" alone is not a full-screen grab: it hands off to slurp to pick a
+-- monitor and blocks until something is clicked, which on a single-monitor
+-- machine looks exactly like the key doing nothing. `active` is a modifier
+-- rather than a mode, so it has to be passed alongside.
+hl.bind(
+    "Print",
+    hl.dsp.exec_cmd("hyprshot -m output -m active -o " .. screenshotDir),
+    { locked = true }
+)
+hl.bind("SUPER + SHIFT + S", hl.dsp.exec_cmd("hyprshot -m region -z -o " .. screenshotDir))
+hl.bind("SUPER + SHIFT + ALT + S", hl.dsp.exec_cmd("hyprshot -m window -o " .. screenshotDir))
 hl.bind("SUPER + ALT + R", hl.dsp.exec_cmd("caelestia record -s"))
 hl.bind("CTRL + ALT + R", hl.dsp.exec_cmd("caelestia record"))
 hl.bind("SUPER + SHIFT + ALT + R", hl.dsp.exec_cmd("caelestia record -r"))

@@ -541,6 +541,8 @@ in
 
     nerd-fonts.jetbrains-mono
     nerd-fonts.caskaydia-cove
+
+    google-sans-rounded
   ];
 
   networking.hostName = "nix";

@@ -56,6 +56,9 @@
 
                 nokochat = final.callPackage ./pkgs/nokochat.nix { };
 
+                google-sans-rounded =
+                  final.callPackage ./pkgs/google-sans-rounded.nix { };
+
                 chromium = prev.chromium.override { enableWideVine = true; };
               })
             ];
