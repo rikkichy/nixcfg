@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 Single-machine NixOS config (host `nix`): 9950X3D / RTX 3090 / LUKS / Hyprland +
-Caelestia. `handbook.md` is the human install guide — keep it install-facing and
+Wayle. `handbook.md` is the human install guide — keep it install-facing and
 put engineering rationale here instead.
 
 **Write this file as a description of how things are, never as a changelog.**
@@ -48,7 +48,19 @@ path.
 
 `hardware-configuration.nix` is tracked but machine-specific, and the repo is
 **public** — do not add secrets. `pkgs/` holds locally packaged software
-(`tg-ws-proxy`), pulled in as a `flake = false` input plus an overlay.
+(`tg-ws-proxy`, `nokochat`, `google-sans-rounded`), pulled in through the
+overlay in `flake.nix`; `tg-ws-proxy` is a `flake = false` input, the other two
+are pinned by hash inside their own file.
+
+### Where each part of the desktop is configured
+
+| what | where |
+| --- | --- |
+| bar, notifications, OSDs, wallpaper engine | `home.nix` → `xdg.configFile."wayle/config.toml"` |
+| colour scheme for every other app | the `caelestia` CLI, driven by `theme-apply` |
+| launcher and wallpaper picker | fuzzel, configured by flags in `hypr/hyprland/keybinds.lua` and `wpp` |
+| keybinds, window rules, monitors | `hypr/`, a live symlink needing no rebuild |
+| fonts | `configuration.nix` → `fonts.packages` |
 
 ### boot.initrd — the one place a mistake costs a live USB
 
@@ -89,32 +101,181 @@ Two home-manager behaviours that waste time if assumed otherwise:
   files that plainly exist. Use `find -L`. This produces very convincing false
   evidence that a package or icon is missing.
 
-### Caelestia owns files at runtime — this drives most design decisions
+### The colour engine owns files at runtime — this drives most design decisions
 
-`caelestia scheme set` rewrites a long list of `~/.config` files on every colour
-change (see `caelestia/utils/theme.py`): `hypr/scheme/current.lua`,
-`fuzzel.ini`, `btop`/`htop`/`cava`/`nvtop` themes, `gtk-3.0`/`gtk-4.0/gtk.css`,
+The `caelestia` CLI (`caelestia-dots/cli`, its own flake input — the shell is
+not installed and its closure carries no quickshell or Qt) generates the whole
+palette. `caelestia scheme set` rewrites a long list of `~/.config` files on
+every colour change: `hypr/scheme/current.lua`, `fuzzel.ini`,
+`btop`/`htop`/`cava`/`nvtop` themes, `gtk-3.0`/`gtk-4.0/gtk.css`,
 `qtengine/config.json`, plus theme files for six Discord clients and Spicetify
 whether or not those apps are installed. Consequences:
 
 - **Never put those paths under `xdg.configFile`.** Home-manager files are
   read-only store symlinks; every colour change would start failing.
-  Home-manager's `gtk` module is unused for the same reason.
-- `shell.json` is the same trap one level up: Caelestia rewrites its *own*
-  merged config on every start, so `programs.caelestia.settings` makes that
-  write fail every time and silently discards anything changed in the GUI. It
-  is seeded by a `home.activation` script that only writes when the file is
-  absent, and `settings` must stay unset — the module gates the file on
-  `extraConfig != "" || settings != {}`, so setting it at all puts the symlink
-  back. Consequence to keep in mind: `caelestiaDefaults` in `home.nix` is
-  first-install state, not live config, and editing it does nothing on a
-  machine that already has the file.
+  Home-manager's `gtk` module is unused for the same reason. The cost of this
+  is that they do not exist until something has themed the machine once —
+  which is what `first-theme` is for.
+- The `hypr/scheme/current.lua` write is gated on `HYPRLAND_INSTANCE_SIGNATURE`
+  being present in the environment. Every other file updates from any context;
+  that one silently does nothing from a bare systemd unit or a `su` without the
+  session environment, so the colours land everywhere except Hyprland's border
+  colours and nothing is logged.
+- `-f` re-derives the Material variant from the image and discards anything set
+  before it, so `scheme set -v` has to run after `wallpaper -f`, never before.
 - `hypr/` is mapped in with `mkOutOfStoreSymlink`, not copied, specifically so
   `scheme/current.lua` stays writable. That in turn requires the repo to be
   owned by `ri` — the installer clones as root, so `configuration.nix` carries a
   `systemd.tmpfiles` `Z` rule reasserting `ri:users` before greetd.
-- Caelestia wraps these writes in `@log_exception`, so permission failures are
+- The CLI wraps these writes in `@log_exception`, so permission failures are
   **swallowed and reported as success**. Symptoms show up far from the cause.
+
+Sixteen `caelestia:*` **global** dispatchers are bound in
+`hypr/hyprland/keybinds.lua` — media keys, brightness, lock, sidebar,
+clear-notifications. Globals were answered by the shell, not the CLI, so these
+fire and do nothing. Replacing them needs real substitutes (`playerctl`,
+`brightnessctl`, `hyprlock`), not a rewrite of the bind.
+
+### Wayle — the shell
+
+`config.toml` is read and never written; `wayle config set` and every change
+made in the GUI land in `runtime.toml` beside it. That split is what makes
+`config.toml` safe to own from `xdg.configFile` — and it carries `force = true`,
+because wayle writes a stub there on first run and home-manager refuses to
+clobber an unmanaged file, failing the entire switch rather than the one file.
+
+**`runtime.toml` wins where the two overlap**, silently. A value declared in
+the flake that has ever been set at runtime simply does not apply. Wayle names
+the shadowed field and prints the fix when it notices:
+
+```
+warning: config.toml change ignored
+  Field: bar.layout
+  Reason: runtime override active
+  → wayle config reset bar.layout
+```
+
+Wayle also shells out to two binaries **by name**, and both failures look like
+the feature silently not existing:
+
+- `swww-daemon` for wallpapers. nixpkgs carries that project as `awww` and
+  ships no alias, so `home.packages` contains a `runCommand` shim linking the
+  swww names onto the awww ones. Wayle's own schema calls this "the awww
+  wallpaper engine" — there is no separate renderer, wayle only drives it.
+  `wallpaper.engine-enabled = false` decouples the two if another tool should
+  draw the wallpaper while wayle keeps extracting colours from it.
+- `matugen`, when `styling.theme-provider = matugen`. Without it wayle logs
+  `cannot execute color extractor` once, then repeats `palette file not found:
+  ~/.cache/wayle/matugen-colors.json` forever while the bar keeps its built-in
+  palette and the UI says nothing.
+
+Two more things that mislead:
+
+- **Layout slot names do not follow orientation.** On a vertical bar `left` is
+  the top section and `right` is the bottom.
+- **A vertical bar is as wide as its widest module**, so a label decides the
+  width of everything. `bar.rounding`, `bar.button-rounding` and
+  `bar.button-group-rounding` are three separate settings; the group one is
+  easy to miss and leaves the systray cluster squarer than its neighbours.
+- Hyprland fades layer surfaces out under a fullscreen window, so the bar
+  reading `a: 0` in `hyprctl layers` during a game is expected, not a fault.
+
+### Wallpapers and theming
+
+`wpp` is the picker: fuzzel in dmenu mode over `~/Pictures/Wallpapers`, handing
+the choice to `theme-apply`, which drives both engines — wayle for the wallpaper
+and its own bar colours, the caelestia CLI for everything else. `theme-apply` is
+split out of `wpp` so `first-theme` reaches the same path rather than a second
+copy of it.
+
+`first-theme` is a user unit guarded on `ConditionPathExists=!%S/caelestia/scheme.json`,
+so it themes a machine that has never been themed and never touches one that
+has. It applies `dotfiles/default-wallpaper.png`, a 9 KB gradient that exists
+so the chain has a root before any user data is restored — every generated file
+descends from a wallpaper, and the collection itself is far too large to track.
+It is a user unit rather than a `home.activation` script because of the
+`HYPRLAND_INSTANCE_SIGNATURE` gate above.
+
+Thumbnails are pre-rendered to `~/.cache/wallpaper-picker` with
+`gdk-pixbuf-thumbnailer` because fuzzel builds with `+png +svg` only — a JPEG
+source draws no thumbnail at all — and because pointing it at originals means
+decoding up to 15 MB per row while the menu opens.
+
+### fuzzel — launcher and picker
+
+Both roles are configured **by flag**, not by `fuzzel.ini`, because that file is
+regenerated by the colour engine and is not in the flake. The launcher lives in
+`hypr/hyprland/keybinds.lua`, the picker inside `wpp`.
+
+- **There is no icon-size option.** Icons are drawn at the row height, which
+  otherwise comes from font metrics, so `--line-height` is the only lever.
+- The launcher is bound as `pkill -x fuzzel || fuzzel`. fuzzel has no
+  single-instance guard and does not stop the compositor seeing SUPER, so a
+  plain invocation stacks windows on repeated taps; `pkill` exits 0 when it
+  killed something, which is what turns the key into a toggle.
+- `--dmenu` accepts Rofi's extended protocol for icons — `name`, NUL, the
+  literal `icon`, `0x1f`, then an absolute path. `--index` returns the position
+  rather than the text, so a selection maps back to an array without depending
+  on how the entry renders.
+- The launcher lists **desktop entries, not `$PATH`**, so a bare script is
+  unreachable from it however short its name; `wpp` has an `xdg.desktopEntries`
+  entry for exactly that reason.
+
+### Fonts
+
+`google-sans-rounded` is the proportional UI face, `nerd-fonts.departure-mono`
+the terminal. Both are addressed by names that are not the names on the box,
+and a family that matches nothing falls back to a default without a word:
+
+- The rounded face is family **`Google Sans Flex`**, with the roundness in the
+  style (`Rounded`, `Bold Rounded`); `Google Sans Flex Rounded` resolves to the
+  regular weight.
+- The Nerd Font build renames its family to **`DepartureMono Nerd Font`**, one
+  word, so the upstream `Departure Mono` matches nothing.
+- `fc-match -f '%{family[0]} %{spacing}\n'` is the check that matters before
+  putting anything in a terminal: **100 is monospace**, empty is proportional.
+  foot warns outright when given a proportional face, but every cell takes one
+  width and narrow glyphs rattle inside it.
+- `nerd-fonts.*` packages may ship `.otf` rather than `.ttf`; a lookup for
+  `*.ttf` comes back empty and makes a working package look broken.
+
+### Screenshots
+
+`hyprshot`, which carries `grim`, `slurp`, `jq` and `wl-clipboard` on an
+injected PATH — none of those are on this user's PATH, and none need to be.
+
+- **`-m output` alone is not a full-screen grab.** It hands off to slurp to
+  pick a monitor and blocks until something is clicked, which on one monitor is
+  indistinguishable from a dead key. `active` is a modifier, not a mode:
+  `-m output -m active`.
+- `-o` is passed explicitly. The default is `SAVEDIR=${XDG_PICTURES_DIR:=~}`,
+  and that variable is unset here (`xdg.enable` is false), so the fallback rests
+  on `xdg-user-dir` being installed to resolve it.
+
+### Crash resilience
+
+Root is XFS, which journals metadata and not contents, so a file written and
+not yet flushed comes back **at length zero** after an unclean stop rather than
+with its previous contents. Two `nix.settings` follow from that:
+
+- `fsync-store-paths = true` flushes a path before it is registered valid.
+  Without it the store can hold an empty file it believes is complete, and a
+  build fails pointing at something that looks perfectly normal on disk.
+- `auto-optimise-store = false`. Optimisation hardlinks identical files into
+  `/nix/store/.links`, so a path is a share in a pool rather than a file: one
+  corrupt link takes every path pointing at it. `nix-store --verify
+  --check-contents` reports these; flake sources have no substituter and cannot
+  be repaired, only deleted and re-imported.
+
+`journald` syncs every 30s rather than the 5-minute default, so an unclean stop
+loses seconds of log instead of minutes. The board's SP5100 watchdog is enabled
+via `systemd.settings.Manager.RuntimeWatchdogSec`, which recovers a hang and
+distinguishes one from a power cut — a hang leaves a watchdog entry, a power
+cut leaves nothing at all.
+
+`split_lock_detect=off` is a kernel param because Steam's HTTP thread issues
+atomic operations that straddle a cache line at a rate of roughly ninety per
+minute, and each trap stalls every core rather than the offending thread.
 
 ### hypr/ — Lua config (Hyprland ≥0.55; hyprlang is deprecated)
 

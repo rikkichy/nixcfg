@@ -483,6 +483,7 @@ in
 
     heroic
     protonplus
+    osu-lazer-bin
     foot
     yubioath-flutter
     claude-code
