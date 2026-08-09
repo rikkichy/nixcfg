@@ -542,7 +542,11 @@ in
     nerd-fonts.jetbrains-mono
     nerd-fonts.caskaydia-cove
 
+    # Google Sans Rounded is the proportional UI face; Departure Mono is the
+    # terminal. It is a pixel/bitmap-styled monospace rather than a match for
+    # the bar's geometry -- a deliberate contrast, not an accident.
     google-sans-rounded
+    nerd-fonts.departure-mono
   ];
 
   networking.hostName = "nix";

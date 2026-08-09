@@ -346,7 +346,15 @@ in
       main = {
         shell = "fish";
         title = "foot";
-        font = "JetBrains Mono Nerd Font:size=12";
+        # Departure Mono is drawn on a pixel grid, so it is sharpest when the
+        # rendered size lands on whole pixels -- dpi-aware = no above is what
+        # keeps that predictable, since letting fontconfig scale by DPI puts a
+        # bitmap-styled face on fractional boundaries and softens it.
+        #
+        # The family is "DepartureMono Nerd Font", one word: the Nerd Font
+        # build renames the family, so the upstream "Departure Mono" matches
+        # nothing and falls through to the default monospace without a word.
+        font = "DepartureMono Nerd Font:size=15";
         letter-spacing = 0;
         dpi-aware = "no";
         pad = "25x25";
