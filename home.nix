@@ -612,16 +612,17 @@ in
       # it, so audio defaults to red where network is accent and bluetooth is
       # blue. With button-variant = basic there is no pill covering that, and
       # the glyphs sit in the bar two hues away from their neighbours. Naming
-      # accent explicitly is what overrides auto; label-color has to come with
-      # it or the volume percentage stays red under a recoloured icon.
+      # accent explicitly is what overrides auto.
+      #
+      # Neither audio module shows a label, so the icon is the whole reading
+      # and label-color would style nothing.
       [modules.microphone]
       label-show = false
       icon-color = "accent"
-      label-color = "accent"
 
       [modules.volume]
+      label-show = false
       icon-color = "accent"
-      label-color = "accent"
 
       [wallpaper]
       transition-fps = 240
