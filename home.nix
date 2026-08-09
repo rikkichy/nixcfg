@@ -1,13 +1,6 @@
 { config, pkgs, lib, inputs, nixcfgPath, ... }:
 
 let
-  # Seeded into ~/.config/caelestia/shell.json below rather than passed to
-  # programs.caelestia.settings. That option writes the file as a read-only
-  # store symlink, and Caelestia rewrites its merged config on every start --
-  # so it logged "Failed to write .../shell.json: Read-only file system" each
-  # time and nothing changed in the GUI could ever be saved. These are defaults
-  # for a fresh install; once the file exists it belongs to Caelestia, so
-  # editing them here will not affect a machine that already has one.
   caelestiaDefaults = {
     general.idle.timeouts = [ ];
 
@@ -33,11 +26,6 @@ let
 
     appearance.transparency.enabled = false;
 
-    # Every shell animation duration is `token * scale`, so this is the only
-    # writable speed control -- the per-size durations (small 200, normal 400,
-    # large 600, extraLarge 1000 ms) are read-only properties derived from it.
-    # Lower is faster, the inverse of Hyprland's `speed` in hypr/hyprland/
-    # animations.lua, which is a separate system this does not touch.
     appearance.anim.durations.scale = 0.6;
     background.wallpaperEnabled = true;
 
@@ -64,15 +52,6 @@ let
   caelestiaSeed = pkgs.writeText "caelestia-shell.json"
     (builtins.toJSON caelestiaDefaults);
 
-  # The colour scheme, applied by the activation script below.
-  #
-  # `dynamic` generates the palette from the current wallpaper rather than
-  # reading one of the bundled scheme files, so what is declared here is which
-  # generator runs, not a set of colours -- the colours themselves change every
-  # time the wallpaper does. `flavour` picks the generator's contrast (`default`
-  # or `hard`); `mode` and `variant` are left out on purpose, because
-  # `services.smartScheme` derives both from the wallpaper on the dynamic path
-  # and setting them here would fight that on every rebuild.
   caelestiaScheme = { name = "dynamic"; flavour = "default"; };
 
 in
@@ -81,23 +60,11 @@ in
 
   home.stateVersion = "26.05";
 
-  # Leaving settings unset matters: the module gates the file on
-  # `extraConfig != "" || settings != {}`, so an empty set means it writes no
-  # shell.json at all and the seed below owns the path.
   programs.caelestia = {
     enable = true;
     cli.enable = true;
-
-    # SUPER+D runs `caelestia toggle communication`, whose built-in config
-    # spawns `discord` and matches windows whose `class` contains "discord".
-    # The native client satisfies both: the binary is on PATH from
-    # systemPackages, so shutil.which() resolves it, and its window class is
-    # plain "discord". Nothing needs overriding.
   };
 
-  # Write a real, writable file, but only when there is not one already, so the
-  # GUI keeps whatever the user changes. Runs after writeBoundary so
-  # home-manager has finished removing the store symlink it used to place here.
   home.activation.seedCaelestiaShell =
     lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       target="${config.xdg.configHome}/caelestia/shell.json"
@@ -111,26 +78,6 @@ in
       fi
     '';
 
-  # Caelestia owns ~/.local/state/caelestia/scheme.json outright -- it rewrites
-  # the whole file, colours included, on `scheme set`, on every wallpaper
-  # change, and on the dark/light toggle in the shell -- so the scheme is
-  # applied by invoking the CLI rather than by placing a file. Writing that JSON
-  # directly relabels the scheme and repaints nothing: the template pass that
-  # produces hypr/scheme/current.lua, gtk.css, fuzzel.ini, the btop/htop/cava
-  # themes and the terminal escape sequences runs inside `scheme set` and
-  # nowhere else.
-  #
-  # The guard is what keeps this out of the rebuild's critical path. `scheme
-  # set` re-runs that whole template pass unconditionally, even when every
-  # property already matches, so it is only worth calling when something
-  # differs; `scheme get -nf` prints name and flavour on separate lines in that
-  # fixed order.
-  #
-  # A dynamic scheme cannot be generated before a wallpaper exists -- the CLI
-  # raises and exits non-zero -- which is the state of a machine that has been
-  # installed but never logged into. Skipping explicitly keeps that from failing
-  # activation midway through the install; the shell sets its bundled wallpaper
-  # on first start, and the next activation applies the scheme.
   home.activation.caelestiaScheme =
     lib.hm.dag.entryAfter [ "writeBoundary" ] (
       let
@@ -145,14 +92,6 @@ in
       ''
     );
 
-  # `chromium --app=URL` gives its window a WM_CLASS of its own -- for
-  # https://open.spotify.com that is chrome-open.spotify.com__-Default, i.e.
-  # "chrome-" + host + "__" + path (slashes as underscores) + "-Default". That
-  # never matches the desktop file's own id, so a running web app falls back to
-  # the generic Chromium icon in the bar and alt-tab even though the launcher
-  # entry looks right. StartupWMClass is what ties the window back to the entry,
-  # so the icon below is used in both places. Verify a class with `hyprctl
-  # clients` after launching the app; a wrong string fails silently.
   xdg.desktopEntries = let
     webApp = name: url: icon: wmClass: {
       inherit name icon;

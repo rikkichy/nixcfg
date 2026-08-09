@@ -1,12 +1,13 @@
 {
     "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
     // NixOS_small, not NixOS: the module box below renders 11 rows, and the
-    // full logo is 20, so it would hang nine lines past the box and leave it
-    // floating at the top. The small variant sits beside the box instead.
+    // full logo is 21, so it would hang ten lines past the box and leave it
+    // floating at the top. The small variant is 8 rows and sits beside the
+    // box, with the top padding centring it against the taller box.
     "logo": {
         "type": "builtin",
         "source": "NixOS_small",
-        "padding": { "top": 1, "left": 2, "right": 3 }
+        "padding": { "top": 2, "left": 2, "right": 3 }
     },
     "display": {
         "separator": "  ",
@@ -36,16 +37,30 @@
             "format": "{$2}{pretty-name>22}{$1} │"
         },
         {
-            "type": "command",
-            "key": "│ {$3}{$1}  mem   ",
-            "text": "free -m | awk 'NR==2{printf \"%.2f GiB / %.2f GiB\",$3/1024,$2/1024}'",
-            "format": "{$3}{>22}{$1} │"
+            "type": "custom",
+            "key": "│ {$3}󰻠{$1}  cpu   ",
+            "format": "{$3}   NVIDIA Grace (2592){$1} │"
+        },
+        {
+            "type": "custom",
+            "key": "│ {$3}󰢮{$1}  gpu   ",
+            "format": "{$3}   72x GB300 Blackwell{$1} │"
+        },
+        {
+            "type": "custom",
+            "key": "│ {$3}{$1}  vram  ",
+            "format": "{$3}       20.00 TiB HBM3e{$1} │"
         },
         {
             "type": "command",
-            "key": "│   hname ",
-            "text": "hostnamectl hostname",
-            "format": "{>22} │"
+            "key": "│ {$3}{$1}  mem   ",
+            "text": "free -m | awk 'NR==2{printf \"%.2f TiB / 17.00 TiB\",$3/$2*17}'",
+            "format": "{$3}{>22}{$1} │"
+        },
+        {
+            "type": "custom",
+            "key": "│ 󰒋  host  ",
+            "format": "  GIGABYTE GB300 NVL72 │"
         },
         {
             "type": "os",

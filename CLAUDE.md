@@ -208,6 +208,37 @@ appears dead until the first window is closed; `vars.fileExplorer` therefore
 carries `--new-window`. Expect the same from any `GApplication` bound to a
 spawn key.
 
+### NokoChat — the one AppImage
+
+`pkgs/nokochat.nix` wraps the vendor's AppImage with `appimageTools.wrapType2`.
+It is pinned by URL and hash rather than tracked as a flake input because the
+CDN is the only distribution channel — there is no repository to follow, so a
+version bump means editing both the version and the hash by hand.
+
+Underneath the image is a Compose Multiplatform app that jpackage bundled with
+its own JRE, which shapes two things:
+
+- The bundled runtime ships **no `bin/java`** — the launcher loads `libjvm`
+  directly — so the app's own classpath cannot be exercised with the runtime
+  that is sitting right there. A probe against those jars needs a separate JDK.
+- Skiko draws the UI and links `libGL`/`libX11` directly, reaching Wayland only
+  through XWayland. Those are absent from the default FHS environment and are
+  added via `extraPkgs`; without them the launcher starts the JVM successfully
+  and only then dies on `UnsatisfiedLinkError`, so the failure looks like a
+  crash rather than a missing dependency.
+
+`appimageTools.extract` is what makes the desktop entry and icon available at
+build time — `wrapType2` mounts the image at runtime and exposes nothing to
+`extraInstallCommands`. The vendor's entry carries a correct `StartupWMClass`
+already; only its `Exec=NokoChat` needs rewriting, since the wrapper is named
+after `pname`.
+
+On startup it logs that the OS keyring is unavailable and that the seal key
+falls back to a 0600 properties file. This is not the sandbox: `busctl --user`
+from inside the same FHS environment finds `org.freedesktop.secrets`, so
+gnome-keyring is reachable and the app's own `java-keyring` backend detection
+is what fails.
+
 ### systemd units in `configuration.nix`
 
 Keep long-running or network-dependent **user** units off `default.target` and
