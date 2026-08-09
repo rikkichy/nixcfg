@@ -4,3 +4,8 @@
 # hyprland.lua on first start, so it must never be tracked or the working tree
 # is dirty after every colour change.
 scheme/current.lua
+
+# scheme/current.conf is the hyprlang form of the same palette. This config is
+# Lua and nothing requires it, but the CLI writes both formats unconditionally,
+# so it reappears on every colour change and would otherwise sit untracked.
+scheme/current.conf

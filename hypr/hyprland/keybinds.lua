@@ -1,7 +1,11 @@
 local vars = require("variables")
 local fn   = require("hyprland.functions")
 
-hl.bind("SUPER + SUPER_L", hl.dsp.global("caelestia:launcher"), { release = true })
+-- pkill first so a second tap dismisses rather than stacking: fuzzel takes the
+-- overlay layer but does not stop the compositor seeing SUPER, and it has no
+-- single-instance guard of its own, so a plain `fuzzel` here piles up windows.
+-- pkill exits 0 when it killed something, which is what makes || a toggle.
+hl.bind("SUPER + SUPER_L", hl.dsp.exec_cmd("pkill -x fuzzel || fuzzel"), { release = true })
 
 hl.bind(vars.kbSession, hl.dsp.global("caelestia:session"))
 hl.bind(vars.kbShowSidebar, hl.dsp.global("caelestia:sidebar"))
@@ -112,11 +116,42 @@ hl.bind(vars.kbWindowBorderedFullscreen, hl.dsp.window.fullscreen({ mode = "maxi
 hl.bind(vars.kbToggleWindowFloating, hl.dsp.window.float())
 hl.bind(vars.kbCloseWindow, hl.dsp.window.close())
 
-hl.bind(vars.kbSpecialWs, hl.dsp.exec_cmd("caelestia toggle specialws"))
-hl.bind(vars.kbSystemMonitorWs, hl.dsp.exec_cmd("caelestia toggle sysmon"))
-hl.bind(vars.kbMusicWs, hl.dsp.exec_cmd("caelestia toggle music"))
-hl.bind(vars.kbCommunicationWs, hl.dsp.exec_cmd("caelestia toggle communication"))
-hl.bind(vars.kbTodoWs, hl.dsp.exec_cmd("caelestia toggle todo"))
+-- toggle_special takes the bare name: it prefixes "special:" itself, so
+-- passing "special:communication" opens special:special:communication. It also
+-- wants a plain string -- every table form ({ name = ... }, { workspace = ... })
+-- is accepted, ignored, and silently degrades to the generic special workspace,
+-- which looks like the keybind working on the wrong target rather than a bad
+-- argument.
+--
+-- The spawn half is what `caelestia toggle` did beyond raising the workspace.
+-- Without it a workspace whose app is not running opens as an empty overlay.
+-- Matching is a literal, case-folded substring rather than a pattern: rules.lua
+-- matches with RE2, this runs in Lua where the metacharacters are different
+-- again, and a plain find has neither dialect's escaping to get wrong.
+local function toggle_ws(name, needle, spawn)
+    return function()
+        if needle and spawn then
+            local running = false
+            for _, w in ipairs(hl.get_windows()) do
+                local class = w.class
+                if class and class:lower():find(needle, 1, true) then
+                    running = true
+                    break
+                end
+            end
+            if not running then hl.dispatch(hl.dsp.exec_cmd(spawn)) end
+        end
+        hl.dispatch(hl.dsp.workspace.toggle_special(name))
+    end
+end
+
+hl.bind(vars.kbSpecialWs, toggle_ws("special"))
+hl.bind(vars.kbSystemMonitorWs, toggle_ws("sysmon", "btop", vars.terminal .. " --app-id=btop btop"))
+hl.bind(vars.kbMusicWs, toggle_ws("music", "spotify", "chromium --app=https://open.spotify.com"))
+hl.bind(vars.kbCommunicationWs, toggle_ws("communication", "discord", "discord"))
+-- No spawn: rules.lua routes class "Todoist" here, but nothing in this config
+-- installs Todoist, so there is no command to start.
+hl.bind(vars.kbTodoWs, toggle_ws("todo"))
 
 hl.bind(vars.kbTerminal, hl.dsp.exec_cmd(vars.terminal))
 hl.bind(vars.kbBrowser, hl.dsp.exec_cmd(vars.browser))

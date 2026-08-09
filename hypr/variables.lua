@@ -72,9 +72,9 @@ return {
 
     kbSpecialWs                = "SUPER + S",
     kbSystemMonitorWs          = "CTRL + SHIFT + Escape",
-    kbMusicWs                  = "SUPER + M",
+    kbMusicWs                  = "SUPER + R",
     kbCommunicationWs          = "SUPER + D",
-    kbTodoWs                   = "SUPER + R",
+    kbTodoWs                   = "SUPER + M",
 
     kbTerminal                 = "SUPER + T",
     kbBrowser                  = "SUPER + W",

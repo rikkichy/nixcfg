@@ -1,6 +1,10 @@
 { config, pkgs, lib, inputs, nixcfgPath, ... }:
 
 let
+  /* Caelestia is parked while Wayle is on trial. Restore by deleting this
+     comment marker and its partner below, the one around the activation
+     scripts, and uncommenting the import and programs.caelestia block.
+
   caelestiaDefaults = {
     general.idle.timeouts = [ ];
 
@@ -53,18 +57,19 @@ let
     (builtins.toJSON caelestiaDefaults);
 
   caelestiaScheme = { name = "dynamic"; flavour = "default"; };
-
+  */
 in
 {
-  imports = [ inputs.caelestia-shell.homeManagerModules.default ];
+  # imports = [ inputs.caelestia-shell.homeManagerModules.default ];
 
   home.stateVersion = "26.05";
 
-  programs.caelestia = {
-    enable = true;
-    cli.enable = true;
-  };
+  # programs.caelestia = {
+  #   enable = true;
+  #   cli.enable = true;
+  # };
 
+  /*
   home.activation.seedCaelestiaShell =
     lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       target="${config.xdg.configHome}/caelestia/shell.json"
@@ -91,6 +96,7 @@ in
         fi
       ''
     );
+  */
 
   xdg.desktopEntries = let
     webApp = name: url: icon: wmClass: {
@@ -105,9 +111,187 @@ in
       "chrome-vault.bitwarden.com__-Default";
     spotify = webApp "Spotify" "https://open.spotify.com" "spotify"
       "chrome-open.spotify.com__-Default";
+
+    # fuzzel's launcher lists desktop entries, not PATH, so a bare `wpp` binary
+    # is unreachable from it no matter how short the name is -- this entry is
+    # what actually makes it typeable there. Name and Exec are both "wpp" so
+    # the match happens on the first three keystrokes.
+    wpp = {
+      name = "wpp";
+      genericName = "Wallpaper";
+      comment = "Pick a wallpaper and retheme";
+      exec = "wpp";
+      icon = "preferences-desktop-wallpaper";
+      terminal = false;
+      categories = [ "Settings" ];
+    };
   };
 
-  home.packages = with pkgs; [ papirus-icon-theme adw-gtk3 ];
+  # Wayle drives wallpapers by shelling out to `swww-daemon` by name, with no
+  # setting to point it elsewhere -- the only backend key in its schema is
+  # Wallust's image sampler, which is colour extraction rather than the
+  # wallpaper daemon. nixpkgs carries that project under its new name, awww,
+  # and ships no swww alias, so the lookup fails and the desktop stays blank
+  # with one WARN line at startup and nothing later.
+  # The launcher, replacing caelestia's. ~/.config/fuzzel/fuzzel.ini is left
+  # alone deliberately: caelestia wrote it as part of its unconditional theme
+  # sweep, so it already carries the right font and colours, and it is a plain
+  # 0600 file rather than a store symlink. Putting it under xdg.configFile
+  # would make it read-only for no gain.
+  home.packages = with pkgs; [
+    papirus-icon-theme
+    adw-gtk3
+    fuzzel
+    wayle
+
+    # wayle's own bar/popover colours. theme-provider = matugen makes it shell
+    # out to a `matugen` binary by name, exactly as it does to `swww-daemon`,
+    # and the failure is the same shape: it logs `cannot execute color
+    # extractor` once and then repeats `palette file not found:
+    # ~/.cache/wayle/matugen-colors.json` forever, while the bar silently keeps
+    # its built-in palette. Nothing in the UI says the theme provider is dead.
+    matugen
+
+    # The colour engine, without the shell that was crashing. caelestia-dots/cli
+    # is its own flake, so this pulls in no quickshell and no Qt -- verified by
+    # inspecting the closure. `scheme set` is what rewrote every app's theme
+    # under caelestia, and it runs headless: fuzzel.ini, gtk-3.0 and gtk-4.0
+    # gtk.css, the btop theme and the terminal escape sequences are all still
+    # regenerated with nothing but this binary.
+    #
+    # hypr/scheme/current.lua is the exception -- that write is gated on
+    # HYPRLAND_INSTANCE_SIGNATURE being set, so it silently does nothing from a
+    # context that lacks it (a bare systemd unit, or su without the session
+    # environment) while every other file updates normally.
+    inputs.caelestia-cli.packages.${pkgs.stdenv.hostPlatform.system}.caelestia-cli
+
+    (writeShellApplication {
+      name = "wpp";
+      runtimeInputs = [
+        fuzzel
+        gdk-pixbuf
+        wayle
+        coreutils
+        findutils
+        libnotify
+        inputs.caelestia-cli.packages.${pkgs.stdenv.hostPlatform.system}.caelestia-cli
+      ];
+      text = ''
+        dir="''${WALLPAPER_DIR:-$HOME/Pictures/Wallpapers}"
+        cache="''${XDG_CACHE_HOME:-$HOME/.cache}/wallpaper-picker"
+
+        # Both notify and print: bound to a key there is no terminal to read,
+        # and run from a shell there may be no notification daemon.
+        die() {
+          echo "wpp: $1" >&2
+          notify-send -a wpp "Wallpaper" "$1" 2>/dev/null || true
+          exit 1
+        }
+
+        if [ ! -d "$dir" ]; then
+          die "no directory at $dir"
+        fi
+
+        mapfile -t files < <(find "$dir" -maxdepth 1 -type f \
+          \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) | sort)
+
+        if [ "''${#files[@]}" -eq 0 ]; then
+          die "no images in $dir"
+        fi
+
+        mkdir -p "$cache"
+
+        # fuzzel renders PNG and SVG icons only, so a JPEG source would show no
+        # thumbnail at all; and pointing it at the originals would have it decode
+        # up to 15 MB per row while the menu is opening. Both are avoided by
+        # caching a small PNG per image, rebuilt only when the source is newer.
+        #
+        # The cache name keeps the source extension and appends .png, giving
+        # 4721.jpg.png. Stripping the extension instead would map 4721.jpg and
+        # 4721.png onto one cache entry, and the loser would silently show the
+        # other image's thumbnail while setting the right wallpaper.
+        for f in "''${files[@]}"; do
+          base="''${f##*/}"
+          thumb="$cache/$base.png"
+          if [ ! -e "$thumb" ] || [ "$f" -nt "$thumb" ]; then
+            gdk-pixbuf-thumbnailer -s 128 "$f" "$thumb" || true
+          fi
+        done
+
+        # fuzzel has no icon-size setting: the icon is drawn at the row height,
+        # so line-height is the only lever. Passed as a flag rather than set in
+        # fuzzel.ini because that file is shared with the app launcher on SUPER,
+        # which does not want 64px icons. 64 sits under the 128px the cache is
+        # rendered at, so the thumbnails stay sharp; --lines drops with it since
+        # 15 rows at this height is taller than the screen.
+        #
+        # Rofi's extended dmenu protocol, which fuzzel implements: name, NUL,
+        # the literal "icon", 0x1f, then the icon. --index returns the position
+        # rather than the text, so the answer maps back to the array without
+        # depending on how the name renders or what characters it contains.
+        idx=$(
+          for f in "''${files[@]}"; do
+            base="''${f##*/}"
+            printf '%s\x00icon\x1f%s\n' "$base" "$cache/$base.png"
+          done | fuzzel --dmenu --index --prompt "wp> " --line-height=64px --lines 8
+        ) || exit 0
+
+        case "$idx" in
+          "" | *[!0-9]*) exit 0 ;;
+        esac
+
+        chosen="''${files[$idx]}"
+
+        # Two owners, deliberately. wayle draws the wallpaper and derives its
+        # own bar colours from it; caelestia's CLI owns everything wayle does
+        # not reach -- fuzzel, GTK, btop, the terminal palette and Hyprland's
+        # border colours. They do not collide: `caelestia wallpaper -f` only
+        # records the path and regenerates the scheme, leaving what is on
+        # screen alone, which is exactly the half we want from it.
+        wayle wallpaper set --fit fill "$chosen"
+
+        # -f re-derives the variant from the image and lands on whatever it
+        # judges to fit, so the Material variant has to be reasserted after it
+        # rather than before; setting it first is silently discarded. Passing
+        # -v alone keeps the name and mode, so light/dark still follows the
+        # wallpaper the way it always did.
+        caelestia wallpaper -f "$chosen" || true
+        caelestia scheme set -v expressive || true
+      '';
+    })
+    (runCommand "swww-compat" { } ''
+      mkdir -p $out/bin
+      ln -s ${awww}/bin/awww $out/bin/swww
+      ln -s ${awww}/bin/awww-daemon $out/bin/swww-daemon
+    '')
+  ];
+
+  # Wayle ships no unit of its own, so this is hand-written rather than taken
+  # from systemd.packages. graphical-session.target rather than default.target
+  # keeps it out of the path of "reloading user units for ri" during a switch.
+  #
+  # It replaces only part of what caelestia did: bar, notifications, OSDs and
+  # wallpaper. There is no launcher and no lock screen, so the caelestia:*
+  # global dispatchers still bound in hypr/hyprland/keybinds.lua now resolve to
+  # nothing -- they fail silently rather than erroring.
+  systemd.user.services.wayle = {
+    Unit = {
+      Description = "Wayle desktop shell";
+      PartOf = [ "graphical-session.target" ];
+      After = [ "graphical-session.target" ];
+    };
+    Service = {
+      Type = "simple";
+      # `wayle` on its own is a CLI dispatcher: it prints usage and exits 2.
+      # The long-running shell is the `shell` subcommand, which stays in the
+      # foreground, so Type=simple is right.
+      ExecStart = "${pkgs.wayle}/bin/wayle shell";
+      Restart = "on-failure";
+      RestartSec = "5s";
+      Slice = "session.slice";
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+  };
 
   xdg.mimeApps = {
     enable = true;

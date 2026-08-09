@@ -121,7 +121,25 @@ in
 
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
-    auto-optimise-store = true;
+
+    # Off deliberately. Optimisation hardlinks identical files into
+    # /nix/store/.links, so one store path is not one file -- it is a share in
+    # a pool. An interrupted write corrupts the link, and every path pointing
+    # at it is corrupt together. That is how a single unclean shutdown left
+    # home.nix as a zero-byte file in the store while the working copy was
+    # fine, and the build failed with "unexpected end of file" pointing at a
+    # path that looked perfectly normal on disk.
+    #
+    # It was saving 2.8 GiB on a 928 GB disk with 386 GB free.
+    auto-optimise-store = false;
+
+    # Root is XFS, which journals metadata but not file contents, so a file
+    # written and not yet flushed comes back at length zero rather than with
+    # its old contents. Without this Nix registers a path as valid before its
+    # data is durable, which is the exact window that produced the empty store
+    # files. The cost is fsync per path on build; the alternative is a store
+    # that lies about what it contains after every power loss.
+    fsync-store-paths = true;
   };
 
   nix.gc = {
@@ -143,7 +161,7 @@ in
     flags = [
       "--update-input" "nixpkgs"
       "--update-input" "home-manager"
-      "--update-input" "caelestia-shell"
+      # "--update-input" "caelestia-shell"
       "--update-input" "vhelper"
       "--update-input" "openwave"
       "--update-input" "tg-ws-proxy"
@@ -215,7 +233,36 @@ in
   boot.initrd.luks.devices."cryptroot".allowDiscards = true;
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
-  boot.kernelParams = [ "amd_pstate=active" ];
+  # split_lock_detect=off: Steam's CHTTPClientThread issues atomic operations
+  # that straddle a cache line, and the kernel's default `warn` mode traps each
+  # one and rate-limits the thread. Measured 2666 traps in 30 minutes, ~89 per
+  # minute. A bus lock stalls every core for the duration, not just the thread
+  # that caused it, so this is a whole-machine stutter that presents as the
+  # compositor hitching rather than as Steam misbehaving. Turning detection off
+  # does not fix Steam's alignment, it stops the kernel paying to notice.
+  boot.kernelParams = [ "amd_pstate=active" "split_lock_detect=off" ];
+
+  # The board has an SP5100 TCO watchdog that nothing was using. systemd pings
+  # it at half of runtimeTime; if the kernel stops scheduling systemd the board
+  # resets the machine instead of leaving it hung until the reset button.
+  #
+  # This is recovery, not diagnosis, and it is deliberately not a fix for the
+  # hard stops: those cut power with no trace at all, which no watchdog can
+  # intercept. What it does buy is a distinction -- a reset that leaves a
+  # watchdog entry in the log was a hang, one that leaves nothing was not.
+  systemd.settings.Manager = {
+    RuntimeWatchdogSec = "30s";
+    RebootWatchdogSec = "3min";
+  };
+
+  # journald fsyncs every 5 minutes by default, so an unclean stop discards up
+  # to five minutes of log and leaves the active journal corrupt -- eight files
+  # have been rotated out that way. Thirty seconds bounds the loss to something
+  # small enough that the last moments before a crash survive, which is the
+  # only part worth having.
+  services.journald.extraConfig = ''
+    SyncIntervalSec=30s
+  '';
 
   boot.extraModulePackages = [ config.boot.kernelPackages.nct6687d ];
   boot.kernelModules = [ "nct6687" ];
