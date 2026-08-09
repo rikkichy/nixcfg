@@ -586,6 +586,25 @@ in
     configFile = "/run/mihomo/config.yaml";
   };
 
+  # network-online.target is reached immediately here, since nothing waits on
+  # the link any more, so mihomo can be started before there is a route and its
+  # first subscription fetch fails. The module ships Restart=no, which turns
+  # that single miss into a tunnel that is down until someone restarts it by
+  # hand -- and a dead tunnel reads as the internet being broken, not as a
+  # service that failed. Retrying is only useful because the provider carries
+  # `proxy: DIRECT`: a fetch that routed through the tunnel it is trying to
+  # build could never repair itself no matter how often it ran.
+  systemd.services.mihomo.serviceConfig = {
+    Restart = "on-failure";
+    RestartSec = "5s";
+  };
+
+  # NetworkManager-wait-online blocks boot until a link is up, which cost
+  # 4.9s of every startup. Nothing here needs the network before the login
+  # screen: mihomo retries, the flatpak and upgrade units are timer-driven,
+  # and geoclue and fwupd-refresh are on demand.
+  systemd.services.NetworkManager-wait-online.enable = false;
+
   networking.networkmanager.unmanaged = [ "interface-name:mihomo" ];
   networking.firewall.trustedInterfaces = [ "mihomo" ];
 
