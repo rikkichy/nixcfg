@@ -58,6 +58,34 @@ let
 
   caelestiaScheme = { name = "dynamic"; flavour = "default"; };
   */
+
+  caelestiaCli =
+    inputs.caelestia-cli.packages.${pkgs.stdenv.hostPlatform.system}.caelestia-cli;
+
+  # Bootstraps the colour scheme on a machine with no wallpapers yet. Every
+  # themed file downstream -- fuzzel.ini, both gtk.css, the btop theme, the
+  # terminal palette, hypr/scheme/current.lua -- is generated from a wallpaper,
+  # so without one the whole chain has no root and a fresh install comes up on
+  # stock defaults. Generated rather than borrowed so a public repo carries
+  # nothing with a licence attached; a smooth gradient also costs 8 KiB, where
+  # anything with noise in it runs to megabytes.
+  defaultWallpaper = ./dotfiles/default-wallpaper.png;
+
+  # The half of wpp that is not the picker, split out so the first-run unit can
+  # reach it too. Both engines are driven here: wayle draws the wallpaper and
+  # derives its own bar colours, caelestia themes everything wayle does not
+  # reach. -v has to come after -f, which re-derives the variant from the image
+  # and discards anything set before it.
+  themeApply = pkgs.writeShellApplication {
+    name = "theme-apply";
+    runtimeInputs = [ pkgs.wayle caelestiaCli ];
+    text = ''
+      wallpaper="''${1:?usage: theme-apply <image>}"
+      wayle wallpaper set --fit fill "$wallpaper"
+      caelestia wallpaper -f "$wallpaper" || true
+      caelestia scheme set -v content || true
+    '';
+  };
 in
 {
   # imports = [ inputs.caelestia-shell.homeManagerModules.default ];
@@ -168,18 +196,18 @@ in
     # HYPRLAND_INSTANCE_SIGNATURE being set, so it silently does nothing from a
     # context that lacks it (a bare systemd unit, or su without the session
     # environment) while every other file updates normally.
-    inputs.caelestia-cli.packages.${pkgs.stdenv.hostPlatform.system}.caelestia-cli
+    caelestiaCli
+    themeApply
 
     (writeShellApplication {
       name = "wpp";
       runtimeInputs = [
         fuzzel
         gdk-pixbuf
-        wayle
         coreutils
         findutils
         libnotify
-        inputs.caelestia-cli.packages.${pkgs.stdenv.hostPlatform.system}.caelestia-cli
+        themeApply
       ];
       text = ''
         dir="''${WALLPAPER_DIR:-$HOME/Pictures/Wallpapers}"
@@ -193,15 +221,19 @@ in
           exit 1
         }
 
-        if [ ! -d "$dir" ]; then
-          die "no directory at $dir"
-        fi
-
         mapfile -t files < <(find "$dir" -maxdepth 1 -type f \
-          \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) | sort)
+          \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) \
+          2>/dev/null | sort)
 
+        # An empty or missing directory used to be fatal, which on a fresh
+        # install meant the one command that could theme the desktop was also
+        # the one that refused to run. Falling back to the shipped default
+        # themes the machine instead of explaining why it cannot.
         if [ "''${#files[@]}" -eq 0 ]; then
-          die "no images in $dir"
+          notify-send -a wpp "Wallpaper" \
+            "No images in $dir — applied the built-in default" 2>/dev/null || true
+          theme-apply ${defaultWallpaper}
+          exit 0
         fi
 
         mkdir -p "$cache"
@@ -248,21 +280,7 @@ in
 
         chosen="''${files[$idx]}"
 
-        # Two owners, deliberately. wayle draws the wallpaper and derives its
-        # own bar colours from it; caelestia's CLI owns everything wayle does
-        # not reach -- fuzzel, GTK, btop, the terminal palette and Hyprland's
-        # border colours. They do not collide: `caelestia wallpaper -f` only
-        # records the path and regenerates the scheme, leaving what is on
-        # screen alone, which is exactly the half we want from it.
-        wayle wallpaper set --fit fill "$chosen"
-
-        # -f re-derives the variant from the image and lands on whatever it
-        # judges to fit, so the Material variant has to be reasserted after it
-        # rather than before; setting it first is silently discarded. Passing
-        # -v alone keeps the name and mode, so light/dark still follows the
-        # wallpaper the way it always did.
-        caelestia wallpaper -f "$chosen" || true
-        caelestia scheme set -v content || true
+        theme-apply "$chosen"
       '';
     })
     (runCommand "swww-compat" { } ''
@@ -298,6 +316,45 @@ in
     };
     Install.WantedBy = [ "graphical-session.target" ];
   };
+
+  # Themes a machine that has never been themed, once. Every generated file
+  # downstream comes from a wallpaper, so a fresh install otherwise reaches the
+  # desktop with fuzzel on stock defaults and GTK unstyled, waiting for someone
+  # to know that running wpp is the fix.
+  #
+  # A user unit rather than a home.activation script, because caelestia only
+  # writes hypr/scheme/current.lua when HYPRLAND_INSTANCE_SIGNATURE is set and
+  # activation has no session to take it from -- the colours would land
+  # everywhere except Hyprland's borders, silently.
+  #
+  # Guarded on scheme.json rather than run unconditionally: past the first boot
+  # this must not reach in and overwrite a wallpaper that was deliberately
+  # chosen. TimeoutStartSec because a blocking unit in the login path wedges
+  # the whole switch with nothing said about why.
+  systemd.user.services.first-theme = {
+    Unit = {
+      Description = "Apply a colour scheme if none has ever been generated";
+      PartOf = [ "graphical-session.target" ];
+      After = [ "graphical-session.target" "wayle.service" ];
+      ConditionPathExists = "!%S/caelestia/scheme.json";
+    };
+    Service = {
+      Type = "oneshot";
+      ExecStart = toString (pkgs.writeShellScript "first-theme" ''
+        set -eu
+        sleep 3
+        exec ${themeApply}/bin/theme-apply ${defaultWallpaper}
+      '');
+      TimeoutStartSec = "60s";
+      Slice = "session.slice";
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+  };
+
+  # wpp reads this directory; the collection inside it is user data and is not
+  # in the repo, but the directory existing is what keeps a fresh install from
+  # looking like a broken one.
+  home.file."Pictures/Wallpapers/.keep".text = "";
 
   xdg.mimeApps = {
     enable = true;

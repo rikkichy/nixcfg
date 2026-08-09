@@ -151,6 +151,25 @@ At rest it is protected by LUKS.
 Later changes are `sudo nixos-rebuild switch --flake /home/ri/nixcfg#nix`
 (first build also writes `flake.lock` — commit it).
 
+## Wallpapers and colours
+
+Every themed file on this machine is generated from a wallpaper —
+`fuzzel.ini`, both `gtk.css`, the btop theme, the terminal palette and
+`hypr/scheme/current.lua`. None of them can live in the repo, because the
+colour engine rewrites them on every change and a read-only store symlink
+would make that fail.
+
+So a fresh install themes itself once, from a gradient shipped in
+`dotfiles/`, and you get a coloured desktop without doing anything. The
+`first-theme` user unit does this and is guarded on
+`~/.local/state/caelestia/scheme.json`, so it runs only on a machine that has
+never been themed and never overwrites a wallpaper you chose later.
+
+`~/Pictures/Wallpapers` is created empty. **The collection itself is user
+data — restore it from a backup**, it is far too large for a public repo.
+`wpp` picks from that folder and re-themes everything; with the folder still
+empty it falls back to the shipped gradient rather than refusing to run.
+
 ## VPN (mihomo)
 
 `services.mihomo` runs the tunnel as a system service, with the dashboard at
