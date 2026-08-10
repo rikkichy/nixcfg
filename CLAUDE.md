@@ -290,6 +290,42 @@ cut leaves nothing at all.
 atomic operations that straddle a cache line at a rate of roughly ninety per
 minute, and each trap stalls every core rather than the offending thread.
 
+### Hardening — read this before debugging a new crash
+
+`environment.memoryAllocator.provider = "graphene-hardened-light"` puts
+GrapheneOS hardened_malloc under everything, through `/etc/ld-nix.so.preload`.
+The light template keeps zero-on-free and slab canaries and drops the
+quarantines, slot randomisation and per-allocation guard slabs.
+
+**This changes what a crash means.** hardened_malloc introduces no bugs; it
+stops tolerating ones that were already there. A use-after-free that reads
+plausible garbage under glibc reads zeroes here and dereferences NULL, so the
+abort lands in the program that was already wrong, often far from any recent
+change. Confirm by setting the provider to `libc` and reproducing before
+chasing anything else. Programs carrying their own allocator — Chromium's
+PartitionAlloc, a JVM heap — are mostly untouched, since the preload only
+replaces `malloc`.
+
+The allocator applies to processes started after a `switch`, so a running
+session is a mix until things are restarted. It lives in the system closure,
+which means an older generation in limine is already free of it.
+
+There is **no hardened kernel to switch to**: `linuxPackages_hardened` and
+`profiles/hardened` were both removed in 26.05, the kernel for lack of
+maintenance and the profile for being "a grab bag of settings" rather than a
+policy. Building one here is the wrong trade anyway — a custom config drops out
+of the binary cache, so `autoUpgrade` would compile a kernel and the
+out-of-tree NVIDIA module daily. Auditing `/proc/config.gz` against KSPP shows
+stock already carries the settings worth having (`SLAB_FREELIST_HARDENED`,
+`HARDENED_USERCOPY`, `INIT_ON_ALLOC_DEFAULT_ON`, `RANDOMIZE_KSTACK_OFFSET`,
+`STRICT_DEVMEM`, and the rest), while `RANDSTRUCT` and `CFI_CLANG` fight the
+proprietary GPU module and `SECURITY_LOCKDOWN_LSM` would refuse to load an
+unsigned `nvidia.ko` in a kernel built without `CONFIG_MODULE_SIG`.
+
+What is reachable is three kernel parameters, described where they are set.
+`init_on_free` is deliberately not among them: it is the most valuable and the
+only one that costs measurably, and this machine also runs games.
+
 ### hypr/ — Lua config (Hyprland ≥0.55; hyprlang is deprecated)
 
 `hyprland.lua` bootstraps `scheme/current.lua` from `scheme/default.lua`, then

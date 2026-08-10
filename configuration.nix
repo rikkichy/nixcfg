@@ -240,7 +240,37 @@ in
   # that caused it, so this is a whole-machine stutter that presents as the
   # compositor hitching rather than as Steam misbehaving. Turning detection off
   # does not fix Steam's alignment, it stops the kernel paying to notice.
-  boot.kernelParams = [ "amd_pstate=active" "split_lock_detect=off" ];
+  #
+  # The last three are kernel hardening, and they are parameters rather than a
+  # kernel config for a reason: nixpkgs ships no hardened kernel, and building
+  # one here would mean compiling the kernel and the out-of-tree NVIDIA module
+  # on every nixpkgs bump, which autoUpgrade does daily. Auditing the stock
+  # kernel against KSPP shows why that trade is bad — the settings worth having
+  # are already on, and the ones that are not (RANDSTRUCT, CFI, lockdown)
+  # conflict with a proprietary GPU module in a kernel built without
+  # CONFIG_MODULE_SIG. These three close the rest of the reachable gap for the
+  # price of a boot entry:
+  #
+  # - vsyscall=none removes the legacy vsyscall page. It sits at a fixed
+  #   address in every process and is executable, which makes it the one
+  #   reliable ROP target left on x86-64. Only pre-2.13 glibc binaries use it.
+  # - slab_nomerge keeps same-sized slab caches separate. Merged caches let an
+  #   overflow in one kind of object land on another, which is what makes a
+  #   heap bug in something harmless into a path to something that is not.
+  # - page_alloc.shuffle=1 randomises the page freelist. The kernel supports
+  #   this but defaults to auto, which enables it only on machines with a
+  #   memory side cache — so it is off here unless asked for.
+  #
+  # init_on_free is deliberately absent. It is the most valuable of the set and
+  # the only one with a measurable cost, zeroing kernel memory on every free;
+  # on a machine that exists partly to run games that is the wrong trade.
+  boot.kernelParams = [
+    "amd_pstate=active"
+    "split_lock_detect=off"
+    "vsyscall=none"
+    "slab_nomerge"
+    "page_alloc.shuffle=1"
+  ];
 
   # The board has an SP5100 TCO watchdog that nothing was using. systemd pings
   # it at half of runtimeTime; if the kernel stops scheduling systemd the board
@@ -337,6 +367,34 @@ in
   security.protectKernelImage = true;
 
   security.sudo-rs.enable = true;
+
+  # GrapheneOS hardened_malloc, system-wide. It turns most heap corruption into
+  # an immediate abort rather than a silent overwrite: freed memory is zeroed,
+  # slabs carry canaries, and size classes sit in separate regions behind guard
+  # slabs, so an overflow lands on unmapped memory instead of the neighbouring
+  # object.
+  #
+  # The light template rather than the full one. What it drops -- quarantines,
+  # slot randomisation, the write-after-free check, a guard slab every 8 rather
+  # than every allocation -- is the part that costs the most and catches the
+  # least here, since the value on a desktop is the abort itself, not the depth
+  # of the audit trail. Zero-on-free and slab canaries, the two that actually
+  # find things, are kept.
+  #
+  # This is a real compatibility risk, and it is worth knowing which way it
+  # breaks: hardened_malloc does not introduce bugs, it stops tolerating ones
+  # that were always there. A use-after-free that reads plausible garbage under
+  # glibc reads zeroes here and dereferences NULL, so the crash arrives in the
+  # program that was already wrong. Anything that ships its own allocator
+  # (Chromium's PartitionAlloc, a JVM heap) is untouched, since the preload
+  # only replaces malloc.
+  #
+  # It is applied through /etc/ld-nix.so.preload -- nixpkgs' patched loader, not
+  # the FHS /etc/ld.so.preload -- and only affects processes started after the
+  # switch. If the desktop stops starting, pick the previous generation in
+  # limine; the setting lives in the system closure, so an older generation is
+  # already free of it.
+  environment.memoryAllocator.provider = "graphene-hardened-light";
 
   services.fwupd.enable = true;
 
