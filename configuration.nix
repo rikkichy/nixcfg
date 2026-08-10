@@ -117,7 +117,57 @@ in
 {
   systemd.tmpfiles.rules = [
     "Z ${nixcfgPath} - ri users - -"
+
+    # The two SATA SSDs mount root-owned, and everything that writes to them
+    # runs as ri. `d` rather than `Z` because Z recurses, and reasserting
+    # ownership of a full games drive on every boot is not free. Both run
+    # after local-fs.target, so they land on the mounted filesystem rather
+    # than on an empty directory underneath it.
+    "d /games 0755 ri users - -"
+    "d /data  0755 ri users - -"
   ];
+
+  # The two spare SATA SSDs, plain XFS with no encryption. Only the NVMe holds
+  # anything worth a LUKS header; these are bulk storage, and leaving them
+  # unencrypted keeps them readable from a live USB without a passphrase.
+  #
+  # nofail matters more than it looks. A secondary disk that fails to appear
+  # would otherwise hold up local-fs.target and drop the boot into emergency
+  # mode over a drive nothing needs to reach the login screen. The device
+  # timeout bounds the wait instead of taking the 90s default twice.
+  #
+  # No discard option: services.fstrim.enable is on, and a weekly batch trim
+  # costs less than trimming inline on every delete.
+  #
+  # x-gvfs-show is what puts them in the Nautilus sidebar. GIO decides on its
+  # own what counts as worth showing, and a fixed disk mounted outside /media,
+  # /run/media and $HOME is not on that list -- so a top-level mount is hidden
+  # with nothing to indicate it was a choice. x-gvfs-name sets the label
+  # beside it, which otherwise falls back to the mount point's basename.
+  fileSystems."/games" = {
+    device = "/dev/disk/by-uuid/3a42fc06-c2d0-46fa-8a30-2ba6992ed35c";
+    fsType = "xfs";
+    options = [
+      "defaults" "noatime" "nofail" "x-systemd.device-timeout=10s"
+      "x-gvfs-show" "x-gvfs-name=Games"
+    ];
+  };
+
+  fileSystems."/data" = {
+    device = "/dev/disk/by-uuid/20685cc5-abf8-47e5-ada2-6519305369e7";
+    fsType = "xfs";
+    options = [
+      "defaults" "noatime" "nofail" "x-systemd.device-timeout=10s"
+      "x-gvfs-show" "x-gvfs-name=Data"
+    ];
+  };
+
+  # Root is declared in hardware-configuration.nix; this adds to the same
+  # attribute rather than restating it, so the device and fsType there stay
+  # the single definition. Only the option list grows, and both options are
+  # userspace-only -- mount and the kernel ignore anything x- prefixed, so
+  # nothing here reaches the initrd or the LUKS mapping.
+  fileSystems."/".options = [ "x-gvfs-show" "x-gvfs-name=NixOS" ];
 
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
@@ -443,6 +493,25 @@ in
     localNetworkGameTransfers.openFirewall = false;
 
     extraCompatPackages = [ pkgs.proton-ge-bin ];
+
+    # Steam runs inside a bubblewrap FHS sandbox whose root is a tmpfs, and it
+    # binds a fixed list of top-level directories in: /boot /home /root /run
+    # /srv /sys /var. A mount outside that list is not there at all, and the
+    # failure is quiet and actively misleading -- Steam's library dialog
+    # reports the path as a drive with the tmpfs's size, which is half of RAM,
+    # so a 500G disk shows up as 15G on a 30G machine. Anything written to it
+    # would land in RAM and disappear when Steam exits.
+    #
+    # The module has no option for this, but its own `apply` only re-overrides
+    # extraEnv, extraLibraries and extraPkgs, so an extraBwrapArgs override
+    # survives it. The package appends to its own default rather than
+    # replacing it, so the crash-dump bind it sets is kept.
+    package = pkgs.steam.override {
+      extraBwrapArgs = [
+        "--bind /games /games"
+        "--bind /data /data"
+      ];
+    };
   };
 
   programs.gamescope.enable = true;
