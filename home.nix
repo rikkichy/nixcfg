@@ -71,7 +71,14 @@ let
   # anything with noise in it runs to megabytes.
   defaultWallpaper = ./dotfiles/default-wallpaper.png;
 
-  # The half of wpp that is not the picker, split out so the first-run unit can
+  # Where the chosen wallpaper is recorded. Wayle keeps no record of its own:
+  # `wallpaper set` draws the image and writes nothing, and the `[wallpaper]
+  # monitors` list that would hold it stays empty unless the GUI fills it, so
+  # a shell restart comes up on a blank desktop. This file is what
+  # wallpaper-restore reads back.
+  wallpaperRecord = ''"''${XDG_STATE_HOME:-$HOME/.local/state}/wallpaper/current"'';
+
+  # The half of wpp that is not the picker, split out so the restore unit can
   # reach it too. Both engines are driven here: wayle draws the wallpaper and
   # derives its own bar colours, caelestia themes everything wayle does not
   # reach. -v has to come after -f, which re-derives the variant from the image
@@ -81,9 +88,14 @@ let
     runtimeInputs = [ pkgs.wayle caelestiaCli ];
     text = ''
       wallpaper="''${1:?usage: theme-apply <image>}"
+      record=${wallpaperRecord}
+
       wayle wallpaper set --fit fill "$wallpaper"
       caelestia wallpaper -f "$wallpaper" || true
       caelestia scheme set -v content || true
+
+      mkdir -p "$(dirname "$record")"
+      printf '%s\n' "$wallpaper" > "$record"
     '';
   };
 in
@@ -317,32 +329,46 @@ in
     Install.WantedBy = [ "graphical-session.target" ];
   };
 
-  # Themes a machine that has never been themed, once. Every generated file
-  # downstream comes from a wallpaper, so a fresh install otherwise reaches the
-  # desktop with fuzzel on stock defaults and GTK unstyled, waiting for someone
-  # to know that running wpp is the fix.
+  # Puts the wallpaper back at every login, and themes a machine that has never
+  # been themed. Two jobs in one unit because they answer the same question --
+  # which image should be on screen -- and the recorded path is exactly what
+  # distinguishes them.
+  #
+  # A recorded wallpaper is re-drawn and nothing else: every file the colour
+  # engine generates is already on disk from the run that recorded it, so
+  # rethemeing here would rewrite dozens of files to their current contents on
+  # every login. No record means nothing has ever chosen one, which is the
+  # fresh-install case -- there the default wallpaper goes through the full
+  # theme-apply, since fuzzel, GTK and the terminal palette all descend from it
+  # and would otherwise sit on stock defaults, waiting for someone to know that
+  # running wpp is the fix.
   #
   # A user unit rather than a home.activation script, because caelestia only
   # writes hypr/scheme/current.lua when HYPRLAND_INSTANCE_SIGNATURE is set and
   # activation has no session to take it from -- the colours would land
-  # everywhere except Hyprland's borders, silently.
-  #
-  # Guarded on scheme.json rather than run unconditionally: past the first boot
-  # this must not reach in and overwrite a wallpaper that was deliberately
-  # chosen. TimeoutStartSec because a blocking unit in the login path wedges
-  # the whole switch with nothing said about why.
-  systemd.user.services.first-theme = {
+  # everywhere except Hyprland's borders, silently. The sleep is for wayle:
+  # `wallpaper set` is answered over D-Bus by the running shell, so it fails
+  # against a service that has started but not yet registered. TimeoutStartSec
+  # because a blocking unit in the login path wedges the whole switch with
+  # nothing said about why.
+  systemd.user.services.wallpaper-restore = {
     Unit = {
-      Description = "Apply a colour scheme if none has ever been generated";
+      Description = "Restore the wallpaper, theming the machine if it never has been";
       PartOf = [ "graphical-session.target" ];
       After = [ "graphical-session.target" "wayle.service" ];
-      ConditionPathExists = "!%S/caelestia/scheme.json";
     };
     Service = {
       Type = "oneshot";
-      ExecStart = toString (pkgs.writeShellScript "first-theme" ''
+      ExecStart = toString (pkgs.writeShellScript "wallpaper-restore" ''
         set -eu
         sleep 3
+        record=${wallpaperRecord}
+        if [ -r "$record" ]; then
+          wallpaper=$(cat "$record")
+          if [ -e "$wallpaper" ]; then
+            exec ${pkgs.wayle}/bin/wayle wallpaper set --fit fill "$wallpaper"
+          fi
+        fi
         exec ${themeApply}/bin/theme-apply ${defaultWallpaper}
       '');
       TimeoutStartSec = "60s";

@@ -115,7 +115,7 @@ whether or not those apps are installed. Consequences:
   read-only store symlinks; every colour change would start failing.
   Home-manager's `gtk` module is unused for the same reason. The cost of this
   is that they do not exist until something has themed the machine once —
-  which is what `first-theme` is for.
+  which is what `wallpaper-restore` is for.
 - The `hypr/scheme/current.lua` write is gated on `HYPRLAND_INSTANCE_SIGNATURE`
   being present in the environment. Every other file updates from any context;
   that one silently does nothing from a bare systemd unit or a `su` without the
@@ -185,16 +185,29 @@ Two more things that mislead:
 `wpp` is the picker: fuzzel in dmenu mode over `~/Pictures/Wallpapers`, handing
 the choice to `theme-apply`, which drives both engines — wayle for the wallpaper
 and its own bar colours, the caelestia CLI for everything else. `theme-apply` is
-split out of `wpp` so `first-theme` reaches the same path rather than a second
-copy of it.
+split out of `wpp` so `wallpaper-restore` reaches the same path rather than a
+second copy of it. `theme-apply` also records what it applied, to
+`~/.local/state/wallpaper/current`.
 
-`first-theme` is a user unit guarded on `ConditionPathExists=!%S/caelestia/scheme.json`,
-so it themes a machine that has never been themed and never touches one that
-has. It applies `dotfiles/default-wallpaper.png`, a 9 KB gradient that exists
-so the chain has a root before any user data is restored — every generated file
-descends from a wallpaper, and the collection itself is far too large to track.
-It is a user unit rather than a `home.activation` script because of the
-`HYPRLAND_INSTANCE_SIGNATURE` gate above.
+**Wayle keeps no record of the wallpaper.** `wayle wallpaper set` draws the
+image and writes nothing; the `[wallpaper] monitors` list that would hold it is
+filled by the GUI and stays empty otherwise, and `wayle wallpaper info` reports
+`Current: (none)` immediately after a successful CLI set. Nothing survives a
+shell restart on its own, so the desktop comes up blank without something
+putting it back.
+
+`wallpaper-restore` is that something — a user unit on `graphical-session.target`
+which reads the recorded path and re-draws it, doing nothing else: every file
+the colour engine generates is already on disk from the run that recorded it, so
+rethemeing at login would rewrite dozens of files to their current contents. No
+record means nothing has ever chosen one, and that path applies
+`dotfiles/default-wallpaper.png` through the whole of `theme-apply` — a 9 KB
+gradient that exists so the chain has a root before any user data is restored,
+since every generated file descends from a wallpaper and the collection itself
+is far too large to track. It is a user unit rather than a `home.activation`
+script because of the `HYPRLAND_INSTANCE_SIGNATURE` gate above, and it sleeps
+first because `wallpaper set` is answered over D-Bus by the running shell and
+fails against a `wayle.service` that has started but not yet registered.
 
 Thumbnails are pre-rendered to `~/.cache/wallpaper-picker` with
 `gdk-pixbuf-thumbnailer` because fuzzel builds with `+png +svg` only — a JPEG

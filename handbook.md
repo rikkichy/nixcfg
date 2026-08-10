@@ -161,9 +161,10 @@ would make that fail.
 
 So a fresh install themes itself once, from a gradient shipped in
 `dotfiles/`, and you get a coloured desktop without doing anything. The
-`first-theme` user unit does this and is guarded on
-`~/.local/state/caelestia/scheme.json`, so it runs only on a machine that has
-never been themed and never overwrites a wallpaper you chose later.
+`wallpaper-restore` user unit does this, and from then on it is what puts your
+wallpaper back at every login — the shell itself remembers nothing, so without
+it you would log in to a blank desktop. It reads
+`~/.local/state/wallpaper/current`, which `wpp` writes.
 
 `~/Pictures/Wallpapers` is created empty. **The collection itself is user
 data — restore it from a backup**, it is far too large for a public repo.
