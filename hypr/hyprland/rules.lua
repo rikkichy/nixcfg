@@ -101,7 +101,11 @@ hl.window_rule({
 })
 -- Rules are matched with RE2, not Lua patterns, so parens escape as \( not %(.
 hl.window_rule({ match = { initial_title = "Spotify( \\(Free\\))?" }, workspace = "special:music" })
-hl.window_rule({ match = { class = "discord|equibop|vesktop|whatsapp" }, workspace = "special:communication" })
+-- Telegram matches on its Wayland app_id, which is not the WM_CLASS its
+-- desktop file advertises: the entry says TelegramDesktop, the compositor
+-- reports org.telegram.desktop. Read off hyprctl clients with a window
+-- mapped -- it lives in the tray, so a running process shows nothing.
+hl.window_rule({ match = { class = "discord|equibop|vesktop|org\\.telegram\\.desktop" }, workspace = "special:communication" })
 hl.window_rule({ match = { class = "Todoist" }, workspace = "special:todo" })
 
 hl.window_rule({ match = { class = "^chrome-open\\.spotify\\.com.*$" }, workspace = "special:music" })
