@@ -78,6 +78,17 @@ let
   # wallpaper-restore reads back.
   wallpaperRecord = ''"''${XDG_STATE_HOME:-$HOME/.local/state}/wallpaper/current"'';
 
+  # The animated counterpart, holding a video path. Separate from the record
+  # above rather than a mode flag inside it, because the two coexist: an
+  # animated wallpaper always has a still frame behind it, and that frame is
+  # what the static record points at. Its absence is what tells the unit below
+  # there is nothing to play.
+  animatedRecord = ''"''${XDG_STATE_HOME:-$HOME/.local/state}/wallpaper/animated"'';
+
+  # Where a video's extracted frame is kept, shared by the picker's thumbnails
+  # and the full-size still that gets themed.
+  animatedCache = ''"''${XDG_CACHE_HOME:-$HOME/.cache}/animated-wallpaper"'';
+
   # The half of wpp that is not the picker, split out so the restore unit can
   # reach it too. Both engines are driven here: wayle draws the wallpaper and
   # derives its own bar colours, caelestia themes everything wayle does not
@@ -96,6 +107,44 @@ let
 
       mkdir -p "$(dirname "$record")"
       printf '%s\n' "$wallpaper" > "$record"
+    '';
+  };
+
+  # The half of awpp that is not the picker, the animated mirror of
+  # theme-apply. A video cannot be handed to either colour engine, so a frame
+  # is pulled out of it and put through the whole static path: that gives the
+  # palette its root, and leaves the still on wayle's surface underneath the
+  # video as what shows whenever mpvpaper is paused or stopped.
+  #
+  # The seek is 3 seconds in because a lot of these open on a fade from black,
+  # which extracts as a frame with no colour in it at all and themes the
+  # desktop grey. -ss ahead of -i seeks by keyframe rather than decoding up to
+  # the mark, so it costs the same on a 480 MB file as on a 2 MB one; a clip
+  # shorter than the seek yields no frame and an empty file, hence the retry
+  # from the start.
+  awpApply = pkgs.writeShellApplication {
+    name = "awp-apply";
+    runtimeInputs = [ pkgs.ffmpeg pkgs.systemd themeApply ];
+    text = ''
+      video="''${1:?usage: awp-apply <video>}"
+      record=${animatedRecord}
+      cache=${animatedCache}
+      frame="$cache/''${video##*/}.png"
+
+      mkdir -p "$cache"
+      if [ ! -s "$frame" ] || [ "$video" -nt "$frame" ]; then
+        ffmpeg -y -loglevel error -ss 3 -i "$video" -frames:v 1 "$frame" \
+          < /dev/null || true
+        if [ ! -s "$frame" ]; then
+          ffmpeg -y -loglevel error -i "$video" -frames:v 1 "$frame" < /dev/null
+        fi
+      fi
+
+      theme-apply "$frame"
+
+      mkdir -p "$(dirname "$record")"
+      printf '%s\n' "$video" > "$record"
+      systemctl --user restart animated-wallpaper.service
     '';
   };
 
@@ -240,6 +289,16 @@ in
       terminal = false;
       categories = [ "Settings" ];
     };
+
+    awpp = {
+      name = "awpp";
+      genericName = "Animated wallpaper";
+      comment = "Pick a video wallpaper and retheme";
+      exec = "awpp";
+      icon = "preferences-desktop-wallpaper";
+      terminal = false;
+      categories = [ "Settings" ];
+    };
   };
 
   # Wayle drives wallpapers by shelling out to `swww-daemon` by name, with no
@@ -285,6 +344,7 @@ in
     # environment) while every other file updates normally.
     caelestiaCli
     themeApply
+    awpApply
 
     # Reached by name from config.toml below: wayle runs a custom module's
     # command through `sh -c` with the session PATH, which carries the
@@ -299,6 +359,7 @@ in
         coreutils
         findutils
         libnotify
+        systemd
         themeApply
       ];
       text = ''
@@ -372,7 +433,80 @@ in
 
         chosen="''${files[$idx]}"
 
+        # A still image is the whole wallpaper, so anything playing over it has
+        # been replaced rather than covered. Dropping the record as well as the
+        # process is what keeps it from coming back at the next login.
+        rm -f ${animatedRecord}
+        systemctl --user stop animated-wallpaper.service || true
+
         theme-apply "$chosen"
+      '';
+    })
+
+    # The animated picker. Everything about the fuzzel side of it is wpp's,
+    # for the same reasons; what differs is where the icons come from, since
+    # gdk-pixbuf-thumbnailer reads images and these are videos.
+    (writeShellApplication {
+      name = "awpp";
+      runtimeInputs = [
+        fuzzel
+        ffmpeg
+        coreutils
+        findutils
+        libnotify
+        awpApply
+      ];
+      text = ''
+        dir="''${ANIMATED_WALLPAPER_DIR:-$HOME/Videos/Animated Wallpapers}"
+        cache=${animatedCache}/thumbs
+
+        die() {
+          echo "awpp: $1" >&2
+          notify-send -a awpp "Animated wallpaper" "$1" 2>/dev/null || true
+          exit 1
+        }
+
+        mapfile -t files < <(find "$dir" -maxdepth 1 -type f \
+          \( -iname '*.mp4' -o -iname '*.webm' -o -iname '*.mkv' \
+             -o -iname '*.mov' -o -iname '*.gif' \) \
+          2>/dev/null | sort)
+
+        # No fallback to a shipped default here, unlike wpp: there is no
+        # animated wallpaper in the repo to fall back to, and the desktop
+        # already has a working static one either way.
+        [ "''${#files[@]}" -gt 0 ] || die "No videos in $dir"
+
+        mkdir -p "$cache"
+
+        for f in "''${files[@]}"; do
+          thumb="$cache/''${f##*/}.png"
+          if [ ! -s "$thumb" ] || [ "$f" -nt "$thumb" ]; then
+            ffmpeg -y -loglevel error -ss 3 -i "$f" -frames:v 1 \
+              -vf scale=256:-2 "$thumb" < /dev/null || true
+            if [ ! -s "$thumb" ]; then
+              ffmpeg -y -loglevel error -i "$f" -frames:v 1 \
+                -vf scale=256:-2 "$thumb" < /dev/null || true
+            fi
+          fi
+        done
+
+        # The extension is dropped from the label only -- these names are
+        # sentences and the row is narrow -- while the cache stays keyed on the
+        # full filename, so two videos of the same scene in different
+        # containers keep their own thumbnails.
+        idx=$(
+          for f in "''${files[@]}"; do
+            base="''${f##*/}"
+            printf '%s\x00icon\x1f%s\n' "''${base%.*}" "$cache/$base.png"
+          done | fuzzel --dmenu --index --prompt "awp> " \
+            --font "Google Sans Flex Rounded:size=17" --line-height=64px --lines 8
+        ) || exit 0
+
+        case "$idx" in
+          "" | *[!0-9]*) exit 0 ;;
+        esac
+
+        awp-apply "''${files[$idx]}"
       '';
     })
     (runCommand "swww-compat" { } ''
@@ -457,10 +591,57 @@ in
     Install.WantedBy = [ "graphical-session.target" ];
   };
 
-  # wpp reads this directory; the collection inside it is user data and is not
-  # in the repo, but the directory existing is what keeps a fresh install from
-  # looking like a broken one.
+  # Plays the recorded video over the static wallpaper, and is skipped
+  # entirely when nothing has chosen one -- ExecCondition rather than a test
+  # inside the script, so an unused animated wallpaper reads as a clean skip in
+  # `systemctl --user status` instead of a unit that exits immediately for
+  # reasons of its own.
+  #
+  # mpvpaper draws on the bottom layer while awww holds the background one, so
+  # the video sits above the still frame regardless of which surface was
+  # created first, and still below every window. Left on the default layer the
+  # two share a level and the order they happened to start in decides which is
+  # visible -- mpvpaper says as much on startup, warning that a running
+  # swww-daemon "may block mpvpaper from being seen".
+  #
+  # -p pauses decoding whenever the wallpaper is hidden, which is most of the
+  # time a game is running, and leaves the last frame on screen. hwdec keeps a
+  # 4K60 clip off the CPU; the videos are silent by intent, not by encoding, so
+  # no-audio is what stops one from taking over the speakers.
+  systemd.user.services.animated-wallpaper = {
+    Unit = {
+      Description = "Play the animated wallpaper";
+      PartOf = [ "graphical-session.target" ];
+      After = [
+        "graphical-session.target"
+        "wayle.service"
+        "wallpaper-restore.service"
+      ];
+    };
+    Service = {
+      Type = "simple";
+      ExecCondition = toString (pkgs.writeShellScript "animated-wallpaper-check" ''
+        test -s ${animatedRecord}
+      '');
+      ExecStart = toString (pkgs.writeShellScript "animated-wallpaper" ''
+        set -eu
+        video=$(cat ${animatedRecord})
+        [ -e "$video" ] || exit 0
+        exec ${pkgs.mpvpaper}/bin/mpvpaper -p -l bottom \
+          -o "no-audio loop-file=inf hwdec=auto panscan=1.0" '*' "$video"
+      '');
+      Restart = "on-failure";
+      RestartSec = "5s";
+      Slice = "session.slice";
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+  };
+
+  # wpp and awpp read these directories; the collections inside them are user
+  # data and are not in the repo, but the directories existing is what keeps a
+  # fresh install from looking like a broken one.
   home.file."Pictures/Wallpapers/.keep".text = "";
+  home.file."Videos/Animated Wallpapers/.keep".text = "";
 
   xdg.mimeApps = {
     enable = true;

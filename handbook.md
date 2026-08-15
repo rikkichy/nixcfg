@@ -171,6 +171,12 @@ data — restore it from a backup**, it is far too large for a public repo.
 `wpp` picks from that folder and re-themes everything; with the folder still
 empty it falls back to the shipped gradient rather than refusing to run.
 
+`awpp` is the same picker for video wallpapers, over
+`~/Videos/Animated Wallpapers` — also created empty, also user data. It plays
+the video over the desktop and takes the colours from a frame of it, so
+everything is themed the same way a still image would theme it. Picking a
+still with `wpp` puts the video away.
+
 ## VPN (mihomo)
 
 `services.mihomo` runs the tunnel as a system service, with the dashboard at
