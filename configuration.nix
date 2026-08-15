@@ -616,6 +616,15 @@ in
     claude-code
     lm_sensors
 
+    # An AppImage, wrapped upstream, shipping the `lms` CLI beside the GUI. The
+    # llama.cpp backends are not packaged -- LM Studio downloads the one it
+    # wants into ~/.lmstudio at first use, so the only thing this machine has to
+    # supply is the driver underneath. That reaches the CUDA runtime through the
+    # ld cache buildFHSEnv generates, which carries /run/opengl-driver/lib:
+    # neither /etc/ld.so.conf nor LD_LIBRARY_PATH inside the sandbox mentions
+    # it, so `dlopen("libcuda.so.1")` succeeding is entirely down to the cache.
+    lmstudio
+
     nautilus
     file-roller
     mpv
