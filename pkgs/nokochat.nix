@@ -6,11 +6,11 @@
 
 let
   pname = "nokochat";
-  version = "1.9.0";
+  version = "2.0.0";
 
   src = fetchurl {
     url = "https://dl.noko.chat/NokoChat-${version}-x86_64.AppImage";
-    hash = "sha256-FNR8QEy7MuRcx57nUfRdtivCzmkrSaC008QV55x+U0E=";
+    hash = "sha256-vaardkEJ3KhFSLp0Xdd+1EVUV248VwBmgPs3dg7uAu4=";
   };
 
   contents = appimageTools.extract { inherit pname version src; };
