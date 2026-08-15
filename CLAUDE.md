@@ -49,8 +49,14 @@ path.
 `hardware-configuration.nix` is tracked but machine-specific, and the repo is
 **public** — do not add secrets. `pkgs/` holds locally packaged software
 (`tg-ws-proxy`, `nokochat`, `google-sans-rounded`), pulled in through the
-overlay in `flake.nix`; `tg-ws-proxy` is a `flake = false` input, the other two
-are pinned by hash inside their own file.
+overlay in `flake.nix`; `tg-ws-proxy` is a `flake = false` input, the other
+three are pinned by hash inside their own file. The same overlay carries
+`overrideAttrs` fixes for nixpkgs packages this machine needs and upstream
+cannot currently build — `ananicy-cpp` compiles only with `<cstring>` and
+`<cstdint>` forced into its translation units.
+
+`nix build --dry-run` proves evaluation, not compilation: a package that fails
+in its build phase still lists cleanly there and only fails during the switch.
 
 ### Where each part of the desktop is configured
 
@@ -179,6 +185,47 @@ Two more things that mislead:
   easy to miss and leaves the systray cluster squarer than its neighbours.
 - Hyprland fades layer surfaces out under a fullscreen window, so the bar
   reading `a: 0` in `hyprctl layers` during a game is expected, not a fault.
+
+#### The special workspaces on the bar
+
+They are three `[[modules.custom]]` buttons rather than entries in
+`hyprland-workspaces`, and each of the reasons is a limit of that module:
+
+- **Its `workspace-map` is keyed by workspace id, and a special workspace's id
+  is not stable.** `newSpecialID()` returns the highest live special id plus
+  one, counting up from -99, so which of `special:music` and
+  `special:communication` is -98 depends on which was opened first that
+  session. An icon pinned to an id lands on a different overlay the next day.
+  `special-ws` addresses them by name for that reason.
+- **A workspace button always focuses; there is no click action to
+  configure.** `niri-workspaces` has one, `hyprland-workspaces` does not, so a
+  second click cannot put an overlay away from there.
+- **Special workspaces sort ahead of the numbered ones**, `sort_by_key` over
+  an id that is negative, and nothing reorders them.
+
+Two things about styling those buttons:
+
+- **`bar.button-group-background` takes tokens, not hex.** `"#ff0000"` reads
+  back from `wayle config get` and paints nothing; `"accent"` works. In this
+  palette a group container is invisible either way — `bg-elevated` and
+  `bg-surface-elevated` both come out level with the bar — so what separates
+  one cluster of modules from the next is `module-gap` against
+  `button-group-module-gap`, not a drawn pill.
+- `styles/index.scss` is compiled with grass and appended after wayle's own
+  stylesheet, so a rule there wins on equal specificity and a file that fails
+  to compile is logged and dropped rather than taking the bar with it. A
+  custom module's dynamic classes land on its root box, one level above the
+  button carrying the background, and `--ws-active-color` is scoped to
+  `.workspaces` and does not reach them; the palette tokens `--accent` and
+  `--fg-on-accent` are what that colour resolves to anyway.
+
+**A custom module that polls reads as broken next to one that does not.**
+Every built-in module follows Hyprland's event socket, so a `poll` at
+`interval-ms = 1000` beside them catches up a visible beat late. `mode =
+"watch"` takes a display update per line of stdout, which is what `special-ws
+watch` feeds it from `.socket2.sock`. Filter the events, and then filter to
+answers that changed — otherwise a mouse moving between windows redraws the
+bar.
 
 ### Wallpapers and theming
 
@@ -448,6 +495,47 @@ falls back to a 0600 properties file. This is not the sandbox: `busctl --user`
 from inside the same FHS environment finds `org.freedesktop.secrets`, so
 gnome-keyring is reachable and the app's own `java-keyring` backend detection
 is what fails.
+
+### `dev/` — per-project dev shells
+
+`flake.nix` exposes `devShells.x86_64-linux`, built from a `pkgs` that is
+imported separately from the system one so it can carry
+`android_sdk.accept_license`; the overlay is shared, which is why it lives in a
+`let` binding rather than inline in the NixOS module. `dev/nokochat/shell.nix`
+is the shell for the NokoChat monorepo at `~/Documents/nokochat`, entered by a
+one-line `.envrc` (`use flake /home/ri/nixcfg#nokochat`) that is kept out of
+that repo through `~/.config/git/ignore`. The project's own `setup.sh` cannot
+run here — it dispatches on apt/dnf/pacman/brew and installs Google's prebuilt
+SDK binaries, which need an FHS environment.
+
+The shell reproduces that script's pins with `androidenv`: platform
+`android-37.0`, build-tools `37.0.0`, and the `google_apis_ps16k` x86_64 system
+image the project's emulator skill expects. Build-tools `36.0.0` sits alongside
+`37.0.0` because that is the version AGP 9.3 asks for itself — a writable SDK
+absorbs that download silently, a store one reports the SDK as not writable. `noko-avd` creates the `noko` AVD
+those skills boot, in `~/.android` — the SDK itself is read-only in the store.
+Three things follow from a store-resident SDK:
+
+- AGP resolves the SDK from `ANDROID_HOME`, so no `local.properties` is
+  written; a store path baked into that gitignored file would go stale on every
+  nixpkgs bump.
+- AGP pulls `aapt2` from Maven as an FHS binary. `GRADLE_OPTS` carries
+  `android.aapt2FromMavenOverride` pointing at the patched one in the Nix
+  build-tools, alongside the flags that keep Gradle from provisioning its own
+  JDK instead of `jdk25`.
+- Skiko links `libGL`/`libX11` from a Maven-shipped native library, so
+  `:composeApp:run` needs those on `LD_LIBRARY_PATH` — the same list
+  `pkgs/nokochat.nix` passes as `extraPkgs`.
+
+`pkgs/kotlin-lsp.nix` is JetBrains' standalone Kotlin language server, pinned by
+CDN URL and hash the way `nokochat` is: the GitHub releases of `Kotlin/kotlin-lsp`
+carry no assets, only links. It bundles its own JetBrains Runtime, so the whole
+tree goes through `autoPatchelfHook` and the wrapper points at
+`bin/intellij-server`. nixpkgs' `kotlin-language-server` is the unrelated fwcd
+implementation.
+
+Docker is enabled for this project's Go suite, which reaches for testcontainers
+and skips silently when no daemon answers.
 
 ### systemd units in `configuration.nix`
 

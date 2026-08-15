@@ -628,6 +628,11 @@ in
     pavucontrol
     zed-editor
 
+    # Unwrapped: the default jdks list is jdk25/21/17/8, which spans every
+    # Minecraft era, and gamemodeSupport defaults on to meet programs.gamemode
+    # already enabled here. An override would only narrow that.
+    prismlauncher
+
     android-tools
 
     hyprpolkitagent
@@ -652,7 +657,9 @@ in
     playerctl
     xdg-user-dirs
 
-    starship direnv zoxide eza fzf bat ripgrep lazygit jq fastfetch micro
+    # direnv is installed by home-manager (programs.direnv) so nix-direnv comes
+    # with it -- a second copy here would shadow the wrapped one.
+    starship zoxide eza fzf bat ripgrep lazygit jq fastfetch micro
 
     tg-ws-proxy
   ];
@@ -759,7 +766,14 @@ in
     isNormalUser = true;
     shell = pkgs.fish;
 
-    extraGroups = [ "wheel" "networkmanager" "gamemode" "ydotool" ];
+    extraGroups = [ "wheel" "networkmanager" "gamemode" "ydotool" "docker" ];
+  };
+
+  # Testcontainers backs nokochat's `go test ./... -race`; without a reachable
+  # daemon that suite skips silently, which reads as passing.
+  virtualisation.docker = {
+    enable = true;
+    autoPrune.enable = true;
   };
 
   services.printing.enable = true;

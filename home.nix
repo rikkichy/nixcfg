@@ -98,6 +98,81 @@ let
       printf '%s\n' "$wallpaper" > "$record"
     '';
   };
+
+  # What the bar's special-workspace buttons are made of. Both halves address
+  # a workspace by name, which is the point: a special workspace's id comes
+  # from newSpecialID(), the highest live special id plus one counting up from
+  # -99, so it depends on the order the overlays were first opened in and
+  # anything keyed on it points somewhere else the next day.
+  #
+  # The state it reports distinguishes three things the bar draws
+  # differently: absent (the overlay holds nothing, and Hyprland does not list
+  # a workspace at all), idle, and on screen. hyprctl is left to the PATH
+  # wayle inherits from the session rather than pinned here -- pkgs.hyprland
+  # would be a second copy of the compositor in this closure to run two IPC
+  # calls.
+  #
+  # `watch` is what the bar runs. Polling for this is visibly late: the
+  # numbered workspaces are driven from Hyprland's event socket and change
+  # under the cursor, so a button next to them that catches up a second later
+  # reads as broken rather than slow. socket2 carries every event, so the
+  # reply is filtered to the ones that can change an answer and then to
+  # answers that actually differ, which keeps a mouse moving between windows
+  # from redrawing anything.
+  specialWs = pkgs.writeShellApplication {
+    name = "special-ws";
+    runtimeInputs = [ pkgs.jq pkgs.socat ];
+    text = ''
+      action="''${1:?usage: special-ws state|watch|toggle <name>}"
+      name="''${2:?usage: special-ws state|watch|toggle <name>}"
+      ws="special:$name"
+
+      state() {
+          if ! hyprctl -j workspaces | jq -e --arg w "$ws" 'any(.[]; .name == $w)' > /dev/null; then
+              echo 0
+          elif hyprctl -j monitors | jq -e --arg w "$ws" 'any(.[]; .specialWorkspace.name == $w)' > /dev/null; then
+              echo open
+          else
+              echo idle
+          fi
+      }
+
+      case "$action" in
+      state)
+          state
+          ;;
+      watch)
+          last=""
+          emit() {
+              current=$(state)
+              if [ "$current" != "$last" ]; then
+                  last=$current
+                  printf '%s\n' "$current"
+              fi
+          }
+
+          emit
+          socat -u UNIX-CONNECT:"$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket2.sock" - |
+              while IFS= read -r event; do
+                  case "$event" in
+                  activespecial* | openwindow* | closewindow* | movewindow* | createworkspace* | destroyworkspace*)
+                      emit
+                      ;;
+                  esac
+              done
+          ;;
+      toggle)
+          # toggle_special prefixes "special:" itself, so it takes the bare
+          # name. hyprctl's argument is Lua as of Hyprland 0.56.
+          hyprctl repl "hl.dispatch(hl.dsp.workspace.toggle_special(\"$name\"))" > /dev/null
+          ;;
+      *)
+          echo "special-ws: unknown action $action" >&2
+          exit 1
+          ;;
+      esac
+    '';
+  };
 in
 {
   # imports = [ inputs.caelestia-shell.homeManagerModules.default ];
@@ -210,6 +285,11 @@ in
     # environment) while every other file updates normally.
     caelestiaCli
     themeApply
+
+    # Reached by name from config.toml below: wayle runs a custom module's
+    # command through `sh -c` with the session PATH, which carries the
+    # per-user profile this lands in.
+    specialWs
 
     (writeShellApplication {
       name = "wpp";
@@ -464,6 +544,15 @@ in
     };
   };
 
+  # nix-direnv is what makes `use flake` cheap: it caches the evaluated shell
+  # and roots its store paths, so a dev shell survives `nix-collect-garbage`.
+  # The fish hook comes from this module -- interactiveShellInit no longer
+  # calls `direnv hook` itself.
+  programs.direnv = {
+    enable = true;
+    nix-direnv.enable = true;
+  };
+
   programs.fish = {
     enable = true;
     shellAbbrs = {
@@ -492,7 +581,6 @@ in
 
     interactiveShellInit = ''
       starship init fish | source
-      direnv hook fish | source
       zoxide init fish --cmd cd | source
 
       # Live colour scheme -- caelestia rewrites this file on every
@@ -572,6 +660,12 @@ in
       # around them.
       button-group-rounding = "full"
 
+      # Zero, so the special-workspace buttons sit against the numbered ones
+      # rather than a step apart from them. This is the gap inside a group;
+      # module-gap, which still separates the whole cluster from
+      # notifications, is a different setting.
+      button-group-module-gap = 0.0
+
       # basic is "icon + label, minimal background". block-prefix, the default,
       # is "icon in colored pill container", which is the filled blob behind
       # every icon. Dropping to basic removes the container so the icon glyph
@@ -584,10 +678,26 @@ in
       # The slot names do not follow the orientation: on a vertical bar `left`
       # is the top section and `right` is the bottom. media is left out here
       # because a track title has nowhere to go in a column.
+      #
+      # A named group puts the special workspaces in the same container as the
+      # numbered ones, so the run reads as one cluster: 1, 2, then whichever
+      # overlays are up, then the gap before notifications. Membership of a
+      # group is what makes button-group-module-gap apply to the join instead
+      # of the bar's own module-gap. The container itself is hidden while
+      # every module in it is, which is the usual state for all three.
       [[bar.layout]]
       monitor = "*"
       show = true
-      left = ["hyprland-workspaces", "notifications", "clock"]
+      left = [
+          { name = "workspaces", modules = [
+              "hyprland-workspaces",
+              "custom-ws-music",
+              "custom-ws-comms",
+              "custom-ws-scratch",
+          ] },
+          "notifications",
+          "clock",
+      ]
       center = []
       right = [
           "systray",
@@ -603,18 +713,84 @@ in
       matugen-scheme = "content"
       rounding = "full"
 
-      # min-workspace-count keeps four pills present when the workspaces behind
-      # them are empty, which is what bar.workspaces.shown = 4 did before.
-      # show-special = false because Hyprland's special workspaces carry
-      # negative ids, and with it on they render as pills labelled -98 and -95
-      # -- which are special:communication and special:special, the Discord and
-      # scratchpad overlays, sitting in the bar next to real workspaces 1 and 3.
-      # They are toggled by keybind and have no business being numbered here.
+      # This module numbers the ordinary workspaces and nothing else. It can
+      # carry the special ones too -- show-special = true with an icon per
+      # workspace in workspace-map -- but that map is keyed by workspace id,
+      # and a special workspace's id is handed out in creation order:
+      # newSpecialID() returns the highest live special id plus one, counting
+      # up from -99. Which of music and communication is -98 therefore depends
+      # on which was opened first that session, and the icons trade places.
+      # The custom modules below address the same workspaces by name.
+      #
+      # min-workspace-count only fills in workspaces that a workspace rule
+      # assigns to this bar's monitor; with monitor-specific on and no such
+      # rules, the empty pills it would add are skipped and the bar shows the
+      # workspaces that exist.
       [modules.hyprland-workspaces]
       show-special = false
       min-workspace-count = 4
       display-mode = "label"
       workspace-padding = 0.6
+
+      # One button per special workspace, each present only while its overlay
+      # holds something: an empty special workspace is not a workspace
+      # Hyprland lists, so special-ws answers 0 and hide-if-empty takes the
+      # button away. Nothing here runs while Spotify or Discord are closed,
+      # and no button can be clicked into an empty overlay.
+      #
+      # class-format turns the other two answers into the CSS classes ws-idle
+      # and ws-open, and styles/index.scss gives ws-open the same filled
+      # accent circle the active numbered workspace gets. The class lands on
+      # the module's root box, so the selector reaches through it to the
+      # button.
+      #
+      # Clicking toggles rather than focuses, so a second click puts the
+      # overlay away. The workspaces module has no click action to configure
+      # -- it always focuses -- which is the other half of why these are
+      # custom modules rather than workspace-map entries.
+      #
+      # The icons are among the 362 the package carries in share/icons.
+      # `wayle icons list` reports none installed regardless: it counts only
+      # ~/.local/share/wayle/icons, where `wayle icons install` puts what it
+      # pulls from a CDN. An icon in neither place draws nothing at all.
+      # mode = "watch" spawns the command once and takes a display update from
+      # every line it prints, so these follow Hyprland's event socket at the
+      # speed the numbered workspaces do. interval-ms means nothing here.
+      # restart-policy covers the socket going away with the compositor: the
+      # delay it retries on backs off exponentially, so a shell that outlives
+      # a Hyprland restart reconnects without spinning.
+      [[modules.custom]]
+      id = "ws-music"
+      command = "special-ws watch music"
+      mode = "watch"
+      restart-policy = "on-exit"
+      icon-name = "ld-music-symbolic"
+      label-show = false
+      hide-if-empty = true
+      class-format = "ws-{{ output }}"
+      left-click = "special-ws toggle music"
+
+      [[modules.custom]]
+      id = "ws-comms"
+      command = "special-ws watch communication"
+      mode = "watch"
+      restart-policy = "on-exit"
+      icon-name = "ld-message-circle-symbolic"
+      label-show = false
+      hide-if-empty = true
+      class-format = "ws-{{ output }}"
+      left-click = "special-ws toggle communication"
+
+      [[modules.custom]]
+      id = "ws-scratch"
+      command = "special-ws watch special"
+      mode = "watch"
+      restart-policy = "on-exit"
+      icon-name = "ld-layers-symbolic"
+      label-show = false
+      hide-if-empty = true
+      class-format = "ws-{{ output }}"
+      left-click = "special-ws toggle special"
 
       # A vertical bar is as wide as its widest module, and the clock defaults
       # to "%a %b %d %I:%M %p" -- "Sun Aug 09 06:46 PM", about nineteen
@@ -652,6 +828,29 @@ in
 
       [wallpaper]
       transition-fps = 240
+    '';
+
+    # Wayle compiles styles/index.scss with grass and appends it to its own
+    # stylesheet, so a rule here is last and wins on equal specificity without
+    # a priority to set. A file that fails to compile is logged and dropped,
+    # leaving the rest of the bundle intact -- so a mistake here costs these
+    # colours, not the bar. force for the same reason config.toml has it: the
+    # settings GUI scaffolds this path on first run.
+    #
+    # A custom module's dynamic classes land on its root box, one level above
+    # the button that carries the background, and the colours come from the
+    # palette tokens rather than --ws-active-color, which is scoped to
+    # .workspaces and does not reach out here. accent and fg-on-accent are
+    # what the workspaces module resolves its own active colours to.
+    "wayle/styles/index.scss".force = true;
+    "wayle/styles/index.scss".text = ''
+      .custom.ws-open menubutton.bar-button > button.toggle {
+          background-color: var(--accent);
+      }
+
+      .custom.ws-open menubutton.bar-button > button.toggle image {
+          color: var(--fg-on-accent);
+      }
     '';
 
     "starship.toml".source = ./dotfiles/starship.toml;
