@@ -8,7 +8,7 @@ let
   caelestiaDefaults = {
     general.idle.timeouts = [ ];
 
-    general.apps.explorer = [ "nautilus" ];
+    general.apps.explorer = [ "thunar" ];
 
     dashboard.showWeather = false;
 
@@ -643,6 +643,21 @@ in
   home.file."Pictures/Wallpapers/.keep".text = "";
   home.file."Videos/Animated Wallpapers/.keep".text = "";
 
+  # Thunar keeps every preference in xfconf, and home-manager writes these with
+  # xfconf-query at activation rather than owning a file -- so a value declared
+  # here is reasserted on every switch and the matching GUI toggle stops
+  # holding, while anything left out (view mode, zoom, window geometry) stays
+  # Thunar's own. hidden-bookmarks suppresses the built-in sidebar entries,
+  # which are addressed by URI and so have no on-disk representation to edit;
+  # dropping the menubar moves those menus into the toolbar's hamburger.
+  xfconf.settings.thunar = {
+    last-menubar-visible = false;
+    hidden-bookmarks = [
+      "file://${config.home.homeDirectory}/Desktop"
+      "recent:///"
+    ];
+  };
+
   xdg.mimeApps = {
     enable = true;
     defaultApplications = {
@@ -651,11 +666,31 @@ in
       "x-scheme-handler/https" = "chromium-browser.desktop";
       "x-scheme-handler/about" = "chromium-browser.desktop";
       "x-scheme-handler/unknown" = "chromium-browser.desktop";
-      "inode/directory" = "org.gnome.Nautilus.desktop";
+      "inode/directory" = "thunar.desktop";
       "video/mp4" = "mpv.desktop";
       "video/x-matroska" = "mpv.desktop";
       "audio/mpeg" = "mpv.desktop";
-    };
+    }
+    # Loupe's desktop entry already claims all of these, but a declared
+    # handler is what decides between two applications that both claim a
+    # type -- chromium answers for image/png and the rest through the same
+    # MimeType mechanism, and wins on cache order alone when neither is
+    # named here. Listing them individually is the only way: the association
+    # is per type, and a `image/*` wildcard is not part of the format.
+    // lib.genAttrs [
+      "image/png"
+      "image/jpeg"
+      "image/gif"
+      "image/webp"
+      "image/avif"
+      "image/heic"
+      "image/jxl"
+      "image/bmp"
+      "image/tiff"
+      "image/svg+xml"
+      "image/vnd.microsoft.icon"
+      "image/x-xpixmap"
+    ] (_: "org.gnome.Loupe.desktop");
   };
 
   systemd.user.services.tg-ws-proxy = {
@@ -1047,6 +1082,23 @@ in
       [Settings]
       gtk-application-prefer-dark-theme=0
     '';
+
+    # The file manager sidebar. This is the GTK bookmarks file rather than
+    # anything Thunar-specific, so it is shared with every other GIO browser,
+    # and a label after the URI overrides what would otherwise be the
+    # basename. Owning it from here costs the UI side of the feature: the file
+    # is a read-only store symlink, so "Add Bookmark" and dragging a folder
+    # onto the sidebar both stop working, and the list is only editable
+    # through this attribute. force is what keeps a switch from failing the
+    # first time something writes a bookmark before home-manager gets there.
+    "gtk-3.0/bookmarks" = {
+      force = true;
+      text = ''
+        file://${config.home.homeDirectory}/Pictures/Screenshots
+        file://${config.home.homeDirectory}/Documents
+        file://${config.home.homeDirectory}/Downloads
+      '';
+    };
     "gtk-4.0/settings.ini".text = ''
       [Settings]
       gtk-application-prefer-dark-theme=0

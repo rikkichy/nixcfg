@@ -5,10 +5,9 @@ return {
 
     browser                    = "chromium",
     editor                     = "zeditor",
-    -- --new-window is required, not cosmetic: nautilus is a GApplication, so a
-    -- second bare `nautilus` just activates the existing primary instance and
-    -- the keybind appears dead until you close the first window.
-    fileExplorer               = "nautilus --new-window",
+    -- Thunar keeps a D-Bus-activated daemon, but each invocation still opens
+    -- its own window, so the keybind needs no flag to stay repeatable.
+    fileExplorer               = "thunar",
     audioSettings              = "pavucontrol",
 
     touchpadDisableTyping      = true,

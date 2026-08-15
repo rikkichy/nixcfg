@@ -139,7 +139,8 @@ in
   # No discard option: services.fstrim.enable is on, and a weekly batch trim
   # costs less than trimming inline on every delete.
   #
-  # x-gvfs-show is what puts them in the Nautilus sidebar. GIO decides on its
+  # x-gvfs-show is what puts them in the file manager sidebar -- it is a GIO
+  # hint, so it reaches any GIO-based browser rather than one. GIO decides on its
   # own what counts as worth showing, and a fixed disk mounted outside /media,
   # /run/media and $HOME is not on that list -- so a top-level mount is hidden
   # with nothing to indicate it was a choice. x-gvfs-name sets the label
@@ -542,6 +543,23 @@ in
 
   services.udisks2.enable = true;
 
+  # Thunar is the file manager. It draws no thumbnails on its own -- every
+  # preview comes from tumbler over D-Bus, so without that service a folder of
+  # images renders as a wall of generic icons and nothing is logged. xfconf is
+  # the settings backend: absent it, Thunar runs but forgets view mode, sort
+  # order and sidebar state on every close.
+  programs.thunar = {
+    enable = true;
+    plugins = with pkgs; [
+      thunar-volman        # acts on the udisks2 events for removable media
+      thunar-archive-plugin
+      thunar-vcs-plugin
+    ];
+  };
+
+  services.tumbler.enable = true;
+  programs.xfconf.enable = true;
+
   programs.chromium = {
     enable = true;
     extensions = [
@@ -625,8 +643,12 @@ in
     # it, so `dlopen("libcuda.so.1")` succeeding is entirely down to the cache.
     lmstudio
 
-    nautilus
+    # Thunar's own search filters visible names in the current folder only; its
+    # "Find in this folder" item shells out to catfish for anything recursive
+    # or content-based, and silently does nothing when catfish is absent.
     file-roller
+    catfish
+    loupe
     mpv
     anytype
 
