@@ -119,6 +119,3 @@ hl.layer_rule({ match = { namespace = "logout_dialog" }, animation = "fade" })
 hl.layer_rule({ match = { namespace = "selection" }, animation = "fade" })
 hl.layer_rule({ match = { namespace = "wayfreeze" }, animation = "fade" })
 hl.layer_rule({ match = { namespace = "launcher" }, animation = "popin 80%", blur = true })
-
-hl.layer_rule({ match = { namespace = "caelestia-(border-exclusion|area-picker)" }, no_anim = true })
-hl.layer_rule({ match = { namespace = "caelestia-(drawers|background)" }, animation = "fade" })

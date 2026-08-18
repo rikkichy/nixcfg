@@ -1,7 +1,7 @@
 -- Loads the live colour scheme.
 --
 -- scheme/current.lua is bootstrapped from scheme/default.lua by hyprland.lua
--- and rewritten by `caelestia scheme set ...`. If it is missing or half-written
+-- and rewritten by matugen on every wallpaper. If it is missing or half-written
 -- a plain require() blows up, and because variables.lua interpolates colours
 -- into strings the failure takes the *whole* variables module with it -- every
 -- vars.* lookup downstream turns into nil and most of the config silently stops

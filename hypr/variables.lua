@@ -80,13 +80,11 @@ return {
     kbEditor                   = "SUPER + C",
     kbFileExplorer             = "SUPER + E",
 
-    -- `vpn` comes from configuration.nix, not from a package
-    kbVpnToggle                = "SUPER + SHIFT + V",
+    -- `vpnp` is the picker over the live node list; `vpn` underneath it comes
+    -- from configuration.nix, not from a package
+    kbVpnPicker                = "SUPER + SHIFT + V",
 
     kbSession                  = "CTRL + ALT + Delete",
-    kbShowSidebar              = "SUPER + N",
     kbClearNotifs              = "CTRL + ALT + C",
     kbShowPanels               = "SUPER + K",
-    kbLock                     = "SUPER + L",
-    kbRestoreLock              = "SUPER + ALT + L",
 }

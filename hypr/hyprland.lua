@@ -1,6 +1,6 @@
 local home   = os.getenv("HOME")
 local hypr   = home .. "/.config/hypr"
-package.path = package.path .. ";" .. home .. "/.config/caelestia/?.lua"
+package.path = package.path .. ";" .. home .. "/.config/hypr-user/?.lua"
 
 local function maybe_create(file, content)
     local f = io.open(file)
@@ -9,6 +9,12 @@ local function maybe_create(file, content)
         f:close()
         return
     end
+
+    -- The directory has to exist first: io.open in "w" mode returns nil rather
+    -- than creating one, and this function would then quietly do nothing --
+    -- leaving the require() below it to raise, which aborts the rest of this
+    -- file with no log line anywhere and takes every rule and keybind with it.
+    os.execute("mkdir -p '" .. file:match("(.*)/") .. "'")
 
     f = io.open(file, "w")
     if f then
@@ -37,9 +43,12 @@ end
 
 maybe_copy(hypr .. "/scheme/default.lua", hypr .. "/scheme/current.lua")
 
-maybe_create(home .. "/.config/caelestia/hypr-vars.lua", "return {}\n")
-local overrides = require("hypr-vars")
-if type(overrides) == "table" then
+-- pcall rather than a bare require, for the same reason current_scheme.lua
+-- falls back to a default: a missing or broken override file would otherwise
+-- raise here and silently truncate everything below it.
+maybe_create(home .. "/.config/hypr-user/hypr-vars.lua", "return {}\n")
+local ok, overrides = pcall(require, "hypr-vars")
+if ok and type(overrides) == "table" then
     local vars = require("variables")
     for k, v in pairs(overrides) do
         vars[k] = v
@@ -76,5 +85,5 @@ require("hyprland.rules")
 require("hyprland.gestures")
 require("hyprland.keybinds")
 
-maybe_create(home .. "/.config/caelestia/hypr-user.lua")
-require("hypr-user")
+maybe_create(home .. "/.config/hypr-user/hypr-user.lua")
+pcall(require, "hypr-user")

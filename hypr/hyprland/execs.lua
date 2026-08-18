@@ -18,7 +18,7 @@ hl.on("hyprland.start", function()
 
     -- Both start straight into the tray with --hide rather than opening a
     -- window. They are staggered behind the shell because the tray itself is a
-    -- Caelestia surface: an app that registers its StatusNotifierItem before
+    -- An app that registers its StatusNotifierItem before
     -- the bar's watcher exists gets no icon and no error, leaving a running
     -- process with nothing to click. OpenDeck goes last -- it is a Flatpak, so
     -- it pays a sandbox start on top, and it talks to 127.0.0.1:9090.

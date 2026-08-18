@@ -1,6 +1,6 @@
 # nixcfg
 
-NixOS config for `nix` — 9950X3D / RTX 3090 / LUKS / Hyprland + Caelestia.
+NixOS config for `nix` — 9950X3D / RTX 3090 / LUKS / Hyprland + Wayle.
 Migrated off CachyOS. Clone to **`/home/ri/nixcfg`** — that exact path is
 hardcoded in two places (`system.autoUpgrade.flake`, and the Hyprland
 `mkOutOfStoreSymlink` in `home.nix`).
@@ -148,8 +148,11 @@ At the first keyring prompt leave the password **empty** and confirm —
 autologin types no password, so a non-blank keyring would stay locked forever.
 At rest it is protected by LUKS.
 
-Later changes are `sudo nixos-rebuild switch --flake /home/ri/nixcfg#nix`
-(first build also writes `flake.lock` — commit it).
+Later changes are `sudo nixos-rebuild switch --flake path:/home/ri/nixcfg#nix`
+(first build also writes `flake.lock` — commit it). After that first switch the
+same thing is one launcher entry away: press SUPER, type `nix`, and pick
+"Rebuild and switch". The rest of that menu is where you roll back, list
+generations and collect garbage.
 
 ## Wallpapers and colours
 
@@ -185,8 +188,9 @@ boot; there is no app to launch.
 
 ### Turning it off
 
-**`SUPER + SHIFT + V`** toggles it, with a notification saying which way it
-went. Same thing from a terminal:
+**`SUPER + SHIFT + V`** opens a picker over the live node list, fastest first,
+with `DIRECT` and `AUTO` pinned at the top. Same from a terminal as `vpnp`, or
+drive it directly:
 
 ```
 vpn                  # toggle
@@ -195,6 +199,7 @@ vpn off              # direct connection
 vpn status           # prints the current node, or DIRECT
 vpn list             # every node, fastest first, with latency
 vpn use <pattern>    # switch to the fastest node matching <pattern>
+vpn select <name>    # switch to exactly this node
 vpn ip               # exit IP and country, to confirm where you leave from
 ```
 
@@ -309,7 +314,7 @@ it; stop the user service first so the two do not both bind 1443.
 |---|---|
 | `flake.nix` | inputs + `nixosConfigurations.nix` |
 | `configuration.nix` | system: boot, GPU, Hyprland, gaming, packages |
-| `home.nix` | home-manager: Caelestia, dotfiles, web apps |
+| `home.nix` | home-manager: wayle, theming, dotfiles, web apps |
 | `hypr/` | Hyprland Lua config, symlinked live into `~/.config/hypr` |
 | `dotfiles/` | verbatim files copied in by `home.nix` (plus `mihomo.yaml`, used by `configuration.nix`) |
 
@@ -318,27 +323,25 @@ repos (`rikkichy/vhelper`, `rikkichy/openwave`) — edit them there, not here.
 
 ## Two rules that are easy to break
 
-**Caelestia owns a set of files at runtime.** `caelestia scheme set …`
-rewrites `fuzzel.ini`, `btop/themes/caelestia.theme`, `htop/htoprc`,
-`cava/config`, `gtk-3.0/gtk.css`, `gtk-4.0/gtk.css`, `qtengine/config.json`,
-`nvtop/nvtop.colors` and `hypr/scheme/current.lua`. Home-manager files are
+**The colour engine owns a set of files at runtime.** Every time the wallpaper
+changes, `matugen` rewrites `fuzzel.ini`, `btop/themes/wallpaper.theme`,
+`nvtop/nvtop.colors`, `gtk-3.0/gtk.css`, `gtk-4.0/gtk.css`, both `thunar.css`,
+`qtengine/scheme.colors` and `hypr/scheme/current.lua`. Home-manager files are
 read-only store symlinks, so **do not** put any of those under
 `xdg.configFile` — every colour change would start failing. This is also why
-home-manager's `gtk` module is not used (it emits `gtk-4.0/gtk.css` and
-fights Caelestia over the same dconf keys).
+home-manager's `gtk` module is not used: it emits `gtk-4.0/gtk.css` too.
 
-**`shell.json` is seeded, not managed.** `home.nix` copies
-`caelestiaDefaults` into `~/.config/caelestia/shell.json` on activation, but
-only when the file is absent. Change settings in the Caelestia GUI as normal —
-they save and survive rebuilds.
+**Change the colours by editing templates, not the generated files.** The
+templates are in `dotfiles/matugen/templates/` and are tracked; anything you
+type into the files listed above is gone at the next wallpaper. Run `wpp` to
+re-render after editing a template.
 
-The flip side is that `caelestiaDefaults` is only the starting point for a
-fresh install. Editing it will *not* change a machine that already has the
-file; for that, delete `~/.config/caelestia/shell.json` and rebuild, which
-loses whatever you had set. It also means your live settings are not in this
-repo and are not restored by a reinstall.
-
-Per-monitor overrides in `~/.config/caelestia/monitors/<name>/` are untouched.
+**Wayle's settings are not in this repo.** `config.toml` is managed here, but
+anything changed in the wayle GUI or with `wayle config set` lands in
+`runtime.toml` beside it — and `runtime.toml` wins where the two overlap. So a
+value set here that has ever been set at runtime simply does not apply;
+`wayle config reset <field>` is what releases it. Those live settings are not
+restored by a reinstall.
 
 ## Auto-updates
 

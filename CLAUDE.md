@@ -18,7 +18,7 @@ which parts are recent.
 ## Commands
 
 ```sh
-sudo nixos-rebuild switch --flake /home/ri/nixcfg#nix   # apply
+sudo nixos-rebuild switch --flake path:/home/ri/nixcfg#nix   # apply; the nix menu runs this
 nix build --dry-run 'path:.#nixosConfigurations.nix.config.system.build.toplevel'
 nix eval 'path:.#nixosConfigurations.nix.config.<option>'   # inspect any option
 Hyprland --verify-config                                # parse hypr/, prints "config ok"
@@ -63,7 +63,7 @@ in its build phase still lists cleanly there and only fails during the switch.
 | what | where |
 | --- | --- |
 | bar, notifications, OSDs, wallpaper engine | `home.nix` → `xdg.configFile."wayle/config.toml"` |
-| colour scheme for every other app | the `caelestia` CLI, driven by `theme-apply` |
+| colour scheme for every other app | `matugen`, driven by `theme-apply` |
 | launcher and wallpaper pickers | fuzzel, configured by flags in `hypr/hyprland/keybinds.lua`, `wpp` and `awpp` |
 | keybinds, window rules, monitors | `hypr/`, a live symlink needing no rebuild |
 | fonts | `configuration.nix` → `fonts.packages` |
@@ -109,38 +109,56 @@ Two home-manager behaviours that waste time if assumed otherwise:
 
 ### The colour engine owns files at runtime — this drives most design decisions
 
-The `caelestia` CLI (`caelestia-dots/cli`, its own flake input — the shell is
-not installed and its closure carries no quickshell or Qt) generates the whole
-palette. `caelestia scheme set` rewrites a long list of `~/.config` files on
-every colour change: `hypr/scheme/current.lua`, `fuzzel.ini`,
-`btop`/`htop`/`cava`/`nvtop` themes, `gtk-3.0`/`gtk-4.0/gtk.css`,
-`qtengine/config.json`, plus theme files for six Discord clients and Spicetify
-whether or not those apps are installed. Consequences:
+`matugen` derives a Material palette from the wallpaper and renders every
+themed file from templates tracked in `dotfiles/matugen/templates/`. The config
+naming each template and its destination is generated in `home.nix` rather than
+tracked, so the store paths in it can never go stale. `theme-apply` is the only
+caller: one `matugen image` run rewrites `hypr/scheme/current.lua`,
+`fuzzel.ini`, both `gtk.css` and their `thunar.css`, the btop and nvtop themes,
+`qtengine/scheme.colors`, and the terminal palette. Consequences:
 
 - **Never put those paths under `xdg.configFile`.** Home-manager files are
   read-only store symlinks; every colour change would start failing.
   Home-manager's `gtk` module is unused for the same reason. The cost of this
   is that they do not exist until something has themed the machine once —
   which is what `wallpaper-restore` is for.
-- The `hypr/scheme/current.lua` write is gated on `HYPRLAND_INSTANCE_SIGNATURE`
-  being present in the environment. Every other file updates from any context;
-  that one silently does nothing from a bare systemd unit or a `su` without the
-  session environment, so the colours land everywhere except Hyprland's border
-  colours and nothing is logged.
-- `-f` re-derives the Material variant from the image and discards anything set
-  before it, so `scheme set -v` has to run after `wallpaper -f`, never before.
 - `hypr/` is mapped in with `mkOutOfStoreSymlink`, not copied, specifically so
   `scheme/current.lua` stays writable. That in turn requires the repo to be
   owned by `ri` — the installer clones as root, so `configuration.nix` carries a
   `systemd.tmpfiles` `Z` rule reasserting `ri:users` before greetd.
-- The CLI wraps these writes in `@log_exception`, so permission failures are
-  **swallowed and reported as success**. Symptoms show up far from the cause.
+- **`--source-color-index` is not optional.** An image usually yields several
+  candidate source colours, and with no preference matugen *asks* — then exits
+  non-zero when there is no terminal to ask. From a keybind or a unit that is a
+  theme run which silently did nothing. `0` is the most dominant colour, and
+  what matugen used by default before 4.0.
+- **matugen's `base16` is a lightness ramp, not a set of accents.** `base08`
+  through `base0f` are ordered by brightness rather than hue, so a low-chroma
+  wallpaper collapses them into near-blacks — measured at `#1d1e32` for
+  "green" and `#060a16` for "blue". Routing fixed ANSI colours through
+  `custom_colors` does not rescue it either: they are tone-mapped into the
+  scheme whether or not `blend` is set, and yellow lands on `#ffffff` both
+  ways. So the terminal templates take **greys from the palette and hues from
+  literals**, which is why a wallpaper can retint the terminal but can no
+  longer make red and green the same colour.
+- `base16` is its own template namespace. `{{colors.base00…}}` does not
+  resolve, and the error names the whole expression rather than the namespace.
 
-Sixteen `caelestia:*` **global** dispatchers are bound in
-`hypr/hyprland/keybinds.lua` — media keys, brightness, lock, sidebar,
-clear-notifications. Globals were answered by the shell, not the CLI, so these
-fire and do nothing. Replacing them needs real substitutes (`playerctl`,
-`brightnessctl`, `hyprlock`), not a rewrite of the bind.
+**foot carries no palette of its own.** Its colours arrive as OSC escape
+sequences, which is a two-part arrangement worth knowing before concluding the
+terminal is unthemed: `term-sequences` writes
+`~/.local/state/theme/sequences.txt` and pushes it at every pty already open,
+and fish `cat`s the same file for shells started later. Miss either half and
+the terminal is the one thing that does not follow the wallpaper.
+
+Two more things the pipeline depends on:
+
+- `btop` re-reads its theme on `SIGUSR2` only. Everything else either watches
+  its file (GTK) or is launched fresh each time (fuzzel and the pickers).
+- `~/.config/hypr-user/` holds `hypr-vars.lua` and `hypr-user.lua`, both
+  created on first start. `io.open(…, "w")` returns nil rather than creating a
+  missing directory, so `maybe_create` in `hyprland.lua` runs `mkdir -p` first
+  — without it the `require` below would raise, and a raw Lua error aborts the
+  rest of that file with no log line at all.
 
 ### Wayle — the shell
 
@@ -231,7 +249,7 @@ bar.
 
 `wpp` is the picker: fuzzel in dmenu mode over `~/Pictures/Wallpapers`, handing
 the choice to `theme-apply`, which drives both engines — wayle for the wallpaper
-and its own bar colours, the caelestia CLI for everything else. `theme-apply` is
+and its own bar colours, matugen for everything else. `theme-apply` is
 split out of `wpp` so `wallpaper-restore` reaches the same path rather than a
 second copy of it. `theme-apply` also records what it applied, to
 `~/.local/state/wallpaper/current`.
@@ -298,17 +316,85 @@ regenerated by the colour engine and is not in the flake. The launcher lives in
 
 - **There is no icon-size option.** Icons are drawn at the row height, which
   otherwise comes from font metrics, so `--line-height` is the only lever.
+- **`icon-theme` names a theme's folder, case sensitively, and its default
+  `default` is not installed here.** The lookup then falls through to hicolor,
+  which holds only what a package shipped for itself — so foot keeps its icon
+  while every entry naming a freedesktop icon draws blank, and the launcher
+  reads as though our own entries are the ones that cannot have icons. The
+  template sets `Papirus-Dark`, the same set dconf gives GTK; `find -L
+  /etc/profiles/per-user/ri/share/icons/Papirus-Dark -name '<name>.svg'` is how
+  to confirm a name before using it.
 - The launcher is bound as `pkill -x fuzzel || fuzzel`. fuzzel has no
   single-instance guard and does not stop the compositor seeing SUPER, so a
   plain invocation stacks windows on repeated taps; `pkill` exits 0 when it
   killed something, which is what turns the key into a toggle.
 - `--dmenu` accepts Rofi's extended protocol for icons — `name`, NUL, the
-  literal `icon`, `0x1f`, then an absolute path. `--index` returns the position
-  rather than the text, so a selection maps back to an array without depending
-  on how the entry renders.
+  literal `icon`, `0x1f`, then either an absolute path (`wpp` and `awpp` pass
+  their thumbnails) or a theme icon name, optionally a comma-separated fallback
+  list tried in order (`powermenu`, `vpnp` and `clipp` pass names). `--index`
+  returns the position rather than the text, so a selection maps back to an
+  array without depending on how the entry renders — which is what every picker
+  here relies on, since a row carrying an icon is no longer the line fed in.
 - The launcher lists **desktop entries, not `$PATH`**, so a bare script is
   unreachable from it however short its name; `wpp` and `awpp` have
   `xdg.desktopEntries` entries for exactly that reason.
+- **`fuzzel.ini` comments start with `#`; a `;` line is a syntax error.** Each
+  one is reported as `key/value pair has no value` naming the whole comment as
+  a key, and fuzzel then carries on and opens normally, so the file works well
+  enough to look correct while `fuzzel --check-config` exits 1. That command is
+  the check worth running after touching the template — the errors otherwise
+  only appear in `journalctl --user`, one screenful per launch.
+
+#### The nix menu
+
+`nixp` is the maintenance picker — rebuild, roll back, list generations,
+collect garbage, verify the store. Three things shape it:
+
+- **The binary cannot be called `nix`.** That name belongs to the package
+  manager, and two derivations claiming `bin/nix` collide when the profile is
+  built rather than one shadowing the other. The desktop entry is what carries
+  the name `nix`, so that is still what reaches it from the launcher.
+- **The choice opens a terminal.** Every action runs for a while, prints output
+  worth reading, and most want a sudo password — none of which a process
+  spawned from a launcher can offer. `foot --hold` keeps the window after the
+  command exits, which is where the output and the exit status stay.
+- **`--rollback` is mutually exclusive with `--flake`**, so that one entry
+  names no flake at all. It selects a generation of the system profile, which
+  is not something the flake evaluates to.
+
+Nothing wraps these commands for a shell. The menu is the only place the long
+forms live, which is why a change to how this machine is rebuilt is one edit
+rather than two that can drift apart.
+
+Each garbage collection runs twice, unprivileged and then under sudo: ri's
+profile generations are a separate set from the system's, and root's sweep does
+not reach them. The 30-day one is the same sweep `nix.gc` runs weekly.
+
+### Power actions and polkit — why a menu entry can be a dead key
+
+`systemctl poweroff`, `reboot` and `suspend` are logind calls and logind asks
+polkit, whose shipped policy answers `yes` only on the `allow_active` branch —
+which requires the caller to be in a logind session. **Nothing on this desktop
+is.** `session-1.scope` holds greetd and the uwsm bootstrap; with `withUWSM`
+the compositor is a unit under `user@1000.service`, and so is everything it
+spawns, where there is no session at all. Those callers fall to `allow_any`,
+`auth_admin_keep`, and hyprpolkitagent cannot answer for them either — an agent
+is registered against a session, and a sessionless subject matches none. The
+call returns `Interactive authentication required.` on stderr, which from a
+keybind or a bar button goes nowhere: the menu takes the click, closes, and the
+machine stays up.
+
+`security.polkit.extraConfig` grants the six ids to `ri` for that reason. The
+measurement that separates this from every other cause is `pkcheck --action-id
+org.freedesktop.login1.power-off --process <pid>`: a pid inside
+`session-1.scope` comes back authorized and silent, while any pid from the
+desktop prints `polkit.result=auth_admin_keep`. `busctl call
+org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager
+CanPowerOff` says `challenge` from the same place, and `yes` once a rule
+applies.
+
+`uwsm stop` is not part of this — logging out is a user-manager operation and
+was never gated.
 
 ### Fonts
 

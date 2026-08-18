@@ -95,11 +95,41 @@ let
         say network-vpn-symbolic "$target"
       }
 
+      # The exact-name counterpart, for a caller that picked from the live
+      # list rather than typing at it. `use` cannot serve that: node names
+      # carry | and ( ), which are regex metacharacters, so feeding a name
+      # back through it matches an alternation of its own fragments and
+      # selects some other node -- quietly, since a wrong match is still a
+      # match. Membership is checked against the group first, so a stale name
+      # fails loudly instead of being PUT and silently ignored.
+      select_node() {
+        if [ -z "''${1:-}" ]; then
+          echo "usage: vpn select <name>" >&2; exit 2
+        fi
+        # A here-string rather than a pipe into grep -q: -q exits on the first
+        # match, which SIGPIPEs whatever is upstream, and pipefail then reports
+        # the whole pipeline as failed. That inverts this test -- a node that
+        # is present reads as missing -- and only when the write loses the
+        # race, so it would hold up under testing and fail in use.
+        names=$(nodes | cut -f2-)
+        if ! grep -qxF "$1" <<< "$names"; then
+          say network-error-symbolic "no node named '$1'"
+          exit 1
+        fi
+        api_put "$1"
+        say network-vpn-symbolic "$1"
+      }
+
       case "''${1:-toggle}" in
         on)     turn_on ;;
         off)    turn_off ;;
         toggle) if [ "$cur" = DIRECT ]; then turn_on; else turn_off; fi ;;
         use)    use_node "''${2:-}" ;;
+        select) select_node "''${2:-}" ;;
+        # The same rows `list` prints, as "delay<TAB>name" with no alignment
+        # or units, for a picker to feed into fuzzel. Kept separate so the
+        # human format stays free to change.
+        nodes)  nodes ;;
         # AUTO is excluded from `use` (it is a group, not a node), so it needs
         # its own verb -- a Stream Deck key has nothing else to call.
         auto)   api_put AUTO; say network-vpn-symbolic "AUTO" ;;
@@ -109,7 +139,7 @@ let
                 done ;;
         ip)     curl -fsS --max-time 15 https://cloudflare.com/cdn-cgi/trace \
                   | sed -n 's/^ip=//p;s/^loc=/ /p' | tr -d '\n'; echo ;;
-        *)      echo "usage: vpn [toggle|on|off|auto|use <pattern>|status|list|ip]" >&2; exit 2 ;;
+        *)      echo "usage: vpn [toggle|on|off|auto|use <pattern>|select <name>|nodes|status|list|ip]" >&2; exit 2 ;;
       esac
     '';
   };
@@ -212,9 +242,9 @@ in
     flags = [
       "--update-input" "nixpkgs"
       "--update-input" "home-manager"
-      # "--update-input" "caelestia-shell"
       "--update-input" "vhelper"
       "--update-input" "openwave"
+      "--update-input" "helium"
       "--update-input" "tg-ws-proxy"
     ];
     dates = "daily";
@@ -390,6 +420,40 @@ in
   systemd.packages = [ pkgs.hyprpolkitagent ];
   systemd.user.services.hyprpolkitagent.wantedBy = [ "graphical-session.target" ];
 
+  # Shutting down, rebooting and suspending are logind calls, and logind asks
+  # polkit. The shipped policy answers `yes` on the `allow_active` branch, which
+  # needs the caller to sit in a logind session -- and with uwsm nothing on this
+  # desktop does. `session-1.scope` holds greetd and the uwsm bootstrap only;
+  # the compositor is a unit under `user@1000.service`, as is everything it
+  # spawns, and a process there has no session at all. So the desktop falls to
+  # `allow_any`, which is `auth_admin_keep`, and hyprpolkitagent cannot answer
+  # for it either: an agent is registered against a session, and there is none
+  # to match. The call comes back "Interactive authentication required." on
+  # stderr, which from a keybind or a bar button is nowhere, so a power menu
+  # entry reads as a dead key rather than a refusal.
+  #
+  # `pkcheck --action-id org.freedesktop.login1.power-off --process <pid>` is
+  # how to see it: a pid inside session-1.scope is authorized, and any pid from
+  # the desktop is not.
+  #
+  # The -multiple-sessions variants are the ids logind picks when another
+  # session is logged in, so both are needed to cover the same button. The
+  # -ignore-inhibit ones are deliberately left out: an inhibitor holding the
+  # machine up is something to be told about, not to override by default.
+  security.polkit.extraConfig = ''
+    polkit.addRule(function (action, subject) {
+      if (subject.user == "ri" && (
+            action.id == "org.freedesktop.login1.power-off" ||
+            action.id == "org.freedesktop.login1.power-off-multiple-sessions" ||
+            action.id == "org.freedesktop.login1.reboot" ||
+            action.id == "org.freedesktop.login1.reboot-multiple-sessions" ||
+            action.id == "org.freedesktop.login1.suspend" ||
+            action.id == "org.freedesktop.login1.suspend-multiple-sessions")) {
+        return polkit.Result.YES;
+      }
+    });
+  '';
+
   programs.dconf.enable = true;
 
   xdg.portal = {
@@ -519,6 +583,31 @@ in
 
   programs.gamemode.enable = true;
 
+  # The tablet (One by Wacom M, CTL-672) is driven by osu!lazer's own bundled
+  # OpenTabletDriver, which opens /dev/hidraw* directly. This module is what
+  # makes that node reachable: its rules tag the tablet's hidraw node and
+  # /dev/uinput with uaccess, and without them the node is root-only. osu!
+  # then gets EACCES and reports no tablet, while the tablet still moves the
+  # cursor through the kernel driver -- so the fault presents as a game
+  # setting rather than as a permission on a device node.
+  #
+  # The blacklist is the other half of it. The kernel wacom driver binds the
+  # device and holds it, which OTD reports as "another tablet driver found",
+  # and two drivers reading one tablet deliver every motion twice. Blacklisting
+  # does not unload a module that is already live, so this one only takes hold
+  # on the next boot.
+  #
+  # The daemon is off because it would claim the device for itself: osu!'s
+  # in-process driver could no longer open it, and the game would see the
+  # daemon's virtual pointer with its own tablet settings inert. The price is
+  # that the tablet does nothing outside osu! -- the module defines no unit
+  # when the daemon is disabled, so lending it to the desktop means running
+  # `otd-daemon` by hand, and stopping it again before playing.
+  hardware.opentabletdriver = {
+    enable = true;
+    daemon.enable = false;
+  };
+
   programs.obs-studio = {
     enable = true;
   };
@@ -620,6 +709,7 @@ in
     vpn
 
     chromium
+    inputs.helium.packages.${pkgs.stdenv.hostPlatform.system}.default
     inputs.vhelper.packages.${pkgs.stdenv.hostPlatform.system}.default
 
     inputs.openwave.packages.${pkgs.stdenv.hostPlatform.system}.default
@@ -629,6 +719,63 @@ in
     heroic
     protonplus
     osu-lazer-bin
+
+    # osu!'s desktop entry claims six MIME types, but nixpkgs packages no
+    # definition for any of them, so the database it is claiming against has
+    # never heard of them and the association resolves to nothing. What the
+    # file manager sees instead is the fallback: a skin or a beatmap is a zip
+    # and opens in the archive manager, a .osu is text. Nothing is logged --
+    # the desktop entry is correct in isolation, which is what makes this look
+    # like the entry being ignored.
+    #
+    # These are the types named in that entry, so declaring them is all it
+    # takes. xdg.mime.enable compiles anything under share/mime/packages into
+    # the system database. The zip and text parents are what keep a
+    # double-click on an unhandled variant landing somewhere sensible rather
+    # than nowhere; the glob is more specific than the parent's magic, so
+    # osu! wins for the extensions it names. The icon is `osu`, the name
+    # nixpkgs installs it under -- upstream packaging calls it `osu!`, which
+    # resolves to nothing here and leaves the files with a blank page icon.
+    (writeTextDir "share/mime/packages/osu.xml" ''
+      <?xml version="1.0" encoding="UTF-8"?>
+      <mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+        <mime-type type="application/x-osu-beatmap">
+          <comment>osu! beatmap</comment>
+          <glob pattern="*.osu"/>
+          <sub-class-of type="text/plain"/>
+          <magic priority="60">
+            <match type="string" offset="0" value="osu file format v"/>
+          </magic>
+          <icon name="osu"/>
+        </mime-type>
+        <mime-type type="application/x-osu-storyboard">
+          <comment>osu! storyboard</comment>
+          <glob pattern="*.osb"/>
+          <sub-class-of type="text/plain"/>
+          <icon name="osu"/>
+        </mime-type>
+        <mime-type type="application/x-osu-skin-archive">
+          <comment>osu! skin archive</comment>
+          <glob pattern="*.osk"/>
+          <sub-class-of type="application/zip"/>
+          <icon name="osu"/>
+        </mime-type>
+        <mime-type type="application/x-osu-beatmap-archive">
+          <comment>osu! beatmap archive</comment>
+          <glob pattern="*.osz"/>
+          <glob pattern="*.osz2"/>
+          <sub-class-of type="application/zip"/>
+          <icon name="osu"/>
+        </mime-type>
+        <mime-type type="application/x-osu-replay">
+          <comment>osu! replay</comment>
+          <glob pattern="*.osr"/>
+          <sub-class-of type="application/octet-stream"/>
+          <icon name="osu"/>
+        </mime-type>
+      </mime-info>
+    '')
+
     foot
     yubioath-flutter
     claude-code

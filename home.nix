@@ -1,66 +1,102 @@
 { config, pkgs, lib, inputs, nixcfgPath, ... }:
 
 let
-  /* Caelestia is parked while Wayle is on trial. Restore by deleting this
-     comment marker and its partner below, the one around the activation
-     scripts, and uncommenting the import and programs.caelestia block.
 
-  caelestiaDefaults = {
-    general.idle.timeouts = [ ];
+  # Where the generated terminal palette lands. term-sequences reads it back;
+  # it is state rather than config because nothing but that script consumes it.
+  terminalColours = "${config.xdg.stateHome}/theme/terminal-colors.conf";
 
-    general.apps.explorer = [ "thunar" ];
+  # matugen renders these against the palette it derives from the wallpaper,
+  # writing each one straight into place. None of the outputs can be owned by
+  # xdg.configFile: they are rewritten on every wallpaper change, and a
+  # read-only store symlink would fail the write every time.
+  #
+  # gtk.css and thunar.css go to both gtk-3.0 and gtk-4.0 because gtk.css
+  # @imports thunar.css by relative name, so the pair has to sit together in
+  # each directory.
+  #
+  # The hypr scheme is written through ~/.config/hypr, which is an out-of-store
+  # symlink to this repo, so the file lands in the working tree and stays
+  # writable. That is the whole reason hypr/ is mapped in rather than copied.
+  matugenConfig = pkgs.writeText "matugen-config.toml" (
+    let
+      templates = ./dotfiles/matugen/templates;
+      cfg = "${config.home.homeDirectory}/.config";
+      entry = name: input: output: ''
+        [templates.${name}]
+        input_path = '${templates}/${input}'
+        output_path = '${output}'
+      '';
+    in
+    ''
+      [config]
 
-    dashboard.showWeather = false;
+    ''
+    + entry "fuzzel" "fuzzel.ini" "${cfg}/fuzzel/fuzzel.ini"
+    + entry "gtk3" "gtk.css" "${cfg}/gtk-3.0/gtk.css"
+    + entry "gtk4" "gtk.css" "${cfg}/gtk-4.0/gtk.css"
+    + entry "thunar3" "thunar.css" "${cfg}/gtk-3.0/thunar.css"
+    + entry "thunar4" "thunar.css" "${cfg}/gtk-4.0/thunar.css"
+    + entry "hypr" "hypr-scheme.lua" "${cfg}/hypr/scheme/current.lua"
+    + entry "terminal" "terminal-colors.conf" terminalColours
+    + entry "btop" "btop.theme" "${cfg}/btop/themes/wallpaper.theme"
+    + entry "nvtop" "nvtop.colors" "${cfg}/nvtop/nvtop.colors"
+    + entry "qt" "qt.colors" "${cfg}/qtengine/scheme.colors"
+  );
 
-    notifs.fullscreen = "off";
+  # Pushes the generated palette at every terminal that will take it. foot
+  # carries no colours of its own, so without this it sits on its stock palette
+  # while everything else follows the wallpaper.
+  #
+  # /dev/pts is walked directly rather than /proc/*/fd: the sequences are
+  # harmless to anything that is not a terminal, but a blocking open on a pty
+  # whose reader has gone away would hang the whole theme run, hence O_NONBLOCK
+  # and a failure that is ignored per-terminal rather than fatal.
+  termSequences = pkgs.writeShellApplication {
+    name = "term-sequences";
+    runtimeInputs = [ pkgs.coreutils pkgs.gnused ];
+    text = ''
+      colours=${terminalColours}
+      [ -r "$colours" ] || exit 0
 
-    bar.tray.recolour = true;
+      # hex -> the OSC form terminals expect: ESC ] <slots> ; rgb:RR/GG/BB ST,
+      # where ST is ESC followed by a backslash. That backslash is written
+      # \x5c rather than \\ so shellcheck does not read the pair as a botched
+      # attempt at escaping a quote (SC1003) and fail the build.
+      osc() {
+        printf '\033]%s;rgb:%s/%s/%s\033\x5c' \
+          "$1" "''${2:0:2}" "''${2:2:2}" "''${2:4:2}"
+      }
 
-    background.desktopClock.enabled = true;
+      get() { sed -n "s/^$1=//p" "$colours" | head -1; }
 
-    lock.useWallpaper = true;
-    lock.hideNotifs = true;
+      # Named `out` rather than `seq`: the loop below calls seq(1), and a
+      # variable of that name reads as though it shadows the command.
+      out=""
+      out+=$(osc 10 "$(get foreground)")
+      out+=$(osc 11 "$(get background)")
+      out+=$(osc 12 "$(get cursor)")
+      out+=$(osc 17 "$(get selection)")
 
-    utilities.toasts.capsLockChanged = false;
-    utilities.toasts.numLockChanged = false;
+      # `if` rather than `[ -n "$c" ] && ...`: as the last statement in the loop
+      # body a failed test is the body's exit status, and set -e would take the
+      # whole script down on the first colour the template did not define.
+      for i in $(seq 0 18); do
+        c=$(get "color$i")
+        if [ -n "$c" ]; then
+          out+=$(osc "4;$i" "$c")
+        fi
+      done
 
-    services.playerAliases = [ { from = "chromium"; to = "Spotify"; } ];
+      mkdir -p "$(dirname "$colours")"
+      printf '%s' "$out" > "$(dirname "$colours")/sequences.txt"
 
-    services.lyricsBackend = "Local";
-
-    appearance.transparency.enabled = false;
-
-    appearance.anim.durations.scale = 0.6;
-    background.wallpaperEnabled = true;
-
-    bar.persistent = true;
-    bar.showOnHover = true;
-    bar.workspaces = {
-      activeIndicator = true;
-      activeTrail = false;
-      maxWindowIcons = 5;
-      occupiedBg = true;
-      showWindows = false;
-      shown = 4;
-    };
-
-    launcher.maxShown = 4;
-    launcher.showOnHover = false;
-    launcher.useFuzzy.apps = true;
-
-    services.visualiserBars = 20;
-
-    sidebar.enabled = true;
+      for pt in /dev/pts/[0-9]*; do
+        [ -w "$pt" ] || continue
+        printf '%s' "$out" > "$pt" 2>/dev/null || true
+      done
+    '';
   };
-
-  caelestiaSeed = pkgs.writeText "caelestia-shell.json"
-    (builtins.toJSON caelestiaDefaults);
-
-  caelestiaScheme = { name = "dynamic"; flavour = "default"; };
-  */
-
-  caelestiaCli =
-    inputs.caelestia-cli.packages.${pkgs.stdenv.hostPlatform.system}.caelestia-cli;
 
   # Bootstraps the colour scheme on a machine with no wallpapers yet. Every
   # themed file downstream -- fuzzel.ini, both gtk.css, the btop theme, the
@@ -90,20 +126,41 @@ let
   animatedCache = ''"''${XDG_CACHE_HOME:-$HOME/.cache}/animated-wallpaper"'';
 
   # The half of wpp that is not the picker, split out so the restore unit can
-  # reach it too. Both engines are driven here: wayle draws the wallpaper and
-  # derives its own bar colours, caelestia themes everything wayle does not
-  # reach. -v has to come after -f, which re-derives the variant from the image
-  # and discards anything set before it.
+  # reach it too. wayle draws the wallpaper and derives its own bar palette;
+  # matugen derives the same Material palette again and renders every file
+  # outside the bar from it.
+  #
+  # --source-color-index is not optional. An image usually yields several
+  # candidate source colours, and without a preference matugen refuses to
+  # choose: it asks, and when there is no terminal to ask it exits non-zero.
+  # From a keybind or a systemd unit that is a theme run that silently did
+  # nothing. 0 is the most dominant colour, which is also what matugen picked
+  # by default before 4.0.
+  #
+  # scheme-content keeps the source image's own chroma rather than normalising
+  # it towards a tonal spot, which is what makes a wallpaper's palette look
+  # like the wallpaper.
   themeApply = pkgs.writeShellApplication {
     name = "theme-apply";
-    runtimeInputs = [ pkgs.wayle caelestiaCli ];
+    runtimeInputs = [ pkgs.wayle pkgs.matugen pkgs.psmisc termSequences ];
     text = ''
       wallpaper="''${1:?usage: theme-apply <image>}"
       record=${wallpaperRecord}
 
       wayle wallpaper set --fit fill "$wallpaper"
-      caelestia wallpaper -f "$wallpaper" || true
-      caelestia scheme set -v content || true
+
+      matugen image "$wallpaper" \
+        --type scheme-content \
+        --mode dark \
+        --source-color-index 0 \
+        --config ${matugenConfig}
+
+      term-sequences
+
+      # btop re-reads its theme on SIGUSR2 and otherwise holds the old palette
+      # until it is restarted. Nothing else here needs poking: fuzzel and the
+      # pickers are started fresh every time, and GTK watches gtk.css itself.
+      killall -USR2 btop 2>/dev/null || true
 
       mkdir -p "$(dirname "$record")"
       printf '%s\n' "$wallpaper" > "$record"
@@ -224,43 +281,7 @@ let
   };
 in
 {
-  # imports = [ inputs.caelestia-shell.homeManagerModules.default ];
-
   home.stateVersion = "26.05";
-
-  # programs.caelestia = {
-  #   enable = true;
-  #   cli.enable = true;
-  # };
-
-  /*
-  home.activation.seedCaelestiaShell =
-    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      target="${config.xdg.configHome}/caelestia/shell.json"
-      if [ -L "$target" ]; then
-        $DRY_RUN_CMD rm -f "$target"       # leftover read-only store symlink
-      fi
-      if [ ! -e "$target" ]; then
-        $DRY_RUN_CMD mkdir -p "$(dirname "$target")"
-        $DRY_RUN_CMD cp ${caelestiaSeed} "$target"
-        $DRY_RUN_CMD chmod 644 "$target"
-      fi
-    '';
-
-  home.activation.caelestiaScheme =
-    lib.hm.dag.entryAfter [ "writeBoundary" ] (
-      let
-        cli = "${config.programs.caelestia.cli.package}/bin/caelestia";
-        inherit (caelestiaScheme) name flavour;
-      in ''
-        if [ ! -e "${config.xdg.stateHome}/caelestia/wallpaper/current" ]; then
-          echo "caelestiaScheme: no wallpaper set yet, leaving the scheme alone"
-        elif [ "$(${cli} scheme get -nf)" != $'${name}\n${flavour}' ]; then
-          $DRY_RUN_CMD ${cli} scheme set -n ${name} -f ${flavour}
-        fi
-      ''
-    );
-  */
 
   xdg.desktopEntries = let
     webApp = name: url: icon: wmClass: {
@@ -290,14 +311,54 @@ in
       categories = [ "Settings" ];
     };
 
+    # A different icon from wpp's on purpose: the two sit next to each other in
+    # the launcher on the first keystroke, and the names are three letters
+    # apart. Every icon named in this attribute set resolves in Papirus and in
+    # nothing else, which is why fuzzel.ini names that theme.
     awpp = {
       name = "awpp";
       genericName = "Animated wallpaper";
       comment = "Pick a video wallpaper and retheme";
       exec = "awpp";
-      icon = "preferences-desktop-wallpaper";
+      icon = "applications-multimedia";
       terminal = false;
       categories = [ "Settings" ];
+    };
+
+    # Reachable from the launcher for the same reason as the two above; the
+    # bar's power button runs the same binary. fuzzel launching fuzzel is
+    # fine -- the launcher exits as soon as it has spawned the entry, and the
+    # child is reparented rather than killed with it.
+    powermenu = {
+      name = "powermenu";
+      genericName = "Session";
+      comment = "Shut down, reboot, suspend or log out";
+      exec = "powermenu";
+      icon = "system-shutdown";
+      terminal = false;
+      categories = [ "System" ];
+    };
+
+    # Named `nix` because that is what gets typed to reach it; the binary
+    # behind it is `nixp`, since `bin/nix` is the package manager's.
+    nixp = {
+      name = "nix";
+      genericName = "Maintenance";
+      comment = "Rebuild, roll back, collect garbage";
+      exec = "nixp";
+      icon = "nix-snowflake";
+      terminal = false;
+      categories = [ "System" ];
+    };
+
+    vpnp = {
+      name = "vpnp";
+      genericName = "VPN";
+      comment = "Pick a VPN node by latency";
+      exec = "vpnp";
+      icon = "network-vpn";
+      terminal = false;
+      categories = [ "Network" ];
     };
   };
 
@@ -307,20 +368,24 @@ in
   # wallpaper daemon. nixpkgs carries that project under its new name, awww,
   # and ships no swww alias, so the lookup fails and the desktop stays blank
   # with one WARN line at startup and nothing later.
-  # The launcher, replacing caelestia's. ~/.config/fuzzel/fuzzel.ini is left
-  # alone deliberately: caelestia wrote it as part of its unconditional theme
-  # sweep, so it already carries the right font and colours, and it is a plain
-  # 0600 file rather than a store symlink. Putting it under xdg.configFile
-  # would make it read-only for no gain.
+  # The launcher. ~/.config/fuzzel/fuzzel.ini is left out of xdg.configFile
+  # deliberately: matugen rewrites it on every wallpaper, so a read-only store
+  # symlink there would fail that write every time. The template it is rendered
+  # from is dotfiles/matugen/templates/fuzzel.ini, which is tracked.
   home.packages = with pkgs; [
     papirus-icon-theme
     adw-gtk3
     fuzzel
     wayle
 
-    # Screenshots, replacing the caelestia CLI for that job. It carries grim,
-    # slurp, jq and wl-clipboard on an injected PATH, so none of those need
-    # installing here -- none of them are on this user's PATH at all.
+    # The emoji and glyph picker on SUPER + Period. It drives whichever of
+    # fuzzel/wofi/rofi it finds and copies the selection, and it ships its own
+    # data rather than fetching a list over HTTP the first time it runs.
+    bemoji
+
+    # Screenshots. hyprshot carries grim, slurp, jq and wl-clipboard on an
+    # injected PATH, so none of those need installing here -- none of them are
+    # on this user's PATH at all.
     hyprshot
 
     # wayle's own bar/popover colours. theme-provider = matugen makes it shell
@@ -331,20 +396,9 @@ in
     # its built-in palette. Nothing in the UI says the theme provider is dead.
     matugen
 
-    # The colour engine, without the shell that was crashing. caelestia-dots/cli
-    # is its own flake, so this pulls in no quickshell and no Qt -- verified by
-    # inspecting the closure. `scheme set` is what rewrote every app's theme
-    # under caelestia, and it runs headless: fuzzel.ini, gtk-3.0 and gtk-4.0
-    # gtk.css, the btop theme and the terminal escape sequences are all still
-    # regenerated with nothing but this binary.
-    #
-    # hypr/scheme/current.lua is the exception -- that write is gated on
-    # HYPRLAND_INSTANCE_SIGNATURE being set, so it silently does nothing from a
-    # context that lacks it (a bare systemd unit, or su without the session
-    # environment) while every other file updates normally.
-    caelestiaCli
     themeApply
     awpApply
+    termSequences
 
     # Reached by name from config.toml below: wayle runs a custom module's
     # command through `sh -c` with the session PATH, which carries the
@@ -509,6 +563,238 @@ in
         awp-apply "''${files[$idx]}"
       '';
     })
+
+    # What the bar's power button opens. The module is only an icon -- every
+    # one of its click fields defaults to the empty string, so an unconfigured
+    # power button is not a broken one, it is a button with nothing bound and
+    # no way to tell from looking at it.
+    #
+    # A menu rather than a bare `systemctl poweroff` because this sits in a
+    # corner of the bar next to the systray, where the cost of a misclick is
+    # otherwise the whole session. --index keeps the actions addressed by
+    # position, so the labels can carry an icon without the case below
+    # depending on how a row renders.
+    #
+    # Logging out is uwsm's job, not the compositor's: greetd starts the
+    # session as `uwsm start hyprland-uwsm.desktop`, so the compositor is one
+    # unit inside a session envelope and stopping only the compositor leaves
+    # the rest of it running. uwsm is left to the PATH wayle inherits from the
+    # session, for the reason hyprctl is above -- the copy that matters is the
+    # one already managing the session.
+    (writeShellApplication {
+      name = "powermenu";
+      runtimeInputs = [ fuzzel systemd libnotify ];
+      text = ''
+        idx=$(
+          printf '%s\x00icon\x1f%s\n' \
+            "Shutdown" system-shutdown \
+            "Reboot"   system-reboot \
+            "Suspend"  system-suspend \
+            "Log out"  system-log-out \
+            | fuzzel --dmenu --index --prompt "power> " \
+              --font "Google Sans Flex Rounded:size=17" \
+              --line-height=32px --lines 4
+        ) || exit 0
+
+        case "$idx" in
+          0) act=(systemctl poweroff) ;;
+          1) act=(systemctl reboot) ;;
+          2) act=(systemctl suspend) ;;
+          3) act=(uwsm stop) ;;
+          *) exit 0 ;;
+        esac
+
+        # Everything here answers through logind and polkit, and a refusal is
+        # one line on stderr -- which, opened from a keybind or the bar, has
+        # nowhere to go. Without this the menu takes the click, closes, and
+        # leaves the machine running with no account of why.
+        if ! err=$("''${act[@]}" 2>&1); then
+          notify-send -a powermenu -u critical \
+            "Power" "''${err:-''${act[*]} failed}" 2>/dev/null || true
+          echo "powermenu: ''${act[*]}: ''${err:-failed}" >&2
+          exit 1
+        fi
+      '';
+    })
+
+    # The clipboard picker. cliphist is fed by the two wl-paste watchers in
+    # hypr/hyprland/execs.lua and accumulates from the moment the session
+    # starts; this is the only thing that reads it back interactively.
+    #
+    # -d deletes the chosen entry rather than copying it, which is why the
+    # chosen line goes to `cliphist delete` unchanged: delete matches on the
+    # id prefix cliphist itself printed, so decoding first would lose it.
+    #
+    # The list is held in an array and the row addressed by --index, as vpnp
+    # and the two wallpaper pickers do, because a row carrying an icon is no
+    # longer the line that was fed in -- what fuzzel echoes back is the label
+    # alone, and putting that through `cliphist delete` would be trusting the
+    # icon spec to have been stripped exactly. An index cannot be reshaped by
+    # how a row renders. cliphist marks an image as `[[ binary data ... ]]`
+    # rather than showing it, which is the only thing in a row that says what
+    # kind of entry it is; that string is what picks the icon.
+    (writeShellApplication {
+      name = "clipp";
+      runtimeInputs = [ fuzzel cliphist wl-clipboard ];
+      text = ''
+        if [ "''${1:-}" = "-d" ]; then
+          prompt="del> "
+        else
+          prompt="clip> "
+        fi
+
+        mapfile -t rows < <(cliphist list)
+        [ "''${#rows[@]}" -gt 0 ] || exit 0
+
+        idx=$(
+          for r in "''${rows[@]}"; do
+            case "$r" in
+              *"[[ binary data"*) icon=image-x-generic ;;
+              *)                  icon=edit-paste ;;
+            esac
+            printf '%s\x00icon\x1f%s\n' "$r" "$icon"
+          done | fuzzel --dmenu --index --prompt "$prompt" \
+            --font "Google Sans Flex Rounded:size=15" --lines 12
+        ) || exit 0
+
+        case "$idx" in
+          "" | *[!0-9]*) exit 0 ;;
+        esac
+
+        if [ "''${1:-}" = "-d" ]; then
+          printf '%s\n' "''${rows[idx]}" | cliphist delete
+        else
+          printf '%s\n' "''${rows[idx]}" | cliphist decode | wl-copy
+        fi
+      '';
+    })
+
+    # The VPN picker. `vpn nodes` already emits the group sorted fastest
+    # first, so this is mostly presentation: latency in the left column, the
+    # provider's name as it stands, and DIRECT and AUTO pinned above the list
+    # since neither is a node and neither appears in it.
+    #
+    # The selection goes back through `vpn select`, not `vpn use`. Names carry
+    # | and ( ), so putting one back through the regex path matches an
+    # alternation of its own fragments -- a wrong node, chosen silently. Rows
+    # are addressed by --index for the same reason: nothing here has to
+    # survive a round trip through how the row was rendered.
+    #
+    # A node whose health check has never succeeded reports 0 and sorts last;
+    # showing that as "0ms" would read as the fastest thing on the list, so it
+    # prints as a dash instead.
+    #
+    # The icons come through Rofi's extended dmenu protocol, which takes a theme
+    # name as readily as the absolute paths wpp passes it. DIRECT and AUTO get
+    # their own so the two rows that are not nodes read as the controls they
+    # are; every real node is a server and looks like one.
+    # vpn itself is left to the PATH, as hyprctl and uwsm are above: it is a
+    # writeShellApplication in configuration.nix rather than a package, so
+    # there is nothing here to name in runtimeInputs.
+    (writeShellApplication {
+      name = "vpnp";
+      runtimeInputs = [ fuzzel ];
+      text = ''
+        cur=$(vpn status)
+        mapfile -t rows < <(vpn nodes)
+
+        idx=$(
+          {
+            printf 'DIRECT  — off\x00icon\x1fnetwork-offline\n'
+            printf 'AUTO    — fastest available\x00icon\x1fnetwork-vpn\n'
+            for r in "''${rows[@]}"; do
+              d=''${r%%$'\t'*}
+              n=''${r#*$'\t'}
+              if [ "$d" = 0 ]; then
+                printf '  --    %s\x00icon\x1fnetwork-server\n' "$n"
+              else
+                printf '%5dms %s\x00icon\x1fnetwork-server\n' "$d" "$n"
+              fi
+            done
+          } | fuzzel --dmenu --index --prompt "vpn [$cur]> " \
+                --font "Google Sans Flex Rounded:size=15" --lines 12 --width 46
+        ) || exit 0
+
+        case "$idx" in
+          "" | *[!0-9]*) exit 0 ;;
+          0) vpn off ;;
+          1) vpn auto ;;
+          *) vpn select "''${rows[idx - 2]#*$'\t'}" ;;
+        esac
+      '';
+    })
+    # The maintenance menu. It answers to `nix` in the launcher through its
+    # desktop entry, while the binary is `nixp`: the package manager already
+    # owns `bin/nix`, and two derivations claiming one name collide in the
+    # profile rather than shadowing each other in any predictable order.
+    #
+    # Every entry here is long-running, prints output worth reading, and most
+    # of them ask sudo for a password -- none of which a background process
+    # from a launcher can offer. So the choice opens a terminal, and `--hold`
+    # keeps that window after the command exits, which is where the output and
+    # the exit status stay readable. A picker with no terminal would be the
+    # powermenu problem again: a click, a closed menu, and no account of what
+    # happened.
+    #
+    # This is the only way these commands are reached. Nothing wraps them for
+    # a shell -- the long forms are here, in one place, rather than in a
+    # `rebuild` on PATH that would be a second copy of the same decisions.
+    #
+    # nixos-rebuild, nix and nix-collect-garbage are left to PATH the way vpnp
+    # leaves `vpn`: all three come with the system, so there is nothing here to
+    # name in runtimeInputs.
+    (writeShellApplication {
+      name = "nixp";
+      runtimeInputs = [ fuzzel foot bashInteractive ];
+      text = ''
+        idx=$(
+          printf '%s\x00icon\x1f%s\n' \
+            "Rebuild and switch"              system-software-update \
+            "Rebuild for the next boot"       system-reboot \
+            "Update inputs and switch"        system-software-install \
+            "Roll back one generation"        edit-undo \
+            "List generations"                document-open-recent \
+            "Collect garbage"                 trash-empty \
+            "Collect garbage, everything old" edit-delete \
+            "Verify the store (slow)"         drive-harddisk \
+            | fuzzel --dmenu --index --prompt "nix> " \
+              --font "Google Sans Flex Rounded:size=15" \
+              --line-height=32px --lines 8 --width 46
+        ) || exit 0
+
+        # The flake is addressed as `path:`, which reads the working tree
+        # directly. A bare directory ref goes through git, where a file that
+        # has never been `git add`ed is invisible -- so a new module would be
+        # left out of the build while the rebuild reported success.
+        build="sudo nixos-rebuild"
+        flake="--flake path:${nixcfgPath}#nix"
+
+        # `nix.gc` already runs the first collection weekly; this is that same
+        # sweep on demand, and the second one is the deeper version of it. Both
+        # run twice, because ri's profile generations are a separate set from
+        # the system ones and root's copy does not reach them.
+        sweep="nix-collect-garbage --delete-older-than 30d"
+        drop="nix-collect-garbage -d"
+
+        case "$idx" in
+          0) label="switch";      cmd="$build switch $flake" ;;
+          1) label="boot";        cmd="$build boot $flake" ;;
+          2) label="update";      cmd="nix flake update --flake path:${nixcfgPath} && $build switch $flake" ;;
+          # --rollback is mutually exclusive with --flake, so this one names no
+          # flake at all: it selects a generation of the system profile rather
+          # than anything the flake evaluates to.
+          3) label="rollback";    cmd="$build switch --rollback" ;;
+          4) label="generations"; cmd="nixos-rebuild list-generations" ;;
+          5) label="gc";          cmd="$sweep && sudo $sweep" ;;
+          6) label="gc -d";       cmd="$drop && sudo $drop" ;;
+          7) label="verify";      cmd="sudo nix-store --verify --check-contents" ;;
+          *) exit 0 ;;
+        esac
+
+        exec foot --app-id=nix-menu --title="nix: $label" --hold bash -c "$cmd"
+      '';
+    })
+
     (runCommand "swww-compat" { } ''
       mkdir -p $out/bin
       ln -s ${awww}/bin/awww $out/bin/swww
@@ -520,10 +806,9 @@ in
   # from systemd.packages. graphical-session.target rather than default.target
   # keeps it out of the path of "reloading user units for ri" during a switch.
   #
-  # It replaces only part of what caelestia did: bar, notifications, OSDs and
-  # wallpaper. There is no launcher and no lock screen, so the caelestia:*
-  # global dispatchers still bound in hypr/hyprland/keybinds.lua now resolve to
-  # nothing -- they fail silently rather than erroring.
+  # It covers the bar, notifications, OSDs and the wallpaper. There is no
+  # launcher and no lock screen in it, which is why fuzzel is installed
+  # separately and why nothing here binds a lock key.
   systemd.user.services.wayle = {
     Unit = {
       Description = "Wayle desktop shell";
@@ -557,10 +842,10 @@ in
   # and would otherwise sit on stock defaults, waiting for someone to know that
   # running wpp is the fix.
   #
-  # A user unit rather than a home.activation script, because caelestia only
-  # writes hypr/scheme/current.lua when HYPRLAND_INSTANCE_SIGNATURE is set and
-  # activation has no session to take it from -- the colours would land
-  # everywhere except Hyprland's borders, silently. The sleep is for wayle:
+  # A user unit rather than a home.activation script, because both halves of
+  # what it drives need a session: wayle answers `wallpaper set` over D-Bus,
+  # and term-sequences has terminals to write to only once there are any.
+  # Activation runs before either exists. The sleep is for wayle:
   # `wallpaper set` is answered over D-Bus by the running shell, so it fails
   # against a service that has started but not yet registered. TimeoutStartSec
   # because a blocking unit in the login path wedges the whole switch with
@@ -643,6 +928,17 @@ in
   home.file."Pictures/Wallpapers/.keep".text = "";
   home.file."Videos/Animated Wallpapers/.keep".text = "";
 
+  # GTK reads these three from dconf rather than from any file, so they are the
+  # half of GTK theming that gtk.css cannot carry: the stylesheet supplies the
+  # colours, and these decide the widget theme and icon set the colours are
+  # painted onto. Declared rather than written once, because a dconf key set by
+  # hand survives only until something else writes it.
+  dconf.settings."org/gnome/desktop/interface" = {
+    gtk-theme = "adw-gtk3-dark";
+    color-scheme = "prefer-dark";
+    icon-theme = "Papirus-Dark";
+  };
+
   # Thunar keeps every preference in xfconf, and home-manager writes these with
   # xfconf-query at activation rather than owning a file -- so a value declared
   # here is reasserted on every switch and the matching GUI toggle stops
@@ -690,7 +986,21 @@ in
       "image/svg+xml"
       "image/vnd.microsoft.icon"
       "image/x-xpixmap"
-    ] (_: "org.gnome.Loupe.desktop");
+    ] (_: "org.gnome.Loupe.desktop")
+    # The types themselves are declared in configuration.nix; osu! is the only
+    # application claiming them, so these lines are what make the association
+    # deterministic rather than a matter of cache order. The scheme handler is
+    # the one that is not decorative: an osu:// link from the browser has no
+    # other candidate, and without a named default chromium has nothing to
+    # hand it to. The desktop id carries the `!` -- it is the filename.
+    // lib.genAttrs [
+      "application/x-osu-beatmap"
+      "application/x-osu-storyboard"
+      "application/x-osu-skin-archive"
+      "application/x-osu-beatmap-archive"
+      "application/x-osu-replay"
+      "x-scheme-handler/osu"
+    ] (_: "osu!.desktop");
   };
 
   systemd.user.services.tg-ws-proxy = {
@@ -799,18 +1109,20 @@ in
       starship init fish | source
       zoxide init fish --cmd cd | source
 
-      # Live colour scheme -- caelestia rewrites this file on every
-      # `caelestia scheme set` and the escape codes repaint the terminal.
-      cat ~/.local/state/caelestia/sequences.txt 2> /dev/null
+      # Live colour scheme. term-sequences pushes these escape codes at every
+      # terminal that is already open; this is the other half, for shells that
+      # start afterwards. foot carries no palette of its own, so without one of
+      # the two it sits on stock colours.
+      cat ${builtins.dirOf terminalColours}/sequences.txt 2> /dev/null
 
       # For jumping between prompts in foot terminal
       function mark_prompt_start --on-event fish_prompt
           echo -en "\e]133;A\e\\"
       end
 
-      # Your own overrides. caelestia's installer used to `touch` this; the
-      # `2> /dev/null` means an absent file is simply a no-op.
-      source $HOME/.config/caelestia/user-config.fish 2> /dev/null
+      # Your own overrides; the `2> /dev/null` means an absent file is simply
+      # a no-op rather than an error on every new shell.
+      source $HOME/.config/fish/user-config.fish 2> /dev/null
     '';
 
     functions.fish_greeting = ''
@@ -819,9 +1131,9 @@ in
   };
 
   xdg.configFile = {
-    # Wayle splits its configuration in two, which is what makes this one
-    # safe to own from here when caelestia's shell.json was not: config.toml
-    # is read and never written, while `wayle config set` and anything changed
+    # Wayle splits its configuration in two, which is what makes this one safe
+    # to own from here: config.toml is read and never written, while
+    # `wayle config set` and anything changed
     # in the GUI land in runtime.toml beside it. A read-only store symlink here
     # therefore breaks nothing.
     #
@@ -1008,6 +1320,13 @@ in
       class-format = "ws-{{ output }}"
       left-click = "special-ws toggle special"
 
+      # The power module ships every click field empty, so it draws an icon
+      # and answers nothing until one is set. Left-click only: the remaining
+      # fields stay empty deliberately, since a scroll landing on a bar corner
+      # should not reach anything that ends the session.
+      [modules.power]
+      left-click = "powermenu"
+
       # A vertical bar is as wide as its widest module, and the clock defaults
       # to "%a %b %d %I:%M %p" -- "Sun Aug 09 06:46 PM", about nineteen
       # characters, which was setting the width for everything else. %H:%M is
@@ -1082,6 +1401,30 @@ in
       [Settings]
       gtk-application-prefer-dark-theme=0
     '';
+
+    # Only the palette underneath this is generated; the file itself never
+    # varies, so it is owned here rather than rendered. colorScheme points at
+    # the one matugen writes, and the fonts are this machine's rather than the
+    # "Sans Serif"/"Monospace" a generic theme would ask fontconfig for.
+    # force, because this path already exists as a plain file and home-manager
+    # will not clobber an unmanaged one -- it fails the whole switch instead.
+    "qtengine/config.json" = {
+      force = true;
+      text = builtins.toJSON {
+        theme = {
+          colorScheme = "${config.home.homeDirectory}/.config/qtengine/scheme.colors";
+          iconTheme = "Papirus-Dark";
+          style = "Darkly";
+          font = { family = "Google Sans Flex"; size = 12; weight = -1; };
+          fontFixed = { family = "DepartureMono Nerd Font"; size = 12; weight = -1; };
+        };
+        misc = {
+          menusHaveIcons = true;
+          singleClickActivate = false;
+          shortcutsForContextMenus = true;
+        };
+      };
+    };
 
     # The file manager sidebar. This is the GTK bookmarks file rather than
     # anything Thunar-specific, so it is shared with every other GIO browser,

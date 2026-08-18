@@ -6,7 +6,7 @@ local fn   = require("hyprland.functions")
 -- single-instance guard of its own, so a plain `fuzzel` here piles up windows.
 -- pkill exits 0 when it killed something, which is what makes || a toggle.
 -- The font is passed as a flag rather than written into fuzzel.ini, because
--- that file is not managed here: the caelestia CLI regenerates it on every
+-- that file is not managed here: matugen regenerates it on every
 -- colour change. It preserves the font line today, but a hand-edit there is
 -- outside the flake and would not survive a reinstall.
 --
@@ -25,35 +25,29 @@ hl.bind(
     { release = true }
 )
 
-hl.bind(vars.kbSession, hl.dsp.global("caelestia:session"))
-hl.bind(vars.kbShowSidebar, hl.dsp.global("caelestia:sidebar"))
-hl.bind(vars.kbClearNotifs, hl.dsp.global("caelestia:clearNotifs"), { locked = true })
-hl.bind(vars.kbShowPanels, hl.dsp.global("caelestia:showall"))
-hl.bind(vars.kbLock, hl.dsp.global("caelestia:lock"))
+-- These reach the shell that draws the bar, and the media keys reach whatever
+-- is playing. A global dispatcher is answered by a shell rather than by a
+-- command, so anything bound as one fires into nothing and reports nothing --
+-- the key is simply inert, which is indistinguishable from a key that was
+-- never bound.
+hl.bind(vars.kbSession, hl.dsp.exec_cmd("powermenu"))
+hl.bind(vars.kbClearNotifs, hl.dsp.exec_cmd("wayle notify dismiss-all"), { locked = true })
+hl.bind(vars.kbShowPanels, hl.dsp.exec_cmd("wayle panel toggle"))
 
-hl.bind(vars.kbRestoreLock, function()
-    hl.dispatch(hl.dsp.exec_cmd("systemctl --user start caelestia.service"))
-    hl.dispatch(hl.dsp.global("caelestia:lock"))
-end)
+-- playerctl talks MPRIS, so it reaches every player on the bus without any of
+-- them being named here; playerctld is D-Bus activated and picks the most
+-- recently active one.
+hl.bind("CTRL + SUPER + Space", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
+hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
+hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
+hl.bind("CTRL + SUPER + Equal", hl.dsp.exec_cmd("playerctl next"), { locked = true })
+hl.bind("XF86AudioNext", hl.dsp.exec_cmd("playerctl next"), { locked = true })
+hl.bind("CTRL + SUPER + Minus", hl.dsp.exec_cmd("playerctl previous"), { locked = true })
+hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true })
+hl.bind("XF86AudioStop", hl.dsp.exec_cmd("playerctl stop"), { locked = true })
 
-hl.bind("XF86MonBrightnessUp", hl.dsp.global("caelestia:brightnessUp"), { locked = true })
-hl.bind("XF86MonBrightnessDown", hl.dsp.global("caelestia:brightnessDown"), { locked = true })
-
-hl.bind("CTRL + SUPER + Space", hl.dsp.global("caelestia:mediaToggle"), { locked = true })
-hl.bind("XF86AudioPlay", hl.dsp.global("caelestia:mediaToggle"), { locked = true })
-hl.bind("XF86AudioPause", hl.dsp.global("caelestia:mediaToggle"), { locked = true })
-hl.bind("CTRL + SUPER + Equal", hl.dsp.global("caelestia:mediaNext"), { locked = true })
-hl.bind("XF86AudioNext", hl.dsp.global("caelestia:mediaNext"), { locked = true })
-hl.bind("CTRL + SUPER + Minus", hl.dsp.global("caelestia:mediaPrev"), { locked = true })
-hl.bind("XF86AudioPrev", hl.dsp.global("caelestia:mediaPrev"), { locked = true })
-hl.bind("XF86AudioStop", hl.dsp.global("caelestia:mediaStop"), { locked = true })
-
-hl.bind("CTRL + SUPER + SHIFT + R", hl.dsp.exec_cmd("systemctl --user stop caelestia.service"), { release = true })
-hl.bind(
-    "CTRL + SUPER + ALT + R",
-    hl.dsp.exec_cmd("systemctl --user restart caelestia.service"),
-    { release = true }
-)
+hl.bind("CTRL + SUPER + SHIFT + R", hl.dsp.exec_cmd("wayle panel stop"), { release = true })
+hl.bind("CTRL + SUPER + ALT + R", hl.dsp.exec_cmd("wayle panel restart"), { release = true })
 
 for i = 1, 10 do
     local key = i % 10
@@ -141,7 +135,7 @@ hl.bind(vars.kbCloseWindow, hl.dsp.window.close())
 -- which looks like the keybind working on the wrong target rather than a bad
 -- argument.
 --
--- The spawn half is what `caelestia toggle` did beyond raising the workspace.
+-- The spawn half is what a workspace toggle needs beyond raising it.
 -- Without it a workspace whose app is not running opens as an empty overlay.
 -- Matching is a literal, case-folded substring rather than a pattern: rules.lua
 -- matches with RE2, this runs in Lua where the metacharacters are different
@@ -176,10 +170,10 @@ hl.bind(vars.kbBrowser, hl.dsp.exec_cmd(vars.browser))
 hl.bind(vars.kbEditor, hl.dsp.exec_cmd(vars.editor))
 hl.bind(vars.kbFileExplorer, hl.dsp.exec_cmd(vars.fileExplorer))
 hl.bind("CTRL + ALT + V", hl.dsp.exec_cmd(vars.audioSettings))
-hl.bind(vars.kbVpnToggle, hl.dsp.exec_cmd("vpn toggle"))
+hl.bind(vars.kbVpnPicker, hl.dsp.exec_cmd("vpnp"))
 
--- hyprshot rather than the caelestia CLI, so screenshots do not depend on a
--- shell this machine no longer runs. -z freezes the screen before the region
+-- hyprshot carries grim, slurp, jq and wl-clipboard on an injected PATH, so
+-- none of those need installing. -z freezes the screen before the region
 -- is dragged, which is the only way to capture a menu or a hover state without
 -- it changing under the selection -- that is what the old screenshotFreeze
 -- global did.
@@ -201,9 +195,6 @@ hl.bind(
 )
 hl.bind("SUPER + SHIFT + S", hl.dsp.exec_cmd("hyprshot -m region -z -o " .. screenshotDir))
 hl.bind("SUPER + SHIFT + ALT + S", hl.dsp.exec_cmd("hyprshot -m window -o " .. screenshotDir))
-hl.bind("SUPER + ALT + R", hl.dsp.exec_cmd("caelestia record -s"))
-hl.bind("CTRL + ALT + R", hl.dsp.exec_cmd("caelestia record"))
-hl.bind("SUPER + SHIFT + ALT + R", hl.dsp.exec_cmd("caelestia record -r"))
 hl.bind("SUPER + SHIFT + C", hl.dsp.exec_cmd("hyprpicker -a"))
 
 hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"), { locked = true })
@@ -227,9 +218,9 @@ hl.bind(
 
 hl.bind("SUPER + SHIFT + L", hl.dsp.exec_cmd(vars.sleepGestureCmd), { locked = true })
 
-hl.bind("SUPER + V", hl.dsp.exec_cmd("pkill fuzzel || caelestia clipboard"))
-hl.bind("SUPER + ALT + V", hl.dsp.exec_cmd("pkill fuzzel || caelestia clipboard -d"))
-hl.bind("SUPER + Period", hl.dsp.exec_cmd("pkill fuzzel || caelestia emoji -p"))
+hl.bind("SUPER + V", hl.dsp.exec_cmd("pkill fuzzel || clipp"))
+hl.bind("SUPER + ALT + V", hl.dsp.exec_cmd("pkill fuzzel || clipp -d"))
+hl.bind("SUPER + Period", hl.dsp.exec_cmd("pkill fuzzel || bemoji"))
 hl.bind(
     "CTRL + SHIFT + ALT + V",
     hl.dsp.exec_cmd('sleep 0.5s && ydotool type -d 1 "$(cliphist list | head -1 | cliphist decode)"'),

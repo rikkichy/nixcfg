@@ -1,5 +1,5 @@
 {
-  description = "9950X3D / RTX 3090 / LUKS / Hyprland + Caelestia";
+  description = "9950X3D / RTX 3090 / LUKS / Hyprland + Wayle";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -9,22 +9,17 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    caelestia-shell = {
-      url = "github:caelestia-dots/shell";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    caelestia-cli = {
-      url = "github:caelestia-dots/cli";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     vhelper = {
       url = "github:rikkichy/vhelper";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     openwave = {
       url = "github:rikkichy/openwave";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    helium = {
+      url = "github:oxcl/nix-flake-helium-browser";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

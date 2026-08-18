@@ -1,0 +1,53 @@
+# NVTOP Color Configuration Template
+# Format: color_name = RGB_HEX_VALUE
+# Colors must be specified as 6-digit hex values without # prefix
+
+# Background colors
+background = {{colors.surface.default.hex}}
+selected_bg = {{colors.surface_container.default.hex}}
+header_bg = {{colors.surface_variant.default.hex}}
+
+# Text colors
+text = {{colors.on_surface.default.hex}}
+selected_text = {{colors.primary.default.hex}}
+header_text = {{colors.on_surface_variant.default.hex}}
+inactive_text = {{colors.outline.default.hex}}
+
+# GPU utilization colors (gradient from low to high)
+gpu_util_low = #a3e635
+gpu_util_med = #fcd34d
+gpu_util_high = #ff6b6b
+
+# Memory usage colors
+memory_low = #56cfe1
+memory_med = #7aa2f7
+memory_high = #7aa2f7
+
+# Temperature colors (cool to hot)
+temp_cool = #a3e635
+temp_warm = #fcd34d
+temp_hot = #ff6b6b
+
+# Power usage colors
+power_low = #a3e635
+power_med = #fbbf24
+power_high = #e08a5f
+
+# Process list colors
+process_normal = {{colors.on_surface.default.hex}}
+process_highlight = {{colors.primary.default.hex}}
+process_killed = #ff6b6b
+
+# Border and separator colors
+border = {{colors.outline.default.hex}}
+separator = {{colors.outline_variant.default.hex}}
+
+# Chart and graph colors
+chart_line = {{colors.tertiary.default.hex}}
+chart_fill = {{colors.surface_container.default.hex}}
+
+# Status indicators
+status_ok = #a3e635
+status_warning = #fcd34d
+status_error = #ff6b6b
+status_info = #7aa2f7

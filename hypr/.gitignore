@@ -1,11 +1,6 @@
-# scheme/current.lua is REGENERATED at runtime -- `caelestia scheme set ...`
-# rewrites it (and fuzzel.ini, btop's theme, gtk.css, cava, htoprc) every time
-# you change colours. It is bootstrapped from scheme/default.lua by
-# hyprland.lua on first start, so it must never be tracked or the working tree
-# is dirty after every colour change.
+# scheme/current.lua is REGENERATED at runtime -- matugen rewrites it (and
+# fuzzel.ini, btop's theme, both gtk.css, the terminal palette) on every colour
+# change. It is bootstrapped from scheme/default.lua by hyprland.lua on first
+# start, so it must never be tracked or the working tree is dirty after every
+# wallpaper.
 scheme/current.lua
-
-# scheme/current.conf is the hyprlang form of the same palette. This config is
-# Lua and nothing requires it, but the CLI writes both formats unconditionally,
-# so it reappears on every colour change and would otherwise sit untracked.
-scheme/current.conf

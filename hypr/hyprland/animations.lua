@@ -11,7 +11,7 @@ hl.curve("standard", { type = "bezier", points = { { 0.2, 0 }, { 0, 1 } } })
 
 -- `speed` is the animation's duration in ds (1 ds = 100 ms), so a smaller
 -- number is a faster animation. These sit at 0.6x the Hyprland defaults, the
--- same factor as appearance.anim.durations.scale in the Caelestia shell config,
+-- same factor as the shell's own animation duration scale,
 -- so window motion and shell motion agree; Hyprland has no global multiplier,
 -- so the factor is applied per leaf.
 hl.animation({ leaf = "layersIn", enabled = true, speed = 3, bezier = "emphasizedDecel", style = "slide" })
