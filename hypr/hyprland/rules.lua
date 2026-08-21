@@ -64,6 +64,16 @@ hl.window_rule({
     idle_inhibit = "always",
 })
 
+-- osu!lazer draws unlocked far above the 240Hz panel, so what decides how fresh
+-- a presented frame is, is the wait for vblank rather than the game. `immediate`
+-- takes the async page flip instead, worth up to a refresh interval and paid for
+-- with a tear line. No `idle_inhibit`: play is continuous input, and the menus
+-- are not somewhere to leave the screen on.
+hl.window_rule({
+    match     = { class = "osu!" },
+    immediate = true,
+})
+
 hl.window_rule({ match = { class = "steam" }, rounding = 10 })
 
 hl.window_rule({

@@ -684,6 +684,34 @@ Two gotchas worth not rediscovering:
   over and drops the display to its preferred mode. `mode = "highrr"` sorts
   refresh rate over resolution, so it is wrong as a blanket fallback.
 
+#### Tearing is two settings and one live condition
+
+`general.allow_tearing` is a gate rather than a switch. A window tears only if
+it also carries `immediate` in `rules.lua`, and only while it is the solitary
+window on its monitor — which is what osu!lazer and the Steam rule have in
+common, both drawing unlocked well above the panel's 240Hz, where the wait for
+vblank is what decides how fresh a presented frame is.
+
+`hyprctl monitors` reports every unmet condition by name:
+
+```
+tearingBlockedBy: next frame is not torn,user settings,window settings
+solitaryBlockedBy: windowed mode,special workspace,missing candidate
+```
+
+`user settings` is `allow_tearing` and clears the moment it is set; `window
+settings` is the rule. **`next frame is not torn` is per-frame state, not a
+misconfiguration** — a window that is not currently presenting torn frames
+prints it whatever the config says, so the line is only worth reading with the
+game fullscreen and focused, and `activelyTearing` is the answer it gives.
+`missing candidate` in either list means no window qualifies at all, which is
+what a special workspace being open produces.
+
+`render:direct_scanout` is a separate axis. It appears in
+`directScanoutBlockedBy` under the same `user settings` name, and gates
+whether the client's buffer reaches the display plane without a composite
+pass; a window can tear without it.
+
 #### Verifying hypr/ changes — most of the obvious signals lie
 
 Nearly every quick check here returns a false negative. Assume a change is

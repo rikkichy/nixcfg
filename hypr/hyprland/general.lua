@@ -4,7 +4,9 @@ hl.config({
     general = {
         layout          = "dwindle",
 
-        allow_tearing   = false,
+        -- A gate, not a switch: a window also needs `immediate` in rules.lua, and
+        -- both are reported back under `tearingBlockedBy` in `hyprctl monitors`.
+        allow_tearing   = true,
 
         gaps_workspaces = vars.workspaceGaps,
         gaps_in         = vars.windowGapsIn,
