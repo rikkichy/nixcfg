@@ -454,6 +454,14 @@ in
   # session is logged in, so both are needed to cover the same button. The
   # -ignore-inhibit ones are deliberately left out: an inhibitor holding the
   # machine up is something to be told about, not to override by default.
+  #
+  # pcscd is built against polkit here and asks it about every client, on the
+  # same two branches: `access_pcsc` to open a context and `access_card` to
+  # reach the card. It answers a refusal by dropping the connection, which the
+  # client can only report as an absent daemon -- Yubico Authenticator says
+  # "Failed to open smart card connection: make sure pcscd is installed and
+  # running" while pcscd is up and logging `Rejected unauthorized PC/SC client`
+  # against that exact pid.
   security.polkit.extraConfig = ''
     polkit.addRule(function (action, subject) {
       if (subject.user == "ri" && (
@@ -462,7 +470,9 @@ in
             action.id == "org.freedesktop.login1.reboot" ||
             action.id == "org.freedesktop.login1.reboot-multiple-sessions" ||
             action.id == "org.freedesktop.login1.suspend" ||
-            action.id == "org.freedesktop.login1.suspend-multiple-sessions")) {
+            action.id == "org.freedesktop.login1.suspend-multiple-sessions" ||
+            action.id == "org.debian.pcsc-lite.access_pcsc" ||
+            action.id == "org.debian.pcsc-lite.access_card")) {
         return polkit.Result.YES;
       }
     });

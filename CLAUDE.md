@@ -392,7 +392,7 @@ call returns `Interactive authentication required.` on stderr, which from a
 keybind or a bar button goes nowhere: the menu takes the click, closes, and the
 machine stays up.
 
-`security.polkit.extraConfig` grants the six ids to `ri` for that reason. The
+`security.polkit.extraConfig` grants those ids to `ri` for that reason. The
 measurement that separates this from every other cause is `pkcheck --action-id
 org.freedesktop.login1.power-off --process <pid>`: a pid inside
 `session-1.scope` comes back authorized and silent, while any pid from the
@@ -403,6 +403,16 @@ applies.
 
 `uwsm stop` is not part of this — logging out is a user-manager operation and
 was never gated.
+
+**The sessionless subject reaches further than the power menu.** `services.pcscd`
+resolves its package to `pcscliteWithPolkit` whenever `security.polkit.enable`
+is on, and that daemon asks polkit about every client — `access_pcsc` to open a
+context, `access_card` to reach the card — on the same `allow_active`-only
+defaults. A refused client is simply disconnected, so it has no way to tell a
+refusal from an absent daemon: Yubico Authenticator reports **"Failed to open
+smart card connection: make sure pcscd is installed and running"** while pcscd
+is running and `systemctl status pcscd` scrolls `Rejected unauthorized PC/SC
+client` for that pid. Those two ids are in the same rule for that reason.
 
 ### Fonts
 
