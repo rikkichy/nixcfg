@@ -43,7 +43,7 @@ return {
     volumeStep                 = 10,
     volumeMax                  = 100,
 
-    cursorTheme                = "Adwaita",
+    cursorTheme                = "Bibata-Material-Dynamic",
     cursorSize                 = 24,
 
     sleepGestureCmd            = "systemctl suspend",

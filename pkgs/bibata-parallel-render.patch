@@ -1,0 +1,60 @@
+Render each cursor's sizes concurrently, and give the intermediate SVG a
+path of its own.
+
+Upstream rasterises one rsvg-convert per (cursor, size, frame) and waits
+for each in turn. That is ~970 processes at the 19 sizes this machine
+builds, and process startup rather than rendering is what the run is made
+of: 10s serial against 1.4s with the same work in flight. The theme is
+rebuilt on every wallpaper change, so that difference is the whole
+question of whether the cursor can follow the wallpaper inline.
+
+The temp path is part of the same change and would be worth making on its
+own. Upstream recolours into a fixed `/tmp/.cursor.0248.svg`, which two
+concurrent conversions overwrite under each other -- and two wallpaper
+changes in quick succession are two concurrent runs. Writing it beside
+the PNG it feeds makes it per-cursor and per-run, and it is unlinked
+after the process that reads it has exited rather than immediately.
+
+Output is byte-identical to the serial build.
+
+diff --git a/src/cursor_utils.py b/src/cursor_utils.py
+index b52744e..fb8f915 100755
+--- a/src/cursor_utils.py
++++ b/src/cursor_utils.py
+@@ -103,7 +103,7 @@ class Utils:
+             cmd.extend(['-h', str(height)])
+ 
+         cmd.extend(['-o', str(dst), str(src)])
+-        cls.run(cmd, wait=True)
++        return cls.run(cmd)
+ 
+     @classmethod
+     def svg_recolor(cls, color_maps: list[dict], src: Path, dst: Path):
+@@ -237,19 +237,24 @@ class CursorMeta:
+ 
+     def render(self, render: CursorRender, cdir: str = ''):
+         dirPath = cdir if cdir else self.name
++        pending = []
+         for src, basename, size in self.renders:
+             dst = Path(f'{dirPath}/{basename}')
+ 
+             if dst.suffix == '.svg':
+                 Utils.svg_recolor(render.color_maps, src, dst)
+             elif dst.suffix == '.png':
+-                tmp = Path('/tmp/.cursor.0248.svg')
++                tmp = Path(f'{dirPath}/.{basename}.svg')
+                 Utils.svg_recolor(render.color_maps, src, tmp)
+-                Utils.svg_convert(tmp, dst, size, size)
+-                tmp.unlink()
++                pending.append((Utils.svg_convert(tmp, dst, size, size), tmp))
+             else:
+                 logger.warning(f'cursor `{self.name}`: undefined render suffix: {dst}')
+ 
++        for proc, tmp in pending:
++            if proc:
++                proc.wait()
++            tmp.unlink()
++
+     def post_process(self, cdir: str = '', fmt: str = 'hypr'):
+         dirPath = cdir if cdir else self.name
+         if fmt == 'hypr':

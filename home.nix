@@ -8,6 +8,18 @@ let
   # it is state rather than config because nothing but that script consumes it.
   terminalColours = "${config.xdg.stateHome}/theme/terminal-colors.conf";
 
+  # The accent the cursor is rendered from, and the theme it is rendered into.
+  # State for the same reason the terminal palette is: cursor-apply is the only
+  # thing that reads either.
+  #
+  # The theme name never changes -- only what is inside it -- which is what
+  # lets hypr/ name it once, in vars.cursorTheme, and set XCURSOR_THEME and the
+  # two gsettings keys from there at startup. A name that moved with the
+  # wallpaper would leave all three naming the previous rendering.
+  cursorColours = "${config.xdg.stateHome}/theme/cursor.conf";
+  cursorTheme = "Bibata-Material-Dynamic";
+  cursorDir = "${config.xdg.dataHome}/icons/${cursorTheme}";
+
   # matugen renders these against the palette it derives from the wallpaper,
   # writing each one straight into place. None of the outputs can be owned by
   # xdg.configFile: they are rewritten on every wallpaper change, and a
@@ -74,6 +86,7 @@ let
     + entry "btop" "btop.theme" "${cfg}/btop/themes/wallpaper.theme"
     + entry "nvtop" "nvtop.colors" "${cfg}/nvtop/nvtop.colors"
     + entry "qt" "qt.colors" "${cfg}/qtengine/scheme.colors"
+    + entry "cursor" "cursor.conf" cursorColours
     + entryPath "discord" discordTheme "${cfg}/Vencord/themes/wallpaper.theme.css"
   );
 
@@ -131,6 +144,52 @@ let
     '';
   };
 
+  # Re-renders the cursor from the accent matugen just wrote, and puts it in
+  # front of the compositor. Split out of theme-apply the way term-sequences
+  # is: it is one step of a theme run, and it is worth being able to run on
+  # its own when only the cursor is in question.
+  #
+  # The two halves are rendered separately because they are wanted at
+  # different times, and the order is what decides whether the cursor turns
+  # over with the wallpaper or several seconds behind it.
+  #
+  # The hyprcursor half is SVG copied into a zip -- 0.2s -- and it is what
+  # Hyprland draws with, so it goes first and setcursor follows it
+  # immediately. The X11 half is 19 sizes of 88 cursors through rsvg, 2s even
+  # with pkgs/bibata-parallel-render.patch, and nothing reads it until it next
+  # starts up: CCursorManager reloads its Xcursor copy in its constructor and
+  # otherwise only when hyprcursor fails to load, and XWayland and GTK3
+  # clients each read the files themselves when they start. So it has no
+  # deadline inside a theme run and takes the time it takes, after the visible
+  # change has already happened.
+  #
+  # setcursor is what reloads it. The rendering is swapped in under a name
+  # that has not changed, so nothing notices on its own -- and hyprctl needs
+  # HYPRLAND_INSTANCE_SIGNATURE, which is why a failure here is not fatal: the
+  # theme on disk is correct either way, and this only decides whether the
+  # session picks it up now or at the next login.
+  #
+  # XCURSOR_SIZE is hypr/hyprland/env.lua's, set from vars.cursorSize, so the
+  # size follows that file rather than a second copy of the number here. A
+  # unit outside the session has neither the variable nor a compositor to
+  # tell, and falls through both.
+  cursorApply = pkgs.writeShellApplication {
+    name = "cursor-apply";
+    runtimeInputs = [ pkgs.bibata-material-cursor pkgs.gnused ];
+    text = ''
+      colours=${cursorColours}
+      [ -r "$colours" ] || exit 0
+
+      accent=$(sed -n "s/^accent=//p" "$colours" | head -1)
+      [ -n "$accent" ] || exit 0
+
+      bibata-material-render "$accent" ${cursorDir} hypr
+      hyprctl setcursor ${cursorTheme} "''${XCURSOR_SIZE:-24}" >/dev/null 2>&1 || true
+
+      bibata-material-render "$accent" ${cursorDir} x11
+    '';
+  };
+
   # Bootstraps the colour scheme on a machine with no wallpapers yet. Every
   # themed file downstream -- fuzzel.ini, both gtk.css, the btop theme, the
   # terminal palette, hypr/scheme/current.lua -- is generated from a wallpaper,
@@ -175,7 +234,7 @@ let
   # like the wallpaper.
   themeApply = pkgs.writeShellApplication {
     name = "theme-apply";
-    runtimeInputs = [ pkgs.wayle pkgs.matugen pkgs.psmisc termSequences ];
+    runtimeInputs = [ pkgs.wayle pkgs.matugen pkgs.psmisc termSequences cursorApply ];
     text = ''
       wallpaper="''${1:?usage: theme-apply <image>}"
       record=${wallpaperRecord}
@@ -189,6 +248,7 @@ let
         --config ${matugenConfig}
 
       term-sequences
+      cursor-apply
 
       # btop re-reads its theme on SIGUSR2 and otherwise holds the old palette
       # until it is restarted. Nothing else here needs poking: fuzzel and the
@@ -1123,6 +1183,10 @@ in
   # colours, and these decide the widget theme and icon set the colours are
   # painted onto. Declared rather than written once, because a dconf key set by
   # hand survives only until something else writes it.
+  #
+  # The cursor is not among them: hypr/hyprland/execs.lua sets cursor-theme and
+  # cursor-size from the same variables the compositor's own env is built from,
+  # so declaring them here would be a second copy of both, free to drift.
   dconf.settings."org/gnome/desktop/interface" = {
     gtk-theme = "adw-gtk3-dark";
     color-scheme = "prefer-dark";

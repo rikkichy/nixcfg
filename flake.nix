@@ -27,6 +27,14 @@
       url = "github:Flowseal/tg-ws-proxy";
       flake = false;
     };
+
+    # The cursor renderer and Bibata's artwork. An input rather than a pinned
+    # fetch because the tree is rendered from at runtime, not built here, so
+    # what this pins is a working copy rather than a build product.
+    bibata-cursor = {
+      url = "github:rtgiskard/bibata_cursor";
+      flake = false;
+    };
   };
 
   outputs =
@@ -41,6 +49,10 @@
         };
 
         nokochat = final.callPackage ./pkgs/nokochat.nix { };
+
+        bibata-material-cursor = final.callPackage ./pkgs/bibata-material-cursor.nix {
+          src = inputs.bibata-cursor;
+        };
 
         kotlin-lsp = final.callPackage ./pkgs/kotlin-lsp.nix { };
 
