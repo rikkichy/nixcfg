@@ -431,8 +431,22 @@ in
     xwayland.enable = true;
   };
 
-  systemd.packages = [ pkgs.hyprpolkitagent ];
+  # Both ship a user unit, so neither is hand-written here: an interpolated
+  # ExecStart has to guess at $out's layout, and hyprpolkitagent's binary is in
+  # libexec with no bin/ at all. NixOS does not act on a packaged unit's
+  # [Install] section, though, so the wantedBy is still needed to start them.
+  systemd.packages = [ pkgs.hyprpolkitagent pkgs.hyprsunset ];
   systemd.user.services.hyprpolkitagent.wantedBy = [ "graphical-session.target" ];
+
+  # The blue-light filter. Its schedule is hypr/hyprsunset.conf, which reaches
+  # it through the same out-of-store symlink as the rest of hypr/ -- so the
+  # times are a live edit, and `hyprctl hyprsunset reset` reloads them.
+  #
+  # hyprsunset is deliberately not in environment.systemPackages. Everything
+  # that drives it goes through `hyprctl hyprsunset`, and a second copy on PATH
+  # is only an invitation to start one by hand -- which the running daemon
+  # refuses with "A CTM manager is already running on the current compositor."
+  systemd.user.services.hyprsunset.wantedBy = [ "graphical-session.target" ];
 
   # Shutting down, rebooting and suspending are logind calls, and logind asks
   # polkit. The shipped policy answers `yes` on the `allow_active` branch, which

@@ -66,6 +66,7 @@ in its build phase still lists cleanly there and only fails during the switch.
 | colour scheme for every other app | `matugen`, driven by `theme-apply` |
 | launcher and wallpaper pickers | fuzzel, configured by flags in `hypr/hyprland/keybinds.lua`, `wpp` and `awpp` |
 | keybinds, window rules, monitors | `hypr/`, a live symlink needing no rebuild |
+| blue-light schedule | `hypr/hyprsunset.conf`, in that same symlink; `sunp` overrides it |
 | fonts | `configuration.nix` → `fonts.packages` |
 
 ### boot.initrd — the one place a mistake costs a live USB
@@ -377,6 +378,65 @@ rather than two that can drift apart.
 Each garbage collection runs twice, unprivileged and then under sudo: ri's
 profile generations are a separate set from the system's, and root's sweep does
 not reach them. The 30-day one is the same sweep `nix.gc` runs weekly.
+
+### The blue-light filter
+
+`hyprsunset`, run from the user unit the package itself ships — so
+`systemd.packages` plus an explicit `wantedBy`, since NixOS does not act on a
+packaged unit's `[Install]`. It is deliberately absent from
+`environment.systemPackages`: everything that drives it goes through `hyprctl
+hyprsunset`, and a second copy on `PATH` only invites starting one by hand,
+which the running daemon refuses with `A CTM manager is already running on the
+current compositor.`
+
+Its schedule is `hypr/hyprsunset.conf`, which is where the config lookup lands
+anyway — `~/.config/hypr/hyprsunset.conf`, inside the out-of-store symlink — so
+the times are a live edit needing no rebuild. Two `profile` blocks warm the
+screen at 21:00 and hand it back at 07:00. Four things about that file and the
+daemon behind it:
+
+- **The `--config` flag in `--help` does not exist.** Passing it exits on
+  `Argument not recognized` naming the path, so the tracked location is the
+  only one, and a config elsewhere cannot be tested without moving it.
+- **A profile is selected by wall clock at startup, not just on the boundary.**
+  Starting at 13:00 with profiles at 21:00 and 07:00 logs `Applying profile
+  from: 7:0` and applies it, so a session begun mid-evening comes up warm.
+  `Loaded N profiles` on the first line is what says the file parsed at all;
+  a malformed one logs `Invalid time format` and skips that block only.
+- **`gamma` means different things eitherside of the socket.** In the config
+  file it is a multiplier — `profile` reports `Gamma: 1` for a block that sets
+  none — while over IPC it is a percentage, and `gamma` reads back `100`. A
+  value copied from one to the other is off by a factor of a hundred, and 0.8
+  as an IPC request is very nearly a black screen rather than a dim one.
+- The home-manager module `services.hyprsunset` is unusable here whatever its
+  merits: it writes `xdg.configFile."hypr/hyprsunset.conf"`, and home-manager
+  cannot own a file inside a directory it is already mapping in whole.
+
+`hyprctl hyprsunset` is the whole control surface, and its shape is not
+uniform. A bare word is a getter for `temperature` and `gamma` and a *setter*
+for `identity`. `reset` with no argument re-reads the config and reapplies
+whichever profile the clock is in — the way back from an override — while
+`reset temperature` and `reset gamma` return one axis to its default instead.
+`profile` answers with the fields of the active block rather than with the
+current state, so it reports the schedule back and there is no live getter for
+identity at all.
+
+Two behaviours the picker depends on:
+
+- **A temperature request clears the identity matrix by itself.** From
+  `identity true`, a bare `temperature 4000` lands on 4000K; the identity does
+  not have to be lifted first, so every action stays one request.
+- **hyprctl writes its connect failure to stdout, not stderr**, and exits 3.
+  So a reading is checked for digits rather than by redirecting stderr — with
+  the daemon stopped, `2>/dev/null` still yields a whole sentence where a
+  number was expected.
+
+`sunp` is the fuzzel picker over it: follow the schedule, off, or one of three
+warmths. It exists because the schedule is right most evenings and wrong some
+of them, and it has a desktop entry for the reason `wpp` and `awpp` do — the
+launcher lists entries, not `$PATH`. An answer other than `ok` is reported
+through `notify-send`, since an unparseable request answers `invalid command`
+and still exits 0, and the menu has already closed by then.
 
 ### Power actions and polkit — why a menu entry can be a dead key
 

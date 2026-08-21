@@ -393,6 +393,19 @@ in
       terminal = false;
       categories = [ "Network" ];
     };
+
+    # The launcher lists desktop entries rather than $PATH, so this is what
+    # makes `sunp` reachable at all -- the schedule in hypr/hyprsunset.conf
+    # runs without it, but nothing could override the schedule.
+    sunp = {
+      name = "sunp";
+      genericName = "Blue-light filter";
+      comment = "Warm the screen, or hand it back to the schedule";
+      exec = "sunp";
+      icon = "redshift";
+      terminal = false;
+      categories = [ "Settings" ];
+    };
   };
 
   # Wayle drives wallpapers by shelling out to `swww-daemon` by name, with no
@@ -756,6 +769,71 @@ in
         esac
       '';
     })
+
+    # The blue-light filter's manual override. hyprsunset runs its own schedule
+    # out of hypr/hyprsunset.conf and needs nothing from here; this is for the
+    # evenings the clock gets wrong -- a film that should not be orange, or a
+    # late edit where colour matters.
+    #
+    # Each action is a single request, because a temperature clears the
+    # identity matrix by itself: from `identity true`, a bare `temperature
+    # 4000` lands on 4000K without the identity having to be lifted first.
+    # `reset` with no argument is the way back -- it re-reads the config and
+    # reapplies whichever profile the clock is currently in, so an override
+    # does not quietly outlive the next boundary.
+    #
+    # The prompt carries the temperature and nothing else, because identity has
+    # no live getter: `profile` answers with the fields of the active profile
+    # block rather than with the current state, so it would report the schedule
+    # back rather than what is on screen. hyprctl also writes its connect
+    # failure to stdout rather than stderr, which is why the reading is checked
+    # for digits instead of by exit status -- the daemon being down would
+    # otherwise put a whole sentence in the prompt.
+    #
+    # hyprctl is left to the PATH, as it is in powermenu: the copy that matters
+    # is the one already managing the session.
+    (writeShellApplication {
+      name = "sunp";
+      runtimeInputs = [ fuzzel libnotify ];
+      text = ''
+        cur=$(hyprctl hyprsunset temperature 2>/dev/null || true)
+        case "$cur" in "" | *[!0-9]*) cur="--" ;; esac
+
+        idx=$(
+          printf '%s\x00icon\x1f%s\n' \
+            "Follow the schedule" preferences-system-time \
+            "Off"                 weather-clear \
+            "Warm     4000 K"     redshift \
+            "Warmer   3400 K"     redshift \
+            "Warmest  2700 K"     redshift \
+            | fuzzel --dmenu --index --prompt "sun [''${cur}K]> " \
+              --font "Google Sans Flex Rounded:size=15" \
+              --line-height=32px --lines 5 --width 30
+        ) || exit 0
+
+        case "$idx" in
+          0) req=(reset) ;;
+          1) req=(identity true) ;;
+          2) req=(temperature 4000) ;;
+          3) req=(temperature 3400) ;;
+          4) req=(temperature 2700) ;;
+          *) exit 0 ;;
+        esac
+
+        # A refused request is one line on stdout and the menu has already
+        # closed, so without this a stopped daemon is a picker that takes the
+        # click and does nothing. `ok` is the only answer that means applied --
+        # an unparseable request answers `invalid command` and still exits 0.
+        out=$(hyprctl hyprsunset "''${req[@]}" 2>&1 || true)
+        if [ "$out" != "ok" ]; then
+          notify-send -a sunp -u critical \
+            "Blue-light filter" "''${req[*]}: ''${out:-no response}" 2>/dev/null || true
+          echo "sunp: ''${req[*]}: ''${out:-no response}" >&2
+          exit 1
+        fi
+      '';
+    })
+
     # The maintenance menu. It answers to `nix` in the launcher through its
     # desktop entry, while the binary is `nixp`: the package manager already
     # owns `bin/nix`, and two derivations claiming one name collide in the
