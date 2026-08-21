@@ -3,7 +3,7 @@ local scheme = require("current_scheme")
 return {
     terminal                   = "foot",
 
-    browser                    = "chromium",
+    browser                    = "helium",
     editor                     = "zeditor",
     -- Thunar keeps a D-Bus-activated daemon, but each invocation still opens
     -- its own window, so the keybind needs no flag to stay repeatable.
@@ -34,7 +34,7 @@ return {
     windowGapsOut              = 10,
     singleWindowGapsOut        = 20,
 
-    windowOpacity              = 0.95,
+    windowOpacity              = 1.0,
     windowRounding             = 15,
     windowBorderSize           = 3,
     activeWindowBorderColour   = "rgba(" .. scheme.primary .. "e6)",
@@ -68,6 +68,7 @@ return {
     kbWindowBorderedFullscreen = "SUPER + ALT + F",
     kbToggleWindowFloating     = "SUPER + ALT + space",
     kbCloseWindow              = "SUPER + Q",
+    kbForceCloseWindow         = "SUPER + SHIFT + Q",
 
     kbSpecialWs                = "SUPER + S",
     kbSystemMonitorWs          = "CTRL + SHIFT + Escape",

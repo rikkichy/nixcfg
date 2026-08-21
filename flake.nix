@@ -47,7 +47,8 @@
         google-sans-rounded =
           final.callPackage ./pkgs/google-sans-rounded.nix { };
 
-        chromium = prev.chromium.override { enableWideVine = true; };
+        midnight-discord =
+          final.callPackage ./pkgs/midnight-discord.nix { };
 
         # ananicy-cpp 1.2.0 leans on transitive <cstring>/<cstdint> that the
         # current libstdc++ no longer pulls in, so std::memset, std::strerror

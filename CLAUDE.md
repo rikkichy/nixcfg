@@ -48,9 +48,9 @@ path.
 
 `hardware-configuration.nix` is tracked but machine-specific, and the repo is
 **public** — do not add secrets. `pkgs/` holds locally packaged software
-(`tg-ws-proxy`, `nokochat`, `google-sans-rounded`), pulled in through the
-overlay in `flake.nix`; `tg-ws-proxy` is a `flake = false` input, the other
-three are pinned by hash inside their own file. The same overlay carries
+(`tg-ws-proxy`, `nokochat`, `google-sans-rounded`, `midnight-discord`), pulled
+in through the overlay in `flake.nix`; `tg-ws-proxy` is a `flake = false`
+input, the rest are pinned by hash inside their own file. The same overlay carries
 `overrideAttrs` fixes for nixpkgs packages this machine needs and upstream
 cannot currently build — `ananicy-cpp` compiles only with `<cstring>` and
 `<cstdint>` forced into its translation units.
@@ -115,7 +115,8 @@ naming each template and its destination is generated in `home.nix` rather than
 tracked, so the store paths in it can never go stale. `theme-apply` is the only
 caller: one `matugen image` run rewrites `hypr/scheme/current.lua`,
 `fuzzel.ini`, both `gtk.css` and their `thunar.css`, the btop and nvtop themes,
-`qtengine/scheme.colors`, and the terminal palette. Consequences:
+`qtengine/scheme.colors`, the Vencord theme, and the terminal palette.
+Consequences:
 
 - **Never put those paths under `xdg.configFile`.** Home-manager files are
   read-only store symlinks; every colour change would start failing.
@@ -142,6 +143,13 @@ caller: one `matugen image` run rewrites `hypr/scheme/current.lua`,
   longer make red and green the same colour.
 - `base16` is its own template namespace. `{{colors.base00…}}` does not
   resolve, and the error names the whole expression rather than the namespace.
+- **The two filters worth knowing are narrower than they look.**
+  `set_lightness` takes a lightness rather than a delta, so `-5` is not five
+  percent darker but black, and there is no filter that walks a ramp down from
+  whatever the wallpaper produced — a template that needs one derives it in
+  the consuming language instead. `set_alpha` refuses any format without an
+  alpha channel, and says so naming the four that have one; `hex_alpha` is the
+  one to reach for.
 
 **foot carries no palette of its own.** Its colours arrive as OSC escape
 sequences, which is a two-part arrangement worth knowing before concluding the
@@ -552,33 +560,73 @@ keybinds.lua shows up as a low count), `hyprctl getoption <opt>` for a value set
 *after* a suspected abort point, and `hyprctl repl 'return require("variables").x'`
 to see what the live config actually holds.
 
-### Web app desktop entries
+### The browser and its web apps
 
-Chromium is overridden with `enableWideVine = true` in the `flake.nix` overlay,
-because nixpkgs ships it without the Widevine CDM and every streaming web app
-here is DRM-gated. Without it Spotify loads, searches and browses normally and
-then refuses to play any track, with nothing in the UI or the logs naming a
-missing decryption module — it presents as broken audio, so the sink and mute
-state get investigated first and are always fine. The override is not a source
-build: it adds one derivation that copies the already-compiled
-`chromium-unwrapped` and drops `WidevineCdm` into `libexec`. It belongs in the
-overlay rather than on `systemPackages` so the web apps in `home.nix`, which
-reference `pkgs.chromium` directly, resolve to the same binary.
+Helium, a Chromium build, from the `helium` flake input. It is the browser
+`hypr/variables.lua` names, the `x-scheme-handler/*` and `text/html` default in
+`home.nix`, and the runtime behind the Bitwarden and Spotify entries in
+`xdg.desktopEntries`, which are `--app=URL` windows.
 
-The Chromium web apps in `home.nix` need `settings.StartupWMClass`. `chromium
---app=URL` gives the window its own WM_CLASS (`chrome-<host>__<path>-Default`)
-which never matches the desktop file id, so without it a running app falls back
-to the generic Chromium icon even though `Icon=` is correct. Read the real value
-off `hyprctl clients` with the app running — a wrong string fails silently.
+**Widevine is not in the package**, and every streaming web app here is
+DRM-gated. Without it Spotify loads, searches and browses normally and then
+refuses to play any track, with nothing in the UI or the logs naming a missing
+decryption module — it presents as broken audio, so the sink and the mute state
+get investigated first and are always fine.
+
+A build takes the CDM by one of two routes and this one has only the second:
+
+- **Bundled**, from `WidevineCdm/` beside the binary. That lookup is compiled
+  in or it is not — nixpkgs patches `BUNDLE_WIDEVINE_CDM=true` into
+  `third_party/widevine/cdm/BUILD.gn` to get it — so dropping the directory
+  into a binary release's tree achieves nothing at all.
+- **As a component**, from `~/.config/net.imput.helium/WidevineCdm/<version>/`,
+  which is what `home.nix` seeds from `pkgs.widevine-cdm`. Startup scans that
+  directory, registers the highest version whose `manifest.json` agrees with
+  the directory name, and records it in `latest-component-updated-widevine-cdm`
+  beside it, holding `{"Path": …}`. Registration happens from that hint, so
+  **the CDM arrives one start late**: the run that first sees a newly seeded
+  directory writes the hint and plays nothing.
+
+`strings` on the two binaries is what separates the routes: `Registering
+bundled Widevine ` against `Registering hinted Widevine `, one string each.
+Beyond that the entry is a real directory of symlinks (`recursive = true`)
+rather than a symlinked directory, because the hint records the path as found —
+a symlink resolves to the store and a nixpkgs bump then moves it out from
+under the hint.
+
+`programs.chromium` in `configuration.nix` installs no browser. It writes
+policy JSON, `/etc/chromium/policies/managed/` among other prefixes, and
+helium reads that directory as any Chromium build does; `chrome://policy` shows
+each one as Platform / Machine / Mandatory once it has been picked up.
+
+Two things make this awkward to verify:
+
+- **`--headless` will not start**, exiting on `Multiple targets are not
+  supported in headless mode`. `--ozone-platform=headless` is the way to run it
+  without a window, and it takes the ordinary flags —
+  `--enable-logging=stderr --v=1` is where the Widevine lines appear. Driving
+  such an instance needs the bundled `chromedriver`, which is not patchelfed
+  and has to be started through the loader with helium's own `RUNPATH`.
+- **EME is a secure-context API.** `navigator.requestMediaKeySystemAccess` is
+  simply not a function on `file://` or `about:blank`, which reads as the
+  feature being compiled out. `http://localhost` is trustworthy enough for it,
+  so the smallest real test is a page served by socat.
+
+The web apps need `settings.StartupWMClass`. An `--app=URL` window carries its
+own WM_CLASS — `chrome-<host>__<path>-Default`, the `chrome-` prefix intact
+here — which never matches the desktop file id, so without it a running app
+falls back to the generic browser icon even though `Icon=` is correct. Read the
+real value off `hyprctl clients` with the app running — a wrong string fails
+silently.
 
 `StartupWMClass` only affects the icon of a **running window** (bar, alt-tab).
 It does nothing for the launcher entry, whose icon comes from `Icon=` resolved
 against the icon theme — a separate problem with a separate fix. Establish which
 one is actually wrong before changing anything.
 
-Chromium is single-instance: `chromium --app=URL` hands off to the running
-browser and the launcher process exits immediately. There is no process to
-`pkill` — close such a window through the compositor.
+The browser is single-instance: `helium --app=URL` hands off to the running
+process and the launcher exits immediately. There is no process to `pkill` —
+close such a window through the compositor.
 
 GTK apps built on `GApplication` are single-instance too, which makes a
 launcher keybind look broken rather than misconfigured: a bare second
@@ -586,6 +634,58 @@ invocation activates the existing primary instance instead of opening a
 window, so the spawn key appears dead until the first window is closed.
 `--new-window` is the usual escape. Expect this from any `GApplication` bound
 to a spawn key.
+
+### Discord and its theme
+
+`discord.override { withVencord = true; }`. The injection is part of the
+derivation: `app.asar` is moved aside and replaced by a directory whose
+`index.js` requires Vencord's patcher, so an update cannot leave a client
+half-patched the way patching an installed copy can.
+
+Vencord's data directory is `~/.config/Vencord` — the Electron user data path
+with the last component swapped, not something the Discord wrapper sets, and
+overridable with `VENCORD_USER_DATA_DIR`. Under it, `themes/` holds theme
+files and `settings/settings.json` holds which of them are on.
+
+The theme is refact0r's Midnight, pinned in `pkgs/midnight-discord.nix`, with a
+block of variable overrides carrying this machine's palette. Three things about
+how that is assembled:
+
+- **Its matugen template is generated, not tracked.** The tracked half is only
+  the overrides; `home.nix` concatenates a meta block, Midnight from the store
+  and those overrides into the template matugen actually reads. A tracked file
+  cannot name a store path without going stale, which is the same reason the
+  matugen config itself is generated.
+- **Concatenated rather than `@import`ed.** Vencord hands a theme's text to a
+  page served from `https://discord.com`, where the renderer refuses a
+  `file://` subresource whatever the CSP says — and the URL Midnight's own
+  install instructions point at is fetched again at every start, which is both
+  a network dependency and an upstream that can change under the machine.
+- **Order is load-bearing.** Midnight defines a default for every variable the
+  overrides set, so it has to come first; at equal specificity the last
+  declaration wins. The meta block has to be first of all, since Vencord reads
+  the theme's name and description from it and otherwise shows the filename.
+
+Colour details that are not free choices:
+
+- The five-step ramps are `color-mix(… black N%)` evaluated by the browser
+  rather than darkened at render time, because matugen has no relative
+  lightness filter.
+- Only the accent and red ramps follow the wallpaper. Green, yellow and purple
+  are the same literals the terminal palette uses and for the same reason —
+  otherwise a low-chroma wallpaper collapses the status dots into three shades
+  of one near-black.
+
+Two runtime behaviours worth relying on:
+
+- **Vencord watches `themes/` and `settings/quickCss.css`**, pushing an update
+  into the renderer on change. A wallpaper change therefore restyles a running
+  Discord with no restart.
+- `settings.json` is Vencord's to write — every GUI toggle rewrites it — so it
+  is seeded by an activation script only when absent, which is what enables the
+  theme on a machine where Vencord has never run. A partial file is enough; the
+  defaults are merged in underneath. Disabling the theme in the UI therefore
+  sticks.
 
 ### The file manager
 
@@ -637,6 +737,57 @@ Its settings live in two different places, and only one of them is a file:
 set of recognised property names is only in the binary —
 `strings .thunar-wrapped | grep -E '^(misc|last|hidden)-'` is how to find one.
 Thunar's own preferences dialog exposes a fraction of them.
+
+### osu!lazer — a game that owns its own configuration
+
+`osu-lazer-bin`, the upstream build. Its settings are plain files beside
+`client.realm` in `~/.local/share/osu/`: `game.ini` is the settings panel,
+`framework.ini` pins window mode, resolution, renderer and volumes, and
+`input.json` holds the input handlers — including the tablet's mapped area,
+rotation and pressure threshold. The tablet itself is arranged in
+`configuration.nix`, where OpenTabletDriver is installed for its udev rules and
+its daemon deliberately left off.
+
+**None of those three can be home-manager files.** osu!framework writes every
+config through `CreateFileSafely`, whose dispose path is
+`storage.Delete(finalPath)` followed by `storage.Move(temporaryPath,
+finalPath)`. The `Delete` unlinks whatever sits at the path, a read-only store
+symlink included, so the first clean exit replaces a managed link with a real
+file — and the next switch either fails on the now-unmanaged file or, forced,
+discards every setting changed in-game. There is no runtime/declared split to
+absorb that the way wayle's `config.toml` has one.
+
+So `home.activation.osuSettings` seeds them instead, copying only what is
+absent and leaving everything afterwards to the game, the same arrangement
+Vencord's `settings.json` has. **A partial file is enough** — osu!framework
+applies the keys it finds and keeps its own defaults for the rest, then writes
+the full set back on exit.
+
+What `dotfiles/osu/` carries is chosen around three things:
+
+- **`game.ini` holds a live credential.** `Token` is an OAuth token for the
+  logged-in account and this repo is public, so it and `Username` are stripped,
+  along with `Skin` and `Ruleset` — GUIDs into `client.realm`, naming nothing
+  against a fresh database — and the game's own bookkeeping (`Version`,
+  `ReleaseStream`, `WasSupporter`, `LastProcessedMetadataId`,
+  `LastOnlineTagsPopulation`).
+- **`input.json` is copied verbatim**, because each handler is resolved through
+  a `$type` discriminator that has to lead its object. It is also the half
+  worth having: an area of `50×28` at offset `186,116` on a 216×135 tablet
+  cannot be reproduced by eye.
+- **`framework.ini` is not seeded at all.** Resolution, display and renderer are
+  what another machine most needs to choose for itself.
+
+**Keybinds are out of reach.** `client.realm` is a binary Realm database,
+schema-versioned and migrated per release, and `class_KeyBinding` lives there
+along with `class_ModPreset`, `class_RulesetSetting`, skins, beatmaps and
+scores. `strings client.realm` is enough to confirm what a given release keeps
+there; nothing short of shipping a whole database preconfigures any of it.
+
+The six `application/x-osu-*` MIME types are declared in `configuration.nix`,
+because nixpkgs packages none of them and the desktop entry claims all six.
+Only `x-scheme-handler/osu` is load-bearing — an `osu://` link from the browser
+has nowhere to go without it.
 
 ### NokoChat — the one AppImage
 

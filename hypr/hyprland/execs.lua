@@ -12,8 +12,6 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("gsettings set org.gnome.desktop.interface cursor-theme " .. vars.cursorTheme)
     hl.exec_cmd("gsettings set org.gnome.desktop.interface cursor-size " .. vars.cursorSize)
 
-    hl.exec_cmd("sleep 1 && gammastep")
-
     hl.exec_cmd("mpris-proxy")
 
     -- Both start straight into the tray with --hide rather than opening a

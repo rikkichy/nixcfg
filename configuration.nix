@@ -375,7 +375,21 @@ in
     SyncIntervalSec=30s
   '';
 
-  boot.extraModulePackages = [ config.boot.kernelPackages.nct6687d ];
+  # strncpy is no longer part of the kernel's string API, so nct6687.c's one
+  # call to it is reported as an implicit declaration rather than as something
+  # missing, and the module fails to compile -- which fails the whole switch,
+  # a kernel module being part of the system closure. strscpy is the
+  # replacement and needs no terminator written afterwards: it always
+  # NUL-terminates, where strncpy did not, which is the reason for the change
+  # upstream.
+  boot.extraModulePackages = [
+    (config.boot.kernelPackages.nct6687d.overrideAttrs (old: {
+      postPatch = (old.postPatch or "") + ''
+        sed -i 's/strncpy(valcp, val, 16);/strscpy(valcp, val, sizeof(valcp));/' \
+          nct6687.c
+      '';
+    }))
+  ];
   boot.kernelModules = [ "nct6687" ];
   boot.blacklistedKernelModules = [ "nct6683" ];
   boot.extraModprobeConfig = ''
@@ -523,15 +537,6 @@ in
   services.gnome.gnome-keyring.enable = true;
   security.pam.services.greetd.enableGnomeKeyring = true;
 
-  services.geoclue2 = {
-    enable = true;
-    appConfig.gammastep = {
-      isAllowed = true;
-      isSystem = false;
-      users = [ ];
-    };
-  };
-
   programs.ydotool.enable = true;
 
   programs.localsend = {
@@ -649,6 +654,10 @@ in
   services.tumbler.enable = true;
   programs.xfconf.enable = true;
 
+  # This module installs no browser -- it only writes policy JSON, to
+  # /etc/chromium/policies/managed/ among others, and helium reads that
+  # directory as any Chromium build does. chrome://policy is where an entry
+  # shows up as Platform/Machine/Mandatory once it has been picked up.
   programs.chromium = {
     enable = true;
     extensions = [
@@ -708,7 +717,6 @@ in
   environment.systemPackages = with pkgs; [
     vpn
 
-    chromium
     inputs.helium.packages.${pkgs.stdenv.hostPlatform.system}.default
     inputs.vhelper.packages.${pkgs.stdenv.hostPlatform.system}.default
 
@@ -799,7 +807,12 @@ in
     mpv
     anytype
 
-    discord
+    # Vencord is what carries the theme: it replaces app.asar with a stub that
+    # requires its patcher, and reads ~/.config/Vencord/themes/ from inside the
+    # renderer. Nothing else about the client changes, and the injection is
+    # part of the derivation rather than something applied to an installed
+    # copy, so an update cannot leave it half-patched.
+    (discord.override { withVencord = true; })
     nokochat
     telegram-desktop
 
@@ -822,7 +835,6 @@ in
     cliphist
 
     trash-cli
-    gammastep
 
     glib
 
@@ -914,7 +926,7 @@ in
   # NetworkManager-wait-online blocks boot until a link is up, which cost
   # 4.9s of every startup. Nothing here needs the network before the login
   # screen: mihomo retries, the flatpak and upgrade units are timer-driven,
-  # and geoclue and fwupd-refresh are on demand.
+  # and fwupd-refresh is on demand.
   systemd.services.NetworkManager-wait-online.enable = false;
 
   networking.networkmanager.unmanaged = [ "interface-name:mihomo" ];

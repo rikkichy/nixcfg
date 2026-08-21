@@ -2,6 +2,8 @@
 
 let
 
+  helium = inputs.helium.packages.${pkgs.stdenv.hostPlatform.system}.default;
+
   # Where the generated terminal palette lands. term-sequences reads it back;
   # it is state rather than config because nothing but that script consumes it.
   terminalColours = "${config.xdg.stateHome}/theme/terminal-colors.conf";
@@ -18,15 +20,45 @@ let
   # The hypr scheme is written through ~/.config/hypr, which is an out-of-store
   # symlink to this repo, so the file lands in the working tree and stays
   # writable. That is the whole reason hypr/ is mapped in rather than copied.
+  # The Vencord theme, whose template cannot be a tracked file: it is Midnight
+  # with this machine's palette appended, and Midnight arrives as a store path
+  # that a tracked file would have to name and then go stale on. Concatenated
+  # rather than @imported because Vencord hands a theme's text to a page served
+  # from https://discord.com, where a file:// subresource is refused by the
+  # renderer whatever the CSP says -- and the URL the theme documents importing
+  # is fetched afresh at every start.
+  #
+  # The meta block has to be the first thing in the file: Vencord reads the
+  # name and description out of it, and shows the filename for a theme that
+  # has none.
+  # The line dropped from Midnight is its webfont @import. Both faces the
+  # overrides name are installed, so it fetches a font nothing then asks for --
+  # at every Discord start, since a theme's CSS is parsed fresh each time.
+  discordTheme = pkgs.runCommand "discord-theme.css.tpl" { } ''
+    cat ${
+      pkgs.writeText "discord-theme-meta.css" ''
+        /**
+         * @name Wallpaper
+         * @description Midnight, coloured from the current wallpaper by matugen.
+         * @author refact0r
+         * @website https://github.com/refact0r/midnight-discord
+        */
+      ''
+    } > $out
+    sed '/fonts\.googleapis\.com/d' ${pkgs.midnight-discord} >> $out
+    cat ${./dotfiles/matugen/templates/discord.css} >> $out
+  '';
+
   matugenConfig = pkgs.writeText "matugen-config.toml" (
     let
       templates = ./dotfiles/matugen/templates;
       cfg = "${config.home.homeDirectory}/.config";
-      entry = name: input: output: ''
+      entryPath = name: input: output: ''
         [templates.${name}]
-        input_path = '${templates}/${input}'
+        input_path = '${input}'
         output_path = '${output}'
       '';
+      entry = name: input: entryPath name "${templates}/${input}";
     in
     ''
       [config]
@@ -42,6 +74,7 @@ let
     + entry "btop" "btop.theme" "${cfg}/btop/themes/wallpaper.theme"
     + entry "nvtop" "nvtop.colors" "${cfg}/nvtop/nvtop.colors"
     + entry "qt" "qt.colors" "${cfg}/qtengine/scheme.colors"
+    + entryPath "discord" discordTheme "${cfg}/Vencord/themes/wallpaper.theme.css"
   );
 
   # Pushes the generated palette at every terminal that will take it. foot
@@ -286,7 +319,7 @@ in
   xdg.desktopEntries = let
     webApp = name: url: icon: wmClass: {
       inherit name icon;
-      exec = "${pkgs.chromium}/bin/chromium --app=${url}";
+      exec = "${helium}/bin/helium --app=${url}";
       terminal = false;
       categories = [ "Network" ];
       settings.StartupWMClass = wmClass;
@@ -928,6 +961,85 @@ in
   home.file."Pictures/Wallpapers/.keep".text = "";
   home.file."Videos/Animated Wallpapers/.keep".text = "";
 
+  # Widevine, without which every DRM-gated web app loads, searches and browses
+  # normally and then refuses to play -- nothing in the UI or the logs names a
+  # missing decryption module, so it presents as broken audio and the sink and
+  # the mute state get investigated first.
+  #
+  # helium takes the CDM only as a component, from its own user data directory:
+  # `Registering hinted Widevine` and `Registering bundled Widevine` are two
+  # different builds, and the second needs a patch at compile time that a build
+  # from a binary release cannot have. So this is the component updater's own
+  # layout, seeded from the store instead of downloaded -- a versioned directory
+  # under WidevineCdm/, which startup scans, registers, and records in the hint
+  # file beside it. The version is read off the package because that scan picks
+  # the highest one it finds and the manifest inside has to agree with the name.
+  #
+  # recursive is what keeps that hint stable: it makes the directory itself real
+  # and symlinks the three files inside, so the recorded path is this one rather
+  # than a store path that a nixpkgs bump would move out from under it.
+  home.file.".config/net.imput.helium/WidevineCdm/${pkgs.widevine-cdm.version}" = {
+    source = "${pkgs.widevine-cdm}/share/google/chrome/WidevineCdm";
+    recursive = true;
+  };
+
+  # Vencord rewrites this file whenever anything changes in its settings UI, so
+  # it cannot be a home-manager file -- a read-only store symlink there fails
+  # the first toggle. Seeding it only when it is absent is what turns the theme
+  # on without a trip through that UI, on a machine where Vencord has never
+  # run; everything after that is Vencord's to write, including turning the
+  # theme off again. A partial file is enough, since the defaults are merged in
+  # underneath whatever it holds.
+  home.activation.vencordSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    settings="${config.home.homeDirectory}/.config/Vencord/settings/settings.json"
+    if [ ! -e "$settings" ]; then
+      run mkdir -p "$(dirname "$settings")"
+      run cp ${
+        pkgs.writeText "vencord-settings.json" (
+          builtins.toJSON { enabledThemes = [ "wallpaper.theme.css" ]; }
+        )
+      } "$settings"
+      run chmod u+w "$settings"
+    fi
+  '';
+
+  # osu! keeps its settings as plain files beside client.realm and rewrites
+  # them when the game exits, so they cannot be home-manager files -- a
+  # read-only store symlink there loses every settings change. Seeding only
+  # when absent is what carries them onto a machine osu! has not run on, and
+  # leaves everything after that to the game. A partial file is enough:
+  # osu!framework applies the keys it finds and keeps its own defaults for the
+  # rest.
+  #
+  # input.json is the half worth having. It holds the tablet's mapped area,
+  # rotation and pressure threshold -- the settings that cannot be reproduced
+  # by eye -- and it is copied verbatim because each handler is resolved
+  # through a $type discriminator that has to lead its object.
+  #
+  # game.ini is the settings panel, minus three kinds of key. Token is a live
+  # OAuth credential and this repo is public, and Username is the account it
+  # belongs to. Skin and Ruleset are GUIDs into client.realm, so against a
+  # fresh database they name nothing. Version, ReleaseStream, WasSupporter,
+  # LastProcessedMetadataId and LastOnlineTagsPopulation are the game's own
+  # bookkeeping. What the login writes stays osu!'s to write.
+  #
+  # Keybinds are not here and cannot be: client.realm is a binary Realm
+  # database, schema-versioned and migrated per release, and it is where
+  # KeyBinding lives along with skins, beatmaps and scores.
+  #
+  # framework.ini is left out as well -- it pins resolution, display and
+  # renderer, which are what another machine most needs to choose for itself.
+  home.activation.osuSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    osudir="${config.home.homeDirectory}/.local/share/osu"
+    run mkdir -p "$osudir"
+    for f in game.ini input.json; do
+      if [ ! -e "$osudir/$f" ]; then
+        run cp ${./dotfiles/osu}/"$f" "$osudir/$f"
+        run chmod u+w "$osudir/$f"
+      fi
+    done
+  '';
+
   # GTK reads these three from dconf rather than from any file, so they are the
   # half of GTK theming that gtk.css cannot carry: the stylesheet supplies the
   # colours, and these decide the widget theme and icon set the colours are
@@ -957,11 +1069,11 @@ in
   xdg.mimeApps = {
     enable = true;
     defaultApplications = {
-      "text/html" = "chromium-browser.desktop";
-      "x-scheme-handler/http" = "chromium-browser.desktop";
-      "x-scheme-handler/https" = "chromium-browser.desktop";
-      "x-scheme-handler/about" = "chromium-browser.desktop";
-      "x-scheme-handler/unknown" = "chromium-browser.desktop";
+      "text/html" = "helium.desktop";
+      "x-scheme-handler/http" = "helium.desktop";
+      "x-scheme-handler/https" = "helium.desktop";
+      "x-scheme-handler/about" = "helium.desktop";
+      "x-scheme-handler/unknown" = "helium.desktop";
       "inode/directory" = "thunar.desktop";
       "video/mp4" = "mpv.desktop";
       "video/x-matroska" = "mpv.desktop";
@@ -969,7 +1081,7 @@ in
     }
     # Loupe's desktop entry already claims all of these, but a declared
     # handler is what decides between two applications that both claim a
-    # type -- chromium answers for image/png and the rest through the same
+    # type -- helium answers for image/png and the rest through the same
     # MimeType mechanism, and wins on cache order alone when neither is
     # named here. Listing them individually is the only way: the association
     # is per type, and a `image/*` wildcard is not part of the format.
@@ -991,7 +1103,7 @@ in
     # application claiming them, so these lines are what make the association
     # deterministic rather than a matter of cache order. The scheme handler is
     # the one that is not decorative: an osu:// link from the browser has no
-    # other candidate, and without a named default chromium has nothing to
+    # other candidate, and without a named default helium has nothing to
     # hand it to. The desktop id carries the `!` -- it is the filename.
     // lib.genAttrs [
       "application/x-osu-beatmap"

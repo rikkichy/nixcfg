@@ -128,6 +128,13 @@ hl.bind(vars.kbWindowBorderedFullscreen, hl.dsp.window.fullscreen({ mode = "maxi
 hl.bind(vars.kbToggleWindowFloating, hl.dsp.window.float())
 hl.bind(vars.kbCloseWindow, hl.dsp.window.close())
 
+-- close() asks the window to go, which is a request the client is free to sit
+-- on: a hung app, or one holding an unsaved-changes dialog, keeps the key
+-- looking dead. kill() does not ask -- it SIGKILLs the process behind the
+-- window, so anything unsaved in it is gone with no prompt. That is why it
+-- sits behind SHIFT rather than sharing the plain key.
+hl.bind(vars.kbForceCloseWindow, hl.dsp.window.kill())
+
 -- toggle_special takes the bare name: it prefixes "special:" itself, so
 -- passing "special:communication" opens special:special:communication. It also
 -- wants a plain string -- every table form ({ name = ... }, { workspace = ... })
@@ -159,7 +166,7 @@ end
 
 hl.bind(vars.kbSpecialWs, toggle_ws("special"))
 hl.bind(vars.kbSystemMonitorWs, toggle_ws("sysmon", "btop", vars.terminal .. " --app-id=btop btop"))
-hl.bind(vars.kbMusicWs, toggle_ws("music", "spotify", "chromium --app=https://open.spotify.com"))
+hl.bind(vars.kbMusicWs, toggle_ws("music", "spotify", "helium --app=https://open.spotify.com"))
 hl.bind(vars.kbCommunicationWs, toggle_ws("communication", "discord", "discord"))
 -- No spawn: rules.lua routes class "Todoist" here, but nothing in this config
 -- installs Todoist, so there is no command to start.
