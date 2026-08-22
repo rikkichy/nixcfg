@@ -211,6 +211,14 @@ Two more things that mislead:
   width of everything. `bar.rounding`, `bar.button-rounding` and
   `bar.button-group-rounding` are three separate settings; the group one is
   easy to miss and leaves the systray cluster squarer than its neighbours.
+- **`styling.rounding` is a scale shared by every box, and its top level is a
+  size rather than a shape.** `full` resolves to `9999px`, which GTK clamps to
+  half the box, so the level that makes a bar button a pill makes a large
+  container an ellipse: `.cal-grid-wrap` behind the calendar grid, and every
+  dropdown and notification card with it. `lg` is `0.875rem` and still half the
+  height of the small elements, so they stay round while the containers do not.
+  This one key covers dropdowns, popovers and dialogs; the bar's three
+  `bar.*rounding` keys are separate and reach none of it.
 - Hyprland fades layer surfaces out under a fullscreen window, so the bar
   reading `a: 0` in `hyprctl layers` during a game is expected, not a fault.
 

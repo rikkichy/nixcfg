@@ -1493,7 +1493,16 @@ in
       [styling]
       theme-provider = "matugen"
       matugen-scheme = "content"
-      rounding = "full"
+      # Corner rounding for dropdowns, popovers and dialogs -- a scale, not a
+      # shape. "full" is 9999px, and GTK clamps a radius to half the box, so
+      # it turns every container it reaches into an ellipse rather than a
+      # pill: the calendar's grid wrapper and a notification card both come
+      # out as circles with the content sitting outside them. "lg" is
+      # 0.875rem, which is still half the height of the small boxes -- the
+      # calendar day cells, the inline chips -- so those stay fully round
+      # while the large ones become rounded rectangles. The bar has its own
+      # rounding keys above and is unaffected by this one.
+      rounding = "lg"
 
       # This module numbers the ordinary workspaces and nothing else. It can
       # carry the special ones too -- show-special = true with an icon per
@@ -1614,6 +1623,17 @@ in
       [modules.volume]
       label-show = false
       icon-color = "accent"
+
+      # The line across the top of a popup is the urgency bar, drawn as
+      # `inset 0 2px 0 0` on the card rather than as a border, so it sits
+      # inside the rounded corners and reads as a stray rule rather than as
+      # an edge. popup-urgency-bar is a threshold and its default, "low",
+      # means every notification carries one -- "critical" would keep it for
+      # the ones that want the emphasis. Nothing else is lost with it off:
+      # a critical notification still tints its icon and a low one still
+      # dims it.
+      [modules.notifications]
+      popup-urgency-bar = "none"
 
       [wallpaper]
       transition-fps = 240
