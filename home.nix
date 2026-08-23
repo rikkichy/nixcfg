@@ -32,15 +32,15 @@ let
   # The hypr scheme is written through ~/.config/hypr, which is an out-of-store
   # symlink to this repo, so the file lands in the working tree and stays
   # writable. That is the whole reason hypr/ is mapped in rather than copied.
-  # The Vencord theme, whose template cannot be a tracked file: it is Midnight
+  # The Equicord theme, whose template cannot be a tracked file: it is Midnight
   # with this machine's palette appended, and Midnight arrives as a store path
   # that a tracked file would have to name and then go stale on. Concatenated
-  # rather than @imported because Vencord hands a theme's text to a page served
+  # rather than @imported because Equicord hands a theme's text to a page served
   # from https://discord.com, where a file:// subresource is refused by the
   # renderer whatever the CSP says -- and the URL the theme documents importing
   # is fetched afresh at every start.
   #
-  # The meta block has to be the first thing in the file: Vencord reads the
+  # The meta block has to be the first thing in the file: Equicord reads the
   # name and description out of it, and shows the filename for a theme that
   # has none.
   # The line dropped from Midnight is its webfont @import. Both faces the
@@ -87,7 +87,7 @@ let
     + entry "nvtop" "nvtop.colors" "${cfg}/nvtop/nvtop.colors"
     + entry "qt" "qt.colors" "${cfg}/qtengine/scheme.colors"
     + entry "cursor" "cursor.conf" cursorColours
-    + entryPath "discord" discordTheme "${cfg}/Vencord/themes/wallpaper.theme.css"
+    + entryPath "discord" discordTheme "${cfg}/Equicord/themes/wallpaper.theme.css"
   );
 
   # Pushes the generated palette at every terminal that will take it. foot
@@ -1121,19 +1121,19 @@ in
     recursive = true;
   };
 
-  # Vencord rewrites this file whenever anything changes in its settings UI, so
+  # Equicord rewrites this file whenever anything changes in its settings UI, so
   # it cannot be a home-manager file -- a read-only store symlink there fails
   # the first toggle. Seeding it only when it is absent is what turns the theme
-  # on without a trip through that UI, on a machine where Vencord has never
-  # run; everything after that is Vencord's to write, including turning the
+  # on without a trip through that UI, on a machine where Equicord has never
+  # run; everything after that is Equicord's to write, including turning the
   # theme off again. A partial file is enough, since the defaults are merged in
   # underneath whatever it holds.
-  home.activation.vencordSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    settings="${config.home.homeDirectory}/.config/Vencord/settings/settings.json"
+  home.activation.equicordSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    settings="${config.home.homeDirectory}/.config/Equicord/settings/settings.json"
     if [ ! -e "$settings" ]; then
       run mkdir -p "$(dirname "$settings")"
       run cp ${
-        pkgs.writeText "vencord-settings.json" (
+        pkgs.writeText "equicord-settings.json" (
           builtins.toJSON { enabledThemes = [ "wallpaper.theme.css" ]; }
         )
       } "$settings"

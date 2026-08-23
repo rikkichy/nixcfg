@@ -117,7 +117,7 @@ naming each template and its destination is generated in `home.nix` rather than
 tracked, so the store paths in it can never go stale. `theme-apply` is the only
 caller: one `matugen image` run rewrites `hypr/scheme/current.lua`,
 `fuzzel.ini`, both `gtk.css` and their `thunar.css`, the btop and nvtop themes,
-`qtengine/scheme.colors`, the Vencord theme, and the terminal palette.
+`qtengine/scheme.colors`, the Equicord theme, and the terminal palette.
 Consequences:
 
 - **Never put those paths under `xdg.configFile`.** Home-manager files are
@@ -623,6 +623,43 @@ cut leaves nothing at all.
 atomic operations that straddle a cache line at a rate of roughly ninety per
 minute, and each trap stalls every core rather than the offending thread.
 
+### Scheduling — sched_ext is not used here
+
+`ananicy-cpp` with the CachyOS rules is the whole of it.
+
+`scx_lavd` starves runnable tasks on this kernel. A task goes unscheduled past
+the sched_ext watchdog's threshold and the kernel ejects the scheduler:
+
+```
+sched_ext: BPF scheduler "lavd_1.1.3_…" disabled (runnable task stall)
+Error: EXIT: runnable task stall (Vulkan Submissi[71729] failed to run for 35.829s)
+```
+
+`Restart=` then brings it back into the same failure a minute later, so the
+machine takes one 35–45s freeze per cycle for as long as it is enabled. Some
+ejections read `runtime error (RCU CPU stall detected!)` instead.
+
+What makes this hard to attribute is that the freeze is **system-wide and
+self-healing**. It ends when the watchdog fires, so whatever was on screen
+looks like it hung and recovered by itself, and the threads the ejection names
+are simply those of whichever process has the most of them — a game's
+`Job.Worker`s and `Vulkan Submissi`, a Chromium `VizCompositorTh`. The
+scheduler is never the thing that appears to be at fault.
+
+The measurements that name it rather than the program that seems to hang:
+`journalctl -b -g 'EXIT:'` gives the starved thread and the duration, and
+`systemctl show scx -p NRestarts` counts the cycles. During a stall the suspect
+process burns **zero CPU ticks** over a multi-second sample, `/proc/pressure/io`
+and `memory` are flat zero and no thread sits in `D`, while `/proc/pressure/cpu`
+reads `some avg10=67` — nothing is working and everything is waiting for a CPU.
+A GPU at 19% and 31W says the same thing from the other end.
+
+Re-enabling it needs a matched pair, which `scx_full-1.1.3` and this kernel are
+not: libbpf logs six struct_ops members it cannot find (`init_cids`,
+`cid_shard_size`, `rescue_quantum_us`, …) while the kernel answers that writing
+`p->scx.slice`/`dsq_vtime` directly is deprecated. Each is built against an ABI
+the other does not have.
+
 ### Hardening — read this before debugging a new crash
 
 `environment.memoryAllocator.provider = "graphene-hardened-light"` puts
@@ -828,15 +865,17 @@ to a spawn key.
 
 ### Discord and its theme
 
-`discord.override { withVencord = true; }`. The injection is part of the
+`discord.override { withEquicord = true; }`. The injection is part of the
 derivation: `app.asar` is moved aside and replaced by a directory whose
-`index.js` requires Vencord's patcher, so an update cannot leave a client
+`index.js` requires Equicord's patcher, so an update cannot leave a client
 half-patched the way patching an installed copy can.
 
-Vencord's data directory is `~/.config/Vencord` — the Electron user data path
+Equicord's data directory is `~/.config/Equicord` — the Electron user data path
 with the last component swapped, not something the Discord wrapper sets, and
-overridable with `VENCORD_USER_DATA_DIR`. Under it, `themes/` holds theme
-files and `settings/settings.json` holds which of them are on.
+overridable with `EQUICORD_USER_DATA_DIR`. Under it, `themes/` holds theme
+files and `settings/settings.json` holds which of them are on. It is a Vencord
+fork and reads Vencord's settings schema, so a settings file carried across
+applies; plugins the fork does not know are ignored rather than rejected.
 
 The theme is refact0r's Midnight, pinned in `pkgs/midnight-discord.nix`, with a
 block of variable overrides carrying this machine's palette. Three things about
@@ -847,14 +886,14 @@ how that is assembled:
   and those overrides into the template matugen actually reads. A tracked file
   cannot name a store path without going stale, which is the same reason the
   matugen config itself is generated.
-- **Concatenated rather than `@import`ed.** Vencord hands a theme's text to a
+- **Concatenated rather than `@import`ed.** Equicord hands a theme's text to a
   page served from `https://discord.com`, where the renderer refuses a
   `file://` subresource whatever the CSP says — and the URL Midnight's own
   install instructions point at is fetched again at every start, which is both
   a network dependency and an upstream that can change under the machine.
 - **Order is load-bearing.** Midnight defines a default for every variable the
   overrides set, so it has to come first; at equal specificity the last
-  declaration wins. The meta block has to be first of all, since Vencord reads
+  declaration wins. The meta block has to be first of all, since Equicord reads
   the theme's name and description from it and otherwise shows the filename.
 
 Colour details that are not free choices:
@@ -869,12 +908,12 @@ Colour details that are not free choices:
 
 Two runtime behaviours worth relying on:
 
-- **Vencord watches `themes/` and `settings/quickCss.css`**, pushing an update
+- **Equicord watches `themes/` and `settings/quickCss.css`**, pushing an update
   into the renderer on change. A wallpaper change therefore restyles a running
   Discord with no restart.
-- `settings.json` is Vencord's to write — every GUI toggle rewrites it — so it
+- `settings.json` is Equicord's to write — every GUI toggle rewrites it — so it
   is seeded by an activation script only when absent, which is what enables the
-  theme on a machine where Vencord has never run. A partial file is enough; the
+  theme on a machine where Equicord has never run. A partial file is enough; the
   defaults are merged in underneath. Disabling the theme in the UI therefore
   sticks.
 
@@ -950,7 +989,7 @@ absorb that the way wayle's `config.toml` has one.
 
 So `home.activation.osuSettings` seeds them instead, copying only what is
 absent and leaving everything afterwards to the game, the same arrangement
-Vencord's `settings.json` has. **A partial file is enough** — osu!framework
+Equicord's `settings.json` has. **A partial file is enough** — osu!framework
 applies the keys it finds and keeps its own defaults for the rest, then writes
 the full set back on exit.
 

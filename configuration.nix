@@ -568,11 +568,6 @@ in
     openFirewall = false;
   };
 
-  services.scx = {
-    enable = true;
-    scheduler = "scx_lavd";
-  };
-
   services.ananicy = {
     enable = true;
     package = pkgs.ananicy-cpp;
@@ -822,6 +817,13 @@ in
     # it, so `dlopen("libcuda.so.1")` succeeding is entirely down to the cache.
     lmstudio
 
+    # The other local inference runtime, and the one that reaches models this
+    # card cannot hold: it streams MoE experts between system RAM and the GPU
+    # rather than requiring the whole checkpoint in VRAM. `ft` builds its own
+    # venv under ~/.freetoken on first use, since the CUDA wheel stack it wants
+    # is published nowhere nixpkgs can follow.
+    freetoken
+
     # Thunar's own search filters visible names in the current folder only; its
     # "Find in this folder" item shells out to catfish for anything recursive
     # or content-based, and silently does nothing when catfish is absent.
@@ -831,12 +833,12 @@ in
     mpv
     anytype
 
-    # Vencord is what carries the theme: it replaces app.asar with a stub that
-    # requires its patcher, and reads ~/.config/Vencord/themes/ from inside the
+    # Equicord is what carries the theme: it replaces app.asar with a stub that
+    # requires its patcher, and reads ~/.config/Equicord/themes/ from inside the
     # renderer. Nothing else about the client changes, and the injection is
     # part of the derivation rather than something applied to an installed
     # copy, so an update cannot leave it half-patched.
-    (discord.override { withVencord = true; })
+    (discord.override { withEquicord = true; })
     nokochat
     telegram-desktop
 
@@ -880,6 +882,35 @@ in
 
   environment.sessionVariables = {
     NIXOS_OZONE_WL = "1";
+
+    # This one is not for anything on this system. mesa's libgbm is patched
+    # with exactly these two directories as its compiled-in default, so every
+    # host program already looks there and naming them changes nothing --
+    # `LIBGL_DRIVERS_PATH` is set the same way by `hardware.graphics` and has
+    # no GBM counterpart. The reader is pressure-vessel.
+    #
+    # Building a Proton container means enumerating the host graphics stack
+    # and copying it in, and that enumeration walks the library directories
+    # the provider's ldconfig reports. There is no ldconfig cache here, so it
+    # reports none -- `Unable to determine architecture of provider /
+    # ldconfig` on stderr -- and `GBM_BACKENDS_PATH` is the only other place
+    # it looks for GBM. Without it the container gets no backends and is
+    # still handed a `GBM_BACKENDS_PATH` of its own naming the empty override
+    # directories, so inside it every `gbm_create_device()` fails on every
+    # DRM node. Drivers that arrive by a different route are unaffected,
+    # which is what makes this look like a working container: DXVK picks the
+    # right GPU and the game renders.
+    #
+    # Anything in the container that allocates through GBM gets nothing.
+    # spout2pw -- the Spout-to-PipeWire bridge that carries VTube Studio's
+    # output to OBS -- allocates its dmabufs that way, so its stream never
+    # starts, the PipeWire Video source in OBS stays unconnected, and the
+    # only sign of it is `Failed to set up Vulkan for stream (c000000d)`.
+    #
+    # It has to be set out here. pressure-vessel overwrites the variable
+    # inside the container, so a value in Steam's launch options reaches the
+    # game already replaced; this one is read before the container is built.
+    GBM_BACKENDS_PATH = "/run/opengl-driver/lib/gbm:/run/opengl-driver-32/lib/gbm";
   };
 
   fonts.packages = with pkgs; [
