@@ -1819,10 +1819,11 @@ in
     # what the workspaces module resolves its own active colours to.
     "wayle/styles/index.scss".force = true;
     "wayle/styles/index.scss".text = ''
-      // Match each dropdown's title bar to its main surface. The remaining
-      // border keeps the header legible without introducing a raised strip.
+      // Make each dropdown's title bar part of the main surface rather than a
+      // separate strip. The content spacing is enough to preserve hierarchy.
       .dropdown-header {
           background: var(--bg-surface);
+          border-bottom: none;
       }
 
       .custom.ws-open menubutton.bar-button > button.toggle {
