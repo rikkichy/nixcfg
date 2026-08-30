@@ -6,45 +6,109 @@ let
     runtimeInputs = with pkgs; [ curl jq libnotify gnugrep gnused coreutils ];
     text = ''
       api=http://127.0.0.1:9090
-      group=PROXY
       state="''${XDG_STATE_HOME:-$HOME/.local/state}/vpn"
-      last="$state/last-node"
+      last_subscription="$state/last-subscription"
 
       # --noproxy matters: this must reach mihomo even when http_proxy points
-      # at mihomo's own mixed-port.
-      api_get() { curl -fsS --noproxy '*' --max-time 3 "$api/proxies/$group"; }
+      # at mihomo's own mixed-port. Group names are URL-encoded so this remains
+      # safe if a future subscription gets a human-readable group name.
+      api_get() {
+        endpoint=$(jq -rn --arg group "$1" '$group | @uri')
+        curl -fsS --noproxy '*' --max-time 3 "$api/proxies/$endpoint"
+      }
       api_put() {
-        curl -fsS --noproxy '*' --max-time 3 -X PUT "$api/proxies/$group" \
-          --data "$(jq -nc --arg n "$1" '{name:$n}')"
+        endpoint=$(jq -rn --arg group "$1" '$group | @uri')
+        curl -fsS --noproxy '*' --max-time 3 -X PUT "$api/proxies/$endpoint" \
+          --data "$(jq -nc --arg n "$2" '{name:$n}')"
       }
 
-      api_providers() { curl -fsS --noproxy '*' --max-time 5 "$api/providers/proxies"; }
+      api_provider() {
+        endpoint=$(jq -rn --arg provider "$1" '$provider | @uri')
+        curl -fsS --noproxy '*' --max-time 5 "$api/providers/proxies/$endpoint"
+      }
 
       say() {
         printf '%s\n' "$2"
         notify-send -a VPN -i "$1" VPN "$2" 2>/dev/null || true
       }
 
-      # Every node the group currently offers, minus the pseudo-entries, sorted
-      # fastest first, as "delay<TAB>name". Delay 0 means the health check has
-      # never succeeded -- a dead node -- so those sort last rather than first.
+      subscription_label() {
+        case "$1" in
+          PRIMARY) printf '%s\n' Primary ;;
+          QUATTRO) printf '%s\n' Quattro ;;
+          *) return 1 ;;
+        esac
+      }
+
+      subscription_provider() {
+        case "$1" in
+          PRIMARY) printf '%s\n' primary ;;
+          QUATTRO) printf '%s\n' quattro ;;
+          *) return 1 ;;
+        esac
+      }
+
+      normalise_subscription() {
+        case "''${1,,}" in
+          primary) printf '%s\n' PRIMARY ;;
+          quattro) printf '%s\n' QUATTRO ;;
+          *) return 1 ;;
+        esac
+      }
+
+      remember_subscription() {
+        mkdir -p "$state"
+        printf '%s\n' "$1" > "$last_subscription"
+      }
+
+      active_subscription() {
+        case "$current_group" in
+          PRIMARY|QUATTRO) printf '%s\n' "$current_group" ;;
+          *)
+            if [ -r "$last_subscription" ]; then
+              saved=$(cat "$last_subscription")
+              case "$saved" in
+                PRIMARY|QUATTRO) printf '%s\n' "$saved"; return ;;
+              esac
+            fi
+            printf '%s\n' PRIMARY
+            ;;
+        esac
+      }
+
+      group_selection() { api_get "$1" | jq -er '.now'; }
+
+      display_selection() {
+        selection=$(group_selection "$1")
+        if [ "$selection" = "$1-AUTO" ]; then
+          printf '%s\n' AUTO
+        else
+          printf '%s\n' "$selection"
+        fi
+      }
+
+      # Every node the active subscription offers, minus its AUTO group and
+      # the built-ins, sorted fastest first as "delay<TAB>name". Delay 0 means
+      # the health check has never succeeded, so those sort last.
       #
-      # Two endpoints, because they hold different halves: /proxies/PROXY knows
-      # which nodes the group offers but carries no history for them (only the
-      # nine built-ins like DIRECT and AUTO are top-level entries there), while
-      # /providers/proxies carries the health-check history but not group
-      # membership. Reading only the first is why every latency showed as "--".
-      #
-      # Delays are merged across *all* providers, so a second subscription is
-      # picked up with no change here and no change on the Stream Deck.
+      # Two endpoints hold different halves: the subscription group knows its
+      # membership but has no node history, while its provider endpoint has the
+      # health-check history. Both responses enter jq through file descriptors,
+      # not command arguments: Quattro's history is larger than Linux's 128 KiB
+      # per-argument limit even though the resulting node rows are small.
       nodes() {
-        jq -rn --argjson g "$(api_get)" --argjson p "$(api_providers)" '
-          ($p.providers | to_entries | map(.value.proxies // []) | flatten
+        active=$(active_subscription)
+        provider=$(subscription_provider "$active")
+        jq -rn \
+          --arg auto "$active-AUTO" \
+          --slurpfile g <(api_get "$active") \
+          --slurpfile p <(api_provider "$provider") '
+          (($p[0].proxies // [])
             | map({key: .name, value: ((.history | last | .delay) // 0)})
             | from_entries) as $d
-          | ($g.all // [])
+          | ($g[0].all // [])
           | map(select(. as $n
-              | ["AUTO","DIRECT","GLOBAL","REJECT","REJECT-DROP","PROXY","COMPATIBLE","PASS","PASS-RULE"]
+              | [$auto,"DIRECT","GLOBAL","REJECT","REJECT-DROP","PROXY","COMPATIBLE","PASS","PASS-RULE"]
               | index($n) | not))
           | map({n: ., d: ($d[.] // 0)})
           | (map(select(.d > 0)) | sort_by(.d)) + map(select(.d == 0))
@@ -52,36 +116,47 @@ let
         '
       }
 
-      if ! cur=$(api_get | jq -er '.now'); then
+      if ! current_group=$(api_get PROXY | jq -er '.now'); then
         say network-error-symbolic "mihomo is not answering on $api"
         exit 1
       fi
 
       turn_on() {
-        target=AUTO
-        if [ -r "$last" ]; then
-          saved=$(cat "$last")
-          if [ -n "$saved" ] && [ "$saved" != DIRECT ]; then target=$saved; fi
-        fi
-        api_put "$target"
-        say network-vpn-symbolic "on -- $target"
+        active=$(active_subscription)
+        api_put PROXY "$active"
+        remember_subscription "$active"
+        say network-vpn-symbolic "on -- $(subscription_label "$active") / $(display_selection "$active")"
       }
 
       turn_off() {
-        if [ "$cur" != DIRECT ]; then
-          mkdir -p "$state"
-          printf '%s\n' "$cur" > "$last"
-        fi
-        api_put DIRECT
+        case "$current_group" in
+          PRIMARY|QUATTRO) remember_subscription "$current_group" ;;
+        esac
+        api_put PROXY DIRECT
         say network-offline-symbolic "off -- direct connection"
       }
 
+      select_subscription() {
+        if ! target=$(normalise_subscription "''${1:-}"); then
+          echo "usage: vpn subscription <primary|quattro>" >&2
+          exit 2
+        fi
+        api_put PROXY "$target"
+        remember_subscription "$target"
+        say network-vpn-symbolic "subscription -- $(subscription_label "$target")"
+      }
+
+      activate_selection() {
+        active=$(active_subscription)
+        api_put "$active" "$1"
+        api_put PROXY "$active"
+        remember_subscription "$active"
+      }
+
       # `vpn use sweden` etc. The argument is a case-insensitive regex matched
-      # against live node names, and the fastest match wins -- deliberately not
-      # an exact name. Subscription node names carry flags, Cyrillic, numbering
-      # and trailing spaces that change without notice, so a Stream Deck key
-      # pinned to one literal name would break the next time the provider
-      # renamed anything.
+      # against the active subscription's live node names, and the fastest
+      # match wins. Flags, numbering and suffixes in those names can all change
+      # without notice, so Stream Deck keys must not depend on a literal name.
       use_node() {
         if [ -z "''${1:-}" ]; then
           echo "usage: vpn use <pattern>" >&2; exit 2
@@ -91,55 +166,67 @@ let
           say network-error-symbolic "no node matching '$1'"
           exit 1
         fi
-        api_put "$target"
+        activate_selection "$target"
         say network-vpn-symbolic "$target"
       }
 
-      # The exact-name counterpart, for a caller that picked from the live
-      # list rather than typing at it. `use` cannot serve that: node names
-      # carry | and ( ), which are regex metacharacters, so feeding a name
-      # back through it matches an alternation of its own fragments and
-      # selects some other node -- quietly, since a wrong match is still a
-      # match. Membership is checked against the group first, so a stale name
-      # fails loudly instead of being PUT and silently ignored.
+      # The exact-name counterpart for a caller that picked from the live list.
+      # Membership is checked first so a stale row fails loudly rather than a
+      # PUT being silently ignored. A here-string avoids grep -q closing a pipe
+      # early and turning a successful match into a pipefail/SIGPIPE failure.
       select_node() {
         if [ -z "''${1:-}" ]; then
           echo "usage: vpn select <name>" >&2; exit 2
         fi
-        # A here-string rather than a pipe into grep -q: -q exits on the first
-        # match, which SIGPIPEs whatever is upstream, and pipefail then reports
-        # the whole pipeline as failed. That inverts this test -- a node that
-        # is present reads as missing -- and only when the write loses the
-        # race, so it would hold up under testing and fail in use.
         names=$(nodes | cut -f2-)
         if ! grep -qxF "$1" <<< "$names"; then
           say network-error-symbolic "no node named '$1'"
           exit 1
         fi
-        api_put "$1"
+        activate_selection "$1"
         say network-vpn-symbolic "$1"
+      }
+
+      status() {
+        if [ "$current_group" = DIRECT ]; then
+          printf '%s\n' DIRECT
+        else
+          display_selection "$(active_subscription)"
+        fi
       }
 
       case "''${1:-toggle}" in
         on)     turn_on ;;
         off)    turn_off ;;
-        toggle) if [ "$cur" = DIRECT ]; then turn_on; else turn_off; fi ;;
+        toggle) if [ "$current_group" = DIRECT ]; then turn_on; else turn_off; fi ;;
         use)    use_node "''${2:-}" ;;
         select) select_node "''${2:-}" ;;
+        # Machine-readable rows for vpnp, as "group<TAB>label".
+        subscriptions) printf 'PRIMARY\tPrimary\nQUATTRO\tQuattro\n' ;;
+        subscription)
+          if [ -n "''${2:-}" ]; then
+            select_subscription "$2"
+          else
+            subscription_label "$(active_subscription)"
+          fi
+          ;;
         # The same rows `list` prints, as "delay<TAB>name" with no alignment
-        # or units, for a picker to feed into fuzzel. Kept separate so the
-        # human format stays free to change.
+        # or units, for a picker to feed into fuzzel.
         nodes)  nodes ;;
-        # AUTO is excluded from `use` (it is a group, not a node), so it needs
-        # its own verb -- a Stream Deck key has nothing else to call.
-        auto)   api_put AUTO; say network-vpn-symbolic "AUTO" ;;
-        status) printf '%s\n' "$cur" ;;
-        list)   printf 'current: %s\n\n' "$cur"; nodes | while IFS=$'\t' read -r d n; do
+        # AUTO belongs to the active subscription and selecting it also turns
+        # the tunnel on when PROXY is currently at DIRECT.
+        auto)   active=$(active_subscription)
+                activate_selection "$active-AUTO"
+                say network-vpn-symbolic "$(subscription_label "$active") / AUTO" ;;
+        status) status ;;
+        list)   printf 'subscription: %s\ncurrent: %s\n\n' \
+                  "$(subscription_label "$(active_subscription)")" "$(status)"
+                nodes | while IFS=$'\t' read -r d n; do
                   if [ "$d" = 0 ]; then printf '   --   %s\n' "$n"; else printf '%5dms %s\n' "$d" "$n"; fi
                 done ;;
         ip)     curl -fsS --max-time 15 https://cloudflare.com/cdn-cgi/trace \
                   | sed -n 's/^ip=//p;s/^loc=/ /p' | tr -d '\n'; echo ;;
-        *)      echo "usage: vpn [toggle|on|off|auto|use <pattern>|select <name>|nodes|status|list|ip]" >&2; exit 2 ;;
+        *)      echo "usage: vpn [toggle|on|off|auto|subscription [primary|quattro]|subscriptions|use <pattern>|select <name>|nodes|status|list|ip]" >&2; exit 2 ;;
       esac
     '';
   };
@@ -1062,7 +1149,7 @@ in
   networking.networkmanager.enable = true;
 
   systemd.services.mihomo-config = {
-    description = "Assemble mihomo's config from the template and the subscription URL";
+    description = "Assemble mihomo's config from the template and subscription credentials";
     before = [ "mihomo.service" ];
     requiredBy = [ "mihomo.service" ];
     serviceConfig = {
@@ -1071,8 +1158,10 @@ in
     };
     script = ''
       set -eu
-      url=$(tr -d '[:space:]' < /etc/mihomo/subscription.url)
-      [ -n "$url" ]
+      primary_url=$(tr -d '[:space:]' < /etc/mihomo/subscription.url)
+      quattro_url=$(tr -d '[:space:]' < /etc/mihomo/quattro.url)
+      [ -n "$primary_url" ]
+      [ -n "$quattro_url" ]
 
       if [ ! -s /etc/mihomo/hwid ]; then
         tr -d '[:space:]' < /etc/machine-id > /etc/mihomo/hwid
@@ -1080,8 +1169,19 @@ in
       fi
       hwid=$(tr -d '[:space:]' < /etc/mihomo/hwid)
 
+      # URLs are sed replacement text rather than patterns. Escape every
+      # character with meaning there so query strings remain byte-for-byte
+      # credentials and never become part of the tracked template.
+      escape_sed() { printf '%s' "$1" | ${pkgs.gnused}/bin/sed 's/[\\&|]/\\&/g'; }
+      primary_url=$(escape_sed "$primary_url")
+      quattro_url=$(escape_sed "$quattro_url")
+      hwid=$(escape_sed "$hwid")
+
       install -d -m 700 /run/mihomo
-      ${pkgs.gnused}/bin/sed -e "s|@SUBSCRIPTION_URL@|$url|" -e "s|@HWID@|$hwid|" \
+      ${pkgs.gnused}/bin/sed \
+        -e "s|@PRIMARY_SUBSCRIPTION_URL@|$primary_url|" \
+        -e "s|@QUATTRO_SUBSCRIPTION_URL@|$quattro_url|" \
+        -e "s|@HWID@|$hwid|" \
         ${./dotfiles/mihomo.yaml} > /run/mihomo/config.yaml
       chmod 600 /run/mihomo/config.yaml
     '';
@@ -1102,9 +1202,15 @@ in
   # service that failed. Retrying is only useful because the provider carries
   # `proxy: DIRECT`: a fetch that routed through the tunnel it is trying to
   # build could never repair itself no matter how often it ran.
-  systemd.services.mihomo.serviceConfig = {
-    Restart = "on-failure";
-    RestartSec = "5s";
+  systemd.services.mihomo = {
+    # The daemon reads the assembled file only at startup. Tie the tracked
+    # template to its unit so a switch cannot leave the previous routing graph
+    # running against a newly generated /run/mihomo/config.yaml.
+    restartTriggers = [ ./dotfiles/mihomo.yaml ];
+    serviceConfig = {
+      Restart = "on-failure";
+      RestartSec = "5s";
+    };
   };
 
   # NetworkManager-wait-online blocks boot until a link is up, which cost

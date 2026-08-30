@@ -197,73 +197,74 @@ boot; there is no app to launch.
 
 ### Turning it off
 
-**`SUPER + SHIFT + V`** opens a picker over the live node list, fastest first,
-with `DIRECT` and `AUTO` pinned at the top. Same from a terminal as `vpnp`, or
-drive it directly:
+**`SUPER + SHIFT + V`** opens a picker over the active subscription's live node
+list, fastest first. `DIRECT`, `AUTO`, **Primary**, and **Quattro** stay pinned
+at the top, so the same picker switches subscriptions and nodes. It is also
+available as `vpnp`, or through the CLI beneath it:
 
 ```
-vpn                  # toggle
-vpn on               # back to the node you were last on
-vpn off              # direct connection
-vpn status           # prints the current node, or DIRECT
-vpn list             # every node, fastest first, with latency
-vpn use <pattern>    # switch to the fastest node matching <pattern>
-vpn select <name>    # switch to exactly this node
-vpn ip               # exit IP and country, to confirm where you leave from
+vpn                              # toggle
+vpn on                           # restore the active subscription
+vpn off                          # direct connection
+vpn status                       # current node, AUTO, or DIRECT
+vpn subscription                 # active subscription name
+vpn subscription primary         # switch to Primary
+vpn subscription quattro         # switch to Quattro
+vpn list                         # active subscription's nodes and latency
+vpn use <pattern>                # fastest matching node in that subscription
+vpn select <name>                # exact node in that subscription
+vpn ip                           # exit IP and country
 ```
 
-Off records the node that was live, so `vpn on` returns to *that* node rather
-than resetting to AUTO (kept in `~/.local/state/vpn/last-node`).
+Each subscription keeps its own AUTO/manual node selection in mihomo's cache.
+Off records the active subscription in
+`~/.local/state/vpn/last-subscription`, so `vpn on` restores the same provider
+and that provider restores its own node.
 
 `vpn use` takes a case-insensitive regex, not a node name — `vpn use швец`
 picks the fastest Swedish node. **Match on the flag emoji** (`vpn use 🇸🇪`) when
 you want something durable: node names carry numbering, `WlFl`/`LTE` suffixes
-and trailing spaces that the provider changes without notice, and a second
-subscription would name its nodes differently again. The node list is read live
-from the proxy group, so adding another `proxy-providers` entry needs no change
-here — its nodes just join the pool and get considered on latency like the
-rest.
+and trailing spaces that providers change without notice.
 
-Or do it by hand: dashboard → **PROXY** group → **DIRECT**. Either way it is
-the same switch. Traffic still goes through the TUN, mihomo just dials it out
-the physical interface instead of a node, so nothing has to be stopped or
-started and nothing drops while you switch.
+The dashboard exposes the same hierarchy: **PROXY** chooses **PRIMARY**,
+**QUATTRO**, or **DIRECT**; each subscription group chooses its own AUTO group
+or a node. DIRECT still sends traffic through the TUN and DNS hijack, but mihomo
+dials out the physical interface, so nothing has to be stopped.
 
-**The choice sticks across reboots** (`profile.store-selected`, cached in
-`/var/lib/private/mihomo/cache.db`). So the VPN is not on because it insists —
-it is on because that is what was last selected. Pick DIRECT once and it stays
-DIRECT until you change it. Pick **AUTO** to go back and let latency choose the
-node.
-
-Deleting `cache.db` resets the selection to AUTO, i.e. VPN on.
+**All choices stick across reboots** (`profile.store-selected`, cached in
+`/var/lib/private/mihomo/cache.db`). DIRECT remains DIRECT until explicitly
+changed, and both subscription groups retain their independent node choices.
+Deleting `cache.db` selects Primary and its AUTO group.
 
 To stop the service outright — `systemctl stop mihomo` — you do not need it for
 this, and it also takes the DNS hijack down with it. DIRECT is the toggle you
 want.
 
-The config lives in `dotfiles/mihomo.yaml`. Two values cannot: the subscription
-URL is a credential and the device id is machine-specific, and this repo is
-public. Both live in `/etc/mihomo/` and are spliced into the config at boot.
+The config lives in `dotfiles/mihomo.yaml`. Three values cannot: both
+subscription URLs are credentials and the device id is machine-specific, while
+this repo is public. They live in `/etc/mihomo/` and are spliced into the config
+at boot.
 
 ### On a fresh install
 
-Write the subscription URL **before the first rebuild** — `mihomo-config`
-refuses to run without it, and mihomo will not start:
+Write both subscription URLs **before the first rebuild** — `mihomo-config`
+refuses to run without either one, and mihomo will not start:
 
 ```
 sudo install -d -m 755 /etc/mihomo
-printf '%s\n' 'https://…your subscription link…' | sudo tee /etc/mihomo/subscription.url
-sudo chmod 600 /etc/mihomo/subscription.url
+printf '%s\n' 'https://…primary subscription link…' | sudo tee /etc/mihomo/subscription.url
+printf '%s\n' 'https://…Quattro subscription link…' | sudo tee /etc/mihomo/quattro.url
+sudo chmod 600 /etc/mihomo/subscription.url /etc/mihomo/quattro.url
 ```
 
-If you have a backup of `/etc/mihomo/hwid` from the old system, restore it in
-the same step. Otherwise it is seeded from `/etc/machine-id` on first boot,
-which a fresh install regenerates — and the panel caps how many devices a
-subscription may have, so a reinstall silently consumes another slot and the
-VPN stays dead until you free one in the panel by hand. Two small files, both
-`0600`; back up the pair, not just the link.
+If you have a backup of `/etc/mihomo/hwid` from the installed system, restore it
+in the same step. Otherwise it is seeded from `/etc/machine-id` on first boot,
+which a fresh install regenerates — and a panel can cap how many devices a
+subscription may have, so a reinstall may consume another slot while the VPN
+stays dead until that device is freed in the panel. All three files are `0600`;
+back up the set, not just the links.
 
-Forgot, and rebuilt anyway? Nothing is broken — write the file and:
+Forgot, and rebuilt anyway? Nothing is broken — write the missing file and:
 
 ```
 sudo systemctl restart mihomo

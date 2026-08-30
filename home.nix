@@ -840,39 +840,45 @@ in
       '';
     })
 
-    # The VPN picker. `vpn nodes` already emits the group sorted fastest
-    # first, so this is mostly presentation: latency in the left column, the
-    # provider's name as it stands, and DIRECT and AUTO pinned above the list
-    # since neither is a node and neither appears in it.
+    # The VPN picker. `vpn nodes` emits only the active subscription, sorted
+    # fastest first. DIRECT, AUTO and every subscription are pinned above that
+    # list, so changing providers and choosing a node are one fuzzel surface.
+    # Each subscription row restores that provider's own saved AUTO/manual
+    # selection; AUTO applies to whichever subscription is active.
     #
-    # The selection goes back through `vpn select`, not `vpn use`. Names carry
-    # | and ( ), so putting one back through the regex path matches an
-    # alternation of its own fragments -- a wrong node, chosen silently. Rows
-    # are addressed by --index for the same reason: nothing here has to
-    # survive a round trip through how the row was rendered.
+    # Node selections go back through `vpn select`, not `vpn use`. Names carry
+    # | and ( ), so putting one back through the regex path can silently match
+    # an alternation of its own fragments. Every row is addressed by --index,
+    # which also avoids depending on the icon-decorated line fuzzel returns.
     #
     # A node whose health check has never succeeded reports 0 and sorts last;
     # showing that as "0ms" would read as the fastest thing on the list, so it
     # prints as a dash instead.
     #
-    # The icons come through Rofi's extended dmenu protocol, which takes a theme
-    # name as readily as the absolute paths wpp passes it. DIRECT and AUTO get
-    # their own so the two rows that are not nodes read as the controls they
-    # are; every real node is a server and looks like one.
-    # vpn itself is left to the PATH, as hyprctl and uwsm are above: it is a
-    # writeShellApplication in configuration.nix rather than a package, so
-    # there is nothing here to name in runtimeInputs.
+    # The icons use Rofi's extended dmenu protocol. vpn itself is left to PATH:
+    # it is a system writeShellApplication from configuration.nix rather than a
+    # Home Manager package that can be named in runtimeInputs.
     (writeShellApplication {
       name = "vpnp";
       runtimeInputs = [ fuzzel ];
       text = ''
         cur=$(vpn status)
+        active=$(vpn subscription)
+        mapfile -t subscriptions < <(vpn subscriptions)
         mapfile -t rows < <(vpn nodes)
 
         idx=$(
           {
             printf 'DIRECT  — off\x00icon\x1fnetwork-offline\n'
-            printf 'AUTO    — fastest available\x00icon\x1fnetwork-vpn\n'
+            printf 'AUTO    — fastest in %s\x00icon\x1fnetwork-vpn\n' "$active"
+            for subscription in "''${subscriptions[@]}"; do
+              label=''${subscription#*$'\t'}
+              if [ "$label" = "$active" ]; then
+                printf '%-8s— active subscription\x00icon\x1fnetwork-vpn\n' "$label"
+              else
+                printf '%-8s— switch subscription\x00icon\x1fnetwork-server\n' "$label"
+              fi
+            done
             for r in "''${rows[@]}"; do
               d=''${r%%$'\t'*}
               n=''${r#*$'\t'}
@@ -882,15 +888,22 @@ in
                 printf '%5dms %s\x00icon\x1fnetwork-server\n' "$d" "$n"
               fi
             done
-          } | fuzzel --dmenu --index --prompt "vpn [$cur]> " \
-                --font "Google Sans Flex Rounded:size=15" --lines 12 --width 46
+          } | fuzzel --dmenu --index --prompt "vpn [$active · $cur]> " \
+                --font "Google Sans Flex Rounded:size=15" --lines 14 --width 48
         ) || exit 0
 
+        subscription_end=$((2 + ''${#subscriptions[@]}))
         case "$idx" in
           "" | *[!0-9]*) exit 0 ;;
           0) vpn off ;;
           1) vpn auto ;;
-          *) vpn select "''${rows[idx - 2]#*$'\t'}" ;;
+          *)
+            if (( idx < subscription_end )); then
+              vpn subscription "''${subscriptions[idx - 2]%%$'\t'*}"
+            else
+              vpn select "''${rows[idx - subscription_end]#*$'\t'}"
+            fi
+            ;;
         esac
       '';
     })

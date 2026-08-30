@@ -1,7 +1,7 @@
-# Template for /run/mihomo/config.yaml. @SUBSCRIPTION_URL@ is spliced in at
-# boot by the mihomo-config unit in configuration.nix, from
-# /etc/mihomo/subscription.url -- the subscription link is a credential and this
-# repo is public, so it is the one thing that cannot live here.
+# Template for /run/mihomo/config.yaml. The two subscription URLs are spliced in
+# at boot by the mihomo-config unit in configuration.nix, from root-only files
+# under /etc/mihomo. Subscription links are credentials and this repo is public,
+# so their values cannot live here.
 
 mixed-port: 7890
 allow-lan: false
@@ -47,32 +47,42 @@ dns:
     - 1.1.1.1
     - 8.8.8.8
 
-# Pulls the node list from the subscription and refreshes it hourly, so nodes
-# stay current without re-importing anything by hand.
+# Each provider refreshes hourly and fetches outside the tunnel. A fetch routed
+# through MATCH,PROXY would depend on the nodes it is trying to update, so one
+# bad update could not repair itself and would surface only as a bare `EOF`.
 #
-# The header block is not optional. The panel (Remnawave) gates on device
-# identity, and without `x-hwid` it answers 200 OK with a perfectly valid
-# 1.4KB profile containing one node named "App not supported" pointed at
-# 0.0.0.0:1 -- so mihomo starts happily, matches MATCH,PROXY, and every
-# connection dies with "connect: connection refused". The internet appears to
-# break rather than the subscription appearing to fail. With the header the
-# same URL returns 46 real nodes. Stock clients send no such header, so the
-# panel is only usable from a client that can set one.
-#
-# User-Agent is a separate axis and is about *format*, not access: `clash.meta`
-# gets Clash YAML, a generic UA gets base64 links. mihomo's default is already
-# right; it is pinned here so the format cannot drift.
+# The primary panel (Remnawave) requires the device identity header. Without it
+# the response is valid Clash YAML containing one "App not supported" node at
+# 0.0.0.0:1, which makes the tunnel look healthy while all connections fail.
+# `clash.meta` selects YAML rather than the base64 format from both panels.
 proxy-providers:
-  subscription:
+  primary:
     type: http
-    url: "@SUBSCRIPTION_URL@"
+    url: "@PRIMARY_SUBSCRIPTION_URL@"
     interval: 3600
-    path: ./providers/subscription.yaml
-    # Fetch outside the tunnel. Without this mihomo dials the subscription
-    # through its own TUN, where MATCH,PROXY sends it to the very nodes it is
-    # trying to download -- so a failed update can never repair itself, and the
-    # error surfaces as a bare `EOF` with nothing logged. It works exactly once,
-    # on the first start, by racing the routing rules into place.
+    path: ./providers/primary.yaml
+    proxy: DIRECT
+    header:
+      User-Agent:
+        - "clash.meta/v1.19.29"
+      x-hwid:
+        - "@HWID@"
+      x-device-os:
+        - "Linux"
+      x-ver-os:
+        - "NixOS"
+      x-device-model:
+        - "nix"
+    health-check:
+      enable: true
+      url: https://www.gstatic.com/generate_204
+      interval: 300
+
+  quattro:
+    type: http
+    url: "@QUATTRO_SUBSCRIPTION_URL@"
+    interval: 3600
+    path: ./providers/quattro.yaml
     proxy: DIRECT
     header:
       User-Agent:
@@ -91,24 +101,43 @@ proxy-providers:
       interval: 300
 
 proxy-groups:
-  # The one switch that matters, in the dashboard. DIRECT is the off position:
-  # traffic still enters the TUN, mihomo just dials it out the physical
-  # interface instead of a node, so there is nothing to stop and nothing to
-  # start. AUTO is first so it is the default on a machine with no saved
-  # selection yet (a fresh install).
+  # PROXY chooses a subscription or DIRECT. Each subscription group remembers
+  # its own AUTO/manual node selection, so switching providers restores exactly
+  # where that provider was left. DIRECT keeps the TUN and DNS hijack alive but
+  # sends traffic out the physical interface.
   - name: PROXY
     type: select
     proxies:
-      - AUTO
+      - PRIMARY
+      - QUATTRO
       - DIRECT
-    use:
-      - subscription
 
-  # Leave PROXY on AUTO and let latency decide which node.
-  - name: AUTO
+  - name: PRIMARY
+    type: select
+    proxies:
+      - PRIMARY-AUTO
+    use:
+      - primary
+
+  - name: PRIMARY-AUTO
     type: url-test
     use:
-      - subscription
+      - primary
+    url: https://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 50
+
+  - name: QUATTRO
+    type: select
+    proxies:
+      - QUATTRO-AUTO
+    use:
+      - quattro
+
+  - name: QUATTRO-AUTO
+    type: url-test
+    use:
+      - quattro
     url: https://www.gstatic.com/generate_204
     interval: 300
     tolerance: 50
