@@ -1,0 +1,109 @@
+/* Everything above this line is refact0r's Midnight, copied in from the store
+ * at build time. Everything below it is the half of this machine's
+ * configuration that does not depend on the wallpaper: the fonts, the shape of
+ * the window, and the animation settings.
+ *
+ * The colours are not here. They are rendered separately into Equicord's
+ * QuickCSS, because this file cannot change without the client dropping every
+ * theme it has loaded and fetching them again -- which is a visible flash of
+ * unstyled Discord. `settings/quickCss.css` is swapped into a live <style>
+ * element instead. dotfiles/matugen/templates/discord-palette.css is that
+ * half, and it wins over anything set here because Equicord appends the
+ * QuickCSS element after the themes element and both carry equal specificity.
+ *
+ * Midnight has to come first for the same reason: it defines its own default
+ * for every variable named here, and at equal specificity the last declaration
+ * is the one that wins. It is configured entirely through custom properties,
+ * so nothing here is a selector -- the theme itself decides what each variable
+ * paints.
+ */
+
+body {
+    /* Both faces are installed here, so neither is fetched at runtime. The
+     * upstream default is "figtree", which Midnight pulls from Google Fonts
+     * through an @import at the top of the file. */
+    --font: "Google Sans Flex";
+    --code-font: "DepartureMono Nerd Font";
+    font-weight: 400;
+
+    --gap: 12px;
+    --divider-thickness: 4px;
+    --border-thickness: 1px;
+
+    /* Midnight gates its own animations behind this, as
+     * `@container body style(--animations: on)`, and what those blocks carry
+     * is movement rather than timing: a channel in the list slides 10px to the
+     * right under the pointer, its unread dot slides with it, and the home
+     * button's moon spins. Off is what stops the sidebar shifting under the
+     * cursor. The transition durations Midnight reads -- list-item,
+     * dms-icon-svg, border-hover -- are deliberately not set here, since with
+     * this off nothing reads them.
+     *
+     * This only reaches the blocks Midnight gates. Its ungated transitions and
+     * every animation Discord ships are handled by the rule at the end of this
+     * file. */
+    --animations: off;
+
+    /* titlebar: the inbox button moves into the title bar, which is then free
+     * to be as short as the gap -- there is no window decoration to leave room
+     * for, since Hyprland draws the border. */
+    --top-bar-height: var(--gap);
+    --top-bar-button-position: titlebar;
+    --top-bar-title-position: off;
+    --subtle-top-bar-title: off;
+
+    --custom-window-controls: on;
+    --window-control-size: 14px;
+
+    --custom-dms-icon: custom;
+    --dms-icon-svg-url: url("https://refact0r.github.io/midnight-discord/assets/Font_Awesome_5_solid_moon.svg");
+    --dms-icon-svg-size: 90%;
+    --dms-icon-color-before: var(--icon-subtle);
+    --dms-icon-color-after: var(--white);
+
+    --custom-dms-background: off;
+    --dms-background-image-url: url("");
+    --dms-background-image-size: cover;
+    --dms-background-color: linear-gradient(70deg, var(--blue-2), var(--purple-2), var(--red-2));
+
+    --background-image: off;
+    --background-image-url: url("");
+
+    /* Transparency is off because these background colours are opaque: the
+     * blur and the removed base layer only work against colours that carry an
+     * alpha channel, and against opaque ones they paint holes. */
+    --transparency-tweaks: off;
+    --remove-bg-layer: off;
+    --panel-blur: off;
+    --blur-amount: 12px;
+
+    --custom-chatbar: off;
+    --chatbar-height: 47px;
+
+    --small-user-panel: off;
+}
+
+/* The rest of the animations: Midnight's ungated transitions -- borders,
+ * settings tabs, the members list -- and everything Discord itself ships,
+ * which is most of what moves.
+ *
+ * The durations are 0.01ms rather than 0. A transition whose combined duration
+ * is zero never starts and so fires no `transitionend`, and Discord waits on
+ * that event to unmount things: menus and modals that close by transitioning
+ * out stay on screen instead. 0.01ms is over within the same frame and still
+ * fires. Iteration count is pinned to 1 for the mirror of that problem -- an
+ * `infinite` spinner at 0.01ms would otherwise fire `animationiteration` once
+ * per frame forever.
+ *
+ * scroll-behavior belongs here rather than with the colours: smooth scrolling
+ * is motion, and jump-to-message is where it is most obvious. */
+*,
+*::before,
+*::after {
+    animation-delay: 0s !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+}

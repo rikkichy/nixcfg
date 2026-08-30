@@ -32,13 +32,22 @@ let
   # The hypr scheme is written through ~/.config/hypr, which is an out-of-store
   # symlink to this repo, so the file lands in the working tree and stays
   # writable. That is the whole reason hypr/ is mapped in rather than copied.
-  # The Equicord theme, whose template cannot be a tracked file: it is Midnight
-  # with this machine's palette appended, and Midnight arrives as a store path
-  # that a tracked file would have to name and then go stale on. Concatenated
-  # rather than @imported because Equicord hands a theme's text to a page served
-  # from https://discord.com, where a file:// subresource is refused by the
-  # renderer whatever the CSP says -- and the URL the theme documents importing
-  # is fetched afresh at every start.
+  # The Equicord theme: Midnight, with the half of this machine's
+  # configuration that does not follow the wallpaper appended to it. The
+  # colours are not in here. They are rendered into Equicord's QuickCSS
+  # instead, which is what keeps a wallpaper change from flashing the client
+  # unstyled: a theme file arrives in the renderer as
+  # `@import url("vencord:///themes/<name>?v=<timestamp>")`, and any change to
+  # any theme rewrites that <style> element's whole content with a fresh
+  # stamp, dropping every theme until the import resolves. Nothing rewrites
+  # this file, so nothing triggers that.
+  #
+  # It is built rather than tracked because Midnight arrives as a store path,
+  # which a tracked file would have to name and then go stale on. Concatenated
+  # rather than @imported because Equicord hands a theme's text to a page
+  # served from https://discord.com, where a file:// subresource is refused by
+  # the renderer whatever the CSP says -- and the URL the theme documents
+  # importing is fetched afresh at every start.
   #
   # The meta block has to be the first thing in the file: Equicord reads the
   # name and description out of it, and shows the filename for a theme that
@@ -46,7 +55,7 @@ let
   # The line dropped from Midnight is its webfont @import. Both faces the
   # overrides name are installed, so it fetches a font nothing then asks for --
   # at every Discord start, since a theme's CSS is parsed fresh each time.
-  discordTheme = pkgs.runCommand "discord-theme.css.tpl" { } ''
+  discordTheme = pkgs.runCommand "wallpaper.theme.css" { } ''
     cat ${
       pkgs.writeText "discord-theme-meta.css" ''
         /**
@@ -58,7 +67,7 @@ let
       ''
     } > $out
     sed '/fonts\.googleapis\.com/d' ${pkgs.midnight-discord} >> $out
-    cat ${./dotfiles/matugen/templates/discord.css} >> $out
+    cat ${./dotfiles/discord/theme.css} >> $out
   '';
 
   matugenConfig = pkgs.writeText "matugen-config.toml" (
@@ -87,7 +96,8 @@ let
     + entry "nvtop" "nvtop.colors" "${cfg}/nvtop/nvtop.colors"
     + entry "qt" "qt.colors" "${cfg}/qtengine/scheme.colors"
     + entry "cursor" "cursor.conf" cursorColours
-    + entryPath "discord" discordTheme "${cfg}/Equicord/themes/wallpaper.theme.css"
+    + entry "halrune" "halrune.svg" "${config.xdg.dataHome}/icons/hicolor/scalable/apps/halrune.svg"
+    + entry "discord" "discord-palette.css" "${cfg}/Equicord/settings/quickCss.css"
   );
 
   # Pushes the generated palette at every terminal that will take it. foot
@@ -390,81 +400,32 @@ in
     spotify = webApp "Spotify" "https://open.spotify.com" "spotify"
       "chrome-open.spotify.com__-Default";
 
-    # fuzzel's launcher lists desktop entries, not PATH, so a bare `wpp` binary
-    # is unreachable from it no matter how short the name is -- this entry is
-    # what actually makes it typeable there. Name and Exec are both "wpp" so
-    # the match happens on the first three keystrokes.
-    wpp = {
-      name = "wpp";
-      genericName = "Wallpaper";
-      comment = "Pick a wallpaper and retheme";
-      exec = "wpp";
-      icon = "preferences-desktop-wallpaper";
-      terminal = false;
-      categories = [ "Settings" ];
-    };
-
-    # A different icon from wpp's on purpose: the two sit next to each other in
-    # the launcher on the first keystroke, and the names are three letters
-    # apart. Every icon named in this attribute set resolves in Papirus and in
-    # nothing else, which is why fuzzel.ini names that theme.
-    awpp = {
-      name = "awpp";
-      genericName = "Animated wallpaper";
-      comment = "Pick a video wallpaper and retheme";
-      exec = "awpp";
-      icon = "applications-multimedia";
-      terminal = false;
-      categories = [ "Settings" ];
-    };
-
-    # Reachable from the launcher for the same reason as the two above; the
-    # bar's power button runs the same binary. fuzzel launching fuzzel is
-    # fine -- the launcher exits as soon as it has spawned the entry, and the
-    # child is reparented rather than killed with it.
-    powermenu = {
-      name = "powermenu";
-      genericName = "Session";
-      comment = "Shut down, reboot, suspend or log out";
-      exec = "powermenu";
-      icon = "system-shutdown";
+    # The one launcher entry the desktop's own tools have between them.
+    # fuzzel's launcher lists desktop entries rather than $PATH, so a bare
+    # `wpp` is unreachable from it however short the name is -- and an entry
+    # each would put eight of this repo's own scripts on the launcher's first
+    # page. This one opens the menu that reaches all eight instead.
+    #
+    # `hal` is enough to find it, and nothing else installed here starts that
+    # way. The short names are not lost with the entries: the menu carries
+    # each one as its second column and fuzzel matches on the whole row, so
+    # `wpp` typed into the menu still selects the wallpaper picker.
+    #
+    # `icon` names a theme icon the way every other entry here does, but the
+    # icon it names is not from a theme: matugen renders it from
+    # dotfiles/matugen/templates/halrune.svg into hicolor under
+    # ~/.local/share/icons, where fuzzel's lookup finds it beside the Papirus
+    # names. So the one entry that opens this machine's own tools is drawn in
+    # this machine's own accent, and like everything else the colour engine
+    # writes it does not exist until something has themed the desktop once.
+    halrune = {
+      name = "Halrune Commander";
+      genericName = "Desktop tools";
+      comment = "Wallpapers, clipboard, VPN, nix and the session";
+      icon = "halrune";
+      exec = "halrune";
       terminal = false;
       categories = [ "System" ];
-    };
-
-    # Named `nix` because that is what gets typed to reach it; the binary
-    # behind it is `nixp`, since `bin/nix` is the package manager's.
-    nixp = {
-      name = "nix";
-      genericName = "Maintenance";
-      comment = "Rebuild, roll back, collect garbage";
-      exec = "nixp";
-      icon = "nix-snowflake";
-      terminal = false;
-      categories = [ "System" ];
-    };
-
-    vpnp = {
-      name = "vpnp";
-      genericName = "VPN";
-      comment = "Pick a VPN node by latency";
-      exec = "vpnp";
-      icon = "network-vpn";
-      terminal = false;
-      categories = [ "Network" ];
-    };
-
-    # The launcher lists desktop entries rather than $PATH, so this is what
-    # makes `sunp` reachable at all -- the schedule in hypr/hyprsunset.conf
-    # runs without it, but nothing could override the schedule.
-    sunp = {
-      name = "sunp";
-      genericName = "Blue-light filter";
-      comment = "Warm the screen, or hand it back to the schedule";
-      exec = "sunp";
-      icon = "redshift";
-      terminal = false;
-      categories = [ "Settings" ];
     };
   };
 
@@ -483,6 +444,10 @@ in
     adw-gtk3
     fuzzel
     wayle
+
+    # The Pi attention extension calls notify-send by name after checking that
+    # its Foot window is not focused. Wayle owns org.freedesktop.Notifications.
+    libnotify
 
     # The emoji and glyph picker on SUPER + Period. It drives whichever of
     # fuzzel/wofi/rofi it finds and copies the selection, and it ships its own
@@ -510,6 +475,106 @@ in
     # command through `sh -c` with the session PATH, which carries the
     # per-user profile this lands in.
     specialWs
+
+    # What puts an entry at the top of the launcher. fuzzel ranks by launch
+    # count and offers no way to pin: with no filter typed the list is the
+    # cache in descending order, so the only lever is the count itself.
+    #
+    # ~/.cache/fuzzel is `<desktop-file-id>|<count>` a line, read at startup
+    # and rewritten on exit with the chosen entry incremented -- so a count
+    # written here survives, and one large enough is a pin. The rewrite also
+    # means the count set here is not drift: fuzzel takes it to 1000001 on the
+    # launch that follows and the next call puts it back.
+    #
+    # The launcher keybind calls this immediately before opening fuzzel rather
+    # than something seeding the cache once, because the cache is a cache --
+    # deleting it is meant to be free, and Shift+Delete on a row drops that
+    # row from it. Reapplying on the way in is what makes either harmless.
+    #
+    # awk with index() rather than grep: a desktop file id carries a dot, and
+    # as a regex that matches any character, so `nixp.desktop` would take
+    # `nixpXdesktop` with it. The rewrite goes through a temporary file in the
+    # same directory so a crash cannot leave the cache half-written -- an
+    # empty one loses every count on the machine.
+    (writeShellApplication {
+      name = "fuzzel-pin";
+      runtimeInputs = [ coreutils gawk ];
+      text = ''
+        id="''${1:?usage: fuzzel-pin <desktop-file-id> [count]}"
+        count="''${2:-1000000}"
+        cache="''${XDG_CACHE_HOME:-$HOME/.cache}/fuzzel"
+
+        mkdir -p "$(dirname "$cache")"
+        tmp=$(mktemp "$cache.XXXXXX")
+        trap 'rm -f "$tmp"' EXIT
+
+        if [ -e "$cache" ]; then
+          awk -v p="$id|" 'index($0, p) != 1' "$cache" > "$tmp"
+        fi
+        printf '%s|%s\n' "$id" "$count" >> "$tmp"
+        mv "$tmp" "$cache"
+        trap - EXIT
+      '';
+    })
+
+    # The menu behind the launcher entry above, and the only thing in the
+    # launcher that reaches any of the scripts below it. Each of those is a
+    # fuzzel picker in its own right, so this is a picker over pickers.
+    #
+    # The second column is the command, because that is what the same tool is
+    # called from a terminal, from a keybind and on the Stream Deck. fuzzel
+    # matches a dmenu row on the whole line rather than on a name field, so
+    # carrying it here means `wpp` selects the wallpaper picker from inside
+    # this menu exactly as it does from a shell -- the short names stay the
+    # fast path, and the descriptions are what makes the menu readable to
+    # someone who does not know them.
+    #
+    # fuzzel opening fuzzel is fine in both directions. The launcher exits as
+    # soon as it has spawned this, and this has exited by the time the
+    # selection is read -- a dmenu instance prints its answer and is gone --
+    # so the picker that follows has the overlay layer and the keyboard to
+    # itself rather than contending with either. `exec` is what keeps this
+    # shell from sitting behind a menu that has already finished.
+    #
+    # The eight are left to PATH rather than named in runtimeInputs: every one
+    # of them is installed by this same list, so they are in the profile the
+    # session, the keybinds and this script all share -- which is how the
+    # desktop entry above reaches `halrune` in the first place.
+    (writeShellApplication {
+      name = "halrune";
+      runtimeInputs = [ fuzzel ];
+      text = ''
+        idx=$(
+          printf '%-20s%s\x00icon\x1f%s\n' \
+            "Wallpaper"          wpp       preferences-desktop-wallpaper \
+            "Animated wallpaper" awpp      applications-multimedia \
+            "Clipboard"          clipp     edit-paste \
+            "Emoji"              bemoji    face-smile \
+            "Blue-light filter"  sunp      redshift \
+            "VPN"                vpnp      network-vpn \
+            "Nix"                nixp      nix-snowflake \
+            "Session"            powermenu system-shutdown \
+            | fuzzel --dmenu --index --prompt "halrune> " \
+              --font "Google Sans Flex Rounded:size=15" \
+              --line-height=32px --lines 8 --width 36
+        ) || exit 0
+
+        # --index for the reason every picker here uses it: a row carrying an
+        # icon is no longer the line that was fed in, so the answer is a
+        # position rather than something that has to survive being rendered.
+        case "$idx" in
+          0) exec wpp ;;
+          1) exec awpp ;;
+          2) exec clipp ;;
+          3) exec bemoji ;;
+          4) exec sunp ;;
+          5) exec vpnp ;;
+          6) exec nixp ;;
+          7) exec powermenu ;;
+          *) exit 0 ;;
+        esac
+      '';
+    })
 
     (writeShellApplication {
       name = "wpp";
@@ -1099,6 +1164,41 @@ in
   home.file."Pictures/Wallpapers/.keep".text = "";
   home.file."Videos/Animated Wallpapers/.keep".text = "";
 
+  # Pi's mutable settings and credentials remain application-owned, while the
+  # code extending the harness is immutable and versioned with the machine.
+  # force migrates the header created before it was brought into this flake.
+  home.file.".pi/agent/extensions/pi-code-header.ts" = {
+    source = ./dotfiles/pi/extensions/pi-code-header.ts;
+    force = true;
+  };
+  home.file.".pi/agent/extensions/attention.ts".source =
+    ./dotfiles/pi/extensions/attention.ts;
+
+  # /settings rewrites settings.json, so Home Manager must not make it a store
+  # symlink. Seed useful defaults once and leave subsequent model, theme, and
+  # interaction choices to Pi. Authentication is a separate file and is never
+  # part of this repository.
+  home.activation.piSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    settings="${config.home.homeDirectory}/.pi/agent/settings.json"
+    if [ ! -e "$settings" ]; then
+      run mkdir -p "$(dirname "$settings")"
+      run cp ${
+        pkgs.writeText "pi-settings.json" (
+          builtins.toJSON {
+            quietStartup = true;
+            theme = "dark";
+            defaultProvider = "openai-codex";
+            defaultModel = "gpt-5.6-sol";
+            defaultThinkingLevel = "xhigh";
+            externalEditor = "micro";
+            enableInstallTelemetry = false;
+          }
+        )
+      } "$settings"
+      run chmod u+w "$settings"
+    fi
+  '';
+
   # Widevine, without which every DRM-gated web app loads, searches and browses
   # normally and then refuses to play -- nothing in the UI or the logs names a
   # missing decryption module, so it presents as broken audio and the sink and
@@ -1221,12 +1321,12 @@ in
       "video/x-matroska" = "mpv.desktop";
       "audio/mpeg" = "mpv.desktop";
     }
-    # Loupe's desktop entry already claims all of these, but a declared
-    # handler is what decides between two applications that both claim a
-    # type -- helium answers for image/png and the rest through the same
-    # MimeType mechanism, and wins on cache order alone when neither is
-    # named here. Listing them individually is the only way: the association
-    # is per type, and a `image/*` wildcard is not part of the format.
+    # Swayimg handles these as a direct Wayland client, but a declared handler
+    # is what decides between two applications that both claim a type --
+    # helium answers for image/png and the rest through the same MimeType
+    # mechanism, and wins on cache order alone when neither is named here.
+    # Listing them individually is the only way: the association is per type,
+    # and an `image/*` wildcard is not part of the format.
     // lib.genAttrs [
       "image/png"
       "image/jpeg"
@@ -1234,13 +1334,12 @@ in
       "image/webp"
       "image/avif"
       "image/heic"
+      "image/heif"
       "image/jxl"
       "image/bmp"
       "image/tiff"
       "image/svg+xml"
-      "image/vnd.microsoft.icon"
-      "image/x-xpixmap"
-    ] (_: "org.gnome.Loupe.desktop")
+    ] (_: "swayimg.desktop")
     # The types themselves are declared in configuration.nix; osu! is the only
     # application claiming them, so these lines are what make the association
     # deterministic rather than a matter of cache order. The scheme handler is
@@ -1337,6 +1436,8 @@ in
     enable = true;
     shellAbbrs = {
       lg = "lazygit";
+      pic = "pi --continue";
+      pir = "pi --resume";
       gd = "git diff";
       ga = "git add .";
       gc = "git commit -am";
@@ -1383,6 +1484,28 @@ in
       fastfetch --key-padding-left 5
     '';
   };
+
+  # The mark the bar draws at the top of the strip. It is an icon rather than
+  # a label because nothing installed here has a runic glyph: both fonts on
+  # this machine would draw a box, which is what a label of it would come out
+  # as.
+  #
+  # It is a second drawing of the launcher's rune rather than the same file,
+  # and the difference is how each one gets its colour. GTK recolours a
+  # symbolic icon by filling its shapes: wayle's own icons carry
+  # `gpa:fill='foreground'` on paths with `stroke='none'`, and the toolkit
+  # paints those from whatever the module asks for. A stroked drawing has
+  # nothing to fill, so it would arrive black on a dark bar. This copy is the
+  # same three shapes as filled capsules for that reason, and the launcher's
+  # stays stroked because matugen writes its colours in.
+  #
+  # hicolor/scalable/actions is where wayle's own 362 icons land from its
+  # package, so this is found by the same theme lookup, under a name that
+  # ends in -symbolic as that lookup expects. Tracked rather than generated,
+  # so a read-only store symlink is right: nothing rewrites it, and the
+  # colour is decided at the other end.
+  xdg.dataFile."icons/hicolor/scalable/actions/halrune-symbolic.svg".source =
+    ./dotfiles/wayle/halrune-symbolic.svg;
 
   xdg.configFile = {
     # Wayle splits its configuration in two, which is what makes this one safe
@@ -1442,11 +1565,11 @@ in
       # around them.
       button-group-rounding = "full"
 
-      # Zero, so the special-workspace buttons sit against the numbered ones
-      # rather than a step apart from them. This is the gap inside a group;
-      # module-gap, which still separates the whole cluster from
-      # notifications, is a different setting.
-      button-group-module-gap = 0.0
+      # A quarter-unit gap keeps the numbered and special workspaces visually
+      # distinct while they remain one cluster. This is the gap inside a group;
+      # module-gap, which separates the whole cluster from notifications, is a
+      # different setting.
+      button-group-module-gap = 0.25
 
       # basic is "icon + label, minimal background". block-prefix, the default,
       # is "icon in colored pill container", which is the filled blob behind
@@ -1471,6 +1594,11 @@ in
       monitor = "*"
       show = true
       left = [
+          # First in `left`, which on a vertical bar is the top of the strip.
+          # A mark rather than a control: it opens the same menu its launcher
+          # entry does, so the corner of the screen the desktop's own tools
+          # live in is the same corner in both places.
+          "custom-halrune",
           { name = "workspaces", modules = [
               "hyprland-workspaces",
               "custom-ws-music",
@@ -1522,6 +1650,31 @@ in
       min-workspace-count = 4
       display-mode = "label"
       workspace-padding = 0.6
+
+      # The mark at the top of the bar. No command and no label: it is an icon
+      # and a click target, which is the whole module.
+      #
+      # interval-ms = 0 is manual polling, where no timer is started at all.
+      # With no command there is nothing to run either way, but the default
+      # 5000 would leave a poller ticking against a module that can never
+      # change.
+      #
+      # icon-color is a palette token rather than a colour, and that is what
+      # makes the glyph follow the wallpaper: wayle resolves --accent from the
+      # scheme matugen hands it, so the mark retints with the bar rather than
+      # being rewritten on disk the way the launcher's copy of it is. A hex
+      # value would read back from `wayle config get` and never move again.
+      #
+      # button-variant = "basic" above is what leaves it a bare glyph: the
+      # default block-prefix would put the same coloured pill behind it that
+      # every other icon here has lost.
+      [[modules.custom]]
+      id = "halrune"
+      interval-ms = 0
+      icon-name = "halrune-symbolic"
+      icon-color = "accent"
+      label-show = false
+      left-click = "halrune"
 
       # One button per special workspace, each present only while its overlay
       # holds something: an empty special workspace is not a workspace
@@ -1653,6 +1806,12 @@ in
     # what the workspaces module resolves its own active colours to.
     "wayle/styles/index.scss".force = true;
     "wayle/styles/index.scss".text = ''
+      // Match each dropdown's title bar to its main surface. The remaining
+      // border keeps the header legible without introducing a raised strip.
+      .dropdown-header {
+          background: var(--bg-surface);
+      }
+
       .custom.ws-open menubutton.bar-button > button.toggle {
           background-color: var(--accent);
       }
@@ -1661,6 +1820,23 @@ in
           color: var(--fg-on-accent);
       }
     '';
+
+    # The Discord theme, which is a file rather than a matugen output because
+    # nothing in it follows the wallpaper. Owning it from here is
+    # what guarantees that: a store symlink cannot be rewritten, so the
+    # themes directory never changes under Equicord's watcher and the client
+    # never drops its stylesheets to re-import them.
+    #
+    # Equicord only ever reads a theme file -- listThemes is a readdir and a
+    # readFile, so a symlink is as good as a file, and enabling or disabling
+    # one is a key in settings.json rather than anything on disk. force,
+    # because the themes directory is otherwise written by hand and by the
+    # settings UI, and home-manager refuses to clobber a file it does not
+    # already own rather than failing only that file.
+    "Equicord/themes/wallpaper.theme.css" = {
+      source = discordTheme;
+      force = true;
+    };
 
     "starship.toml".source = ./dotfiles/starship.toml;
     "btop/btop.conf".source = ./dotfiles/btop.conf;

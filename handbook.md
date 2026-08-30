@@ -150,9 +150,18 @@ At rest it is protected by LUKS.
 
 Later changes are `sudo nixos-rebuild switch --flake path:/home/ri/nixcfg#nix`
 (first build also writes `flake.lock` — commit it). After that first switch the
-same thing is one launcher entry away: press SUPER, type `nix`, and pick
-"Rebuild and switch". The rest of that menu is where you roll back, list
-generations and collect garbage.
+same thing is two menus away: press SUPER, type `hal`, pick **Halrune
+Commander**, then **Nix** and "Rebuild and switch". The rest of that menu is
+where you roll back, list generations and collect garbage.
+
+Halrune Commander is the launcher's one entry for this machine's own tools —
+the wallpaper pickers, the clipboard, emoji, the blue-light filter, the VPN,
+the nix menu and the session menu. It is held at the top of the list, its rune
+sits at the top of the bar as well, and both are coloured from the wallpaper
+like everything else here. Clicking the one on the bar opens the same menu.
+Each row shows the command beside it, so typing `wpp` in that menu picks the
+wallpaper the same way typing it in a terminal does, and every one of them
+still works as a command on its own.
 
 ## Wallpapers and colours
 

@@ -50,8 +50,6 @@
 
         nokochat = final.callPackage ./pkgs/nokochat.nix { };
 
-        freetoken = final.callPackage ./pkgs/freetoken.nix { };
-
         bibata-material-cursor = final.callPackage ./pkgs/bibata-material-cursor.nix {
           src = inputs.bibata-cursor;
         };

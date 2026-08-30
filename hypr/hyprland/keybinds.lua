@@ -16,11 +16,18 @@ local fn   = require("hyprland.functions")
 -- of 1080; 48px was tried and reaches 812px, which starts owning the screen.
 -- lines stays at the 15 from fuzzel.ini, so the window grows rather than
 -- showing fewer entries.
+--
+-- fuzzel-pin is what holds Halrune Commander at the top of the list. fuzzel
+-- orders an unfiltered launcher by launch count and has no pin of its own, so
+-- the pin is a count in its cache, rewritten on the way in. It is called from
+-- here rather than from inside a wrapper so that which entry is pinned stays
+-- a live edit, like the flags beside it.
 hl.bind(
     "SUPER + SUPER_L",
     hl.dsp.exec_cmd(
-        "pkill -x fuzzel || fuzzel --font 'Google Sans Flex Rounded:size=17'"
-            .. " --line-height=40px --lines 5"
+        "pkill -x fuzzel || (fuzzel-pin halrune.desktop;"
+            .. " fuzzel --font 'Google Sans Flex Rounded:size=17'"
+            .. " --line-height=40px --lines 5)"
     ),
     { release = true }
 )

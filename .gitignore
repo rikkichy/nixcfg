@@ -8,8 +8,5 @@ result-*
 # luac artefact (luac -l writes this unless -p is given)
 luac.out
 
-# Claude Code session state, settings and local agent files
-.claude/
-
 # Python bytecode (importing pkgs/bibata-tonal.py for a check writes this)
 __pycache__/

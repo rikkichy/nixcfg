@@ -257,11 +257,34 @@ in
     script = ''
       user=ri
       uid=$(${pkgs.coreutils}/bin/id -u "$user")
-      notify() {
+
+      # Everything the user sees is run from here, and the session has to be
+      # handed to it: the bus address for notify-send, and the Wayland socket
+      # for the window behind "View changes". The socket is looked up rather
+      # than named -- it is wayland-1 under uwsm, but the number counts up when
+      # a compositor is restarted inside one login. The bracket is what
+      # separates the socket from the `wayland-1-awww-daemon.sock` and the
+      # `.lock` sitting beside it.
+      #
+      # PATH is nix's own, because nvd shells out to `nix-build` and
+      # `nix-store` by name while a unit's PATH is systemd's minimal default
+      # and carries neither. That failure is a Python traceback ending in
+      # `FileNotFoundError: 'nix-build'`, inside a terminal already opened for
+      # it. A unit carries no LANG either, which foot reports as `'C' is not a
+      # UTF-8 locale` and every other reader of that variable does not report
+      # at all.
+      wl=$(cd /run/user/"$uid" && ls -d wayland-[0-9] 2>/dev/null | head -1)
+      asuser() {
         ${pkgs.util-linux}/bin/runuser -u "$user" -- ${pkgs.coreutils}/bin/env \
-          DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$uid/bus \
-          ${pkgs.libnotify}/bin/notify-send "$@"
+          HOME="/home/$user" \
+          LANG=${config.i18n.defaultLocale} \
+          PATH=${config.nix.package}/bin \
+          XDG_RUNTIME_DIR=/run/user/"$uid" \
+          WAYLAND_DISPLAY="$wl" \
+          DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/"$uid"/bus \
+          "$@"
       }
+
       # The whole generation, not its kernel. `operation = "boot"` stages every
       # upgrade for next boot, so a pending reboot is the normal outcome even
       # when nothing kernel-side moved -- comparing initrd/kernel/kernel-modules
@@ -270,18 +293,45 @@ in
       booted="$(readlink -f /run/booted-system)"
       built="$(readlink -f /nix/var/nix/profiles/system)"
       if [ "$booted" = "$built" ]; then
-        notify "HalruneNix" "Update successful." || true
-      else
-        choice=$(${pkgs.coreutils}/bin/timeout 15m \
-          ${pkgs.util-linux}/bin/runuser -u "$user" -- ${pkgs.coreutils}/bin/env \
-          DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$uid/bus \
+        asuser ${pkgs.libnotify}/bin/notify-send "HalruneNix" "Update successful." || true
+        exit 0
+      fi
+
+      # The prompt is posted again once the diff window closes, so reading what
+      # changed and rebooting for it are not one choice between two. Every
+      # other answer -- dismissed, or the 15m timeout -- leaves the upgrade
+      # staged, which is where it already was.
+      #
+      # The round count is the stop. With no notification daemon answering,
+      # notify-send returns immediately and every branch below would come back
+      # around; ten is past what anyone clicks and still a bound.
+      round=0
+      while [ "$round" -lt 10 ]; do
+        round=$((round + 1))
+        choice=$(asuser ${pkgs.coreutils}/bin/timeout 15m \
           ${pkgs.libnotify}/bin/notify-send -u critical \
+            -A view="View changes" \
             -A reboot="Reboot now" \
             "HalruneNix" "Update requires reboot.") || true
-        if [ "$choice" = "reboot" ]; then
-          ${pkgs.systemd}/bin/systemctl reboot
-        fi
-      fi
+        case "$choice" in
+          reboot)
+            ${pkgs.systemd}/bin/systemctl reboot
+            exit 0
+            ;;
+          # nvd against the two resolved generations rather than the symlinks,
+          # so the header names the nixos labels being moved between. It prints
+          # a closure-size summary even when no version moved at all, where
+          # `nix store diff-closures` prints nothing whatsoever and reads as a
+          # dead button. `--hold` keeps the window after it exits, and foot's
+          # own 10k lines of scrollback are the pager.
+          view)
+            asuser ${pkgs.foot}/bin/foot --app-id=nix-menu \
+              --title="nix: pending update" --hold \
+              ${pkgs.nvd}/bin/nvd diff "$booted" "$built" || true
+            ;;
+          *) exit 0 ;;
+        esac
+      done
     '';
   };
   systemd.services.nixos-upgrade.onSuccess = [ "nixos-upgrade-notify.service" ];
@@ -352,6 +402,36 @@ in
     "slab_nomerge"
     "page_alloc.shuffle=1"
   ];
+
+  # The two CCDs on a 9950X3D are not interchangeable: cores 0-7 sit under
+  # 96 MB of L3 and cores 8-15 under 32 MB. Nothing in the topology ranks them
+  # -- acpi_cppc/highest_perf reads the same sequence on both -- so the tie for
+  # lightly threaded work is broken by amd_3d_vcache's single knob, which
+  # defaults to `frequency` and points that work at the 32 MB half. `cache`
+  # points it at the other one, which is the reason the part carries the extra
+  # die at all, and it is what a cache-resident game wants.
+  #
+  # A udev rule rather than tmpfiles or a boot script, because the attribute
+  # does not exist until the driver binds. The ACPI device AMDI0101:00 appears
+  # first with nothing under it, udev loads amd_3d_vcache from its MODALIAS,
+  # and the bind event that follows is the first moment there is anything to
+  # write to. Matching on DRIVER== is what waits for that: the key is empty
+  # until the bind, so the rule cannot fire too early.
+  #
+  # amd_pstate=active puts the CPU on amd-pstate-epp, where the two governors
+  # are a coarse switch and energy_performance_preference carries the actual
+  # bias -- it comes up at balance_performance. The governor is deliberately
+  # left at powersave, which for this driver is the dynamic mode rather than a
+  # low-power one: selecting `performance` pins min_perf to the maximum on all
+  # 32 threads and makes the EPP setting inert, which is a much broader change
+  # than biasing the ramp.
+  services.udev.extraRules = ''
+    ACTION!="remove", SUBSYSTEM=="platform", DRIVER=="amd_x3d_vcache", \
+      ATTR{amd_x3d_mode}="cache"
+
+    ACTION!="remove", SUBSYSTEM=="cpu", \
+      ATTR{cpufreq/energy_performance_preference}="performance"
+  '';
 
   # The board has an SP5100 TCO watchdog that nothing was using. systemd pings
   # it at half of runtimeTime; if the kernel stops scheduling systemd the board
@@ -632,6 +712,22 @@ in
     daemon.enable = false;
   };
 
+  # The Wooting 60HE+ (31e3:1322) and its configuration software. The module is
+  # both halves at once -- `pkgs.wootility` and `pkgs.wooting-udev-rules` into
+  # services.udev.packages -- which is the whole reason to use it rather than
+  # listing the package: Wootility reaches the board over hidraw, and an
+  # untagged node is root-only, so without the rules the app starts, presents
+  # its whole UI and reports no keyboard. That reads as an unsupported model
+  # rather than as a permission on a device node.
+  #
+  # The rules are not per-model. Two Wootings from the AVR era are matched by
+  # product id and everything since by vendor alone, so a board that postdates
+  # the file is still covered -- the 60HE+ is matched by the generic line.
+  #
+  # Wootility is an AppImage, so it is on plain glibc malloc whatever
+  # environment.memoryAllocator says.
+  hardware.wooting.enable = true;
+
   programs.obs-studio = {
     enable = true;
   };
@@ -708,6 +804,17 @@ in
       for app in org.vinegarhq.Sober me.amankhanna.opendeck; do
         $flatpak install --user -y --noninteractive flathub "$app"
       done
+
+      # OpenDeck's Discord plugin speaks Discord's RPC protocol over
+      # $XDG_RUNTIME_DIR/discord-ipc-0, and a sandbox's runtime directory holds
+      # only what has been granted into it. Without this the plugin reports
+      # "Could not find the IPC pipe" for a socket that is plainly there on the
+      # host, and neither side logs anything. The grant names the socket file
+      # rather than a directory, so it is bound at sandbox startup: Discord has
+      # to be running by then, and an OpenDeck started first gives the same
+      # error until it is restarted.
+      $flatpak override --user --filesystem=xdg-run/discord-ipc-0 \
+        me.amankhanna.opendeck
     '';
   };
 
@@ -805,7 +912,15 @@ in
 
     foot
     yubioath-flutter
-    claude-code
+
+    # Pi Code is the coding harness. Its binary is `pi`, and the wrapper
+    # carries ripgrep and fd on an injected PATH, so neither has to be
+    # installed for it. It also defaults PI_SKIP_VERSION_CHECK=1, since a
+    # store copy is pinned by the flake and the self-update check has nothing
+    # to offer it, and PI_TELEMETRY=0. Mutable settings and credentials stay
+    # under ~/.pi/agent; Home Manager only owns the tracked extensions.
+    pi-coding-agent
+
     lm_sensors
 
     # An AppImage, wrapped upstream, shipping the `lms` CLI beside the GUI. The
@@ -817,20 +932,19 @@ in
     # it, so `dlopen("libcuda.so.1")` succeeding is entirely down to the cache.
     lmstudio
 
-    # The other local inference runtime, and the one that reaches models this
-    # card cannot hold: it streams MoE experts between system RAM and the GPU
-    # rather than requiring the whole checkpoint in VRAM. `ft` builds its own
-    # venv under ~/.freetoken on first use, since the CUDA wheel stack it wants
-    # is published nowhere nixpkgs can follow.
-    freetoken
-
     # Thunar's own search filters visible names in the current folder only; its
     # "Find in this folder" item shells out to catfish for anything recursive
     # or content-based, and silently does nothing when catfish is absent.
     file-roller
     catfish
-    loupe
+
+    # A direct Wayland client with explicit Hyprland support. Image decoding
+    # stays in this process instead of starting a sandbox below an RLIMIT_AS;
+    # the system-wide hardened allocator reserves terabytes of virtual address
+    # space at startup and cannot initialize under a decoder-sized limit.
+    swayimg
     mpv
+    qbittorrent
     anytype
 
     # Equicord is what carries the theme: it replaces app.asar with a stub that
@@ -856,7 +970,7 @@ in
 
     wineWow64Packages.stable
 
-    wl-clipboard mangohud btop nvtopPackages.nvidia git gh wget
+    wl-clipboard mangohud btop nvtopPackages.nvidia git gh wget yt-dlp
 
     cliphist
 
@@ -877,11 +991,26 @@ in
     # with it -- a second copy here would shadow the wrapped one.
     starship zoxide eza fzf bat ripgrep lazygit jq fastfetch micro
 
+    # `file` is what BepInEx's run_bepinex.sh uses to decide whether the game
+    # binary is 32- or 64-bit, and it picks its doorstop library from the
+    # answer. Absent, the script matches neither branch of its case statement
+    # and exits with "not compiled for x86 or x64 (might be ARM?)" -- which
+    # names the executable, so it reads as a broken game rather than a missing
+    # utility. The `file: command not found` line above it goes to the same
+    # stream and is easy to scroll past.
+    file
+    unzip
+
     tg-ws-proxy
   ];
 
   environment.sessionVariables = {
     NIXOS_OZONE_WL = "1";
+
+    # Keep stable Pi prompt prefixes reusable across long coding sessions.
+    # Providers that support the setting extend retention (OpenAI to 24h);
+    # providers that do not support it ignore it.
+    PI_CACHE_RETENTION = "long";
 
     # This one is not for anything on this system. mesa's libgbm is patched
     # with exactly these two directories as its compiled-in default, so every

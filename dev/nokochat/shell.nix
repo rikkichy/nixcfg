@@ -96,7 +96,7 @@ pkgs.mkShell {
       bun
 
       # repo tooling: the commit-msg secrets gate fails closed without
-      # gitleaks, and CLAUDE.md standardises on fd/rg/jq.
+      # gitleaks, and AGENTS.md standardises on fd/rg/jq.
       gitleaks
       fd
       ripgrep
