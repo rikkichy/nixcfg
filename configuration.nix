@@ -1033,6 +1033,7 @@ in
     mpv
     qbittorrent
     anytype
+    onlyoffice-desktopeditors
 
     # Equicord is what carries the theme: it replaces app.asar with a stub that
     # requires its patcher, and reads ~/.config/Equicord/themes/ from inside the
