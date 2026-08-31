@@ -1186,6 +1186,8 @@ in
   };
   home.file.".pi/agent/extensions/attention.ts".source =
     ./dotfiles/pi/extensions/attention.ts;
+  home.file.".pi/agent/extensions/elevation.ts".source =
+    ./dotfiles/pi/extensions/elevation.ts;
 
   # /settings rewrites settings.json, so Home Manager must not make it a store
   # symlink. Seed useful defaults once and leave subsequent model, theme, and

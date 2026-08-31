@@ -235,6 +235,11 @@ in
   systemd.tmpfiles.rules = [
     "Z ${nixcfgPath} - ri users - -"
 
+    # xfs_scrub_all records when it last read every data extent so its weekly
+    # metadata pass only becomes a full media scan once a month. The packaged
+    # service binds this path into its otherwise read-only mount namespace.
+    "d /var/lib/xfsprogs 0700 root root - -"
+
     # The two SATA SSDs mount root-owned, and everything that writes to them
     # runs as ri. `d` rather than `Z` because Z recurses, and reasserting
     # ownership of a full games drive on every boot is not free. Both run
@@ -286,6 +291,54 @@ in
   # userspace-only -- mount and the kernel ignore anything x- prefixed, so
   # nothing here reaches the initrd or the LUKS mapping.
   fileSystems."/".options = [ "x-gvfs-show" "x-gvfs-name=NixOS" ];
+
+  # xfsprogs supplies a low-CPU, idle-I/O scrub service and a Sunday timer.
+  # Metadata is checked weekly; the state above makes its data-extent scan
+  # monthly. Persistent=true in the packaged timer catches a missed run after
+  # the machine is next powered on.
+  systemd.timers.xfs_scrub_all.wantedBy = [ "timers.target" ];
+
+  # A failed scrub remains visible in both the journal and `systemctl --failed`.
+  # The packaged reporters require a `mail` account and sendmail, neither of
+  # which belongs on this desktop. Keep their OnFailure wiring but make each
+  # reporter add an error-priority journal message instead of failing itself.
+  systemd.services = {
+    xfs_scrub_all_fail.serviceConfig = {
+      User = "root";
+      Group = "root";
+      SupplementaryGroups = [ "" ];
+      ExecStart = [
+        ""
+        "${pkgs.systemd}/bin/systemd-cat --identifier=xfs-scrub --priority=err ${pkgs.coreutils}/bin/echo XFS scrub-all failed -- inspect journalctl -u xfs_scrub_all.service"
+      ];
+    };
+
+    "xfs_scrub_fail@" = {
+      overrideStrategy = "asDropin";
+      serviceConfig = {
+        User = "root";
+        Group = "root";
+        SupplementaryGroups = [ "" ];
+        ExecStart = [
+          ""
+          "${pkgs.systemd}/bin/systemd-cat --identifier=xfs-scrub --priority=err ${pkgs.coreutils}/bin/echo XFS metadata scrub failed for %f -- inspect journalctl -u xfs_scrub@%i.service"
+        ];
+      };
+    };
+
+    "xfs_scrub_media_fail@" = {
+      overrideStrategy = "asDropin";
+      serviceConfig = {
+        User = "root";
+        Group = "root";
+        SupplementaryGroups = [ "" ];
+        ExecStart = [
+          ""
+          "${pkgs.systemd}/bin/systemd-cat --identifier=xfs-scrub --priority=err ${pkgs.coreutils}/bin/echo XFS media scrub failed for %f -- inspect journalctl -u xfs_scrub_media@%i.service"
+        ];
+      };
+    };
+  };
 
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
