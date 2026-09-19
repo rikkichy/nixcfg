@@ -14,12 +14,23 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     openwave = {
-      url = "github:rikkichy/openwave";
+      # Test the local Rust migration, including uncommitted source files.
+      url = "path:/home/ri/openwave";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     helium = {
       url = "github:oxcl/nix-flake-helium-browser";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    omp = {
+      url = "github:can1357/oh-my-pi";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    unsloth = {
+      url = "github:Trantorian1/unsloth-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

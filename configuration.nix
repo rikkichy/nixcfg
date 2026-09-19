@@ -230,6 +230,7 @@ let
       esac
     '';
   };
+
 in
 {
   systemd.tmpfiles.rules = [
@@ -385,6 +386,7 @@ in
       "--update-input" "vhelper"
       "--update-input" "openwave"
       "--update-input" "helium"
+      "--update-input" "omp"
       "--update-input" "tg-ws-proxy"
     ];
     dates = "daily";
@@ -591,9 +593,7 @@ in
   # have been rotated out that way. Thirty seconds bounds the loss to something
   # small enough that the last moments before a crash survive, which is the
   # only part worth having.
-  services.journald.extraConfig = ''
-    SyncIntervalSec=30s
-  '';
+  services.journald.settings.Journal.SyncIntervalSec = "30s";
 
   # strncpy is no longer part of the kernel's string API, so nct6687.c's one
   # call to it is reported as an implicit declaration rather than as something
@@ -776,6 +776,73 @@ in
     alsa.enable = true;
     alsa.support32Bit = true;
     pulse.enable = true;
+
+    # A smart filter stays out of the device list: applications and OpenWave
+    # continue targeting the Wave XLR, and WirePlumber transparently inserts the
+    # filter on streams headed there. This avoids a competing effects daemon and
+    # the extra default sink that comes with one.
+    extraConfig.pipewire."90-blessing3-eq" = {
+      "context.modules" = [
+        {
+          name = "libpipewire-module-filter-chain";
+          args = {
+            "node.description" = "Blessing 3 EQ";
+            "media.name" = "Blessing 3 EQ";
+
+            "filter.graph" = {
+              nodes = [
+                {
+                  type = "builtin";
+                  name = "preamp";
+                  label = "linear";
+                  # -4 dB of headroom for the positive shelf below.
+                  control = {
+                    Mult = 0.630957;
+                    Add = 0.0;
+                  };
+                }
+                {
+                  type = "builtin";
+                  name = "bass";
+                  label = "bq_lowshelf";
+                  control = {
+                    Freq = 105.0;
+                    Q = 0.70;
+                    Gain = 4.0;
+                  };
+                }
+              ];
+              links = [
+                {
+                  output = "preamp:Out";
+                  input = "bass:In";
+                }
+              ];
+            };
+
+            "audio.channels" = 2;
+            "audio.position" = [ "FL" "FR" ];
+
+            "capture.props" = {
+              "node.name" = "blessing3_eq";
+              "node.description" = "Blessing 3 EQ";
+              "media.class" = "Audio/Sink";
+              "filter.smart" = true;
+              "filter.smart.name" = "blessing3-eq";
+              "filter.smart.target" = {
+                "alsa.card_name" = "Elgato Wave XLR";
+              };
+            };
+
+            "playback.props" = {
+              "node.name" = "blessing3_eq_output";
+              "node.passive" = true;
+              "stream.dont-remix" = true;
+            };
+          };
+        }
+      ];
+    };
   };
 
   services.gnome.gnome-keyring.enable = true;
@@ -877,6 +944,11 @@ in
     pkgs.yubikey-personalization
 
     inputs.openwave.packages.${pkgs.stdenv.hostPlatform.system}.default
+
+    (pkgs.writeTextDir "lib/udev/rules.d/70-lc87.rules" ''
+      KERNEL=="hidraw*", ATTRS{idVendor}=="056a", TAG+="uaccess"
+      SUBSYSTEM=="usb", ATTR{idVendor}=="0ac3", TAG+="uaccess"
+    '')
 
     (pkgs.runCommand "streamdeck-udev-rules" { } ''
       mkdir -p $out/lib/udev/rules.d
@@ -1053,24 +1125,16 @@ in
     foot
     yubioath-flutter
 
-    # Pi Code is the coding harness. Its binary is `pi`, and the wrapper
-    # carries ripgrep and fd on an injected PATH, so neither has to be
-    # installed for it. It also defaults PI_SKIP_VERSION_CHECK=1, since a
-    # store copy is pinned by the flake and the self-update check has nothing
-    # to offer it, and PI_TELEMETRY=0. Mutable settings and credentials stay
-    # under ~/.pi/agent; Home Manager only owns the tracked extensions.
-    pi-coding-agent
+    # OMP is pinned directly from its upstream flake. Its native tools include
+    # search and shell support, so it does not need a separate injected tool
+    # PATH. Mutable settings, credentials, and sessions stay under ~/.omp.
+    inputs.omp.packages.${pkgs.stdenv.hostPlatform.system}.omp
 
     lm_sensors
 
-    # An AppImage, wrapped upstream, shipping the `lms` CLI beside the GUI. The
-    # llama.cpp backends are not packaged -- LM Studio downloads the one it
-    # wants into ~/.lmstudio at first use, so the only thing this machine has to
-    # supply is the driver underneath. That reaches the CUDA runtime through the
-    # ld cache buildFHSEnv generates, which carries /run/opengl-driver/lib:
-    # neither /etc/ld.so.conf nor LD_LIBRARY_PATH inside the sandbox mentions
-    # it, so `dlopen("libcuda.so.1")` succeeding is entirely down to the cache.
-    lmstudio
+    # Unsloth Desktop runs in the flake's FHS environment so its first-run
+    # installer can manage the CUDA training backend under ~/.unsloth with uv.
+    inputs.unsloth.packages.${pkgs.stdenv.hostPlatform.system}.unsloth-desktop
 
     # Thunar's own search filters visible names in the current folder only; its
     # "Find in this folder" item shells out to catfish for anything recursive
@@ -1148,7 +1212,7 @@ in
   environment.sessionVariables = {
     NIXOS_OZONE_WL = "1";
 
-    # Keep stable Pi prompt prefixes reusable across long coding sessions.
+    # Keep stable OMP prompt prefixes reusable across long coding sessions.
     # Providers that support the setting extend retention (OpenAI to 24h);
     # providers that do not support it ignore it.
     PI_CACHE_RETENTION = "long";
@@ -1200,6 +1264,7 @@ in
   ];
 
   networking.hostName = "nix";
+  networking.enableIPv6 = false;
   networking.networkmanager.enable = true;
 
   systemd.services.mihomo-config = {

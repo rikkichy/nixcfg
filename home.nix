@@ -421,7 +421,7 @@ in
     halrune = {
       name = "Halrune Commander";
       genericName = "Desktop tools";
-      comment = "Wallpapers, clipboard, VPN, nix and the session";
+      comment = "Wallpapers, clipboard, VPN, nix, troubleshooting and the session";
       icon = "halrune";
       exec = "halrune";
       terminal = false;
@@ -536,7 +536,7 @@ in
     # itself rather than contending with either. `exec` is what keeps this
     # shell from sitting behind a menu that has already finished.
     #
-    # The eight are left to PATH rather than named in runtimeInputs: every one
+    # The pickers are left to PATH rather than named in runtimeInputs: every one
     # of them is installed by this same list, so they are in the profile the
     # session, the keybinds and this script all share -- which is how the
     # desktop entry above reaches `halrune` in the first place.
@@ -553,10 +553,11 @@ in
             "Blue-light filter"  sunp      redshift \
             "VPN"                vpnp      network-vpn \
             "Nix"                nixp      nix-snowflake \
+            "Troubleshoot"       troubleshootp view-refresh \
             "Session"            powermenu system-shutdown \
             | fuzzel --dmenu --index --prompt "halrune> " \
               --font "Google Sans Flex Rounded:size=15" \
-              --line-height=32px --lines 8 --width 36
+              --line-height=32px --lines 9 --width 36
         ) || exit 0
 
         # --index for the reason every picker here uses it: a row carrying an
@@ -570,9 +571,141 @@ in
           4) exec sunp ;;
           5) exec vpnp ;;
           6) exec nixp ;;
-          7) exec powermenu ;;
+          7) exec troubleshootp ;;
+          8) exec powermenu ;;
           *) exit 0 ;;
         esac
+      '';
+    })
+
+    (writeShellApplication {
+      name = "troubleshootp";
+      runtimeInputs = [ fuzzel foot ];
+      text = ''
+        idx=$(
+          printf '%s\x00icon\x1f%s\n' \
+            "Reset browser network" view-refresh \
+            | fuzzel --dmenu --index --prompt "troubleshoot> " \
+              --font "Google Sans Flex Rounded:size=15" \
+              --line-height=32px --lines 1 --width 40
+        ) || exit 0
+        [ "$idx" = 0 ] || exit 0
+
+        confirm=$(
+          printf '%s\x00icon\x1f%s\n' \
+            "Cancel"                          dialog-cancel \
+            "Reset and restart Helium"        view-refresh \
+            | fuzzel --dmenu --index --prompt "Keep tabs and logins> " \
+              --font "Google Sans Flex Rounded:size=15" \
+              --line-height=32px --lines 2 --width 48
+        ) || exit 0
+        [ "$confirm" = 1 ] || exit 0
+
+        exec foot --app-id=troubleshoot-menu --title="Reset browser network" \
+          --hold helium-reset-network
+      '';
+    })
+
+    # Failed alternative-service backoff is separate from the HTTP disk cache.
+    # Keep the working HTTP/3 advertisements: deleting them can strand a browser
+    # on a failing TCP path before it has learned that QUIC is available.
+    (writeShellApplication {
+      name = "helium-reset-network";
+      runtimeInputs = [ helium coreutils jq procps util-linux systemd libnotify ];
+      text = ''
+        umask 077
+        data="''${XDG_CONFIG_HOME:-$HOME/.config}/net.imput.helium"
+        state="''${XDG_STATE_HOME:-$HOME/.local/state}/helium-reset-network"
+        mkdir -p "$state"
+        chmod 700 "$state"
+        exec 9>"$state/reset.lock"
+        flock -n 9 || { echo "A browser network reset is already running." >&2; exit 1; }
+
+        restart=0
+        temporary=()
+        cleanup() {
+          local status=$?
+          rm -f -- "''${temporary[@]}"
+          if [ "$restart" = 1 ]; then
+            # The transient user service outlives the menu terminal and does
+            # not inherit its reset lock. No debugging or forced-QUIC flags.
+            if ! systemd-run --user --collect --quiet --service-type=exec \
+              ${helium}/bin/helium --user-data-dir="$data" --restore-last-session; then
+              echo "Could not reopen Helium; start it normally to restore your session." >&2
+              status=1
+            fi
+          fi
+          if [ "$status" != 0 ]; then
+            notify-send -a helium-reset-network -u critical \
+              "Browser network reset failed" "See the troubleshooting terminal for details." \
+              2>/dev/null || true
+          fi
+          exit "$status"
+        }
+        trap cleanup EXIT
+
+        lock=$(readlink "$data/SingletonLock" 2>/dev/null || true)
+        if [ -n "$lock" ]; then
+          host="''${lock%-*}"
+          pid="''${lock##*-}"
+          if [ "$host" != "$(uname -n)" ] || [[ ! "$pid" =~ ^[0-9]+$ ]]; then
+            echo "Unrecognized Helium profile lock; no cache files changed." >&2
+            exit 1
+          fi
+          if kill -0 "$pid" 2>/dev/null; then
+            echo "Asking Helium to quit cleanly. Save or dismiss any pending browser dialogs."
+            # Target this profile's browser process, never every helium process.
+            # Ctrl+Shift+Q is the browser's Exit action and saves the whole session.
+            hyprctl repl "hl.dispatch(hl.dsp.send_shortcut({mods=\"CTRL SHIFT\", key=\"Q\", window=\"pid:$pid\"}))" > /dev/null
+            if ! timeout 20s pidwait --pid "$pid"; then
+              if kill -0 "$pid" 2>/dev/null; then
+                echo "Helium is still running. Close it normally and retry; no cache files changed." >&2
+                exit 1
+              fi
+            fi
+            restart=1
+          fi
+        fi
+
+        shopt -s nullglob
+        files=("$data"/*/"Network Persistent State")
+        if [ "''${#files[@]}" = 0 ]; then
+          echo "No saved network state found. Any running browser connections have been reset."
+          exit 0
+        fi
+
+        # Validate and stage every profile before replacing any cache file.
+        # An invalid file leaves all originals intact; cleanup still reopens
+        # the browser if this command closed it.
+        for file in "''${files[@]}"; do
+          tmp=$(mktemp "$file.reset.XXXXXX")
+          temporary+=("$tmp")
+          jq -e -s '
+            if length != 1 or (.[0] | type) != "object" then
+              error("expected one network-state object")
+            else
+              .[0] | del(.net.http_server_properties.broken_alternative_services)
+            end
+          ' "$file" > "$tmp"
+        done
+
+        backup=$(mktemp -d "$state/backup.XXXXXXXX")
+        for file in "''${files[@]}"; do
+          profile="''${file%/*}"
+          profile="''${profile##*/}"
+          mkdir "$backup/$profile"
+          cp -- "$file" "$backup/$profile/Network Persistent State"
+        done
+        for i in "''${!files[@]}"; do
+          mv -- "''${temporary[$i]}" "''${files[$i]}"
+        done
+
+        printf 'Cleared failed network-route backoff in %s profile(s).\n' "''${#files[@]}"
+        printf 'Preserved HTTP/3 hints, cookies, passwords, extensions and security settings.\n'
+        printf 'Backup: %s\n' "$backup"
+        printf 'This does not change DNS servers, the VPN, the firewall or the router.\n'
+        notify-send -a helium-reset-network "Browser network reset" \
+          "Failed-route backoff cleared; tabs and logins preserved." 2>/dev/null || true
       '';
     })
 
@@ -1177,43 +1310,6 @@ in
   home.file."Pictures/Wallpapers/.keep".text = "";
   home.file."Videos/Animated Wallpapers/.keep".text = "";
 
-  # Pi's mutable settings and credentials remain application-owned, while the
-  # code extending the harness is immutable and versioned with the machine.
-  # force migrates the header created before it was brought into this flake.
-  home.file.".pi/agent/extensions/pi-code-header.ts" = {
-    source = ./dotfiles/pi/extensions/pi-code-header.ts;
-    force = true;
-  };
-  home.file.".pi/agent/extensions/attention.ts".source =
-    ./dotfiles/pi/extensions/attention.ts;
-  home.file.".pi/agent/extensions/elevation.ts".source =
-    ./dotfiles/pi/extensions/elevation.ts;
-
-  # /settings rewrites settings.json, so Home Manager must not make it a store
-  # symlink. Seed useful defaults once and leave subsequent model, theme, and
-  # interaction choices to Pi. Authentication is a separate file and is never
-  # part of this repository.
-  home.activation.piSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    settings="${config.home.homeDirectory}/.pi/agent/settings.json"
-    if [ ! -e "$settings" ]; then
-      run mkdir -p "$(dirname "$settings")"
-      run cp ${
-        pkgs.writeText "pi-settings.json" (
-          builtins.toJSON {
-            quietStartup = true;
-            theme = "dark";
-            defaultProvider = "openai-codex";
-            defaultModel = "gpt-5.6-sol";
-            defaultThinkingLevel = "xhigh";
-            externalEditor = "micro";
-            enableInstallTelemetry = false;
-          }
-        )
-      } "$settings"
-      run chmod u+w "$settings"
-    fi
-  '';
-
   # Widevine, without which every DRM-gated web app loads, searches and browses
   # normally and then refuses to play -- nothing in the UI or the logs names a
   # missing decryption module, so it presents as broken audio and the sink and
@@ -1451,8 +1547,8 @@ in
     enable = true;
     shellAbbrs = {
       lg = "lazygit";
-      pic = "pi --continue";
-      pir = "pi --resume";
+      pic = "omp --continue";
+      pir = "omp --resume";
       gd = "git diff";
       ga = "git add .";
       gc = "git commit -am";
