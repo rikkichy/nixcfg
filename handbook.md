@@ -148,8 +148,8 @@ autologin types no password, so a non-blank keyring would stay locked forever.
 At rest it is protected by LUKS.
 
 Later changes are `sudo nixos-rebuild switch --flake path:/home/ri/nixcfg#nix`
-(first build also writes `flake.lock` — commit it). Press SUPER and search
-**Nix maintenance** or `nixp`: the parent lists generations in a held terminal,
+(first build also writes `flake.lock` — commit it). Press META+ALT and select
+**Nix maintenance**: the parent lists generations in a held terminal,
 and native actions include **Rebuild and switch**, rollback and garbage collection.
 `nh os switch` is the terminal alternative: `NH_FLAKE` defaults to
 `path:/home/ri/nixcfg`. Run it as your normal user; it requests elevation as needed.
@@ -157,10 +157,14 @@ Fish exports this default at shell startup, including terminals opened from an
 existing desktop session after a switch.
 
 Wallpaper, animated wallpaper, clipboard, emoji, blue-light filter, VPN,
-network recovery and session tools have ordinary launcher entries.
-Short commands such as `wpp`, `clipp`, `vpnp` and `troubleshootp` remain searchable.
-The palette-tinted rune at the top of the bar opens the same launcher.
+network recovery and session tools are available through META+ALT.
+Short commands such as `wpp`, `clipp`, `vpnp` and `troubleshootp` remain searchable there.
+Bare META and the palette-tinted rune on the bar open the apps-only launcher.
 There is no `nixp` shell command; maintenance operations are desktop actions.
+**META + ALT** opens Fuzzel on a directory containing only these tools and their
+native actions. Search starts empty and matches tool names normally. Press the
+chord again to dismiss it. Tools and desktop actions stay hidden from the main
+launcher using native desktop-entry visibility.
 Clipboard capture is supervised by Home Manager. Start a fresh graphical session
 after applying this configuration to avoid overlapping old unmanaged watchers.
 

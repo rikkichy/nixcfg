@@ -105,13 +105,23 @@ with row height. Both the release keybinding and the symbolic bar launcher use
 `pkill -x fuzzel || fuzzel`: dismiss-on-second-tap, not stack prevention.
 Fuzzel also has its own single-instance lock.
 
+Bare Meta and the bar launcher show apps only: desktop filtering is enabled and
+desktop actions are hidden. The nine tools declare `OnlyShowIn=X-DesktopTools;`.
+Meta+Alt sets `XDG_CURRENT_DESKTOP=X-DesktopTools` and points Fuzzel's XDG data
+directories at the managed `desktop-tools` directory. It contains the existing
+tool desktop files and Papirus icons, selected from their `OnlyShowIn` marker.
+Search starts empty with normal matching; no keyword query is injected.
+The tools view enables native actions, with 21 rows, font15 and 32px row height.
+Release bindings in `hypr/hyprland/keybinds.lua` handle either modifier-release
+order and left/right keys; another Meta+Alt shortcut shadows these bindings.
+
 Fuzzel's launcher restricts theme lookup to Applications/Apps/Legacy contexts.
 Desktop entries using Actions or Devices glyphs therefore reference existing
 Papirus SVG store paths directly; picker mode does not impose that restriction.
 
 Desktop entries expose each public picker directly. Search includes filename,
-name, generic name, Exec and keywords; native actions are enabled, PATH-wide
-executable listing is not. `Network recovery` runs `troubleshootp all`; native
+name, generic name, Exec and keywords; native actions appear in the tools view,
+and PATH-wide executable listing is disabled. `Network recovery` runs `troubleshootp all`; native
 actions select system, Helium, Discord/cache or Ethernet reconnect scopes.
 
 `troubleshootp [scope]` opens a held Foot terminal running `network-reset [scope]`.

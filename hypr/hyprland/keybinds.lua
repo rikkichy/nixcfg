@@ -8,6 +8,20 @@ hl.bind(
     { release = true }
 )
 
+for _, key in ipairs({ "Alt_L", "Alt_R", "Super_L", "Super_R" }) do
+    hl.bind(
+        "SUPER + ALT + " .. key,
+        hl.dsp.exec_cmd(
+            "pkill -x fuzzel || "
+                .. "XDG_DATA_DIRS=\"${XDG_DATA_HOME:-$HOME/.local/share}/desktop-tools\" "
+                .. "XDG_DATA_HOME=\"${XDG_DATA_HOME:-$HOME/.local/share}/desktop-tools\" "
+                .. "XDG_CURRENT_DESKTOP=X-DesktopTools fuzzel --show-actions "
+                .. "--font='Google Sans Flex Rounded:size=15' --line-height=32px --lines=21"
+        ),
+        { release = true }
+    )
+end
+
 -- These reach the shell that draws the bar, and the media keys reach whatever
 -- is playing. A global dispatcher is answered by a shell rather than by a
 -- command, so anything bound as one fires into nothing and reports nothing --

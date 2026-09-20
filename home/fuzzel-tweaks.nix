@@ -11,6 +11,15 @@ let
         --font 'Google Sans Flex Rounded:size=15' --line-height=32px "$@"
     '';
   };
+
+  toolEntryNames = lib.mapAttrsToList (name: _: "${name}.desktop")
+    (lib.filterAttrs (_: entry: (entry.settings.OnlyShowIn or "") == "X-DesktopTools;")
+      config.xdg.desktopEntries);
+  desktopTools = pkgs.symlinkJoin {
+    name = "desktop-tools";
+    paths = builtins.filter (package: builtins.elem (package.name or "") toolEntryNames)
+      config.home.packages ++ [ pkgs.papirus-icon-theme ];
+  };
 in
 {
   _module.args.desktopPicker = desktopPicker;
@@ -39,7 +48,8 @@ in
         horizontal-pad = 40;
         vertical-pad = 15;
         match-counter = true;
-        show-actions = true;
+        show-actions = false;
+        filter-desktop = true;
         fields = "filename,name,generic,exec,keywords";
       };
       border = { radius = 22; width = 3; };
@@ -47,6 +57,7 @@ in
     };
   };
   xdg.configFile."fuzzel/fuzzel.ini".force = true;
+  xdg.dataFile."desktop-tools".source = "${desktopTools}/share";
 
   xdg.desktopEntries = let
     webApp = name: url: icon: wmClass: {
@@ -98,6 +109,7 @@ in
       icon = "preferences-desktop-wallpaper";
       terminal = false;
       categories = [ "System" ];
+      settings.OnlyShowIn = "X-DesktopTools;";
     };
     awpp = {
       name = "Animated wallpaper";
@@ -105,6 +117,7 @@ in
       icon = "applications-multimedia";
       terminal = false;
       categories = [ "System" ];
+      settings.OnlyShowIn = "X-DesktopTools;";
     };
     clipp = {
       name = "Clipboard";
@@ -112,6 +125,7 @@ in
       icon = "${papirus}/24x24/actions/edit-paste.svg";
       terminal = false;
       categories = [ "System" ];
+      settings.OnlyShowIn = "X-DesktopTools;";
       actions.delete = { name = "Delete clipboard entry"; exec = "clipp -d"; icon = "${papirus}/24x24/actions/edit-delete.svg"; };
     };
     bemoji = {
@@ -120,6 +134,7 @@ in
       icon = "face-smile";
       terminal = false;
       categories = [ "System" ];
+      settings.OnlyShowIn = "X-DesktopTools;";
     };
     sunp = {
       name = "Blue-light filter";
@@ -127,6 +142,7 @@ in
       icon = "redshift";
       terminal = false;
       categories = [ "System" ];
+      settings.OnlyShowIn = "X-DesktopTools;";
     };
     vpnp = {
       name = "VPN";
@@ -134,6 +150,7 @@ in
       icon = "${papirus}/32x32/devices/network-vpn.svg";
       terminal = false;
       categories = [ "System" ];
+      settings.OnlyShowIn = "X-DesktopTools;";
     };
     powermenu = {
       name = "Session";
@@ -141,6 +158,7 @@ in
       icon = "system-shutdown";
       terminal = false;
       categories = [ "System" ];
+      settings.OnlyShowIn = "X-DesktopTools;";
     };
     network-reset = {
       name = "Network recovery";
@@ -149,6 +167,7 @@ in
       terminal = false;
       categories = [ "System" ];
       settings.Keywords = "troubleshootp;troubleshoot;network;system;helium;browser;discord;cache;";
+      settings.OnlyShowIn = "X-DesktopTools;";
       actions = {
         system = { name = "Reset system networking"; exec = "troubleshootp system"; };
         helium = { name = "Kill Helium and reset networking"; exec = "troubleshootp helium"; };
@@ -162,6 +181,7 @@ in
       icon = "nix-snowflake";
       terminal = false;
       categories = [ "System" ];
+      settings.OnlyShowIn = "X-DesktopTools;";
       actions = builtins.removeAttrs maintenanceActions [ "generations" ];
     };
   };
