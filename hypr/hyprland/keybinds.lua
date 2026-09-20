@@ -29,7 +29,7 @@ end
 -- never bound.
 hl.bind(vars.kbSession, hl.dsp.exec_cmd("powermenu"))
 hl.bind(vars.kbClearNotifs, hl.dsp.exec_cmd("quickshell -c expressive ipc call desktop dismissAll"), { locked = true })
-hl.bind(vars.kbShowPanels, hl.dsp.exec_cmd("quickshell -c expressive ipc call desktop toggle controls"))
+hl.bind(vars.kbShowPanels, hl.dsp.exec_cmd("quickshell -c expressive ipc call desktop toggle sound"))
 
 -- playerctl talks MPRIS, so it reaches every player on the bus without any of
 -- them being named here; playerctld is D-Bus activated and picks the most

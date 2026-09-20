@@ -10,10 +10,11 @@ import Quickshell.Bluetooth
 Item {
     id: root
     required property var shell
+    required property string section
     implicitWidth: 440
-    implicitHeight: 576
-    property bool showNetworks: false
-    property bool showBluetooth: false
+    implicitHeight: Math.min(560, content.implicitHeight)
+    property bool showNetworks: true
+    property bool showBluetooth: true
     property string networkError: ""
     property string bluetoothError: ""
     readonly property bool hasWifi: Networking.devices.values.some(device => device.type === DeviceType.Wifi)
@@ -26,10 +27,6 @@ Item {
         Quickshell.execDetached(command);
     }
 
-    SystemClock {
-        id: clock
-        precision: SystemClock.Minutes
-    }
     PwObjectTracker {
         objects: [Pipewire.defaultAudioSink, Pipewire.defaultAudioSource].filter(node => node !== null)
     }
@@ -108,7 +105,7 @@ Item {
             Slider {
                 id: slider
                 Layout.fillWidth: true
-                Layout.minimumHeight: 48
+                Layout.minimumHeight: 56
                 enabled: !!volumeControl.audio
                 from: 0
                 to: 1
@@ -119,28 +116,39 @@ Item {
                 Accessible.description: "Use left and right arrow keys to adjust the volume"
                 onMoved: if (volumeControl.audio)
                     volumeControl.audio.volume = value
-                background: Rectangle {
+                background: Item {
                     x: slider.leftPadding
                     y: slider.topPadding + slider.availableHeight / 2 - height / 2
                     width: slider.availableWidth
-                    height: 28
-                    radius: 14
-                    color: Theme.secondaryContainer
-                    opacity: slider.enabled ? 1 : 0.38
+                    height: 40
+                    // Separate tracks leave the Material 6px gap on both sides of the handle.
                     Rectangle {
-                        width: slider.visualPosition * parent.width
+                        width: Math.max(0, slider.handle.x - slider.leftPadding - 6)
                         height: parent.height
-                        radius: parent.radius
-                        color: Theme.primary
+                        radius: 2
+                        topLeftRadius: Theme.radiusSmall
+                        bottomLeftRadius: Theme.radiusSmall
+                        color: slider.enabled ? (slider.mirrored ? Theme.secondaryContainer : Theme.primary) : Theme.textOnSurface
+                        opacity: slider.enabled ? 1 : slider.mirrored ? 0.12 : 0.38
+                    }
+                    Rectangle {
+                        x: Math.min(parent.width, slider.handle.x - slider.leftPadding + slider.handle.width + 6)
+                        width: Math.max(0, parent.width - x)
+                        height: parent.height
+                        radius: 2
+                        topRightRadius: Theme.radiusSmall
+                        bottomRightRadius: Theme.radiusSmall
+                        color: slider.enabled ? (slider.mirrored ? Theme.primary : Theme.secondaryContainer) : Theme.textOnSurface
+                        opacity: slider.enabled ? 1 : slider.mirrored ? 0.38 : 0.12
                     }
                 }
                 handle: Rectangle {
                     x: slider.leftPadding + slider.visualPosition * (slider.availableWidth - width)
                     y: slider.topPadding + slider.availableHeight / 2 - height / 2
-                    width: slider.pressed ? 8 : 6
-                    height: 44
-                    radius: 3
-                    color: Theme.primary
+                    width: slider.pressed ? 2 : 4
+                    height: 52
+                    radius: width / 2
+                    color: slider.enabled ? Theme.primary : Theme.textOnSurface
                     border.width: slider.visualFocus ? 2 : 0
                     border.color: Theme.textOnSurface
                     opacity: slider.enabled ? 1 : 0.38
@@ -192,40 +200,12 @@ Item {
         contentWidth: availableWidth
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
         ColumnLayout {
+            id: content
             width: scroll.availableWidth
             spacing: 12
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: headline.implicitHeight + 40
-                radius: Theme.radiusExtraLarge
-                color: Theme.primaryContainer
-                ColumnLayout {
-                    id: headline
-                    anchors.fill: parent
-                    anchors.margins: 20
-                    spacing: 0
-                    Label {
-                        text: "Your space"
-                        font.pixelSize: 22
-                        font.styleName: "Bold Rounded"
-                        color: Theme.textOnPrimaryContainer
-                    }
-                    Label {
-                        text: Qt.formatDateTime(clock.date, "HH:mm")
-                        font.pixelSize: 68
-                        font.styleName: "Bold Rounded"
-                        font.letterSpacing: -3
-                        color: Theme.textOnPrimaryContainer
-                    }
-                    Label {
-                        text: Qt.formatDateTime(clock.date, "dddd, d MMMM")
-                        font.pixelSize: 17
-                        color: Theme.textOnPrimaryContainer
-                    }
-                }
-            }
 
             Rectangle {
+                visible: root.section === "network" || root.section === "bluetooth"
                 Layout.fillWidth: true
                 implicitHeight: connectivity.implicitHeight + 24
                 radius: Theme.radiusLarge
@@ -235,172 +215,178 @@ Item {
                     anchors.fill: parent
                     anchors.margins: 12
                     spacing: 10
-                    Label {
-                        text: "Stay connected"
-                        font.pixelSize: 22
-                        font.styleName: "Bold Rounded"
-                    }
-                    RowLayout {
+                    ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 4
-                        GroupButton {
-                            Layout.fillWidth: true
-                            text: !root.hasWifi ? "Wi-Fi unavailable" : !Networking.wifiHardwareEnabled ? "Wi-Fi blocked" : Networking.wifiEnabled ? "Wi-Fi on" : "Wi-Fi off"
-                            checked: root.hasWifi && Networking.wifiEnabled
-                            enabled: root.hasWifi && Networking.wifiHardwareEnabled
-                            description: "Toggle Wi-Fi radio"
-                            onClicked: Networking.wifiEnabled = !Networking.wifiEnabled
-                        }
-                        GroupButton {
-                            Layout.preferredWidth: 88
-                            text: root.showNetworks ? "Less" : "Networks"
-                            checked: root.showNetworks
-                            description: "Show available network connections"
-                            onClicked: root.showNetworks = !root.showNetworks
-                        }
-                    }
-                    Label {
-                        Layout.fillWidth: true
-                        color: Theme.textOnSurfaceVariant
-                        text: Networking.backend === NetworkBackendType.None ? "Network service unavailable" : Networking.devices.values.length === 0 ? "No network devices available" : "Internet · " + NetworkConnectivity.toString(Networking.connectivity)
-                    }
-                    Repeater {
-                        model: Networking.devices
-                        delegate: ColumnLayout {
-                            id: networkDevice
-                            required property var modelData
+                        visible: root.section === "network"
+                        spacing: 10
+                        RowLayout {
                             Layout.fillWidth: true
                             spacing: 4
-                            Binding {
-                                target: networkDevice.modelData.type === DeviceType.Wifi ? networkDevice.modelData : null
-                                property: "scannerEnabled"
-                                value: root.visible && root.showNetworks && Networking.wifiEnabled
-                                restoreMode: Binding.RestoreBindingOrValue
-                            }
-                            Label {
+                            GroupButton {
                                 Layout.fillWidth: true
-                                color: Theme.textOnSurfaceVariant
-                                text: networkDevice.modelData.name + " · " + ConnectionState.toString(networkDevice.modelData.state)
+                                text: !root.hasWifi ? "Wi-Fi unavailable" : !Networking.wifiHardwareEnabled ? "Wi-Fi blocked" : Networking.wifiEnabled ? "Wi-Fi on" : "Wi-Fi off"
+                                checked: root.hasWifi && Networking.wifiEnabled
+                                enabled: root.hasWifi && Networking.wifiHardwareEnabled
+                                description: "Toggle Wi-Fi radio"
+                                onClicked: Networking.wifiEnabled = !Networking.wifiEnabled
                             }
-                            Repeater {
-                                model: networkDevice.modelData.networks
-                                delegate: GroupButton {
-                                    id: networkButton
-                                    required property var modelData
+                            GroupButton {
+                                Layout.preferredWidth: 88
+                                text: root.showNetworks ? "Less" : "Networks"
+                                checked: root.showNetworks
+                                description: "Show available network connections"
+                                onClicked: root.showNetworks = !root.showNetworks
+                            }
+                        }
+                        Label {
+                            Layout.fillWidth: true
+                            color: Theme.textOnSurfaceVariant
+                            text: Networking.backend === NetworkBackendType.None ? "Network service unavailable" : Networking.devices.values.length === 0 ? "No network devices available" : "Internet · " + NetworkConnectivity.toString(Networking.connectivity)
+                        }
+                        Repeater {
+                            model: Networking.devices
+                            delegate: ColumnLayout {
+                                id: networkDevice
+                                required property var modelData
+                                Layout.fillWidth: true
+                                spacing: 4
+                                Binding {
+                                    target: networkDevice.modelData.type === DeviceType.Wifi ? networkDevice.modelData : null
+                                    property: "scannerEnabled"
+                                    value: root.shell.panel === "network" && root.showNetworks && Networking.wifiEnabled
+                                    restoreMode: Binding.RestoreBindingOrValue
+                                }
+                                Label {
                                     Layout.fillWidth: true
-                                    visible: root.showNetworks || modelData.connected
-                                    text: (modelData.name || "Unnamed network") + " · " + ConnectionState.toString(modelData.state)
-                                    checked: modelData.connected
-                                    enabled: !modelData.stateChanging
-                                    description: (modelData.connected ? "Disconnect from " : "Connect to ") + (modelData.name || "network")
-                                    onClicked: {
-                                        root.networkError = "";
-                                        if (modelData.connected)
-                                            modelData.disconnect();
-                                        else if (modelData.known || networkDevice.modelData.type === DeviceType.Wired || modelData.security === WifiSecurityType.Open)
-                                            modelData.connect();
-                                        else
-                                            root.launch(["foot", "-e", "nmtui"]);
-                                    }
-                                    Connections {
-                                        target: networkButton.modelData
-                                        function onConnectionFailed(reason) {
-                                            root.networkError = (networkButton.modelData.name || "Network") + ": " + ConnectionFailReason.toString(reason) + ". Open network settings to check credentials.";
+                                    color: Theme.textOnSurfaceVariant
+                                    text: networkDevice.modelData.name + " · " + ConnectionState.toString(networkDevice.modelData.state)
+                                }
+                                Repeater {
+                                    model: networkDevice.modelData.networks
+                                    delegate: GroupButton {
+                                        id: networkButton
+                                        required property var modelData
+                                        Layout.fillWidth: true
+                                        visible: root.showNetworks || modelData.connected
+                                        text: (modelData.name || "Unnamed network") + " · " + ConnectionState.toString(modelData.state)
+                                        checked: modelData.connected
+                                        enabled: !modelData.stateChanging
+                                        description: (modelData.connected ? "Disconnect from " : "Connect to ") + (modelData.name || "network")
+                                        onClicked: {
+                                            root.networkError = "";
+                                            if (modelData.connected)
+                                                modelData.disconnect();
+                                            else if (modelData.known || networkDevice.modelData.type === DeviceType.Wired || modelData.security === WifiSecurityType.Open)
+                                                modelData.connect();
+                                            else
+                                                root.launch(["foot", "-e", "nmtui"]);
+                                        }
+                                        Connections {
+                                            target: networkButton.modelData
+                                            function onConnectionFailed(reason) {
+                                                root.networkError = (networkButton.modelData.name || "Network") + ": " + ConnectionFailReason.toString(reason) + ". Open network settings to check credentials.";
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
-                    }
-                    Label {
-                        Layout.fillWidth: true
-                        visible: root.networkError.length > 0
-                        text: root.networkError
-                        color: Theme.error
-                    }
-                    GroupButton {
-                        Layout.fillWidth: true
-                        text: "Network settings"
-                        description: "Manage networks, passwords and VPNs in nmtui"
-                        onClicked: root.launch(["foot", "-e", "nmtui"])
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 4
-                        GroupButton {
+                        Label {
                             Layout.fillWidth: true
-                            text: root.adapter ? "Bluetooth · " + BluetoothAdapterState.toString(root.adapter.state) : "Bluetooth unavailable"
-                            checked: root.adapter ? root.adapter.enabled : false
-                            enabled: root.adapter !== null && root.adapter.state !== BluetoothAdapterState.Blocked && root.adapter.state !== BluetoothAdapterState.Enabling && root.adapter.state !== BluetoothAdapterState.Disabling
-                            description: "Toggle Bluetooth adapter"
-                            onClicked: root.adapter.enabled = !root.adapter.enabled
+                            visible: root.networkError.length > 0
+                            text: root.networkError
+                            color: Theme.error
                         }
                         GroupButton {
-                            Layout.preferredWidth: 88
-                            text: root.showBluetooth ? "Less" : "Devices"
-                            checked: root.showBluetooth
-                            description: "Show Bluetooth devices"
-                            onClicked: root.showBluetooth = !root.showBluetooth
+                            Layout.fillWidth: true
+                            text: "Network settings"
+                            description: "Manage networks, passwords and VPNs in nmtui"
+                            onClicked: root.launch(["foot", "-e", "nmtui"])
                         }
                     }
-                    Label {
+                    ColumnLayout {
                         Layout.fillWidth: true
-                        visible: !root.adapter || root.adapter.state === BluetoothAdapterState.Blocked
-                        text: root.adapter ? "Bluetooth is blocked by the hardware radio switch." : "No Bluetooth adapter available"
-                        color: root.adapter ? Theme.error : Theme.textOnSurfaceVariant
-                    }
-                    Repeater {
-                        model: Bluetooth.devices
-                        delegate: GroupButton {
-                            id: bluetoothButton
-                            required property var modelData
-                            property bool connecting: false
+                        visible: root.section === "bluetooth"
+                        spacing: 10
+                        RowLayout {
                             Layout.fillWidth: true
-                            visible: modelData.connected || (root.showBluetooth && (modelData.paired || modelData.bonded))
-                            text: (modelData.name || modelData.address) + " · " + BluetoothDeviceState.toString(modelData.state)
-                            checked: modelData.connected
-                            enabled: modelData.adapter && modelData.adapter.enabled && modelData.state !== BluetoothDeviceState.Connecting && modelData.state !== BluetoothDeviceState.Disconnecting
-                            description: (modelData.connected ? "Disconnect " : "Connect ") + (modelData.name || modelData.address)
-                            onClicked: {
-                                root.bluetoothError = "";
-                                if (modelData.connected) {
-                                    modelData.disconnect();
-                                } else {
-                                    connecting = true;
-                                    modelData.connect();
-                                }
+                            spacing: 4
+                            GroupButton {
+                                Layout.fillWidth: true
+                                text: root.adapter ? "Bluetooth · " + BluetoothAdapterState.toString(root.adapter.state) : "Bluetooth unavailable"
+                                checked: root.adapter ? root.adapter.enabled : false
+                                enabled: root.adapter !== null && root.adapter.state !== BluetoothAdapterState.Blocked && root.adapter.state !== BluetoothAdapterState.Enabling && root.adapter.state !== BluetoothAdapterState.Disabling
+                                description: "Toggle Bluetooth adapter"
+                                onClicked: root.adapter.enabled = !root.adapter.enabled
                             }
-                            Connections {
-                                target: bluetoothButton.modelData
-                                function onStateChanged() {
-                                    if (!bluetoothButton.connecting)
-                                        return;
-                                    if (bluetoothButton.modelData.state === BluetoothDeviceState.Connected)
-                                        bluetoothButton.connecting = false;
-                                    else if (bluetoothButton.modelData.state === BluetoothDeviceState.Disconnected) {
-                                        bluetoothButton.connecting = false;
-                                        root.bluetoothError = "Could not connect to " + (bluetoothButton.modelData.name || bluetoothButton.modelData.address) + ". Open Bluetooth settings for details or pairing.";
+                            GroupButton {
+                                Layout.preferredWidth: 88
+                                text: root.showBluetooth ? "Less" : "Devices"
+                                checked: root.showBluetooth
+                                description: "Show Bluetooth devices"
+                                onClicked: root.showBluetooth = !root.showBluetooth
+                            }
+                        }
+                        Label {
+                            Layout.fillWidth: true
+                            visible: !root.adapter || root.adapter.state === BluetoothAdapterState.Blocked
+                            text: root.adapter ? "Bluetooth is blocked by the hardware radio switch." : "No Bluetooth adapter available"
+                            color: root.adapter ? Theme.error : Theme.textOnSurfaceVariant
+                        }
+                        Repeater {
+                            model: Bluetooth.devices
+                            delegate: GroupButton {
+                                id: bluetoothButton
+                                required property var modelData
+                                property bool connecting: false
+                                Layout.fillWidth: true
+                                visible: modelData.connected || (root.showBluetooth && (modelData.paired || modelData.bonded))
+                                text: (modelData.name || modelData.address) + " · " + BluetoothDeviceState.toString(modelData.state)
+                                checked: modelData.connected
+                                enabled: modelData.adapter && modelData.adapter.enabled && modelData.state !== BluetoothDeviceState.Connecting && modelData.state !== BluetoothDeviceState.Disconnecting
+                                description: (modelData.connected ? "Disconnect " : "Connect ") + (modelData.name || modelData.address)
+                                onClicked: {
+                                    root.bluetoothError = "";
+                                    if (modelData.connected) {
+                                        modelData.disconnect();
+                                    } else {
+                                        connecting = true;
+                                        modelData.connect();
+                                    }
+                                }
+                                Connections {
+                                    target: bluetoothButton.modelData
+                                    function onStateChanged() {
+                                        if (!bluetoothButton.connecting)
+                                            return;
+                                        if (bluetoothButton.modelData.state === BluetoothDeviceState.Connected)
+                                            bluetoothButton.connecting = false;
+                                        else if (bluetoothButton.modelData.state === BluetoothDeviceState.Disconnected) {
+                                            bluetoothButton.connecting = false;
+                                            root.bluetoothError = "Could not connect to " + (bluetoothButton.modelData.name || bluetoothButton.modelData.address) + ". Open Bluetooth settings for details or pairing.";
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                    Label {
-                        Layout.fillWidth: true
-                        visible: root.bluetoothError.length > 0
-                        text: root.bluetoothError
-                        color: Theme.error
-                    }
-                    GroupButton {
-                        Layout.fillWidth: true
-                        text: "Bluetooth settings & pairing"
-                        description: "Discover, pair and manage Bluetooth devices in Blueman"
-                        onClicked: root.launch(["blueman-manager"])
+                        Label {
+                            Layout.fillWidth: true
+                            visible: root.bluetoothError.length > 0
+                            text: root.bluetoothError
+                            color: Theme.error
+                        }
+                        GroupButton {
+                            Layout.fillWidth: true
+                            text: "Bluetooth settings & pairing"
+                            description: "Discover, pair and manage Bluetooth devices in Blueman"
+                            onClicked: root.launch(["blueman-manager"])
+                        }
                     }
                 }
             }
 
             Rectangle {
+                visible: root.section === "microphone" || root.section === "sound"
                 Layout.fillWidth: true
                 implicitHeight: audioControls.implicitHeight + 32
                 radius: Theme.radiusLarge
@@ -412,17 +398,10 @@ Item {
                     spacing: 16
                     VolumeControl {
                         Layout.fillWidth: true
-                        title: "Output"
-                        node: Pipewire.defaultAudioSink
-                        devices: root.outputs
-                        input: false
-                    }
-                    VolumeControl {
-                        Layout.fillWidth: true
-                        title: "Microphone"
-                        node: Pipewire.defaultAudioSource
-                        devices: root.inputs
-                        input: true
+                        title: root.section === "microphone" ? "Input" : "Output"
+                        node: root.section === "microphone" ? Pipewire.defaultAudioSource : Pipewire.defaultAudioSink
+                        devices: root.section === "microphone" ? root.inputs : root.outputs
+                        input: root.section === "microphone"
                     }
                     ExpressiveButton {
                         Layout.fillWidth: true
@@ -434,7 +413,7 @@ Item {
             }
 
             Label {
-                visible: Mpris.players.values.length === 0
+                visible: root.section === "sound" && Mpris.players.values.length === 0
                 Layout.fillWidth: true
                 Layout.leftMargin: 16
                 Layout.rightMargin: 16
@@ -442,7 +421,7 @@ Item {
                 color: Theme.textOnSurfaceVariant
             }
             Repeater {
-                model: Mpris.players
+                model: root.section === "sound" ? Mpris.players : null
                 delegate: Rectangle {
                     id: media
                     required property var modelData
@@ -539,62 +518,6 @@ Item {
                 }
             }
 
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: personal.implicitHeight + 24
-                radius: Theme.radiusLarge
-                color: Theme.surfaceContainer
-                ColumnLayout {
-                    id: personal
-                    anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 8
-                    Label {
-                        text: "Make it yours"
-                        font.pixelSize: 22
-                        font.styleName: "Bold Rounded"
-                    }
-                    GroupButton {
-                        Layout.fillWidth: true
-                        text: root.shell.notifications.dnd ? "Do Not Disturb · on" : "Do Not Disturb · off"
-                        checked: root.shell.notifications.dnd
-                        description: "Toggle Do Not Disturb; notifications remain in history"
-                        onClicked: root.shell.notifications.dnd = !root.shell.notifications.dnd
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 4
-                        GroupButton {
-                            Layout.fillWidth: true
-                            text: "Wallpaper"
-                            description: "Choose a still wallpaper and matching colors"
-                            onClicked: root.launch(["wpp"])
-                        }
-                        GroupButton {
-                            Layout.fillWidth: true
-                            text: "Animated"
-                            description: "Choose an animated wallpaper and matching colors"
-                            onClicked: root.launch(["awpp"])
-                        }
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 4
-                        GroupButton {
-                            Layout.fillWidth: true
-                            text: "Night light"
-                            description: "Configure night light warmth or follow the schedule"
-                            onClicked: root.launch(["sunp"])
-                        }
-                        GroupButton {
-                            Layout.fillWidth: true
-                            text: "Power"
-                            description: "Open session and power actions"
-                            onClicked: root.launch(["powermenu"])
-                        }
-                    }
-                }
-            }
             Item {
                 Layout.preferredHeight: 4
             }

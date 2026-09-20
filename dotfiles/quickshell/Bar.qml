@@ -54,11 +54,7 @@ PanelWindow {
     }
 
     function triggerForPanel(name) {
-        return name === "calendar" ? clockButton : name === "notifications" ? notificationsButton : volumeButton;
-    }
-
-    function openControls(trigger) {
-        shell.togglePanel("controls", screen, trigger);
+        return name === "calendar" ? clockButton : name === "notifications" ? notificationsButton : name === "microphone" ? microphoneButton : name === "network" ? networkButton : name === "bluetooth" ? bluetoothButton : volumeButton;
     }
 
     function changeVolume(delta) {
@@ -371,22 +367,22 @@ PanelWindow {
                 RailButton {
                     id: microphoneButton
                     glyph: bar.inputAudio?.muted ? "󰍭" : "󰍬"
-                    enabled: bar.inputAudio !== null
                     checked: bar.inputAudio !== null && !bar.inputAudio.muted
-                    description: bar.inputAudio ? (bar.inputAudio.muted ? "Unmute microphone" : "Mute microphone") : "No microphone available"
-                    onClicked: bar.inputAudio.muted = !bar.inputAudio.muted
+                    description: bar.inputAudio ? "Microphone" + (bar.inputAudio.muted ? ", muted" : "") + ". Open input controls; right click to mute" : "Microphone controls; no input device available"
+                    onClicked: shell.togglePanel("microphone", bar.screen, microphoneButton)
                     TapHandler {
                         acceptedButtons: Qt.RightButton
-                        onTapped: bar.openControls(microphoneButton)
+                        onTapped: if (bar.inputAudio)
+                            bar.inputAudio.muted = !bar.inputAudio.muted
                     }
                 }
 
                 RailButton {
                     id: volumeButton
                     glyph: !bar.outputAudio || bar.outputAudio.muted ? "󰖁" : bar.outputAudio.volume < 0.5 ? "󰕿" : "󰕾"
-                    description: bar.outputAudio ? "Volume " + Math.round(bar.outputAudio.volume * 100) + "%" + (bar.outputAudio.muted ? ", muted" : "") + ". Open controls; scroll to adjust; right click or M to mute" : "No audio output. Open controls"
-                    checked: shell.panel === "controls" && shell.panelTrigger === volumeButton
-                    onClicked: bar.openControls(volumeButton)
+                    description: bar.outputAudio ? "Volume " + Math.round(bar.outputAudio.volume * 100) + "%" + (bar.outputAudio.muted ? ", muted" : "") + ". Open sound controls; scroll to adjust; right click or M to mute" : "Sound controls; no audio output"
+                    checked: shell.panel === "sound" && shell.panelTrigger === volumeButton
+                    onClicked: shell.togglePanel("sound", bar.screen, volumeButton)
                     TapHandler {
                         acceptedButtons: Qt.RightButton
                         onTapped: if (bar.outputAudio)
@@ -412,16 +408,16 @@ PanelWindow {
                 RailButton {
                     id: networkButton
                     glyph: !bar.networkDevice ? "󰖪" : Networking.connectivity === NetworkConnectivity.Portal || Networking.connectivity === NetworkConnectivity.Limited ? "󰖫" : bar.networkDevice.type === DeviceType.Wired ? "󰈀" : "󰖩"
-                    description: (bar.networkDevice ? bar.networkDevice.name + ": " + NetworkConnectivity.toString(Networking.connectivity) : "Network disconnected") + ". Open controls"
-                    onClicked: bar.openControls(networkButton)
+                    description: (bar.networkDevice ? bar.networkDevice.name + ": " + NetworkConnectivity.toString(Networking.connectivity) : "Network disconnected") + ". Open network controls"
+                    onClicked: shell.togglePanel("network", bar.screen, networkButton)
                 }
 
                 RailButton {
                     id: bluetoothButton
                     glyph: !bar.bluetoothEnabled ? "󰂲" : bar.bluetoothConnections > 0 ? "󰂱" : "󰂯"
                     checked: bar.bluetoothConnections > 0
-                    description: (bar.bluetoothEnabled ? "Bluetooth on, " + bar.bluetoothConnections + " connected devices" : "Bluetooth off") + ". Open controls"
-                    onClicked: bar.openControls(bluetoothButton)
+                    description: (bar.bluetoothEnabled ? "Bluetooth on, " + bar.bluetoothConnections + " connected devices" : "Bluetooth off") + ". Open Bluetooth controls"
+                    onClicked: shell.togglePanel("bluetooth", bar.screen, bluetoothButton)
                 }
             }
         }

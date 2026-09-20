@@ -391,14 +391,19 @@ workspaces use `layers`. Bundled SVGs and their Apache-2.0 license live in
 `dotfiles/quickshell/icons/`. Icons follow workspace names rather than temporary IDs;
 ordinary workspaces retain their numeric labels.
 Microphone, volume, network and Bluetooth remain at the bottom.
-Quick settings use native PipeWire,
-NetworkManager, Bluetooth and MPRIS models. Network credentials use `nmtui`,
-pairing uses Blueman, and detailed audio routing uses Pavucontrol. Wallpaper,
-night-light and power controls use the existing `wpp`, `awpp`, `sunp` and
-`powermenu` actions.
+Each of those buttons opens only its own controls: microphone input,
+sound output/media, internet connections, or Bluetooth devices. They use native
+PipeWire, MPRIS, NetworkManager and Bluetooth models. Network credentials use
+`nmtui`, pairing uses Blueman, and detailed audio routing uses Pavucontrol.
+Right-clicking microphone or sound toggles mute; Super+K opens Sound.
+Wallpaper, night-light and power remain available through the launcher tools
+`wpp`, `awpp`, `sunp` and `powermenu`; DND lives in notification history.
 
 ```sh
-quickshell -c expressive ipc call desktop toggle controls
+quickshell -c expressive ipc call desktop toggle microphone
+quickshell -c expressive ipc call desktop toggle sound
+quickshell -c expressive ipc call desktop toggle network
+quickshell -c expressive ipc call desktop toggle bluetooth
 quickshell -c expressive ipc call desktop toggle notifications
 quickshell -c expressive ipc call desktop toggle calendar
 quickshell -c expressive ipc call desktop close
@@ -411,12 +416,13 @@ quickshell -c expressive ipc call desktop status
 
 IPC selects the same configuration as the service. `reveal` avoids the CLI's
 reserved `show` subcommand. Escape and clicking outside dismiss panels.
-Calendar, notifications and quick settings are compact popovers next to their
-trigger, centered vertically on it where screen bounds allow. They morph from
-the clicked button's rectangle, color and corner radius, and close back into it.
-Calendar height follows its contents; notification history and quick settings
+Calendar, notifications and device controls are compact popovers next to their
+trigger, centered vertically on it where screen bounds allow. Hyprland handles
+their subtle 96%–100% pop-in and fade, reversed on close; QML keeps a fixed size.
+Calendar height follows its contents; notification history and device controls
 scroll within capped heights. Keyboard IPC uses the corresponding rail button
 on the focused monitor as its origin. No full-screen overlay is created.
+Reduced-motion mode disables this compositor animation as well.
 Notification bodies are plain text; DND suppresses popups, not history.
 History is memory-only, bounded to 100 entries, and clears on shell restart
 or QML reload. Expired notifications remain readable but their actions are
@@ -448,11 +454,11 @@ Its seven tactics map to this desktop as follows:
 |---|---|
 | Vary shapes | selected workspace pills, rounded cards and pressed corner morphs |
 | Rich, nuanced color | wallpaper-derived primary, secondary and tertiary role pairs |
-| Guide with typography | bold rounded headings, readable labels and a display-size clock |
-| Contain related content | separate connectivity, audio, media and personalization groups |
-| Fluid, natural motion | spatial springs for presses/panels; bounded color transitions |
+| Guide with typography | bold rounded headings, readable labels and the stacked rail clock |
+| Contain related content | separate microphone, sound, network and Bluetooth popovers |
+| Fluid, natural motion | spatial springs for controls; compositor pop-in/fade for popovers |
 | Flexible components | per-monitor rails, scrollable controls and device-dependent actions |
-| Combine tactics for hero moments | one prominent clock card; media artwork when playing |
+| Combine tactics for hero moments | media artwork and playback controls in the sound popup |
 
 The article cautions against making essential actions too small, insufficient
 contrast, ungrouped information, and too many hero moments. Controls provide

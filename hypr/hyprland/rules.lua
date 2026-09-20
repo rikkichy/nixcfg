@@ -129,5 +129,6 @@ hl.layer_rule({ match = { namespace = "logout_dialog" }, animation = "fade" })
 hl.layer_rule({ match = { namespace = "selection" }, animation = "fade" })
 hl.layer_rule({ match = { namespace = "wayfreeze" }, animation = "fade" })
 hl.layer_rule({ match = { namespace = "launcher" }, animation = "popin 80%" })
--- Quickshell owns the full opening/closing container transform.
-hl.layer_rule({ match = { namespace = "^expressive-panel$" }, no_anim = true })
+-- Hyprland owns popover scale/fade; the shell submits a fixed-size surface.
+hl.layer_rule({ match = { namespace = "^expressive-panel$" }, animation = "popin 96%" })
+hl.layer_rule({ match = { namespace = "^expressive-panel-static$" }, no_anim = true })

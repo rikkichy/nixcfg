@@ -21,13 +21,18 @@ Use native `Quickshell.Hyprland`, `Services.Pipewire`, `Services.Mpris`,
 models rather than subprocess polling. The pinned version is 0.3.1; read its
 packaged `.qmltypes` or matching upstream tag before assuming older APIs.
 
-The `desktop` IPC target exposes `toggle controls|notifications|calendar`,
-`close`, `dismissAll`, `dnd`, `hide`, `reveal`, and `status`:
+The `desktop` IPC target exposes `toggle microphone|sound|network|bluetooth|notifications|calendar`,
+`close`, `dismissAll`, `dnd`, `hide`, `reveal`, and `status`. Super+K opens Sound.
 
 ```sh
-quickshell -c expressive ipc call desktop toggle controls
+quickshell -c expressive ipc call desktop toggle sound
 quickshell -c expressive ipc call desktop status
 ```
+
+The four device rail buttons open separate contents in the anchored popover:
+microphone input, sound output/media, networking, and Bluetooth. Left-clicking
+the microphone opens its controls; right-click toggles mute. Device popovers
+contain no clock or personalization section; DND remains in notification history.
 
 Do not name an IPC method `show`: Quickshell's CLI consumes it as its own
 subcommand instead of calling the method. IPC arguments are typed. External
@@ -65,19 +70,18 @@ names into shell commands.
 - Rail windows reserve 80px. Popovers are compact overlay-layer windows with
   top/left anchors, not full-screen surfaces. Click handlers pass their actual
   button; keyboard IPC resolves the matching button on the focused monitor.
-  Source geometry is mapped into the rail window, then interpolated to a
-  content-sized, screen-clamped card with the M3 spatial spring. The native
-  window has fixed bounds covering both endpoints; animate the QML card only,
-  never the Wayland window size or margins. A `Region` mask keeps unused space
-  click-through. Retain the presented content during the closing transform.
-  Start the opening spring only after `sheet.Window.window.frameSwapped`, so
-  the trigger-sized card is rendered before it expands. The exact
-  `expressive-panel` layer rule sets `no_anim = true`: compositor layer slides
-  and fades must not compete with the shell-owned opening/closing transform.
-- Popovers take keyboard focus only while open. `HyprlandFocusGrab` permits
-  the popover and source rail, and dismisses on outside clicks; Escape also
-  closes. Popover/OSD windows reserve no space. Fullscreen behavior remains
-  compositor-owned.
+  Source geometry determines the anchor; the shell submits the popover at its
+  final, content-sized, screen-clamped bounds. Hyprland alone animates the
+  `expressive-panel` layer with `popin 96%` and the configured layer fade.
+  Do not add QML surface resizing, transform springs or first-frame gates.
+  `QS_REDUCED_MOTION=1` selects `expressive-panel-static`, whose layer rule
+  disables compositor animation. Keep the presented content when hiding so
+  Hyprland can animate its closing snapshot without a content change.
+- Popovers use on-demand layer keyboard focus and a `HyprlandFocusGrab` limited
+  to the mapped popover. Outside clicks dismiss it, including clicks on empty
+  rail space; Escape also closes. Exclusive layer focus redirects outside
+  pointer input back into the popup and prevents the grab from clearing.
+  Popover/OSD windows reserve no space. Fullscreen behavior remains compositor-owned.
 
 #### Rendering and verification
 
