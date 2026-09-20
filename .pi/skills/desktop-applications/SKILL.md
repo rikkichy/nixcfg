@@ -118,8 +118,8 @@ Its settings live in two different places, and only one of them is a file:
   the GTK file shared with every GIO browser, not a Thunar format. Owning it
   from the flake makes it a read-only store symlink, which is what disables
   "Add Bookmark" and dragging a folder onto the sidebar — the list is editable
-  only through the attribute. It carries `force = true` for the reason wayle's
-  `config.toml` does.
+  only through the attribute. `force = true` permits replacing an unmanaged
+  bookmarks file created by the application before the first activation.
 - **Everything else is xfconf**, declared through `xfconf.settings.thunar`.
   home-manager applies these with `xfconf-query` at activation instead of
   managing a file, so a declared value is stamped back on every switch and its
@@ -149,8 +149,8 @@ config through `CreateFileSafely`, whose dispose path is
 finalPath)`. The `Delete` unlinks whatever sits at the path, a read-only store
 symlink included, so the first clean exit replaces a managed link with a real
 file — and the next switch either fails on the now-unmanaged file or, forced,
-discards every setting changed in-game. There is no runtime/declared split to
-absorb that the way wayle's `config.toml` has one.
+discards every setting changed in-game. There is no separate runtime override
+file to preserve those edits.
 
 So `home.activation.osuSettings` seeds them instead, copying only what is
 absent and leaving everything afterwards to the game, the same arrangement

@@ -1,6 +1,6 @@
 # nixcfg
 
-NixOS config for `nix` — 9950X3D / RTX 3090 / LUKS / Hyprland + Wayle.
+NixOS config for `nix` — 9950X3D / RTX 3090 / LUKS / Hyprland + Quickshell.
 Clone to **`/home/ri/nixcfg`** — `nixcfgPath` in `flake.nix` supplies that runtime
 path to services and the live Hyprland symlink.
 
@@ -342,7 +342,8 @@ it; stop the user service first so the two do not both bind 1443.
 | `home/matugen.nix` | generated palettes, cursors, wallpaper pickers and restoration |
 | `home/fuzzel-tweaks.nix` | Fuzzel settings, desktop entries/actions and shared pickers |
 | `home/network-reset.nix` | network recovery backend and terminal launcher |
-| `home/wayle.nix` | Wayle service, bar, styling and live Hyprland symlink |
+| `home/quickshell.nix` | Quickshell service, QML deployment and live Hyprland symlink |
+| `dotfiles/quickshell/` | Material 3 Expressive rail, controls, notifications and calendar |
 | `home/applications.nix` | application settings, MIME defaults, GTK/Qt and Telegram proxy |
 | `home/shell.nix` | Foot, Fish, direnv and CLI dotfiles |
 | `hypr/` | Hyprland Lua config, symlinked live into `~/.config/hypr` |
@@ -360,7 +361,7 @@ and Fish initialization order.
 **The colour engine owns a set of files at runtime.** Every time the wallpaper
 changes, `matugen` rewrites `fuzzel/colors.ini`, `btop/themes/wallpaper.theme`,
 `nvtop/nvtop.colors`, `gtk-3.0/gtk.css`, `gtk-4.0/gtk.css`, both `thunar.css`,
-`qtengine/scheme.colors` and `hypr/scheme/current.lua`. Home-manager files are
+`qtengine/scheme.colors`, `quickshell/colors.json` and `hypr/scheme/current.lua`. Home-manager files are
 read-only store symlinks, so **do not** put any of those under
 `xdg.configFile` — every colour change would start failing. This is also why
 home-manager's `gtk` module is not used: it emits `gtk-4.0/gtk.css` too.
@@ -370,12 +371,108 @@ templates are in `dotfiles/matugen/templates/` and are tracked; anything you
 type into the files listed above is gone at the next wallpaper. Run `wpp` to
 re-render after editing a template.
 
-**Wayle's settings are not in this repo.** `config.toml` is managed here, but
-anything changed in the wayle GUI or with `wayle config set` lands in
-`runtime.toml` beside it — and `runtime.toml` wins where the two overlap. So a
-value set here that has ever been set at runtime simply does not apply;
-`wayle config reset <field>` is what releases it. Those live settings are not
-restored by a reinstall.
+## Expressive desktop shell
+
+`quickshell.service` runs the pinned Quickshell package with
+`dotfiles/quickshell/`. The unit's restart trigger includes the QML store path,
+so a configuration rebuild updates the unit as well as its files. Apply with the
+normal `nixos-rebuild switch --flake path:/home/ri/nixcfg#nix`; no manual
+notification daemon or wallpaper daemon should run alongside the managed ones.
+
+The left rail groups a folded tray toggle, notifications, the centered
+clock/calendar, and occupied workspaces, in that order. Empty workspaces are
+hidden; occupied ordinary and special workspaces appear beneath the clock.
+Tray icons expand vertically upward without moving the clock or overlapping
+the notification button; Escape or the toggle folds them away.
+The folded tray and notification buttons both occupy 56 × 48 logical pixels.
+Special workspaces use Google's official Material Symbols Rounded:
+`communication` uses `chat`, `music` uses `music_note`, and other special
+workspaces use `layers`. Bundled SVGs and their Apache-2.0 license live in
+`dotfiles/quickshell/icons/`. Icons follow workspace names rather than temporary IDs;
+ordinary workspaces retain their numeric labels.
+Microphone, volume, network and Bluetooth remain at the bottom.
+Quick settings use native PipeWire,
+NetworkManager, Bluetooth and MPRIS models. Network credentials use `nmtui`,
+pairing uses Blueman, and detailed audio routing uses Pavucontrol. Wallpaper,
+night-light and power controls use the existing `wpp`, `awpp`, `sunp` and
+`powermenu` actions.
+
+```sh
+quickshell -c expressive ipc call desktop toggle controls
+quickshell -c expressive ipc call desktop toggle notifications
+quickshell -c expressive ipc call desktop toggle calendar
+quickshell -c expressive ipc call desktop close
+quickshell -c expressive ipc call desktop dismissAll
+quickshell -c expressive ipc call desktop dnd
+quickshell -c expressive ipc call desktop hide
+quickshell -c expressive ipc call desktop reveal
+quickshell -c expressive ipc call desktop status
+```
+
+IPC selects the same configuration as the service. `reveal` avoids the CLI's
+reserved `show` subcommand. Escape and clicking outside dismiss panels.
+Calendar, notifications and quick settings are compact popovers next to their
+trigger, centered vertically on it where screen bounds allow. They morph from
+the clicked button's rectangle, color and corner radius, and close back into it.
+Calendar height follows its contents; notification history and quick settings
+scroll within capped heights. Keyboard IPC uses the corresponding rail button
+on the focused monitor as its origin. No full-screen overlay is created.
+Notification bodies are plain text; DND suppresses popups, not history.
+History is memory-only, bounded to 100 entries, and clears on shell restart
+or QML reload. Expired notifications remain readable but their actions are
+disabled; transient notifications do not enter history. Critical and explicit
+zero-timeout notifications remain until closed. An identical replacement
+notification cannot restart its timeout because Quickshell 0.3.1 exposes no
+update signal when every field is unchanged.
+
+`awww.service` owns still wallpapers independently of the shell;
+`wallpaper-restore.service` waits for its socket and restores the recorded
+image. Matugen renders writable `quickshell/colors.json`; Quickshell watches it
+and keeps the last valid palette on malformed writes. Missing colors use a
+complete dark fallback. Set `QS_REDUCED_MOTION=1` in the user service environment
+to disable shell animations.
+
+### Material 3 Expressive design basis
+
+The [official introduction](https://m3.material.io/blog/building-with-m3-expressive)
+describes an evolution of M3, not M4. Its fourteen component additions/updates
+are app bars, button groups, common buttons, extended FABs, FAB menus, FABs,
+icon buttons, loading indicators, navigation bars, navigation rails, progress
+indicators, sliders, split buttons and toolbars. Its style updates are spatial
+and effects springs, emphasized typography, 35 decorative shapes with morphing,
+and richer dynamic color schemes.
+
+Its seven tactics map to this desktop as follows:
+
+| Tactic | Shell application |
+|---|---|
+| Vary shapes | selected workspace pills, rounded cards and pressed corner morphs |
+| Rich, nuanced color | wallpaper-derived primary, secondary and tertiary role pairs |
+| Guide with typography | bold rounded headings, readable labels and a display-size clock |
+| Contain related content | separate connectivity, audio, media and personalization groups |
+| Fluid, natural motion | spatial springs for presses/panels; bounded color transitions |
+| Flexible components | per-monitor rails, scrollable controls and device-dependent actions |
+| Combine tactics for hero moments | one prominent clock card; media artwork when playing |
+
+The article cautions against making essential actions too small, insufficient
+contrast, ungrouped information, and too many hero moments. Controls provide
+48-pixel hit areas, focus indicators, keyboard operation and accessible names.
+Qt dimensions and spring coefficients are desktop adaptations, not claims of
+pixel-identical Android tokens. The shell uses relevant components rather than
+inserting every FAB/loading shape into a desktop that has no use for it.
+
+Tray motion uses Material's [Expressive spring tokens](https://raw.githubusercontent.com/androidx/androidx/androidx-main/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/ExpressiveMotionTokens.kt):
+default spatial (stiffness 380, damping ratio 0.8) for expansion/shape, default
+effects (1600, 1.0) for opacity, and fast spatial (800, 0.6) for icon rotation.
+The coefficients are converted for Qt's native 16ms spring integrator; geometry
+and opacity remain separate so transparency does not bounce. The toggle uses
+the stock `pan-up` theme icon. Occupied-workspace selection retains its animated
+48-to-56-pixel size and rounded-shape transition.
+
+Implementation reference: [Quickshell v0.3.1](https://git.outfoxxed.me/quickshell/quickshell/src/tag/v0.3.1),
+including its native Hyprland IPC and service APIs. The flake applies a
+socket-lifetime correction required with the pinned Qt; verify it with
+`bash tests/quickshell-hyprland.sh /absolute/path/to/quickshell` inside Hyprland.
 
 ## Auto-updates
 

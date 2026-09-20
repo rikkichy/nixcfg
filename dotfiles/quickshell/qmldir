@@ -1,0 +1,7 @@
+singleton Theme 1.0 Theme.qml
+ExpressiveButton 1.0 ExpressiveButton.qml
+Bar 1.0 Bar.qml
+ControlCenter 1.0 ControlCenter.qml
+CalendarPanel 1.0 CalendarPanel.qml
+NotificationCenter 1.0 NotificationCenter.qml
+NotificationPanel 1.0 NotificationPanel.qml

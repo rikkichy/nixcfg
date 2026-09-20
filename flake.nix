@@ -1,5 +1,5 @@
 {
-  description = "9950X3D / RTX 3090 / LUKS / Hyprland + Wayle";
+  description = "9950X3D / RTX 3090 / LUKS / Hyprland + Quickshell";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -51,6 +51,14 @@
       system = "x86_64-linux";
 
       overlay = final: prev: {
+        quickshell = prev.quickshell.overrideAttrs (old: {
+          postPatch = (old.postPatch or "") + ''
+            # QLocalSocket emits channelReadyRead after readyRead; do not destroy its sender.
+            substituteInPlace src/wayland/hyprland/ipc/connection.cpp \
+              --replace-fail 'delete requestSocket;' 'requestSocket->deleteLater();'
+          '';
+        });
+
         tg-ws-proxy = final.callPackage ./pkgs/tg-ws-proxy.nix {
           src = inputs.tg-ws-proxy;
         };

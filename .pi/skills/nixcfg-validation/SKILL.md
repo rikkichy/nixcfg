@@ -44,5 +44,7 @@ apply the result.
 - A successful flake evaluation does not render matugen templates. For palette,
   wallpaper, cursor, or Discord theme work, also load `wallpaper-theming` and
   use its subsystem-specific checks.
-- Wayle keeps startup configuration in memory. Validate the source first; only
-  restart `wayle.service` when the user wants the live desktop changed.
+- Quickshell UI changes require a real runtime and visual check on an isolated
+  compositor/session bus. Do not compete with the live notification daemon.
+  `tests/quickshell-hyprland.sh QUICKSHELL` checks native IPC socket lifetime.
+  Only activate the rebuilt system when the user wants the live desktop changed.

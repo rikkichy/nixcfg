@@ -12,11 +12,12 @@ Detailed engineering reference for this NixOS configuration. Read the relevant s
 `matugen` derives a Material palette from the wallpaper and renders every
 themed file from templates tracked in `dotfiles/matugen/templates/`. The config
 naming each template and its destination uses `pkgs.formats.toml` in `home/matugen.nix`.
-Private `theme-apply` runs Wayle → matugen → terminal OSC delivery → cursor
+Private `theme-apply` runs awww → matugen → terminal OSC delivery → cursor
 rendering, then records success. Matugen writes `hypr/scheme/current.lua`,
-`fuzzel/colors.ini`, both GTK and Thunar styles, btop/nvtop/Qt palettes,
-Equicord QuickCSS, terminal colours and cursor accent. GTK3/GTK4 outputs remain
-separate entries: this matugen pin loses earlier paths in multi-output templates.
+`quickshell/colors.json`, `fuzzel/colors.ini`, both GTK and Thunar styles,
+btop/nvtop/Qt palettes, Equicord QuickCSS, terminal colours and cursor accent.
+GTK3/GTK4 outputs remain separate entries: this matugen pin loses earlier paths
+in multi-output templates.
 Consequences:
 
 - **Never put those paths under `xdg.configFile`.** Home-manager files are
@@ -79,25 +80,23 @@ Two more things the pipeline depends on:
 ### Wallpapers and theming
 
 `wpp` is the picker: fuzzel in dmenu mode over `~/Pictures/Wallpapers`, handing
-the choice to `theme-apply`, which drives both engines — wayle for the wallpaper
-and its own bar colours, matugen for everything else. `theme-apply` is
-split out of `wpp` so `wallpaper-restore` reaches the same path rather than a
-second copy of it. `theme-apply` also records what it applied, to
-`~/.local/state/wallpaper/current`.
+the choice to private `theme-apply`. It draws the still through awww and renders
+all application palettes through matugen, including Quickshell's semantic color
+roles. `wallpaper-restore` reaches the same helper when theming is needed.
+Successful application records the image in `~/.local/state/wallpaper/current`.
 
-**Wayle keeps no record of the wallpaper.** `wayle wallpaper set` draws the
-image and writes nothing; the `[wallpaper] monitors` list that would hold it is
-filled by the GUI and stays empty otherwise, and `wayle wallpaper info` reports
-`Current: (none)` immediately after a successful CLI set. Nothing survives a
-shell restart on its own, so the desktop comes up blank without something
-putting it back.
+`awww.service` owns `awww-daemon` independently of Quickshell. Its
+`ExecStartPost` waits for a successful `awww query`, with a bounded timeout.
+`wallpaper-restore.service` requires and starts after that ready service.
+A readable recorded image with both Fuzzel and Quickshell palettes only needs
+an awww redraw; either missing palette runs the full theme. Missing or broken
+records use the built-in default. State/cache paths follow Home Manager's
+configured XDG locations; collection overrides remain supported.
 
-`wallpaper-restore` runs on graphical-session.target. A valid recorded image
-and readable Fuzzel palette need only a Wayle redraw; a missing palette runs
-the full theme on that image. Missing/broken records use the built-in default.
-The readiness delay remains necessary because Wayle's D-Bus registration trails
-process startup; the oneshot is timeout-bounded. State/cache paths follow Home
-Manager's configured XDG locations, while collection overrides remain supported.
+Quickshell reads and watches `quickshell/colors.json`, but does not own it.
+Its QML source lives in the read-only `quickshell/expressive` directory.
+Render `dotfiles/matugen/templates/quickshell.json` to a temporary destination
+and verify live palette reload in an isolated shell when changing color roles.
 
 Thumbnails are pre-rendered to `~/.cache/wallpaper-picker` with
 `gdk-pixbuf-thumbnailer` because fuzzel builds with `+png +svg` only — a JPEG

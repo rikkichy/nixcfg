@@ -1,0 +1,11 @@
+Material Symbols Rounded by Google
+https://github.com/google/material-design-icons
+Licensed under Apache License 2.0; see LICENSE.
+
+Source assets:
+symbols/web/chat/materialsymbolsrounded/chat_24px.svg
+symbols/web/music_note/materialsymbolsrounded/music_note_24px.svg
+symbols/web/layers/materialsymbolsrounded/layers_24px.svg
+
+Paths and view boxes are unchanged. Root fill is set to white for runtime
+palette tinting in Qt Quick. No network access is used to display these icons.

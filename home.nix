@@ -2,7 +2,7 @@
 
 {
   imports = [
-    ./home/wayle.nix
+    ./home/quickshell.nix
     ./home/fuzzel-tweaks.nix
     ./home/matugen.nix
     ./home/network-reset.nix
@@ -15,7 +15,6 @@
   home.packages = with pkgs; [
     papirus-icon-theme
     adw-gtk3
-    wayle
 
     libnotify
 

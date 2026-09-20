@@ -29,6 +29,7 @@ let
     config = {};
     templates = let cfg = config.xdg.configHome; in {
       fuzzel = template "fuzzel.ini" "${cfg}/fuzzel/colors.ini";
+      quickshell = template "quickshell.json" "${cfg}/quickshell/colors.json";
       gtk3 = template "gtk.css" "${cfg}/gtk-3.0/gtk.css";
       gtk4 = template "gtk.css" "${cfg}/gtk-4.0/gtk.css";
       thunar3 = template "thunar.css" "${cfg}/gtk-3.0/thunar.css";
@@ -109,12 +110,12 @@ let
 
   themeApply = pkgs.writeShellApplication {
     name = "theme-apply";
-    runtimeInputs = [ pkgs.wayle pkgs.matugen termSequences cursorApply ];
+    runtimeInputs = [ pkgs.awww pkgs.matugen termSequences cursorApply ];
     text = ''
       wallpaper="''${1:?usage: theme-apply <image>}"
       record=${wallpaperRecord}
 
-      wayle wallpaper set --fit fill "$wallpaper"
+      awww img --resize crop --transition-fps 240 "$wallpaper"
 
       matugen image "$wallpaper" \
         --type scheme-content \
@@ -284,23 +285,47 @@ in
     })
   ]);
 
+  systemd.user.services.awww = {
+    Unit = {
+      Description = "Still wallpaper renderer";
+      PartOf = [ "graphical-session.target" ];
+      After = [ "graphical-session.target" ];
+      Before = [ "wallpaper-restore.service" ];
+    };
+    Service = {
+      ExecStart = "${pkgs.awww}/bin/awww-daemon";
+      ExecStartPost = toString (pkgs.writeShellScript "awww-ready" ''
+        for attempt in $(seq 1 100); do
+          ${pkgs.awww}/bin/awww query >/dev/null 2>&1 && exit 0
+          sleep 0.1
+        done
+        exit 1
+      '');
+      Restart = "on-failure";
+      RestartSec = "2s";
+      Slice = "session.slice";
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+  };
+
   systemd.user.services.wallpaper-restore = {
     Unit = {
       Description = "Restore the wallpaper, theming the machine if it never has been";
       PartOf = [ "graphical-session.target" ];
-      After = [ "graphical-session.target" "wayle.service" ];
+      Requires = [ "awww.service" ];
+      After = [ "graphical-session.target" "awww.service" ];
     };
     Service = {
       Type = "oneshot";
       ExecStart = toString (pkgs.writeShellScript "wallpaper-restore" ''
         set -eu
-        sleep 3
         record=${wallpaperRecord}
         if [ -r "$record" ]; then
           wallpaper=$(cat "$record")
           if [ -e "$wallpaper" ]; then
-            if [ -r ${lib.escapeShellArg "${config.xdg.configHome}/fuzzel/colors.ini"} ]; then
-              exec ${pkgs.wayle}/bin/wayle wallpaper set --fit fill "$wallpaper"
+            if [ -r ${lib.escapeShellArg "${config.xdg.configHome}/fuzzel/colors.ini"} ] \
+              && [ -r ${lib.escapeShellArg "${config.xdg.configHome}/quickshell/colors.json"} ]; then
+              exec ${pkgs.awww}/bin/awww img --resize crop --transition-fps 240 "$wallpaper"
             fi
             exec ${themeApply}/bin/theme-apply "$wallpaper"
           fi
@@ -320,7 +345,7 @@ in
       PartOf = [ "graphical-session.target" ];
       After = [
         "graphical-session.target"
-        "wayle.service"
+        "awww.service"
         "wallpaper-restore.service"
       ];
     };

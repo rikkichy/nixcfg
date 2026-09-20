@@ -1,7 +1,7 @@
 # AGENTS.md
 
 Single-machine NixOS configuration for host `nix`: Ryzen 9950X3D, RTX 3090,
-LUKS, Hyprland, and Wayle. `handbook.md` is the install-facing guide; detailed
+LUKS, Hyprland, and Quickshell. `handbook.md` is the install-facing guide; detailed
 engineering knowledge is progressively disclosed through the project skills in
 `.pi/skills/`.
 
@@ -61,7 +61,7 @@ path while runtime symlinks and services need the final checkout at `/home/ri/ni
 | hardware and root LUKS mapping | `hardware-configuration.nix` |
 | keybinds, rules, monitors | `hypr/` live out-of-store symlink |
 | generated app palettes | `dotfiles/matugen/templates/` via `theme-apply` |
-| Wayle bar, notifications, OSD, wallpaper and Hyprland symlink | `home/wayle.nix` |
+| Quickshell rail, controls, notifications, OSD and Hyprland symlink | `home/quickshell.nix`, `dotfiles/quickshell/` |
 | local package expressions | `pkgs/` and the overlay in `flake.nix` |
 | NokoChat development environment | `dev/nokochat/shell.nix` |
 
@@ -72,7 +72,7 @@ task matches:
 
 - `nix-system-operations` — boot/initrd, services, updates, security, CPU policy,
   crash resilience, polkit, and VPN behavior.
-- `desktop-shell` — Wayle, Hyprland Lua, fuzzel, workspaces, keybinds, menus,
+- `desktop-shell` — Quickshell, Hyprland Lua, fuzzel, workspaces, keybinds, menus,
   blue-light controls, and screenshots.
 - `wallpaper-theming` — matugen, wallpapers, terminal colors, cursor rendering,
   fonts, and Discord styling.

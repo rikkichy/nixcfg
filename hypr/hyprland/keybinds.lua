@@ -28,8 +28,8 @@ end
 -- the key is simply inert, which is indistinguishable from a key that was
 -- never bound.
 hl.bind(vars.kbSession, hl.dsp.exec_cmd("powermenu"))
-hl.bind(vars.kbClearNotifs, hl.dsp.exec_cmd("wayle notify dismiss-all"), { locked = true })
-hl.bind(vars.kbShowPanels, hl.dsp.exec_cmd("wayle panel toggle"))
+hl.bind(vars.kbClearNotifs, hl.dsp.exec_cmd("quickshell -c expressive ipc call desktop dismissAll"), { locked = true })
+hl.bind(vars.kbShowPanels, hl.dsp.exec_cmd("quickshell -c expressive ipc call desktop toggle controls"))
 
 -- playerctl talks MPRIS, so it reaches every player on the bus without any of
 -- them being named here; playerctld is D-Bus activated and picks the most
@@ -43,8 +43,8 @@ hl.bind("CTRL + SUPER + Minus", hl.dsp.exec_cmd("playerctl previous"), { locked 
 hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true })
 hl.bind("XF86AudioStop", hl.dsp.exec_cmd("playerctl stop"), { locked = true })
 
-hl.bind("CTRL + SUPER + SHIFT + R", hl.dsp.exec_cmd("wayle panel stop"), { release = true })
-hl.bind("CTRL + SUPER + ALT + R", hl.dsp.exec_cmd("wayle panel restart"), { release = true })
+hl.bind("CTRL + SUPER + SHIFT + R", hl.dsp.exec_cmd("quickshell -c expressive ipc call desktop hide"), { release = true })
+hl.bind("CTRL + SUPER + ALT + R", hl.dsp.exec_cmd("systemctl --user restart quickshell.service"), { release = true })
 
 for i = 1, 10 do
     local key = i % 10

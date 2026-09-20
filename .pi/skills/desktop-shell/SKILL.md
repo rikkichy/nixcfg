@@ -1,96 +1,120 @@
 ---
 name: desktop-shell
-description: Hyprland and Wayle desktop-shell engineering for this machine, including native workspaces, fuzzel pickers and desktop actions, hyprsunset, screenshots, tearing, Lua configuration, and reliable validation. Use when changing home/ shell modules, hypr/, Wayle, fuzzel, keybinds, launchers, workspaces, power actions, or screenshots.
+description: Hyprland and Quickshell desktop-shell engineering for this machine, including native workspaces, fuzzel pickers and desktop actions, hyprsunset, screenshots, tearing, Lua configuration, and reliable validation. Use when changing home/ shell modules, hypr/, Quickshell, keybinds, launchers, workspaces, power actions, or screenshots.
 ---
 
 # Desktop Shell
 
 Detailed engineering reference for this NixOS configuration. Read the relevant section before changing the subsystem; the counterintuitive constraints and verification methods are part of the design.
 
-### Wayle — the shell
+### Quickshell — the shell
 
-The service, bar configuration, styles and live Hyprland symlink are declared in
-`home/wayle.nix`.
+`home/quickshell.nix` owns the user service, QML deployment and live Hyprland
+symlink. `dotfiles/quickshell/` owns the Material 3 Expressive UI. The service
+includes the QML store path in `Unit.X-Restart-Triggers`, so source changes
+change its unit and Home Manager restarts it. Both service and CLI use `-c expressive`.
 
-`config.toml` is read and never written; `wayle config set` and every change
-made in the GUI land in `runtime.toml` beside it. That split is what makes
-`config.toml` safe to own from `xdg.configFile` — and it carries `force = true`,
-because wayle writes a stub there on first run and home-manager refuses to
-clobber an unmanaged file, failing the entire switch rather than the one file.
+Quickshell is a Qt/QML shell toolkit, not a preconfigured desktop. `ShellRoot`
+owns singleton services and IPC; `Variants` creates a `PanelWindow` per screen.
+Use native `Quickshell.Hyprland`, `Services.Pipewire`, `Services.Mpris`,
+`Services.SystemTray`, `Services.Notifications`, `Networking` and `Bluetooth`
+models rather than subprocess polling. The pinned version is 0.3.1; read its
+packaged `.qmltypes` or matching upstream tag before assuming older APIs.
 
-**`runtime.toml` wins where the two overlap**, silently. A value declared in
-the flake that has ever been set at runtime simply does not apply. Wayle names
-the shadowed field and prints the fix when it notices:
+The `desktop` IPC target exposes `toggle controls|notifications|calendar`,
+`close`, `dismissAll`, `dnd`, `hide`, `reveal`, and `status`:
 
+```sh
+quickshell -c expressive ipc call desktop toggle controls
+quickshell -c expressive ipc call desktop status
 ```
-warning: config.toml change ignored
-  Field: bar.layout
-  Reason: runtime override active
-  → wayle config reset bar.layout
-```
 
-**The shell holds the config it started with, and a switch does not restart
-it.** home-manager restarts a user unit when the unit's own definition
-changes, not when a file the unit reads changes — so an edit to `config.toml`
-lands on disk, the symlink under `~/.config/wayle` points at the new store
-path, and the bar goes on drawing the layout it read at startup. Nothing is
-logged, the file on disk is demonstrably right, and the change reads as having
-been ignored. `systemctl --user restart wayle.service` is what applies it.
+Do not name an IPC method `show`: Quickshell's CLI consumes it as its own
+subcommand instead of calling the method. IPC arguments are typed. External
+actions use argv arrays; never interpolate window titles, SSIDs or device
+names into shell commands.
 
-`wayle panel restart` is not that restart. It answered `Error: Timeout waiting
-for panel to stop` and left no bar on screen at all, which the unit restart
-brought back; `CTRL + SUPER + ALT + R` is bound to the same subcommand.
+#### Native integration caveats
 
-Wayle also shells out to two binaries **by name**, and both failures look like
-the feature silently not existing:
+- `workspace.activate()` understands Lua Hyprland. `Hyprland.dispatch()` does
+  not translate legacy dispatcher strings; it expects `hl.dsp.*` on this host.
+- The rail shows occupied workspaces beneath its centered clock; filter native
+  `workspace.toplevels.values`, not a fixed range or only the focused workspace.
+  `monitor.activeWorkspace` describes ordinary workspaces, not specials.
+  Special selection reads `lastIpcObject.specialWorkspace`; one root raw-event
+  handler refreshes monitors on `activespecial`/`activespecialv2`. An active
+  special takes precedence for the selection highlight.
+- Workspace, monitor, audio and service objects can disappear. Guard null
+  pointers and do not cache deleted native objects in persistent JS state.
+- `PwObjectTracker` binds selected audio nodes; wait for `node.ready` before
+  reading/writing audio. Device selection writes `preferredDefaultAudioSink`
+  or `preferredDefaultAudioSource`. Volume is a fraction, not a percentage.
+- NetworkManager support is native in 0.3.1. Unknown protected networks use
+  `nmtui` for credentials; Bluetooth pairing/details use Blueman. Do not invent
+  a second secrets agent or silent success feedback for asynchronous requests.
+- Tray activation, secondary activation, scrolling and menus use the native
+  item and `QsMenuAnchor`. Menus must have a real window/item anchor.
+- Notification objects require `tracked = true` during delivery. A
+  `RetainableLock` holds expired history and image data. Close releases the
+  entry; actions are disabled after expiry. D-Bus timeouts are milliseconds
+  despite a misleading upstream header comment. Critical/zero-timeout
+  notifications remain until explicitly closed. Identical replacement
+  payloads emit no update signal, so cannot restart the timer through this API.
+- Only one notification daemon owns the session bus. Tests must use a separate
+  D-Bus bus; do not displace the running desktop to validate a candidate shell.
+- Rail windows reserve 80px. Popovers are compact overlay-layer windows with
+  top/left anchors, not full-screen surfaces. Click handlers pass their actual
+  button; keyboard IPC resolves the matching button on the focused monitor.
+  Source geometry is mapped into the rail window, then interpolated to a
+  content-sized, screen-clamped card with the M3 spatial spring. The native
+  window has fixed bounds covering both endpoints; animate the QML card only,
+  never the Wayland window size or margins. A `Region` mask keeps unused space
+  click-through. Retain the presented content during the closing transform.
+  Start the opening spring only after `sheet.Window.window.frameSwapped`, so
+  the trigger-sized card is rendered before it expands. The exact
+  `expressive-panel` layer rule sets `no_anim = true`: compositor layer slides
+  and fades must not compete with the shell-owned opening/closing transform.
+- Popovers take keyboard focus only while open. `HyprlandFocusGrab` permits
+  the popover and source rail, and dismisses on outside clicks; Escape also
+  closes. Popover/OSD windows reserve no space. Fullscreen behavior remains
+  compositor-owned.
 
-- `swww-daemon` for wallpapers. nixpkgs carries that project as `awww` and
-  ships no alias, so `home.packages` contains a `runCommand` shim linking the
-  swww names onto the awww ones. Wayle's own schema calls this "the awww
-  wallpaper engine" — there is no separate renderer, wayle only drives it.
-  `wallpaper.engine-enabled = false` decouples the two if another tool should
-  draw the wallpaper while wayle keeps extracting colours from it.
-- `matugen`, when `styling.theme-provider = matugen`. Without it wayle logs
-  `cannot execute color extractor` once, then repeats `palette file not found:
-  ~/.cache/wayle/matugen-colors.json` forever while the bar keeps its built-in
-  palette and the UI says nothing.
+#### Rendering and verification
 
-Two more things that mislead:
+`Theme.qml` reads writable `quickshell/colors.json` through `FileView` and
+explicitly reloads on file changes, preserving the last valid palette.
+Never deploy that generated file as a store symlink. Color properties use
+`textOn*`, avoiding QML's `on*` handler-name interpretation. Buttons use `glyph`
+because `AbstractButton.icon` is a final native property.
 
-- **Layout slot names do not follow orientation.** On a vertical bar `left` is
-  the top section and `right` is the bottom.
-- **A vertical bar is as wide as its widest module**, so a label decides the
-  width of everything. `bar.rounding`, `bar.button-rounding` and
-  `bar.button-group-rounding` are three separate settings; the group one is
-  easy to miss and leaves the systray cluster squarer than its neighbours.
-- **`styling.rounding` is a scale shared by every box, and its top level is a
-  size rather than a shape.** `full` resolves to `9999px`, which GTK clamps to
-  half the box, so the level that makes a bar button a pill makes a large
-  container an ellipse: `.cal-grid-wrap` behind the calendar grid, and every
-  dropdown and notification card with it. `lg` is `0.875rem` and still half the
-  height of the small elements, so they stay round while the containers do not.
-  This one key covers dropdowns, popovers and dialogs; the bar's three
-  `bar.*rounding` keys are separate and reach none of it.
-- **A module icon is a symbolic icon from the theme, and the theme recolours
-  it by filling shapes.** The package's own 362 land in
-  `share/icons/hicolor/scalable/actions` as `<name>-symbolic.svg`, each path
-  carrying `stroke="none"`, `fill="rgb(0,0,0)"` and GTK's
-  `gpa:fill="foreground"` — so an icon added here has to be filled outlines
-  rather than strokes. A stroked drawing is found, drawn, and arrives black on
-  a dark bar, since there is nothing in it for the recolour to reach.
-  `icon-color` then takes a palette token, and a token is what makes a glyph
-  follow the wallpaper without any file being rewritten.
-- Hyprland fades layer surfaces out under a fullscreen window, so the bar
-  reading `a: 0` in `hyprctl layers` during a game is expected, not a fault.
+The font family is `Google Sans Flex`; use `Bold Rounded` for emphasized text,
+not `Rounded` plus a weight that the named style overrides. Reduced motion is
+`QS_REDUCED_MOTION=1`. Native controls use the Basic style so custom backgrounds
+remain supported.
 
-#### Workspaces
+Focus outlines use Qt Controls' `visualFocus`, not `activeFocus`. Mouse clicks
+retain active focus after the pointer leaves; that must not leave a keyboard
+focus ring behind. Keep `Qt.StrongFocus` so Tab/Backtab navigation still works.
 
-Wayle's native `hyprland-workspaces` module shows ordinary and occupied special
-workspaces with numeric labels. Specials sort before ordinary workspaces by
-negative ID, follow native monitor filtering, and focus on click rather than
-toggle. IDs depend on creation order, so do not attach named icons to them.
-Keybindings and the down gesture toggle named specials through the native Lua
-dispatcher. No custom watcher or special-workspace style is needed.
+The flake patches native Hyprland request sockets to `deleteLater()`:
+destroying a socket during `readyRead` lets Qt access its freed sender during
+`channelReadyRead`. `tests/quickshell-hyprland.sh QUICKSHELL` exercises native
+discovery with no windows or notification daemon; it requires a running
+Hyprland instance.
+
+Validate the real shell on a separate compositor and D-Bus session, exercise
+IPC, notification lifetime and workspace transitions, then capture its actual
+Wayland output. A successful QML load or Nix evaluation is not visual proof.
+Keep tests isolated from live audio/network changes. The install guide records
+the Material article's component inventory and design-tactic mapping.
+
+Nested Hyprland can modify the real user-manager and D-Bus activation
+environment even when Quickshell itself uses a private bus. Snapshot the live
+`WAYLAND_DISPLAY`, `DISPLAY`, `HYPRLAND_INSTANCE_SIGNATURE` and compositor/cursor
+variables before starting a preview; restore them in both activation environments
+afterward. Check the user-manager display against `hyprctl instances` before
+starting real services. A deleted preview socket makes awww and Quickshell fail
+to start and leaves Home Manager waiting for wallpaper readiness.
 
 ### Fuzzel — launcher and picker
 
