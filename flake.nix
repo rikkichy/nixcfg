@@ -14,8 +14,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     openwave = {
-      # Test the local Rust migration, including uncommitted source files.
-      url = "path:/home/ri/openwave";
+      url = "github:rikkichy/openwave";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -39,9 +38,6 @@
       flake = false;
     };
 
-    # The cursor renderer and Bibata's artwork. An input rather than a pinned
-    # fetch because the tree is rendered from at runtime, not built here, so
-    # what this pins is a working copy rather than a build product.
     bibata-cursor = {
       url = "github:rtgiskard/bibata_cursor";
       flake = false;
@@ -73,9 +69,6 @@
         midnight-discord =
           final.callPackage ./pkgs/midnight-discord.nix { };
 
-        # ananicy-cpp 1.2.0 leans on transitive <cstring>/<cstdint> that the
-        # current libstdc++ no longer pulls in, so std::memset, std::strerror
-        # and std::int32_t come up undeclared across several translation units.
         ananicy-cpp = prev.ananicy-cpp.overrideAttrs (old: {
           postPatch = (old.postPatch or "") + ''
             find src -name "*.cpp" -exec sed -i "1i #include <cstring>\n#include <cstdint>" {} +
@@ -83,8 +76,6 @@
         });
       };
 
-      # Dev shells build their own pkgs: the Android SDK needs a license
-      # acceptance that only belongs in a shell, not in the system closure.
       devPkgs = import nixpkgs {
         inherit system;
         overlays = [ overlay ];

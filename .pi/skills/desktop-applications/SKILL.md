@@ -11,8 +11,8 @@ Detailed engineering reference for this NixOS configuration. Read the relevant s
 
 Helium, a Chromium build, from the `helium` flake input. It is the browser
 `hypr/variables.lua` names, the `x-scheme-handler/*` and `text/html` default in
-`home.nix`, and the runtime behind the Bitwarden and Spotify entries in
-`xdg.desktopEntries`, which are `--app=URL` windows.
+`home/applications.nix`, and the runtime behind the Bitwarden and Spotify entries
+in `home/fuzzel-tweaks.nix`, which are `--app=URL` windows.
 
 **Widevine is not in the package**, and every streaming web app here is
 DRM-gated. Without it Spotify loads, searches and browses normally and then
@@ -27,7 +27,7 @@ A build takes the CDM by one of two routes and this one has only the second:
   `third_party/widevine/cdm/BUILD.gn` to get it — so dropping the directory
   into a binary release's tree achieves nothing at all.
 - **As a component**, from `~/.config/net.imput.helium/WidevineCdm/<version>/`,
-  which is what `home.nix` seeds from `pkgs.widevine-cdm`. Startup scans that
+  which `home/applications.nix` seeds from `pkgs.widevine-cdm`. Startup scans that
   directory, registers the highest version whose `manifest.json` agrees with
   the directory name, and records it in `latest-component-updated-widevine-cdm`
   beside it, holding `{"Path": …}`. Registration happens from that hint, so

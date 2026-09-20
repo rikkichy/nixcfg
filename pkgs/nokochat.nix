@@ -39,8 +39,6 @@ appimageTools.wrapType2 {
     install -Dm444 ${contents}/nokochat.png \
       $out/share/icons/hicolor/512x512/apps/nokochat.png
 
-    # The bundled entry launches `NokoChat`; wrapType2 names the wrapper after
-    # pname, so the entry would otherwise point at a binary that is not on PATH.
     substituteInPlace $out/share/applications/chat.noko.NokoChat.desktop \
       --replace-fail 'Exec=NokoChat' 'Exec=${pname}'
   '';

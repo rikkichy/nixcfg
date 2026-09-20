@@ -11,12 +11,12 @@ Detailed engineering reference for this NixOS configuration. Read the relevant s
 
 `matugen` derives a Material palette from the wallpaper and renders every
 themed file from templates tracked in `dotfiles/matugen/templates/`. The config
-naming each template and its destination is generated in `home.nix` rather than
-tracked, so the store paths in it can never go stale. `theme-apply` is the only
-caller: one `matugen image` run rewrites `hypr/scheme/current.lua`,
-`fuzzel.ini`, both `gtk.css` and their `thunar.css`, the btop and nvtop themes,
-`qtengine/scheme.colors`, the Equicord theme, the terminal palette, and the
-launcher icon in `~/.local/share/icons/hicolor`.
+naming each template and its destination uses `pkgs.formats.toml` in `home/matugen.nix`.
+Private `theme-apply` runs Wayle → matugen → terminal OSC delivery → cursor
+rendering, then records success. Matugen writes `hypr/scheme/current.lua`,
+`fuzzel/colors.ini`, both GTK and Thunar styles, btop/nvtop/Qt palettes,
+Equicord QuickCSS, terminal colours and cursor accent. GTK3/GTK4 outputs remain
+separate entries: this matugen pin loses earlier paths in multi-output templates.
 Consequences:
 
 - **Never put those paths under `xdg.configFile`.** Home-manager files are
@@ -59,10 +59,17 @@ terminal is unthemed: `term-sequences` writes
 and fish `cat`s the same file for shells started later. Miss either half and
 the terminal is the one thing that does not follow the wallpaper.
 
+The parser reads assignments once as data, accepts only known keys with six hex
+digits, preserves the first duplicate, and validates before writing any output.
+Foot palette includes and SIGUSR1/SIGUSR2 do not reload arbitrary palette files.
+`theme-apply`, `awp-apply`, `term-sequences`, `desktop-picker` and
+`wallpaper-frame` are private runtime dependencies; use public `wpp`/`awpp`.
+
 Two more things the pipeline depends on:
 
-- `btop` re-reads its theme on `SIGUSR2` only. Everything else either watches
-  its file (GTK) or is launched fresh each time (fuzzel and the pickers).
+- The btop template's nonfatal post-hook sends SIGUSR2 after its file is written.
+  Do not move success-critical steps into hooks: matugen logs hook failures but
+  returns success. GTK watches files; Fuzzel reads its palette on launch.
 - `~/.config/hypr-user/` holds `hypr-vars.lua` and `hypr-user.lua`, both
   created on first start. `io.open(…, "w")` returns nil rather than creating a
   missing directory, so `maybe_create` in `hyprland.lua` runs `mkdir -p` first
@@ -85,18 +92,12 @@ filled by the GUI and stays empty otherwise, and `wayle wallpaper info` reports
 shell restart on its own, so the desktop comes up blank without something
 putting it back.
 
-`wallpaper-restore` is that something — a user unit on `graphical-session.target`
-which reads the recorded path and re-draws it, doing nothing else: every file
-the colour engine generates is already on disk from the run that recorded it, so
-rethemeing at login would rewrite dozens of files to their current contents. No
-record means nothing has ever chosen one, and that path applies
-`dotfiles/default-wallpaper.png` through the whole of `theme-apply` — a 9 KB
-gradient that exists so the chain has a root before any user data is restored,
-since every generated file descends from a wallpaper and the collection itself
-is far too large to track. It is a user unit rather than a `home.activation`
-script because of the `HYPRLAND_INSTANCE_SIGNATURE` gate above, and it sleeps
-first because `wallpaper set` is answered over D-Bus by the running shell and
-fails against a `wayle.service` that has started but not yet registered.
+`wallpaper-restore` runs on graphical-session.target. A valid recorded image
+and readable Fuzzel palette need only a Wayle redraw; a missing palette runs
+the full theme on that image. Missing/broken records use the built-in default.
+The readiness delay remains necessary because Wayle's D-Bus registration trails
+process startup; the oneshot is timeout-bounded. State/cache paths follow Home
+Manager's configured XDG locations, while collection overrides remain supported.
 
 Thumbnails are pre-rendered to `~/.cache/wallpaper-picker` with
 `gdk-pixbuf-thumbnailer` because fuzzel builds with `+png +svg` only — a JPEG
@@ -107,30 +108,32 @@ decoding up to 15 MB per row while the menu opens.
 
 `awpp` is the same picker over `~/Videos/Animated Wallpapers`, handing the
 choice to `awp-apply`, and `animated-wallpaper.service` is what plays it.
-Neither colour engine accepts a video, so `awp-apply` pulls a frame out with
-ffmpeg and puts *that* through the whole of `theme-apply` — which roots the
-palette, and leaves the still on wayle's surface as what shows whenever
-mpvpaper is paused or stopped. The video path is recorded separately, in
-`~/.local/state/wallpaper/animated`; the two records coexist, and it is the
-absence of the animated one that makes the unit skip, through `ExecCondition`
-rather than a test inside the script. `wpp` deletes it, since a still image is
-the whole wallpaper rather than something the video sits on top of.
+Neither colour engine accepts a video. Private `wallpaper-frame` extracts its
+backing still, then `awp-apply` themes it before recording the video and restarting
+playback. Both current and animated records coexist. `ConditionFileNotEmpty`
+skips the service without an animated record; ExecStart also guards missing video
+files. `wpp` applies its selected or default still successfully before deleting
+the animated record and stopping playback. Cancellation and theme failure leave
+animated state untouched; this is not transactional rollback across services.
 
 - **mpvpaper and awww both default to the `background` layer**, where the
   order they happened to start in decides which one is visible. mpvpaper warns
   about exactly this at startup — "swww-daemon is running. This may block
   mpvpaper from being seen" — and `-l bottom` settles it: above the still,
   below every window, regardless of creation order.
-- **`-ss` ahead of `-i` seeks by keyframe**, so a frame costs the same from a
-  480 MB file as from a 2 MB one and the whole 41-video sweep takes about 7
-  seconds, once. Seeking 3 seconds in matters because many of these open on a
-  fade from black, which extracts as a frame with no colour in it and themes
-  the desktop grey. A clip shorter than the seek writes a zero-length file
-  rather than failing, so the retry from the start is keyed on `-s`, not on
-  ffmpeg's exit status.
+- `wallpaper-frame VIDEO OUTPUT [FFMPEG_OUTPUT_ARGUMENT ...]` seeks three seconds
+  past opening fades and retries empty output from the start for short videos.
+  It reuses nonempty output when the source is not newer, stages into a temporary
+  PNG beside the destination, and replaces the cache only after successful
+  nonempty extraction. Failed regeneration preserves an existing usable frame.
+  Full-frame failures are fatal; thumbnail failures remain nonfatal.
 - The thumbnail cache is keyed on the full filename including extension, for
   the reason `wpp`'s is; only the fuzzel label drops it, because these names
   are sentences.
+
+Run `bash tests/wallpaper-frame.sh /absolute/store/path/bin/wallpaper-frame`
+with the helper's pinned ffmpeg/coreutils tools on PATH. It covers short/long
+clips, thumbnail dimensions, quoted filenames, cache reuse and failed regeneration.
 
 #### The cursor
 

@@ -1,34 +1,10 @@
 local vars = require("variables")
 local fn   = require("hyprland.functions")
 
--- pkill first so a second tap dismisses rather than stacking: fuzzel takes the
--- overlay layer but does not stop the compositor seeing SUPER, and it has no
--- single-instance guard of its own, so a plain `fuzzel` here piles up windows.
--- pkill exits 0 when it killed something, which is what makes || a toggle.
--- The font is passed as a flag rather than written into fuzzel.ini, because
--- that file is not managed here: matugen regenerates it on every
--- colour change. It preserves the font line today, but a hand-edit there is
--- outside the flake and would not survive a reinstall.
---
--- line-height is how the icons get bigger: fuzzel has no icon-size option and
--- draws them at the row height, which otherwise comes from font metrics --
--- 22.67px at this size. 40px roughly doubles them and puts the window at 684px
--- of 1080; 48px was tried and reaches 812px, which starts owning the screen.
--- lines stays at the 15 from fuzzel.ini, so the window grows rather than
--- showing fewer entries.
---
--- fuzzel-pin is what holds Halrune Commander at the top of the list. fuzzel
--- orders an unfiltered launcher by launch count and has no pin of its own, so
--- the pin is a count in its cache, rewritten on the way in. It is called from
--- here rather than from inside a wrapper so that which entry is pinned stays
--- a live edit, like the flags beside it.
+-- A second tap dismisses the launcher.
 hl.bind(
     "SUPER + SUPER_L",
-    hl.dsp.exec_cmd(
-        "pkill -x fuzzel || (fuzzel-pin halrune.desktop;"
-            .. " fuzzel --font 'Google Sans Flex Rounded:size=17'"
-            .. " --line-height=40px --lines 5)"
-    ),
+    hl.dsp.exec_cmd("pkill -x fuzzel || fuzzel"),
     { release = true }
 )
 

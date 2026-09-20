@@ -1,6 +1,6 @@
 ---
 name: desktop-shell
-description: Hyprland and Wayle desktop-shell engineering for this machine, including Wayle modules, special workspaces, fuzzel and Halrune pickers, the Nix menu, hyprsunset, screenshots, tearing, Lua configuration, and reliable validation. Use when changing home.nix shell configuration, hypr/, Wayle, fuzzel, keybinds, launchers, workspaces, power actions, or screenshots.
+description: Hyprland and Wayle desktop-shell engineering for this machine, including native workspaces, fuzzel pickers and desktop actions, hyprsunset, screenshots, tearing, Lua configuration, and reliable validation. Use when changing home/ shell modules, hypr/, Wayle, fuzzel, keybinds, launchers, workspaces, power actions, or screenshots.
 ---
 
 # Desktop Shell
@@ -8,6 +8,9 @@ description: Hyprland and Wayle desktop-shell engineering for this machine, incl
 Detailed engineering reference for this NixOS configuration. Read the relevant section before changing the subsystem; the counterintuitive constraints and verification methods are part of the design.
 
 ### Wayle — the shell
+
+The service, bar configuration, styles and live Hyprland symlink are declared in
+`home/wayle.nix`.
 
 `config.toml` is read and never written; `wayle config set` and every change
 made in the GUI land in `runtime.toml` beside it. That split is what makes
@@ -80,178 +83,87 @@ Two more things that mislead:
 - Hyprland fades layer surfaces out under a fullscreen window, so the bar
   reading `a: 0` in `hyprctl layers` during a game is expected, not a fault.
 
-#### The special workspaces on the bar
+#### Workspaces
 
-They are three `[[modules.custom]]` buttons rather than entries in
-`hyprland-workspaces`, and each of the reasons is a limit of that module:
+Wayle's native `hyprland-workspaces` module shows ordinary and occupied special
+workspaces with numeric labels. Specials sort before ordinary workspaces by
+negative ID, follow native monitor filtering, and focus on click rather than
+toggle. IDs depend on creation order, so do not attach named icons to them.
+Keybindings and the down gesture toggle named specials through the native Lua
+dispatcher. No custom watcher or special-workspace style is needed.
 
-- **Its `workspace-map` is keyed by workspace id, and a special workspace's id
-  is not stable.** `newSpecialID()` returns the highest live special id plus
-  one, counting up from -99, so which of `special:music` and
-  `special:communication` is -98 depends on which was opened first that
-  session. An icon pinned to an id lands on a different overlay the next day.
-  `special-ws` addresses them by name for that reason.
-- **A workspace button always focuses; there is no click action to
-  configure.** `niri-workspaces` has one, `hyprland-workspaces` does not, so a
-  second click cannot put an overlay away from there.
-- **Special workspaces sort ahead of the numbered ones**, `sort_by_key` over
-  an id that is negative, and nothing reorders them.
+### Fuzzel — launcher and picker
 
-Two things about styling those buttons:
+`home/fuzzel-tweaks.nix` owns launcher settings, desktop entries and shared
+pickers. Network recovery commands live in `home/network-reset.nix`; wallpaper
+pickers and their private theming dependencies live in `home/matugen.nix`.
 
-- **`bar.button-group-background` takes tokens, not hex.** `"#ff0000"` reads
-  back from `wayle config get` and paints nothing; `"accent"` works. In this
-  palette a group container is invisible either way — `bg-elevated` and
-  `bg-surface-elevated` both come out level with the bar — so what separates
-  one cluster of modules from the next is `module-gap` against
-  `button-group-module-gap`, not a drawn pill.
-- `styles/index.scss` is compiled with grass and appended after wayle's own
-  stylesheet, so a rule there wins on equal specificity and a file that fails
-  to compile is logged and dropped rather than taking the bar with it. A
-  custom module's dynamic classes land on its root box, one level above the
-  button carrying the background, and `--ws-active-color` is scoped to
-  `.workspaces` and does not reach them; the palette tokens `--accent` and
-  `--fg-on-accent` are what that colour resolves to anyway.
+`programs.fuzzel.settings` owns static `fuzzel/fuzzel.ini`; matugen writes only
+its included, writable `colors.ini`. The launcher uses font17, 40px rows and
+five lines. Icons use the case-sensitive `Papirus-Dark` theme name and scale
+with row height. Both the release keybinding and the symbolic bar launcher use
+`pkill -x fuzzel || fuzzel`: dismiss-on-second-tap, not stack prevention.
+Fuzzel also has its own single-instance lock.
 
-**A custom module that polls reads as broken next to one that does not.**
-Every built-in module follows Hyprland's event socket, so a `poll` at
-`interval-ms = 1000` beside them catches up a visible beat late. `mode =
-"watch"` takes a display update per line of stdout, which is what `special-ws
-watch` feeds it from `.socket2.sock`. Filter the events, and then filter to
-answers that changed — otherwise a mouse moving between windows redraws the
-bar.
+Fuzzel's launcher restricts theme lookup to Applications/Apps/Legacy contexts.
+Desktop entries using Actions or Devices glyphs therefore reference existing
+Papirus SVG store paths directly; picker mode does not impose that restriction.
 
-### fuzzel — launcher and picker
+Desktop entries expose each public picker directly. Search includes filename,
+name, generic name, Exec and keywords; native actions are enabled, PATH-wide
+executable listing is not. `Network recovery` runs `troubleshootp all`; native
+actions select system, Helium, Discord/cache or Ethernet reconnect scopes.
 
-Both roles are configured **by flag**, not by `fuzzel.ini`, because that file is
-regenerated by the colour engine and is not in the flake. The launcher lives in
-`hypr/hyprland/keybinds.lua`, the picker inside `wpp`.
+`troubleshootp [scope]` opens a held Foot terminal running `network-reset [scope]`.
+The default scope is `all`. There are no confirmation prompts: selected Helium
+and Discord process families receive SIGKILL and remain closed. No session
+restoration, application relaunch or post-reset connectivity probe is performed.
 
-- **There is no icon-size option.** Icons are drawn at the row height, which
-  otherwise comes from font metrics, so `--line-height` is the only lever.
-- **`icon-theme` names a theme's folder, case sensitively, and its default
-  `default` is not installed here.** The lookup then falls through to hicolor,
-  which holds only what a package shipped for itself — so foot keeps its icon
-  while every entry naming a freedesktop icon draws blank, and the launcher
-  reads as though our own entries are the ones that cannot have icons. The
-  template sets `Papirus-Dark`, the same set dconf gives GTK; `find -L
-  /etc/profiles/per-user/ri/share/icons/Papirus-Dark -name '<name>.svg'` is how
-  to confirm a name before using it.
-- The launcher is bound as `pkill -x fuzzel || fuzzel`. fuzzel has no
-  single-instance guard and does not stop the compositor seeing SUPER, so a
-  plain invocation stacks windows on repeated taps; `pkill` exits 0 when it
-  killed something, which is what turns the key into a toggle.
-- `--dmenu` accepts Rofi's extended protocol for icons — `name`, NUL, the
-  literal `icon`, `0x1f`, then either an absolute path (`wpp` and `awpp` pass
-  their thumbnails) or a theme icon name, optionally a comma-separated fallback
-  list tried in order (`powermenu`, `vpnp` and `clipp` pass names). `--index`
-  returns the position rather than the text, so a selection maps back to an
-  array without depending on how the entry renders — which is what every picker
-  here relies on, since a row carrying an icon is no longer the line fed in.
-- The launcher lists **desktop entries, not `$PATH`**, so a bare script is
-  unreachable from it however short its name. One entry covers every picker in
-  this repo: Halrune Commander, below.
-- **`fuzzel.ini` comments start with `#`; a `;` line is a syntax error.** Each
-  one is reported as `key/value pair has no value` naming the whole comment as
-  a key, and fuzzel then carries on and opens normally, so the file works well
-  enough to look correct while `fuzzel --check-config` exits 1. That command is
-  the check worth running after touching the template — the errors otherwise
-  only appear in `journalctl --user`, one screenful per launch.
+App resets stage and back up Chromium network-state JSON, removing only failed
+alternative-service backoff. Discord cleaning allows only `Cache`, `Code Cache`,
+`GPUCache`, `DawnGraphiteCache` and `DawnWebGPUCache`. Cache directories are
+quarantined before removal; failures retain quarantine and report its path.
+Cookies, sessions, persistent web storage, service workers, modules and Equicord
+data remain untouched. Ownership/symlink checks prevent unsafe cache paths.
 
-#### Halrune Commander
+System reset republishes NetworkManager DNS, flushes Mihomo DNS answers and
+closes its tracked connections. It preserves VPN selection and fake-IP mappings,
+does not restart services, and interrupts connections from other applications.
+`reconnect` disconnects Ethernet `enp11s0`, brings up its exact saved profile,
+then performs the system reset. No new privilege policy is required.
 
-The launcher's single entry for everything here that is itself a picker.
-Choosing it opens a fuzzel menu of eight rows — `wpp`, `awpp`, `clipp`,
-`bemoji`, `sunp`, `vpnp`, `nixp` and `powermenu` — and execs the one chosen.
+`tests/network-reset.sh /absolute/store/path/bin/network-reset` exercises
+temporary profiles with external effects stubbed; never validate by invoking
+the live reset against the user's session.
 
-- **Each row carries its command in a second column.** fuzzel matches a dmenu
-  row against the whole line rather than against a name field, so `wpp` typed
-  into the menu selects the wallpaper picker exactly as it does at a shell,
-  while the first column is what makes the list readable to someone who does
-  not know the names.
-- **fuzzel opening fuzzel is fine in both directions.** The launcher exits as
-  soon as it has spawned the menu, and a dmenu instance prints its answer and
-  is gone before the selection is read — so the picker that follows has the
-  overlay layer and the keyboard to itself rather than contending with either.
-  `exec` is what keeps the menu's own shell from sitting behind it.
-- **Only the launcher route goes through here.** `powermenu` on
-  `CTRL + ALT + Delete` and from the bar's power button, `vpnp` on
-  `SUPER + SHIFT + V`, `clipp` on `SUPER + V` and `bemoji` on `SUPER + Period`
-  each run the binary, and all eight are on `$PATH` for a terminal.
-- The eight are named bare rather than pinned in `runtimeInputs`: they are
-  installed by the same `home.packages` list, so they sit in the profile the
-  session, the keybinds and this menu all share.
+Private `desktop-picker` supplies dmenu, only-match, no-run-if-empty, font15
+and 32px rows. Callers retain their prompts and dimensions; wallpapers use
+64px thumbnail rows. `execute-input=none` is essential: only-match alone does
+not disable Shift+Enter's raw-input action. Wallpaper and VPN indexes must be
+canonical decimals within the row count, with length checked before arithmetic.
+VPN nodes go to `vpn select` as one exact argument, never regex-based `vpn use`.
 
-**It sits at the top of the launcher, and that is a count rather than a
-setting.** fuzzel ranks an unfiltered launcher by launch count and has no pin:
-`~/.cache/fuzzel` is `<desktop-file-id>|<count>` a line, read at startup and
-rewritten on exit with the chosen row incremented. `fuzzel-pin` writes
-`halrune.desktop|1000000` there, and the launcher keybind calls it immediately
-before opening fuzzel — on the way in rather than once, because deleting a
-cache is meant to be free and `Shift+Delete` on a row drops it from that file.
-The count does not drift: fuzzel takes it to 1000001 on the launch that
-follows and the next call puts it back. Which entry is pinned lives in
-`hypr/hyprland/keybinds.lua` beside the launcher's other flags, so it is a
-live edit.
+Clipboard uses `--with-nth='{2..}'` to hide the ID visually while returning the
+complete tab-separated row for `cliphist decode` or `delete`. Do not drop the
+ID with `--accept-nth`. Home Manager supervises text/default-MIME and image
+capture under graphical-session.target without imposing a history limit.
+Use a fresh graphical session on rollout so old unmanaged watchers do not
+overlap the services; never kill arbitrary wl-paste processes.
 
-**Its icon is generated, not themed.** `Icon=halrune` resolves the way any
-Papirus name does, but the file behind it is
-`dotfiles/matugen/templates/halrune.svg` rendered into
-`~/.local/share/icons/hicolor/scalable/apps/` on every wallpaper change — a
-hagalaz rune in `primary` on `on_primary`. So it does not exist until the
-machine has been themed once, and `wallpaper-restore` is what covers that on a
-fresh install, exactly as it is for `fuzzel.ini`.
+Validate a rendered palette plus static settings with `fuzzel --check-config`.
+Config comments begin with `#`, not `;`. For isolated checks use a temporary
+include path and `--cache=/dev/null`, not the user's launch cache.
 
-- **A doubled hyphen anywhere in that SVG makes it draw nothing.** XML forbids
-  one inside a comment, so a header written in this repo's usual dash style
-  invalidates the document — and an invalid icon is reported nowhere: no line
-  on fuzzel's stderr, just a blank row, which is what a name that resolved to
-  nothing also looks like. The template's own comment says so, and writes its
-  dashes as em dashes. Position is not the issue; a comment ahead of `<svg>`
-  is fine.
-- **`~/.local/share/icons` is searched.** It is not in `XDG_DATA_DIRS` here,
-  but fuzzel follows the icon spec's user directory as well, so a generated
-  icon needs no `XDG_DATA_DIRS` entry and no absolute path in `Icon=` — both
-  forms work, and the theme name is what keeps the entry readable.
+#### Nix maintenance
 
-**The same mark sits at the top of the bar**, first in `left`, which on a
-vertical bar is the top of the strip — a `[[modules.custom]]` with no command
-and no label, `interval-ms = 0` so no poller ticks against something that
-cannot change, and `left-click` opening the menu. `button-variant = "basic"`
-is what leaves it a bare glyph rather than an icon in a coloured pill.
-
-- **It is a second drawing of the rune, not the same file.** The two are
-  coloured at opposite ends. The launcher's is stroked and matugen writes the
-  colours into it; the bar's is filled outlines carrying
-  `gpa:fill="foreground"`, which is what lets GTK paint it from
-  `icon-color = "accent"` and retint it with the palette, no file rewritten.
-  Swapping them gives a black glyph on the bar and a colourless one in the
-  launcher.
-
-#### The nix menu
-
-`nixp` is the maintenance picker — rebuild, roll back, list generations,
-collect garbage, verify the store. Three things shape it:
-
-- **The binary cannot be called `nix`.** That name belongs to the package
-  manager, and two derivations claiming `bin/nix` collide when the profile is
-  built rather than one shadowing the other. Its row in Halrune Commander is
-  labelled `Nix`, which is what reaches it from the launcher.
-- **The choice opens a terminal.** Every action runs for a while, prints output
-  worth reading, and most want a sudo password — none of which a process
-  spawned from a launcher can offer. `foot --hold` keeps the window after the
-  command exits, which is where the output and the exit status stay.
-- **`--rollback` is mutually exclusive with `--flake`**, so that one entry
-  names no flake at all. It selects a generation of the system profile, which
-  is not something the flake evaluates to.
-
-Nothing wraps these commands for a shell. The menu is the only place the long
-forms live, which is why a change to how this machine is rebuilt is one edit
-rather than two that can drift apart.
-
-Each garbage collection runs twice, unprivileged and then under sudo: ri's
-profile generations are a separate set from the system's, and root's sweep does
-not reach them. The 30-day one is the same sweep `nix.gc` runs weekly.
+`nixp.desktop` is a native entry, not a command. Its parent opens a held Foot
+window with `nixos-rebuild list-generations`; native actions expose switch,
+boot, update-and-switch, rollback, both garbage collections and store verify.
+`terminalAction` accepts trusted declaration-time Desktop Exec fragments.
+Simple commands use direct argv; only the three conjunctions use private shell
+scripts. `--rollback` has no `--flake`. Rebuilds use `path:` so untracked source
+files remain visible. Garbage collection runs unprivileged and under sudo,
+because user and system generations are separate.
 
 ### The blue-light filter
 
@@ -306,9 +218,8 @@ Two behaviours the picker depends on:
   number was expected.
 
 `sunp` is the fuzzel picker over it: follow the schedule, off, or one of three
-warmths. It exists because the schedule is right most evenings and wrong some
-of them, and Halrune Commander is how the launcher reaches it — that menu is
-what the launcher carries instead of an entry per picker. An answer other than
+warmths. Its ordinary desktop entry is searchable by name or `sunp`.
+An answer other than
 `ok` is reported through `notify-send`, since an unparseable request answers
 `invalid command` and still exits 0, and the menu has already closed by then.
 

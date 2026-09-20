@@ -45,18 +45,23 @@ does this interactively.
 
 `flake.nix` defines `nixosConfigurations.nix`, composing
 `hardware-configuration.nix`, `configuration.nix`, and Home Manager's
-`home.nix`. `nixcfgPath` is passed through `specialArgs` because install-time
-flake evaluation occurs from another path while runtime symlinks and services
-need the final checkout at `/home/ri/nixcfg`.
+`home.nix`, which imports the focused modules in `home/`. `nixcfgPath` is passed
+through `specialArgs` because install-time flake evaluation occurs from another
+path while runtime symlinks and services need the final checkout at `/home/ri/nixcfg`.
 
 | Area | Source of truth |
 | --- | --- |
 | system, boot, packages, system services | `configuration.nix` |
-| Home Manager, desktop services, scripts | `home.nix` |
+| Home Manager imports, state version, desktop packages | `home.nix` |
+| palettes, cursors, wallpapers and restoration | `home/matugen.nix` |
+| Fuzzel, desktop entries, maintenance actions and pickers | `home/fuzzel-tweaks.nix` |
+| scoped network recovery commands | `home/network-reset.nix` |
+| app settings, MIME defaults, GTK/Qt and Telegram proxy | `home/applications.nix` |
+| Foot, Fish, direnv and CLI configuration | `home/shell.nix` |
 | hardware and root LUKS mapping | `hardware-configuration.nix` |
 | keybinds, rules, monitors | `hypr/` live out-of-store symlink |
 | generated app palettes | `dotfiles/matugen/templates/` via `theme-apply` |
-| Wayle bar, notifications, OSD, wallpaper | `home.nix` → Wayle config |
+| Wayle bar, notifications, OSD, wallpaper and Hyprland symlink | `home/wayle.nix` |
 | local package expressions | `pkgs/` and the overlay in `flake.nix` |
 | NokoChat development environment | `dev/nokochat/shell.nix` |
 

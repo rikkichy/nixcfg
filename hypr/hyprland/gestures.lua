@@ -17,7 +17,7 @@ hl.gesture({
     fingers   = vars.gestureFingers,
     direction = "down",
     action    = function()
-        hl.exec_cmd("special-ws toggle special")
+        hl.dispatch(hl.dsp.workspace.toggle_special("special"))
     end,
 })
 hl.gesture({

@@ -1,9 +1,8 @@
 # nixcfg
 
 NixOS config for `nix` — 9950X3D / RTX 3090 / LUKS / Hyprland + Wayle.
-Migrated off CachyOS. Clone to **`/home/ri/nixcfg`** — that exact path is
-hardcoded in two places (`system.autoUpgrade.flake`, and the Hyprland
-`mkOutOfStoreSymlink` in `home.nix`).
+Clone to **`/home/ri/nixcfg`** — `nixcfgPath` in `flake.nix` supplies that runtime
+path to services and the live Hyprland symlink.
 
 ## Install, step by step
 
@@ -149,43 +148,54 @@ autologin types no password, so a non-blank keyring would stay locked forever.
 At rest it is protected by LUKS.
 
 Later changes are `sudo nixos-rebuild switch --flake path:/home/ri/nixcfg#nix`
-(first build also writes `flake.lock` — commit it). After that first switch the
-same thing is two menus away: press SUPER, type `hal`, pick **Halrune
-Commander**, then **Nix** and "Rebuild and switch". The rest of that menu is
-where you roll back, list generations and collect garbage.
+(first build also writes `flake.lock` — commit it). Press SUPER and search
+**Nix maintenance** or `nixp`: the parent lists generations in a held terminal,
+and native actions include **Rebuild and switch**, rollback and garbage collection.
+`nh os switch` is the terminal alternative: `NH_FLAKE` defaults to
+`path:/home/ri/nixcfg`. Run it as your normal user; it requests elevation as needed.
+Fish exports this default at shell startup, including terminals opened from an
+existing desktop session after a switch.
 
-Halrune Commander is the launcher's one entry for this machine's own tools —
-the wallpaper pickers, the clipboard, emoji, the blue-light filter, the VPN,
-the nix menu and the session menu. It is held at the top of the list, its rune
-sits at the top of the bar as well, and both are coloured from the wallpaper
-like everything else here. Clicking the one on the bar opens the same menu.
-Each row shows the command beside it, so typing `wpp` in that menu picks the
-wallpaper the same way typing it in a terminal does, and every one of them
-still works as a command on its own.
+Wallpaper, animated wallpaper, clipboard, emoji, blue-light filter, VPN,
+network recovery and session tools have ordinary launcher entries.
+Short commands such as `wpp`, `clipp`, `vpnp` and `troubleshootp` remain searchable.
+The palette-tinted rune at the top of the bar opens the same launcher.
+There is no `nixp` shell command; maintenance operations are desktop actions.
+Clipboard capture is supervised by Home Manager. Start a fresh graphical session
+after applying this configuration to avoid overlapping old unmanaged watchers.
+
+**Network recovery acts immediately, without confirmation.** Its default action
+force-kills Helium and Discord, clears failed network-route backoff, cleans
+Discord's disposable caches, and refreshes system DNS/connections. Apps remain
+closed; nothing restores their sessions. Cookies, settings and persistent
+application data are preserved, but unsaved work can be lost.
+Use its native actions for individual scopes, or
+`network-reset [all|system|helium|discord|reconnect]` in a terminal.
+`reconnect` briefly disconnects Ethernet; ordinary system reset keeps the link,
+VPN choice and fake-IP mappings intact. `troubleshootp` runs the same command
+in a held terminal. No post-reset connectivity checks run.
 
 ## Wallpapers and colours
 
-Every themed file on this machine is generated from a wallpaper —
-`fuzzel.ini`, both `gtk.css`, the btop theme, the terminal palette and
-`hypr/scheme/current.lua`. None of them can live in the repo, because the
-colour engine rewrites them on every change and a read-only store symlink
-would make that fail.
+Runtime palettes are generated from a wallpaper: `fuzzel/colors.ini`, both
+`gtk.css`, the btop theme, terminal colours and `hypr/scheme/current.lua`.
+Their templates are tracked, but generated destinations must remain writable.
+Fuzzel's static `fuzzel.ini` is managed separately and includes its palette.
 
 So a fresh install themes itself once, from a gradient shipped in
 `dotfiles/`, and you get a coloured desktop without doing anything. The
 `wallpaper-restore` user unit does this, and from then on it is what puts your
 wallpaper back at every login — the shell itself remembers nothing, so without
 it you would log in to a blank desktop. It reads
-`~/.local/state/wallpaper/current`, which `wpp` writes.
+`~/.local/state/wallpaper/current`, which the wallpaper pipeline writes.
+If the included Fuzzel palette is missing, restoration themes the recorded image.
 
-`~/Pictures/Wallpapers` is created empty. **The collection itself is user
-data — restore it from a backup**, it is far too large for a public repo.
-`wpp` picks from that folder and re-themes everything; with the folder still
-empty it falls back to the shipped gradient rather than refusing to run.
+**Wallpaper collections are user data — restore them from a backup.**
+`wpp` reads `~/Pictures/Wallpapers`; a missing or empty directory applies the
+shipped gradient. Collection directories are not created by the configuration.
 
-`awpp` is the same picker for video wallpapers, over
-`~/Videos/Animated Wallpapers` — also created empty, also user data. It plays
-the video over the desktop and takes the colours from a frame of it, so
+`awpp` reads `~/Videos/Animated Wallpapers` and reports an empty collection.
+It plays the video over the desktop and takes the colours from a frame of it, so
 everything is themed the same way a still image would theme it. Picking a
 still with `wpp` puts the video away.
 
@@ -324,17 +334,27 @@ it; stop the user service first so the two do not both bind 1443.
 |---|---|
 | `flake.nix` | inputs + `nixosConfigurations.nix` |
 | `configuration.nix` | system: boot, GPU, Hyprland, gaming, packages |
-| `home.nix` | home-manager: wayle, theming, dotfiles, web apps |
+| `home.nix` | Home Manager imports, state version and desktop packages |
+| `home/matugen.nix` | generated palettes, cursors, wallpaper pickers and restoration |
+| `home/fuzzel-tweaks.nix` | Fuzzel settings, desktop entries/actions and shared pickers |
+| `home/network-reset.nix` | network recovery backend and terminal launcher |
+| `home/wayle.nix` | Wayle service, bar, styling and live Hyprland symlink |
+| `home/applications.nix` | application settings, MIME defaults, GTK/Qt and Telegram proxy |
+| `home/shell.nix` | Foot, Fish, direnv and CLI dotfiles |
 | `hypr/` | Hyprland Lua config, symlinked live into `~/.config/hypr` |
-| `dotfiles/` | verbatim files copied in by `home.nix` (plus `mihomo.yaml`, used by `configuration.nix`) |
+| `dotfiles/` | tracked assets/templates used by `home/` (plus `mihomo.yaml`, used by `configuration.nix`) |
 
 `vhelper` and `openwave` are separate flake inputs and live in their own
 repos (`rikkichy/vhelper`, `rikkichy/openwave`) — edit them there, not here.
 
+The modules share only `desktopPicker` and `terminalColours` through standard
+Nix module arguments. Import order and `lib.mkAfter` preserve package ordering
+and Fish initialization order.
+
 ## Two rules that are easy to break
 
 **The colour engine owns a set of files at runtime.** Every time the wallpaper
-changes, `matugen` rewrites `fuzzel.ini`, `btop/themes/wallpaper.theme`,
+changes, `matugen` rewrites `fuzzel/colors.ini`, `btop/themes/wallpaper.theme`,
 `nvtop/nvtop.colors`, `gtk-3.0/gtk.css`, `gtk-4.0/gtk.css`, both `thunar.css`,
 `qtengine/scheme.colors` and `hypr/scheme/current.lua`. Home-manager files are
 read-only store symlinks, so **do not** put any of those under

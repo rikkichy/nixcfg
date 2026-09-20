@@ -115,11 +115,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1789650228,
-        "narHash": "sha256-fntAX/+3dwTi344E/JBW/B/xTfzdGRzHUZaMExz7V6Y=",
+        "lastModified": 1789820247,
+        "narHash": "sha256-CB/ZmtlGbdqHZV8yBBVb4kjyDBlZkocMDAbJgy/L2QU=",
         "owner": "oxcl",
         "repo": "nix-flake-helium-browser",
-        "rev": "c4fc526e08fd5a5a8639eb81bfb36a9536f1d5ce",
+        "rev": "31b2af977177d347db89d69fac4fe5c44b852007",
         "type": "github"
       },
       "original": {
@@ -171,11 +171,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1789684949,
-        "narHash": "sha256-ZKhUe/2IJUq1JhKxKMu8rbkgSGmPP2ZCqlIPn40aGCM=",
+        "lastModified": 1789785513,
+        "narHash": "sha256-B44WL6h0XoLjJ41bUPJk0X5SDinLCII//6EcBLXKiJ0=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "e554fab72f81915600f3f449b786fd9af40439a5",
+        "rev": "20b1ddd1aa5ace70c9468305030aa4f9ef79671b",
         "type": "github"
       },
       "original": {
@@ -213,11 +213,11 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1789752471,
-        "narHash": "sha256-iloWjtMRUOx7CQAUzvUvtqz0r+Djg42mQr9vxHDTy5w=",
+        "lastModified": 1789846573,
+        "narHash": "sha256-sfyOWuxYaqc7IA6coKg7aknIwrl4G25ysQKEPpAAtEs=",
         "owner": "can1357",
         "repo": "oh-my-pi",
-        "rev": "78b753124d11f8dd3ae73e2524125890ff7c977e",
+        "rev": "836048d81e088b4cddcd023780d6d769920e8525",
         "type": "github"
       },
       "original": {
@@ -234,14 +234,17 @@
         "rust-overlay": "rust-overlay_2"
       },
       "locked": {
-        "lastModified": 1789379252,
-        "narHash": "sha256-OYrhLf6s9bZwb4BLHiKPiTl+Lo2MGf3z5rMS7SAwBH4=",
-        "path": "/home/ri/openwave",
-        "type": "path"
+        "lastModified": 1789378416,
+        "narHash": "sha256-g9nm7OTX+Zx1xgdtlKsw/1QtYKBOSYDHGhueBRh5EpQ=",
+        "owner": "rikkichy",
+        "repo": "openwave",
+        "rev": "9ed76b3bfead5b9315858c34687bb47e114d94fa",
+        "type": "github"
       },
       "original": {
-        "path": "/home/ri/openwave",
-        "type": "path"
+        "owner": "rikkichy",
+        "repo": "openwave",
+        "type": "github"
       }
     },
     "root": {
@@ -332,11 +335,11 @@
     "tg-ws-proxy": {
       "flake": false,
       "locked": {
-        "lastModified": 1789806730,
-        "narHash": "sha256-ccIU269cFcxqqSgNio3eMpLHBMmScW+BMb3lLOzPZ6g=",
+        "lastModified": 1789847507,
+        "narHash": "sha256-emR1+31feNDNGzRJ7DSjf724bcK4+LpXqnCdRiAXWjM=",
         "owner": "Flowseal",
         "repo": "tg-ws-proxy",
-        "rev": "222cabeee050389d539c21b1633062cc12c40aec",
+        "rev": "70b982da2ca75637b61f281170e4ed57df763db8",
         "type": "github"
       },
       "original": {
