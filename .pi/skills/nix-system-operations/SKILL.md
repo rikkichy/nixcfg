@@ -247,6 +247,15 @@ change. Confirm by setting the provider to `libc` and reproducing before
 chasing anything else. Programs carrying their own allocator — Chromium's
 PartitionAlloc, a JVM heap — are mostly untouched, since the preload only
 replaces `malloc`.
+`system/lighting.nix` isolates OpenRGB's allocator boundary: its libusb backend
+uses `RTLD_DEEPBIND`, which conflicts with the global allocator preload.
+`openrgb-off` bind-mounts an empty file over the preload source inside its private
+mount namespace; do not disable system-wide hardened_malloc for lighting.
+The root-only oneshot targets ENE DRAM and the Gainward RTX 3090 with Off mode,
+and MSI's 761-byte controller with Direct/black (it exposes no Off mode).
+Elgato and Wooting detection is disabled and explicit selectors exclude them.
+No SDK server, GUI, persistent polling or global user-device permissions are needed.
+
 
 The allocator applies to processes started after a `switch`, so a running
 session is a mix until things are restarted. It lives in the system closure,

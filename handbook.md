@@ -468,6 +468,20 @@ secret.
 The GUI tray version is also on PATH as `tg-ws-proxy-tray-linux` if you prefer
 it; stop the user service first so the two do not both bind 1443.
 
+## RGB lighting
+
+`system/lighting.nix` runs `openrgb-off` once at boot, without a GUI, tray app or
+SDK server. It sets both ENE RAM modules and the Gainward RTX 3090 to Off, and
+sends black in Direct mode to MSI Mystic Light's JAF/JARGB headers.
+Wooting and Elgato detectors are disabled; explicit device-name selectors also
+exclude the Wooting keyboard, Stream Deck and Wave XLR from lighting commands.
+Other hardware status indicators are outside OpenRGB's supported controls.
+
+After a rebuild, reapply with `sudo systemctl start openrgb-off`.
+Inspect failures with `journalctl -u openrgb-off`. The root-only service does not
+require user-facing OpenRGB udev permissions. Its private mount namespace hides
+the allocator preload only for this service; system-wide hardening stays enabled.
+
 ## Layout
 
 | Path | What |
@@ -476,6 +490,7 @@ it; stop the user service first so the two do not both bind 1443.
 | `configuration.nix` | host identity, user, locale and explicit system module imports |
 | `system/boot.nix` | bootloader, initrd/LUKS additions, kernel and crash resilience |
 | `system/hardware.nix` | CPU policy, NVIDIA, peripheral access and Bluetooth |
+| `system/lighting.nix` | headless RGB shutdown, device exclusions and process isolation |
 | `system/storage.nix` | data mounts, permissions, XFS scrubbing and trim |
 | `system/security.nix` | polkit, PAM/U2F, sudo, hardened allocator and smart cards |
 | `system/networking.nix` | NetworkManager, Mihomo, firewall and service discovery |

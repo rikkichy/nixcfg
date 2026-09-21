@@ -6,6 +6,7 @@
     ./system/nix.nix
     ./system/boot.nix
     ./system/hardware.nix
+    ./system/lighting.nix
     ./system/security.nix
     ./system/desktop.nix
     ./system/audio.nix
