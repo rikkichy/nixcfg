@@ -396,6 +396,8 @@ sound output/media, internet connections, or Bluetooth devices. They use native
 PipeWire, MPRIS, NetworkManager and Bluetooth models. Network credentials use
 `nmtui`, pairing uses Blueman, and detailed audio routing uses Pavucontrol.
 Right-clicking microphone or sound toggles mute; Super+K opens Sound.
+Audio popovers use the selected device's ellipsized name as their heading.
+The header switch controls mute (on means unmuted), above a full-width slider.
 Wallpaper, night-light and power remain available through the launcher tools
 `wpp`, `awpp`, `sunp` and `powermenu`; DND lives in notification history.
 

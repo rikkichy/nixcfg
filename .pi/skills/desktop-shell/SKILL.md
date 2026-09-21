@@ -33,6 +33,10 @@ The four device rail buttons open separate contents in the anchored popover:
 microphone input, sound output/media, networking, and Bluetooth. Left-clicking
 the microphone opens its controls; right-click toggles mute. Device popovers
 contain no clock or personalization section; DND remains in notification history.
+Audio headers show the selected device name and a native Qt `Switch` styled with
+Material tokens. On means unmuted. Thumb size and offset animate toward separate
+fixed endpoints with the fast spatial spring; pressed geometry snaps, matching
+AndroidX `Switch.kt`. Never spring-animate an offset derived from animated width.
 
 Do not name an IPC method `show`: Quickshell's CLI consumes it as its own
 subcommand instead of calling the method. IPC arguments are typed. External

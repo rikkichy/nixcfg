@@ -73,89 +73,169 @@ Item {
         spacing: 4
         RowLayout {
             Layout.fillWidth: true
+            spacing: 12
             Label {
-                text: volumeControl.title
+                text: volumeControl.node ? (volumeControl.node.description || volumeControl.node.nickname || volumeControl.node.name) : (Pipewire.ready ? "No audio device" : "PipeWire unavailable")
                 font.pixelSize: 18
                 font.styleName: "Bold Rounded"
                 Layout.fillWidth: true
+                Layout.minimumWidth: 0
+                wrapMode: Text.NoWrap
+                maximumLineCount: 1
+                elide: Text.ElideRight
             }
-            Label {
-                text: volumeControl.audio ? (volumeControl.audio.muted ? "Muted" : Math.round(volumeControl.audio.volume * 100) + "%") : "Unavailable"
-                color: Theme.textOnSurfaceVariant
-            }
-        }
-        Label {
-            Layout.fillWidth: true
-            text: volumeControl.node ? (volumeControl.node.description || volumeControl.node.nickname || volumeControl.node.name) : (Pipewire.ready ? "No audio device" : "PipeWire unavailable")
-            color: Theme.textOnSurfaceVariant
-            maximumLineCount: 2
-            elide: Text.ElideRight
-        }
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 8
-            ExpressiveButton {
-                Layout.preferredWidth: 72
-                enabled: !!volumeControl.audio
-                checked: volumeControl.audio ? volumeControl.audio.muted : false
-                text: checked ? "Unmute" : "Mute"
-                description: (checked ? "Unmute " : "Mute ") + volumeControl.title.toLowerCase()
-                onClicked: volumeControl.audio.muted = !volumeControl.audio.muted
-            }
-            Slider {
-                id: slider
-                Layout.fillWidth: true
-                Layout.minimumHeight: 56
-                enabled: !!volumeControl.audio
-                from: 0
-                to: 1
-                stepSize: 0.01
-                value: volumeControl.audio ? volumeControl.audio.volume : 0
+            Switch {
+                id: audioSwitch
+                implicitWidth: 52
+                implicitHeight: 48
+                padding: 0
+                hoverEnabled: true
                 focusPolicy: Qt.StrongFocus
-                Accessible.name: volumeControl.title + " volume"
-                Accessible.description: "Use left and right arrow keys to adjust the volume"
-                onMoved: if (volumeControl.audio)
-                    volumeControl.audio.volume = value
-                background: Item {
-                    x: slider.leftPadding
-                    y: slider.topPadding + slider.availableHeight / 2 - height / 2
-                    width: slider.availableWidth
-                    height: 40
-                    // Separate tracks leave the Material 6px gap on both sides of the handle.
-                    Rectangle {
-                        width: Math.max(0, slider.handle.x - slider.leftPadding - 6)
-                        height: parent.height
-                        radius: 2
-                        topLeftRadius: Theme.radiusSmall
-                        bottomLeftRadius: Theme.radiusSmall
-                        color: slider.enabled ? (slider.mirrored ? Theme.secondaryContainer : Theme.primary) : Theme.textOnSurface
-                        opacity: slider.enabled ? 1 : slider.mirrored ? 0.12 : 0.38
-                    }
-                    Rectangle {
-                        x: Math.min(parent.width, slider.handle.x - slider.leftPadding + slider.handle.width + 6)
-                        width: Math.max(0, parent.width - x)
-                        height: parent.height
-                        radius: 2
-                        topRightRadius: Theme.radiusSmall
-                        bottomRightRadius: Theme.radiusSmall
-                        color: slider.enabled ? (slider.mirrored ? Theme.primary : Theme.secondaryContainer) : Theme.textOnSurface
-                        opacity: slider.enabled ? 1 : slider.mirrored ? 0.38 : 0.12
-                    }
+                enabled: !!volumeControl.audio
+                checked: volumeControl.audio ? !volumeControl.audio.muted : false
+                Accessible.name: volumeControl.input ? "Microphone enabled" : "Sound enabled"
+                Accessible.description: checked ? "Turn off to mute" : "Turn on to unmute"
+                onToggled: if (volumeControl.audio)
+                    volumeControl.audio.muted = !checked
+                contentItem: null
+                background: Rectangle {
+                    color: "transparent"
+                    radius: 20
+                    border.width: audioSwitch.visualFocus ? 2 : 0
+                    border.color: Theme.primary
                 }
-                handle: Rectangle {
-                    x: slider.leftPadding + slider.visualPosition * (slider.availableWidth - width)
-                    y: slider.topPadding + slider.availableHeight / 2 - height / 2
-                    width: slider.pressed ? 2 : 4
-                    height: 52
-                    radius: width / 2
-                    color: slider.enabled ? Theme.primary : Theme.textOnSurface
-                    border.width: slider.visualFocus ? 2 : 0
-                    border.color: Theme.textOnSurface
-                    opacity: slider.enabled ? 1 : 0.38
-                    Behavior on width {
-                        NumberAnimation {
+                // Material Switch tokens: 52x32 track; 16/24px thumb, 28px while pressed.
+                indicator: Rectangle {
+                    implicitWidth: 52
+                    implicitHeight: 32
+                    x: (audioSwitch.width - width) / 2
+                    y: (audioSwitch.height - height) / 2
+                    radius: height / 2
+                    color: audioSwitch.checked ? Theme.primary : Theme.surfaceContainerHighest
+                    border.width: audioSwitch.checked ? 0 : 2
+                    border.color: Theme.outline
+                    opacity: audioSwitch.enabled ? 1 : 0.38
+                    Behavior on color {
+                        ColorAnimation {
                             duration: Theme.motionDuration
                         }
+                    }
+                    Rectangle {
+                        id: switchThumb
+                        width: 16
+                        height: width
+                        radius: width / 2
+                        x: audioSwitch.mirrored ? parent.width - 24 : 8
+                        y: (parent.height - height) / 2
+                        color: audioSwitch.checked ? Theme.textOnPrimary : Theme.outline
+                        state: audioSwitch.down ? "pressed" : audioSwitch.checked ? "on" : "off"
+                        states: [
+                            State {
+                                name: "pressed"
+                                PropertyChanges {
+                                    target: switchThumb
+                                    width: 28
+                                    x: 2 + (audioSwitch.indicator.width - 32) * audioSwitch.visualPosition
+                                }
+                            },
+                            State {
+                                name: "on"
+                                PropertyChanges {
+                                    target: switchThumb
+                                    width: 24
+                                    x: audioSwitch.mirrored ? 4 : audioSwitch.indicator.width - 28
+                                }
+                            },
+                            State {
+                                name: "off"
+                                PropertyChanges {
+                                    target: switchThumb
+                                    width: 16
+                                    x: audioSwitch.mirrored ? audioSwitch.indicator.width - 24 : 8
+                                }
+                            }
+                        ]
+                        // Material snaps the pressed shape, then springs size/offset to fixed endpoints.
+                        transitions: [
+                            Transition {
+                                to: "pressed"
+                                PropertyAction {
+                                    properties: "x,width"
+                                }
+                            },
+                            Transition {
+                                enabled: !Theme.reducedMotion
+                                SpringAnimation {
+                                    properties: "x,width"
+                                    spring: 3.2
+                                    damping: 0.13576
+                                    mass: 0.25
+                                    epsilon: 0.05
+                                }
+                            }
+                        ]
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: Theme.motionDuration
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Slider {
+            id: slider
+            Layout.fillWidth: true
+            Layout.minimumHeight: 56
+            enabled: !!volumeControl.audio
+            from: 0
+            to: 1
+            stepSize: 0.01
+            value: volumeControl.audio ? volumeControl.audio.volume : 0
+            focusPolicy: Qt.StrongFocus
+            Accessible.name: volumeControl.title + " volume"
+            Accessible.description: "Use left and right arrow keys to adjust the volume"
+            onMoved: if (volumeControl.audio)
+                volumeControl.audio.volume = value
+            background: Item {
+                x: slider.leftPadding
+                y: slider.topPadding + slider.availableHeight / 2 - height / 2
+                width: slider.availableWidth
+                height: 40
+                // Separate tracks leave the Material 6px gap on both sides of the handle.
+                Rectangle {
+                    width: Math.max(0, slider.handle.x - slider.leftPadding - 6)
+                    height: parent.height
+                    radius: 2
+                    topLeftRadius: Theme.radiusSmall
+                    bottomLeftRadius: Theme.radiusSmall
+                    color: slider.enabled ? (slider.mirrored ? Theme.secondaryContainer : Theme.primary) : Theme.textOnSurface
+                    opacity: slider.enabled ? 1 : slider.mirrored ? 0.12 : 0.38
+                }
+                Rectangle {
+                    x: Math.min(parent.width, slider.handle.x - slider.leftPadding + slider.handle.width + 6)
+                    width: Math.max(0, parent.width - x)
+                    height: parent.height
+                    radius: 2
+                    topRightRadius: Theme.radiusSmall
+                    bottomRightRadius: Theme.radiusSmall
+                    color: slider.enabled ? (slider.mirrored ? Theme.primary : Theme.secondaryContainer) : Theme.textOnSurface
+                    opacity: slider.enabled ? 1 : slider.mirrored ? 0.38 : 0.12
+                }
+            }
+            handle: Rectangle {
+                x: slider.leftPadding + slider.visualPosition * (slider.availableWidth - width)
+                y: slider.topPadding + slider.availableHeight / 2 - height / 2
+                width: slider.pressed ? 2 : 4
+                height: 52
+                radius: width / 2
+                color: slider.enabled ? Theme.primary : Theme.textOnSurface
+                border.width: slider.visualFocus ? 2 : 0
+                border.color: Theme.textOnSurface
+                opacity: slider.enabled ? 1 : 0.38
+                Behavior on width {
+                    NumberAnimation {
+                        duration: Theme.motionDuration
                     }
                 }
             }
