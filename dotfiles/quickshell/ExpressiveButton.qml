@@ -4,6 +4,8 @@ import QtQuick.Controls
 AbstractButton {
     id: control
     property string glyph: ""
+    // Opt in for glyphs whose painted bounds are off-center within the font advance.
+    property bool centerGlyphInk: false
     property bool prominent: false
     property string description: text
     implicitWidth: Math.max(48, label.implicitWidth + 32)
@@ -35,5 +37,13 @@ AbstractButton {
         verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
         textFormat: Text.PlainText
+        TextMetrics {
+            id: glyphMetrics
+            font: label.font
+            text: control.centerGlyphInk ? control.glyph : ""
+        }
+        transform: Translate {
+            x: control.centerGlyphInk ? (glyphMetrics.advanceWidth - glyphMetrics.tightBoundingRect.width) / 2 - glyphMetrics.tightBoundingRect.x : 0
+        }
     }
 }

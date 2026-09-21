@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Controls
-import QtQuick.Shapes
 import QtQuick.Window
 
 ComboBox {
@@ -67,52 +66,16 @@ ComboBox {
         Accessible.name: text
         Accessible.role: Accessible.ListItem
         Accessible.selected: selected
-        contentItem: Item {
-            Text {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.leftMargin: control.mirrored ? 0 : option.selected ? 32 : 0
-                anchors.rightMargin: control.mirrored && option.selected ? 32 : 0
-                anchors.verticalCenter: parent.verticalCenter
-                text: option.text
-                font: option.font
-                color: option.selected ? Theme.textOnTertiaryContainer : Theme.textOnSurface
-                elide: Text.ElideRight
-            }
-            Shape {
-                width: 20
-                height: 20
-                x: control.mirrored ? parent.width - width : 0
-                anchors.verticalCenter: parent.verticalCenter
-                visible: option.selected
-                ShapePath {
-                    fillColor: "transparent"
-                    strokeColor: Theme.textOnTertiaryContainer
-                    strokeWidth: 2
-                    capStyle: ShapePath.RoundCap
-                    joinStyle: ShapePath.RoundJoin
-                    startX: 4
-                    startY: 10
-                    PathLine {
-                        x: 8
-                        y: 14
-                    }
-                    PathLine {
-                        x: 16
-                        y: 6
-                    }
-                }
-            }
+        contentItem: MenuStyle.RowContent {
+            button: option
+            selected: option.selected
         }
-        background: Rectangle {
-            radius: option.selected ? 16 : 4
-            topLeftRadius: option.index === 0 ? 20 : radius
-            topRightRadius: topLeftRadius
-            bottomLeftRadius: option.index === control.count - 1 ? 20 : radius
-            bottomRightRadius: bottomLeftRadius
-            color: option.selected ? Theme.tertiaryContainer : option.highlighted || option.hovered ? Theme.surfaceContainerHighest : "transparent"
-            border.width: option.highlighted ? 1 : 0
-            border.color: option.selected ? Theme.textOnTertiaryContainer : Theme.outline
+        background: MenuStyle.RowBackground {
+            button: option
+            selected: option.selected
+            first: option.index === 0
+            last: option.index === control.count - 1
+            keyboardFocus: control.visualFocus
         }
     }
     popup: Popup {
@@ -134,28 +97,8 @@ ComboBox {
             boundsBehavior: Flickable.StopAtBounds
             ScrollIndicator.vertical: ScrollIndicator {}
         }
-        background: Rectangle {
-            radius: 28
-            color: Theme.surfaceContainer
-            border.width: 1
-            border.color: Theme.outlineVariant
-        }
-        enter: Transition {
-            NumberAnimation {
-                property: "opacity"
-                from: 0
-                to: 1
-                duration: Theme.reducedMotion ? 0 : 150
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: [0.31, 0.94, 0.34, 1, 1, 1]
-            }
-        }
-        exit: Transition {
-            NumberAnimation {
-                property: "opacity"
-                to: 0
-                duration: Theme.reducedMotion ? 0 : 100
-            }
-        }
+        background: MenuStyle.Surface {}
+        enter: MenuStyle.Enter {}
+        exit: MenuStyle.Exit {}
     }
 }

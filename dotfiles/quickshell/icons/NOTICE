@@ -17,6 +17,10 @@ src/av/skip_previous/materialiconsround/24px.svg
 src/av/play_arrow/materialiconsround/24px.svg
 src/av/pause/materialiconsround/24px.svg
 src/av/skip_next/materialiconsround/24px.svg
+src/social/notifications_active/materialiconsround/24px.svg
+src/social/notifications_off/materialiconsround/24px.svg
+src/social/notifications_none/materialiconsround/24px.svg
+src/action/done_all/materialiconsround/24px.svg
 
 Paths and view boxes are unchanged. Root fill is set to white for runtime
 palette tinting in Qt Quick. No network access is used to display these icons.

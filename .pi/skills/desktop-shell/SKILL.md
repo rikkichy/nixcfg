@@ -33,6 +33,10 @@ The four device rail buttons open separate contents in the anchored popover:
 microphone input, sound output/media, networking, and Bluetooth. Left-clicking
 the microphone opens its controls; right-click toggles mute. Device popovers
 contain no clock or personalization section; DND remains in notification history.
+The notification header contains an icon-only DND toggle with a 48px target,
+an accessible action label and a muted active fill. The empty body is a neutral
+bell icon and “Clean.”; populated history has a full-width “Clear all” footer.
+The footer is hidden when empty, and panel height follows the current contents.
 Audio headers place the shared device dropdown beside a native Qt `Switch`
 styled with Material tokens, above the slider. The selector remains visible but
 disabled with fewer than two devices. On means unmuted. The QmlMaterial-style thumb keeps fixed 28px
@@ -57,8 +61,10 @@ animation; keep these behaviors in the shared component, not its callers.
 `ExpressiveComboBox.qml` styles the native device selector shared by Sound and
 Microphone. Its trigger is a borderless filled pill with a keyboard-only focus
 ring and small rotating arrow. The m3e option panel uses a rounded surface,
-separated rows, a tertiary selected fill and checkmark. Long
-names elide; bounded menus scroll and retain Qt keyboard selection and dismissal.
+rounded hovered/selected rows, a muted surface selection fill and checkmark.
+It opens with a 150ms scale-and-fade pop; reduced motion disables transitions.
+Long names elide; bounded menus scroll and retain Qt keyboard selection and
+dismissal. Row outlines are keyboard-only.
 Keep `Popup.Item`: the options stay inside the existing layer surface and its
 focus grab instead of creating a competing native window.
 
@@ -96,8 +102,13 @@ names into shell commands.
 - NetworkManager support is native in 0.3.1. Unknown protected networks use
   `nmtui` for credentials; Bluetooth pairing/details use Blueman. Do not invent
   a second secrets agent or silent success feedback for asynchronous requests.
-- Tray activation, secondary activation, scrolling and menus use the native
-  item and `QsMenuAnchor`. Menus must have a real window/item anchor.
+- Tray activation, secondary activation and scrolling use the native item.
+  `TrayMenu.qml` opens native DBus menu models through `QsMenuOpener` and renders
+  Qt Quick `Menu` windows, including submenus, separators and checked actions.
+  `MenuStyle.qml` shares surfaces, row rendering and pop transitions with device
+  dropdowns. Use `Popup.Window`, not platform menus or rail-clipped `Popup.Item`.
+  Loaders own menu entries: detach with `takeItem`/`takeMenu`, never destructive
+  `removeItem`/`removeMenu`. Release opener models after close-event dispatch.
 - Notification objects require `tracked = true` during delivery. A
   `RetainableLock` holds expired history and image data. Close releases the
   entry; actions are disabled after expiry. D-Bus timeouts are milliseconds

@@ -8,39 +8,11 @@ Item {
     id: root
     required property var center
     implicitWidth: 440
-    implicitHeight: Math.min(480, toolbar.implicitHeight + dndToggle.implicitHeight + 32 + (center.count > 0 ? notificationList.implicitHeight : emptyState.implicitHeight + 32))
+    implicitHeight: center.count > 0 ? Math.min(480, notificationList.implicitHeight + clearAll.implicitHeight + 16) : emptyState.implicitHeight + 32
 
     ColumnLayout {
         anchors.fill: parent
         spacing: 16
-        RowLayout {
-            id: toolbar
-            Layout.fillWidth: true
-            Text {
-                text: "Notifications"
-                font.family: Theme.fontFamily
-                font.styleName: "Rounded"
-                font.pixelSize: 28
-                font.weight: Font.Medium
-                color: Theme.textOnSurface
-                Layout.fillWidth: true
-            }
-            ExpressiveButton {
-                text: "Clear all"
-                description: "Dismiss all notifications"
-                enabled: root.center.count > 0
-                onClicked: root.center.dismissAll()
-            }
-        }
-        ExpressiveButton {
-            id: dndToggle
-            Layout.fillWidth: true
-            text: root.center.dnd ? "Do not disturb is on" : "Do not disturb"
-            description: "Silence notification popups; keep notification history"
-            checkable: true
-            checked: root.center.dnd
-            onClicked: root.center.dnd = !root.center.dnd
-        }
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -50,38 +22,21 @@ Item {
                 width: parent.width - 48
                 spacing: 12
                 visible: root.center.count === 0
-                Rectangle {
+                MaterialIcon {
                     Layout.alignment: Qt.AlignHCenter
-                    width: 88
-                    height: 88
-                    radius: Theme.radiusLarge
-                    color: Theme.tertiaryContainer
-                    Text {
-                        anchors.centerIn: parent
-                        text: "✓"
-                        font.family: Theme.fontFamily
-                        font.pixelSize: 40
-                        color: Theme.textOnTertiaryContainer
-                    }
+                    name: "notifications_none"
+                    width: 64
+                    height: 64
+                    tint: Theme.textOnSurfaceVariant
                 }
                 Text {
-                    text: "All caught up"
+                    text: "Clean."
                     Layout.fillWidth: true
                     horizontalAlignment: Text.AlignHCenter
                     font.family: Theme.fontFamily
                     font.styleName: "Rounded"
                     font.pixelSize: 24
                     color: Theme.textOnSurface
-                }
-                Text {
-                    text: "Your notifications will appear here."
-                    Layout.fillWidth: true
-                    horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.WordWrap
-                    font.family: Theme.fontFamily
-                    font.styleName: "Rounded"
-                    font.pixelSize: 14
-                    color: Theme.textOnSurfaceVariant
                 }
             }
             ScrollView {
@@ -105,6 +60,27 @@ Item {
                         }
                     }
                 }
+            }
+        }
+        ExpressiveButton {
+            id: clearAll
+            Layout.fillWidth: true
+            text: "Clear all"
+            description: "Dismiss all notifications"
+            visible: root.center.count > 0
+            onClicked: root.center.dismissAll()
+            contentItem: RowLayout {
+                spacing: 8
+                Item { Layout.fillWidth: true }
+                MaterialIcon { name: "done_all"; tint: Theme.textOnSurface }
+                Text {
+                    text: clearAll.text
+                    color: Theme.textOnSurface
+                    font.family: Theme.fontFamily
+                    font.styleName: "Bold Rounded"
+                    font.pixelSize: 15
+                }
+                Item { Layout.fillWidth: true }
             }
         }
     }

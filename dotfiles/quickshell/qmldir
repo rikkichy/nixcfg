@@ -3,6 +3,8 @@ ExpressiveButton 1.0 ExpressiveButton.qml
 ExpressiveSlider 1.0 ExpressiveSlider.qml
 ExpressiveComboBox 1.0 ExpressiveComboBox.qml
 MaterialIcon 1.0 MaterialIcon.qml
+MenuStyle 1.0 MenuStyle.qml
+TrayMenu 1.0 TrayMenu.qml
 Bar 1.0 Bar.qml
 ControlCenter 1.0 ControlCenter.qml
 CalendarPanel 1.0 CalendarPanel.qml

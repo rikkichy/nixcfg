@@ -244,12 +244,11 @@ PanelWindow {
                                         fillMode: Image.PreserveAspectFit
                                     }
                                 }
-                                QsMenuAnchor {
+                                TrayMenu {
                                     id: trayMenu
-                                    menu: trayButton.modelData.menu
-                                    anchor.item: trayButton
-                                    anchor.edges: Edges.Right
-                                    anchor.gravity: Edges.Right | Edges.Bottom
+                                    menuHandle: trayButton.modelData.menu
+                                    x: trayButton.width + 8
+                                    y: 0
                                 }
                                 TapHandler {
                                     acceptedButtons: Qt.RightButton
@@ -329,23 +328,24 @@ PanelWindow {
                 anchors.bottom: clockButton.top
                 anchors.bottomMargin: 8
                 glyph: shell.notifications.dnd ? "󰂛" : "󰂚"
+                centerGlyphInk: shell.notifications.dnd
                 checked: shell.panel === "notifications" && shell.panelScreen === bar.screen
                 description: (shell.notifications.dnd ? "Do not disturb. " : "") + shell.notifications.count + " notifications"
                 onClicked: shell.togglePanel("notifications", bar.screen, notificationsButton)
                 Rectangle {
                     visible: shell.notifications.count > 0
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.margins: 4
+                    anchors.centerIn: parent
+                    anchors.horizontalCenterOffset: 10
+                    anchors.verticalCenterOffset: -10
                     width: Math.max(18, countLabel.implicitWidth + 8)
                     height: 18
                     radius: 9
-                    color: Theme.tertiaryContainer
+                    color: Theme.surfaceContainerHighest
                     Text {
                         id: countLabel
                         anchors.centerIn: parent
-                        text: shell.notifications.count > 99 ? "99+" : shell.notifications.count
-                        color: Theme.textOnTertiaryContainer
+                        text: shell.notifications.count > 9 ? "9+" : shell.notifications.count
+                        color: Theme.textOnSurface
                         font.family: Theme.fontFamily
                         font.styleName: "Rounded"
                         font.pixelSize: 10
@@ -404,6 +404,7 @@ PanelWindow {
                 RailButton {
                     id: networkButton
                     glyph: !bar.networkDevice ? "󰖪" : Networking.connectivity === NetworkConnectivity.Portal || Networking.connectivity === NetworkConnectivity.Limited ? "󰖫" : bar.networkDevice.type === DeviceType.Wired ? "󰈀" : "󰖩"
+                    centerGlyphInk: glyph === "󰈀"
                     description: (bar.networkDevice ? bar.networkDevice.name + ": " + NetworkConnectivity.toString(Networking.connectivity) : "Network disconnected") + ". Open network controls"
                     onClicked: shell.togglePanel("network", bar.screen, networkButton)
                 }

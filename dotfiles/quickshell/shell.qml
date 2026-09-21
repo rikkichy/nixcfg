@@ -162,13 +162,35 @@ ShellRoot {
                                 network: "Internet",
                                 bluetooth: "Bluetooth",
                                 calendar: "Calendar",
-                                notifications: "Inbox"
+                                notifications: "Notifications"
                             })[desktop.presentedPanel]
                         color: Theme.textOnSurface
                         font.family: Theme.fontFamily
                         font.styleName: "Bold Rounded"
                         font.pixelSize: 28
                         font.weight: Font.Bold
+                    }
+                    ExpressiveButton {
+                        id: dndButton
+                        visible: desktop.presentedPanel === "notifications"
+                        implicitWidth: 48
+                        description: notificationCenter.dnd ? "Turn off Do not disturb" : "Turn on Do not disturb"
+                        checkable: true
+                        checked: notificationCenter.dnd
+                        onClicked: notificationCenter.dnd = !notificationCenter.dnd
+                        background: Rectangle {
+                            radius: height / 2
+                            color: dndButton.checked || dndButton.hovered ? Theme.surfaceContainerHighest : "transparent"
+                            border.width: dndButton.visualFocus ? 2 : 0
+                            border.color: Theme.primary
+                        }
+                        contentItem: Item {
+                            MaterialIcon {
+                                anchors.centerIn: parent
+                                name: notificationCenter.dnd ? "notifications_off" : "notifications_active"
+                                tint: dndButton.checked ? Theme.textOnSurface : Theme.textOnSurfaceVariant
+                            }
+                        }
                     }
                     ExpressiveButton {
                         text: "×"

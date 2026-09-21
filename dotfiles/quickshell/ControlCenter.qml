@@ -464,7 +464,7 @@ Item {
                     Layout.fillWidth: true
                     implicitHeight: mediaContent.implicitHeight + 32
                     radius: Theme.radiusExtraLarge
-                    color: Theme.tertiaryContainer
+                    color: Theme.surfaceContainerHigh
                     ColumnLayout {
                         id: mediaContent
                         anchors.fill: parent
@@ -507,7 +507,7 @@ Item {
                                     Layout.fillWidth: true
                                     text: media.modelData.identity + " · " + MprisPlaybackState.toString(media.modelData.playbackState)
                                     font.pixelSize: 12
-                                    color: Theme.textOnTertiaryContainer
+                                    color: Theme.textOnSurfaceVariant
                                 }
                                 Label {
                                     Layout.fillWidth: true
@@ -516,14 +516,14 @@ Item {
                                     font.styleName: "Bold Rounded"
                                     maximumLineCount: 2
                                     elide: Text.ElideRight
-                                    color: Theme.textOnTertiaryContainer
+                                    color: Theme.textOnSurface
                                 }
                                 Label {
                                     Layout.fillWidth: true
                                     text: media.modelData.trackArtist || media.modelData.trackAlbum || "Unknown artist"
                                     maximumLineCount: 1
                                     elide: Text.ElideRight
-                                    color: Theme.textOnTertiaryContainer
+                                    color: Theme.textOnSurfaceVariant
                                 }
                             }
                         }
