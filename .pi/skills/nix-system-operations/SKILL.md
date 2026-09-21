@@ -13,7 +13,7 @@ Detailed engineering reference for this NixOS configuration. Read the relevant s
 `boot.initrd.luks.devices."cryptroot"`, named after the mapping opened during
 install, and `fileSystems."/"` mounts `/dev/mapper/cryptroot`.
 `configuration.nix` may only *add* to that attribute
-(`…devices."cryptroot".allowDiscards = true`). These are attribute names, not
+(`allowDiscards` and `crypttabExtraOpts`). These are attribute names, not
 device paths, so a differently-named entry aimed at the same partition defines a
 **second mapping** rather than overriding the first. The generated crypttab then
 carries two lines, systemd emits one `systemd-cryptsetup@` unit per line, and
@@ -25,7 +25,7 @@ Verifying a change here needs care, because the usual signals do not apply:
 
 - **initrd changes take effect only on reboot**, so a successful `switch` proves
   nothing about them. Read the generated crypttab directly:
-  `cat $(nix eval --raw '.#…config.boot.initrd.systemd.contents."/etc/crypttab".source')`.
+  `cat "$(nix eval --raw 'path:.#nixosConfigurations.nix.config.boot.initrd.systemd.contents."/etc/crypttab".source')"`.
 - **Never infer the current generation from `ls`** — it sorts lexically, so
   `system-10-link` lands *above* `system-7-link` and a `tail` silently shows a
   stale one. This produced a confident, wrong "the fix was never applied".
@@ -33,6 +33,64 @@ Verifying a change here needs care, because the usual signals do not apply:
 - Ground truth for what will actually boot is `/boot/limine/limine.conf`:
   each `//Generation N` block names its own `module_path` initrd, so comparing
   those store hashes shows exactly which generations carry the change.
+
+The systemd initrd explicitly enables FIDO2 and uses `fido2-device=auto` and
+`token-timeout=10s` on **that same mapping**. The timeout bounds discovery, not
+every touch interaction. Keep password fallback, USB/HID support, and the
+existing passphrase slots; never add `headless` or a SOPS dependency to root
+unlock. `/var/lib/sops-nix/key.txt` is inside root and cannot bootstrap it.
+
+Disk enrollment is a separate operator-approved mutation. Verify the backing
+UUID from hardware configuration, LUKS2, passphrase, free capacity, and an
+off-disk protected header backup before `systemd-cryptenroll`. Request
+`--fido2-with-client-pin=no --fido2-with-user-presence=yes
+--fido2-with-user-verification=no`; verify actual token policy and real unlock.
+Do not target `/dev/mapper/cryptroot`, wipe slots, edit JSON to fake PINlessness,
+or reset a token. Follow `handbook.md` for enrollment and no-token recovery.
+
+For a live token-only check without a second mapping, use `cryptsetup open
+--test-passphrase --token-only --token-id ID DEVICE`. The locked Nixpkgs
+`relative-token-path.patch` loads plugins by basename and ignores
+`--external-tokens-path`; set
+`LD_LIBRARY_PATH=/run/current-system/systemd/lib/cryptsetup` **inside the root
+command's environment**. A missing plugin can report only "No usable token is
+available." This is not evidence that the enrollment must be recreated.
+
+Limine has a zero timeout; do not assume a visible menu or Shift/Escape escape
+sequence. The locked [12.9.0 CONFIG.md](https://github.com/limine-bootloader/limine/blob/v12.9.0/CONFIG.md)
+documents the UEFI one-shot override used by
+`systemctl reboot --boot-loader-menu=30s`. Verify the installed EFI version
+before relying on it. An approved temporary Nix timeout increase or an emergency
+recovery-ISO edit of the active ESP config to `timeout: no` is the fallback.
+The handbook gives the full procedure. Rebuild success is not boot evidence:
+test touch/no PIN, no-token/passphrase, and no-touch/wrong-token fallback with
+local approval, preserving known-working generations.
+
+### Sudo touch authentication
+
+sudo-rs uses PAM services `sudo` and `sudo-i`, not `sudo-rs`. Only these services
+enable U2F with `sufficient`; Unix password and account/session checks stay in
+place and `wheelNeedsPassword = true`. Global U2F enablement, NOPASSWD,
+`nouserok`, and `alwaysok` are not acceptable substitutes.
+
+`security.pam.u2f.settings` sets `authfile=/etc/u2f-mappings`, origin and appid
+`pam://nix`, a cue, and integer values `userpresence=1`, `pinverification=0`,
+`userverification=0`. Nix's PAM renderer omits boolean false, so inspect the
+generated arguments for literal `=0`. The mapping is operator-created,
+root-controlled public registration metadata; do not move it into SOPS.
+Register `ri` with both `--origin=pam://nix --appid=pam://nix`, ordinary
+non-resident credentials, and no PIN/UV/no-presence flags.
+
+Keep an authenticated root shell throughout testing. From a separate `ri`
+terminal invalidate sudo timestamps before **each** `sudo` and `sudo -i`
+attempt: key/touch/no PIN, key/no touch, no key/correct password,
+no key/wrong password, unregistered key, and missing/malformed mapping.
+Absence/failure may reach password fallback but must not unconditionally
+succeed. Preserve timestamp policy and unrelated desktop authentication.
+Restore the saved mapping and known-working generation from the retained root
+shell if needed; Nix rollback does not restore an out-of-store mapping.
+
+### Home Manager installation details
 
 Two home-manager behaviours that waste time if assumed otherwise:
 
@@ -247,10 +305,81 @@ remote-add` hangs on it indefinitely rather than failing; use `dl.flathub.org`.
 ### The VPN (mihomo) — failures here all look like "the internet is broken"
 
 `services.mihomo` is a `DynamicUser` unit whose only privilege is
-`CAP_NET_ADMIN`, granted by `tunMode`. Config is `dotfiles/mihomo.yaml` with two
-placeholders spliced in at boot from `/etc/mihomo/` — the subscription URL is a
-credential and the repo is public, so **it must never be committed, quoted in a
-commit message, or pasted into this file**.
+`CAP_NET_ADMIN`, granted by `tunMode`. `dotfiles/mihomo.yaml` is public;
+`pkgs/mihomo-config.py` parses it and serializes private values at runtime into
+root-only `/run/mihomo/config.yaml`. The locked module consumes that path via
+`LoadCredential`. YAML/JSON serialization, not textual placeholder splicing,
+protects quoting/backslash/newline values. Never put secret strings into Nix,
+`writeText`, derivation inputs, logs, command arguments, or this documentation.
+
+`.secrets/sops.nix` selects SOPS only when `.secrets/personal.yaml` exists.
+The encrypted document and two-recipient policy are provisioned. A checkout
+without ciphertext uses the legacy inputs instead; never fabricate recipients.
+SOPS supplies the active runtime inputs. Retain the legacy
+`/etc/mihomo/{subscription.url,quattro.url,hwid}` files, root-owned mode `0600`,
+for rollback. A missing HWID fails rather than inventing a new identity.
+
+SOPS entries are `mihomo/primary_url`, `mihomo/quattro_url`, `mihomo/hwid`.
+Raw SOPS strings are preserved; legacy input normalization matches the
+established effective values. Import the exact meaningful HWID privately,
+without rederiving it from machine-id. Successful decryption does not prove
+provider/device-limit acceptance. `mihomo-config` has no `RemainAfterExit`, so
+each Mihomo start renders again before `LoadCredential`. SOPS uses systemd
+activation; the renderer requires and runs after `sops-install-secrets.service`.
+The decrypted files are root-owned mode `0400`, rendered output mode `0600`.
+SOPS updates request a Mihomo restart; prove a changed secret reaches a newly
+loaded service credential.
+
+### SOPS authoring and recovery
+
+The root flake imports `.secrets/sops.nix` and upstream sops-nix once, without a
+second Home Manager instance. Only public module/policy and encrypted
+`.secrets/personal.yaml` belong in Git. Ignoring a plaintext file is insufficient:
+`path:` includes it. Author/edit plaintext only in protected temporary storage
+outside the checkout/store, preferably tmpfs; disable editor backup/swap/undo.
+
+The nested `.secrets/.sops.yaml` rule matches `^personal\.yaml$` relative to its
+own directory. From the repository root use
+`sops --config .secrets/.sops.yaml edit .secrets/personal.yaml`; inside `.secrets/`
+use `sops --config .sops.yaml edit personal.yaml`. Config discovery walks up,
+not into child directories. Set `SOPS_AGE_KEY_FILE` to the external administrator
+descriptor `~/.config/sops/age/yubikey.txt`; do not borrow the root host key.
+
+The two recipients are alternatives in **one** group: administrator PIV and
+dedicated root host age key `/var/lib/sops-nix/key.txt`. There is no independent
+recovery recipient by explicit operator choice; losing both keys loses access.
+The host key/parent are `0600`/`0700`, root-owned, with automatic generation
+disabled. Login and LUKS passwords are not SOPS identities.
+
+PIV via age-plugin-yubikey is independent of FIDO boot/sudo enrollment. For a
+new, approved PIV key in a confirmed-unused compatible slot, check installed
+help and request PIN `never`, touch `always`. Policies are immutable at key
+generation/import; do not substitute `once`/cached touch or alter descriptors
+to claim changed policy. Inspect firmware/FIPS restrictions and management
+setup; plugin generation can update default PIN/PUK/management settings.
+No applet reset, PIN clearing, or management mutation is implied by a repo edit.
+Reconstruct a lost descriptor using `--identity` for the existing serial/slot,
+not `--generate`. Touch proves presence, not identity; plaintext still reaches
+the host and secret-consuming processes.
+
+On a replacement machine retain the administrator PIV identity, create a new
+root host key, add its real public recipient, then run
+`sops --config .secrets/.sops.yaml updatekeys .secrets/personal.yaml` using an
+already-authorized identity. Policy edits alone do not rewrap ciphertext.
+Test the new host independently without a token before activation. Hardware
+configuration, LUKS enrollment, and sudo registration must independently match
+the new machine.
+
+Distinguish recipient updates, SOPS data-key rotation, and provider credential
+rotation. Removing a recipient does not revoke old Git ciphertext. Compromise
+requires reviewing all three and separately removing the lost token's exact
+sudo/LUKS access without destroying fallback methods. A layout-only move
+preserves ciphertext bytes/metadata, key paths, and enrollments; adapt relative
+paths and verify checksums, not rotate. Roll back matched module/policy/
+ciphertext/imports and keep private keys plus legacy inputs. The handbook
+contains operator commands and recovery checkpoints.
+
+### Mihomo networking constraints
 
 Three things here produce no log line anywhere:
 

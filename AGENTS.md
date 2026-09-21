@@ -9,9 +9,11 @@ engineering knowledge is progressively disclosed through the project skills in
 
 - Preserve unrelated working-tree changes. This repository is frequently edited
   live and may be dirty before an agent starts.
-- The repository is public. Never add secrets, tokens, machine credentials, or
-  private subscription URLs. `hardware-configuration.nix` is intentionally
-  tracked but machine-specific.
+- The repository is public. Plaintext secrets, private keys, identity descriptors,
+  tokens, and private subscription URLs must never enter it, even in ignored
+  files: `path:` flakes include them. Encrypted SOPS documents and public
+  recipient rules under `.secrets/` are permitted. `hardware-configuration.nix`
+  is intentionally tracked but machine-specific.
 - Describe the current design, never its history. Documentation states what is
   true and why; changelog language such as "now", "used to", "replaced", and
   descriptions of failed prior approaches belongs in the commit message.
@@ -19,6 +21,9 @@ engineering knowledge is progressively disclosed through the project skills in
   and verification methods are part of the implementation, not optional notes.
 - Keep changes focused. Do not rewrite generated or application-owned state when
   the tracked source, template, or seed is elsewhere.
+- Secret provisioning, PIV/FIDO enrollment, keyslot removal, activation, and
+  reboot require separate operator approval. Never read production secrets into
+  tool output or manufacture recipients/ciphertext to bypass pending provisioning.
 
 ## Commands
 
@@ -52,6 +57,7 @@ path while runtime symlinks and services need the final checkout at `/home/ri/ni
 | Area | Source of truth |
 | --- | --- |
 | system, boot, packages, system services | `configuration.nix` |
+| system SOPS declarations, public recipient policy, encrypted Mihomo inputs | `.secrets/sops.nix`, `.secrets/.sops.yaml`, `.secrets/personal.yaml` |
 | Home Manager imports, state version, desktop packages | `home.nix` |
 | palettes, cursors, wallpapers and restoration | `home/matugen.nix` |
 | Fuzzel, desktop entries, maintenance actions and pickers | `home/fuzzel-tweaks.nix` |
@@ -88,5 +94,8 @@ task matches:
   `hyprctl configerrors` are not reliable validation.
 - Never treat a successful `nixos-rebuild switch` as proof that an initrd change
   will boot. Load `nix-system-operations` and inspect the generated boot inputs.
+- For SOPS/PAM/FIDO work, use the enrollment and recovery checklist in
+  `handbook.md`. Dummy-data tests, evaluation, activation, and actual hardware
+  checks are separate evidence; never report the latter from configuration alone.
 - Report checks that were not run and why. Do not silently substitute a weaker
   check for the documented one.

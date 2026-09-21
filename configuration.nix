@@ -395,7 +395,14 @@ in
   };
   boot.loader.efi.canTouchEfiVariables = true;
   boot.initrd.systemd.enable = true;
-  boot.initrd.luks.devices."cryptroot".allowDiscards = true;
+  boot.initrd.systemd.fido2.enable = true;
+  boot.initrd.luks.devices."cryptroot" = {
+    allowDiscards = true;
+    crypttabExtraOpts = [
+      "fido2-device=auto"
+      "token-timeout=10s"
+    ];
+  };
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
   boot.kernelParams = [
@@ -518,7 +525,27 @@ in
 
   security.protectKernelImage = true;
 
-  security.sudo-rs.enable = true;
+  security.sudo-rs = {
+    enable = true;
+    wheelNeedsPassword = true;
+  };
+  security.pam.u2f.settings = {
+    authfile = "/etc/u2f-mappings";
+    origin = "pam://nix";
+    appid = "pam://nix";
+    userpresence = 1;
+    pinverification = 0;
+    userverification = 0;
+    cue = true;
+  };
+  security.pam.services.sudo.u2f = {
+    enable = true;
+    control = "sufficient";
+  };
+  security.pam.services.sudo-i.u2f = {
+    enable = true;
+    control = "sufficient";
+  };
 
   environment.memoryAllocator.provider = "graphene-hardened-light";
 
@@ -793,8 +820,19 @@ in
 
     foot
     yubioath-flutter
+    sops
+    age
+    age-plugin-yubikey
+    yubikey-manager
+    pam_u2f
 
-    inputs.omp.packages.${pkgs.stdenv.hostPlatform.system}.omp
+    (inputs.omp.packages.${pkgs.stdenv.hostPlatform.system}.omp.override (args: {
+      # nix-bun's dependency predicates still use deprecated stdenv platform aliases.
+      bun = args.bun.overrideAttrs {
+        nativeBuildInputs = [ unzip ] ++ lib.optionals stdenv.hostPlatform.isLinux [ autoPatchelfHook ];
+        buildInputs = lib.optionals stdenv.hostPlatform.isLinux [ stdenv.cc.cc.lib zlib ];
+      };
+    }))
 
     lm_sensors
 
@@ -873,51 +911,13 @@ in
   networking.enableIPv6 = false;
   networking.networkmanager.enable = true;
 
-  systemd.services.mihomo-config = {
-    description = "Assemble mihomo's config from the template and subscription credentials";
-    before = [ "mihomo.service" ];
-    requiredBy = [ "mihomo.service" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-    };
-    script = ''
-      set -eu
-      primary_url=$(tr -d '[:space:]' < /etc/mihomo/subscription.url)
-      quattro_url=$(tr -d '[:space:]' < /etc/mihomo/quattro.url)
-      [ -n "$primary_url" ]
-      [ -n "$quattro_url" ]
-
-      if [ ! -s /etc/mihomo/hwid ]; then
-        tr -d '[:space:]' < /etc/machine-id > /etc/mihomo/hwid
-        chmod 600 /etc/mihomo/hwid
-      fi
-      hwid=$(tr -d '[:space:]' < /etc/mihomo/hwid)
-
-      escape_sed() { printf '%s' "$1" | ${pkgs.gnused}/bin/sed 's/[\\&|]/\\&/g'; }
-      primary_url=$(escape_sed "$primary_url")
-      quattro_url=$(escape_sed "$quattro_url")
-      hwid=$(escape_sed "$hwid")
-
-      install -d -m 700 /run/mihomo
-      ${pkgs.gnused}/bin/sed \
-        -e "s|@PRIMARY_SUBSCRIPTION_URL@|$primary_url|" \
-        -e "s|@QUATTRO_SUBSCRIPTION_URL@|$quattro_url|" \
-        -e "s|@HWID@|$hwid|" \
-        ${./dotfiles/mihomo.yaml} > /run/mihomo/config.yaml
-      chmod 600 /run/mihomo/config.yaml
-    '';
-  };
-
   services.mihomo = {
     enable = true;
     tunMode = true;
     webui = pkgs.metacubexd;
-    configFile = "/run/mihomo/config.yaml";
   };
 
   systemd.services.mihomo = {
-    restartTriggers = [ ./dotfiles/mihomo.yaml ];
     serviceConfig = {
       Restart = "on-failure";
       RestartSec = "5s";

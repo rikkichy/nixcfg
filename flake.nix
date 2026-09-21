@@ -9,6 +9,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     vhelper = {
       url = "github:rikkichy/vhelper";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -107,6 +112,8 @@
         modules = [
           ./hardware-configuration.nix
           ./configuration.nix
+          inputs.sops-nix.nixosModules.sops
+          ./.secrets/sops.nix
 
           { nixpkgs.overlays = [ overlay ]; }
 

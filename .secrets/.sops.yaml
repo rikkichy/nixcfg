@@ -1,0 +1,3 @@
+creation_rules:
+  - path_regex: '^personal\.yaml$'
+    age: "age1yubikey1qfhtygqh0sqeqvwzpnegwnu5da8l0l0quj2gqpzn8p3az5nt2667ztu7s0l,age1j8ed4mwnntp0m46tq7scrargfhv5d99fugtt6jdvyel00dzx4azszvn2a8"
