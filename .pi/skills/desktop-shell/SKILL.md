@@ -33,8 +33,9 @@ The four device rail buttons open separate contents in the anchored popover:
 microphone input, sound output/media, networking, and Bluetooth. Left-clicking
 the microphone opens its controls; right-click toggles mute. Device popovers
 contain no clock or personalization section; DND remains in notification history.
-Audio headers show the selected device name and a native Qt `Switch` styled with
-Material tokens. On means unmuted. The QmlMaterial-style thumb keeps fixed 28px
+Audio headers place the shared device dropdown beside a native Qt `Switch`
+styled with Material tokens, above the slider. The selector remains visible but
+disabled with fewer than two devices. On means unmuted. The QmlMaterial-style thumb keeps fixed 28px
 geometry and scales to its 16/24/28px visible sizes. Motion follows the m3e 2.8.2
 showcase: movement is 350ms cubic-bezier(0.27, 1.06, 0.18, 1), size is 150ms
 cubic-bezier(0.31, 0.94, 0.34, 1), and colors use the 200ms standard curve.
@@ -52,6 +53,25 @@ The fixed handle geometry contains ink that
 compresses from 4px to 2px over 100ms with the standard curve. Tracks follow the
 same displayed position. Hidden controls and reduced motion skip position
 animation; keep these behaviors in the shared component, not its callers.
+
+`ExpressiveComboBox.qml` styles the native device selector shared by Sound and
+Microphone. Its trigger is a borderless filled pill with a keyboard-only focus
+ring and small rotating arrow. The m3e option panel uses a rounded surface,
+separated rows, a tertiary selected fill and checkmark. Long
+names elide; bounded menus scroll and retain Qt keyboard selection and dismissal.
+Keep `Popup.Item`: the options stay inside the existing layer surface and its
+focus grab instead of creating a competing native window.
+
+Shell arrows use bundled Google Material Icons Round SVGs through `MaterialIcon.qml`:
+`arrow_drop_down` for device selectors, `expand_less` for the tray, and
+`chevron_left`/`chevron_right` for the calendar. The shared palette-tinted renderer
+also serves OSD icons. Do not substitute font glyphs or desktop-theme arrows.
+
+Now playing uses a connected group of rounded previous/play-pause/next icon
+buttons, with a primary-filled center action and native MPRIS capability gates.
+`PlaybackButton` reuses `ExpressiveButton` input/accessibility and `MaterialIcon`
+rendering. Artwork that is missing, loading, failed or at least 3:2 widescreen
+uses the music-note placeholder; narrower artwork preserves its aspect ratio.
 
 Do not name an IPC method `show`: Quickshell's CLI consumes it as its own
 subcommand instead of calling the method. IPC arguments are typed. External

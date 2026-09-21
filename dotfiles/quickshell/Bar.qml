@@ -286,14 +286,10 @@ PanelWindow {
                     description: (bar.trayExpanded ? "Fold" : "Show") + " system tray · " + SystemTray.items.values.length + " items"
                     onClicked: bar.trayExpanded = !bar.trayExpanded
                     contentItem: Item {
-                        Image {
+                        MaterialIcon {
                             anchors.centerIn: parent
-                            width: 16
-                            height: 16
-                            source: Quickshell.iconPath("pan-up")
-                            sourceSize.width: 16
-                            sourceSize.height: 16
-                            fillMode: Image.PreserveAspectFit
+                            name: "expand_less"
+                            tint: trayToggle.checked ? Theme.textOnSecondaryContainer : Theme.textOnSurface
                             rotation: bar.trayExpanded ? 180 : 0
                             Behavior on rotation {
                                 enabled: !Theme.reducedMotion

@@ -63,6 +63,51 @@ Item {
         }
     }
 
+    component PlaybackButton: ExpressiveButton {
+        id: button
+        required property string iconName
+        required property int position
+        Layout.fillWidth: true
+        Layout.preferredHeight: 56
+        scale: 1
+        contentItem: Item {
+            MaterialIcon {
+                anchors.centerIn: parent
+                width: 28
+                height: 28
+                name: button.iconName
+                tint: button.prominent ? Theme.textOnPrimary : Theme.textOnSecondaryContainer
+            }
+        }
+        background: Rectangle {
+            radius: button.down ? 12 : 8
+            topLeftRadius: button.position === 0 ? 28 : radius
+            bottomLeftRadius: topLeftRadius
+            topRightRadius: button.position === 2 ? 28 : radius
+            bottomRightRadius: topRightRadius
+            color: button.prominent ? Theme.primary : Theme.secondaryContainer
+            border.width: button.visualFocus ? 2 : 0
+            border.color: Theme.textOnSurface
+            Rectangle {
+                anchors.fill: parent
+                radius: parent.radius
+                topLeftRadius: parent.topLeftRadius
+                bottomLeftRadius: parent.bottomLeftRadius
+                topRightRadius: parent.topRightRadius
+                bottomRightRadius: parent.bottomRightRadius
+                color: button.prominent ? Theme.textOnPrimary : Theme.textOnSecondaryContainer
+                opacity: button.down ? 0.1 : button.hovered ? 0.08 : 0
+            }
+            Behavior on radius {
+                NumberAnimation {
+                    duration: Theme.reducedMotion ? 0 : 150
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: [0.31, 0.94, 0.34, 1, 1, 1]
+                }
+            }
+        }
+    }
+
     component VolumeControl: ColumnLayout {
         id: volumeControl
         required property string title
@@ -74,15 +119,22 @@ Item {
         RowLayout {
             Layout.fillWidth: true
             spacing: 12
-            Label {
-                text: volumeControl.node ? (volumeControl.node.description || volumeControl.node.nickname || volumeControl.node.name) : (Pipewire.ready ? "No audio device" : "PipeWire unavailable")
-                font.pixelSize: 18
-                font.styleName: "Bold Rounded"
+            ExpressiveComboBox {
+                id: devicePicker
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
-                wrapMode: Text.NoWrap
-                maximumLineCount: 1
-                elide: Text.ElideRight
+                enabled: volumeControl.devices.length > 1
+                model: volumeControl.devices
+                textRole: "description"
+                currentIndex: volumeControl.devices.indexOf(volumeControl.node)
+                displayText: volumeControl.node ? (volumeControl.node.description || volumeControl.node.nickname || volumeControl.node.name) : (Pipewire.ready ? "No audio device" : "PipeWire unavailable")
+                Accessible.name: "Select " + volumeControl.title.toLowerCase() + " device"
+                onActivated: index => {
+                    if (volumeControl.input)
+                        Pipewire.preferredDefaultAudioSource = volumeControl.devices[index];
+                    else
+                        Pipewire.preferredDefaultAudioSink = volumeControl.devices[index];
+                }
             }
             Switch {
                 id: audioSwitch
@@ -174,37 +226,6 @@ Item {
             Accessible.description: "Use left and right arrow keys to adjust the volume"
             onMoved: if (volumeControl.audio)
                 volumeControl.audio.volume = value
-        }
-        ComboBox {
-            id: devicePicker
-            Layout.fillWidth: true
-            Layout.minimumHeight: 48
-            visible: volumeControl.devices.length > 1
-            model: volumeControl.devices
-            textRole: "description"
-            currentIndex: volumeControl.devices.indexOf(volumeControl.node)
-            Accessible.name: "Select " + volumeControl.title.toLowerCase() + " device"
-            font.family: Theme.fontFamily
-            font.styleName: "Rounded"
-            font.pixelSize: 14
-            palette.button: Theme.surfaceContainerHighest
-            palette.buttonText: Theme.textOnSurface
-            palette.base: Theme.surfaceContainerHigh
-            palette.text: Theme.textOnSurface
-            palette.highlight: Theme.secondaryContainer
-            palette.highlightedText: Theme.textOnSecondaryContainer
-            background: Rectangle {
-                radius: Theme.radiusSmall
-                color: Theme.surfaceContainerHighest
-                border.width: devicePicker.visualFocus ? 2 : 0
-                border.color: Theme.primary
-            }
-            onActivated: index => {
-                if (volumeControl.input)
-                    Pipewire.preferredDefaultAudioSource = volumeControl.devices[index];
-                else
-                    Pipewire.preferredDefaultAudioSink = volumeControl.devices[index];
-            }
         }
     }
 
@@ -459,6 +480,9 @@ Item {
                                 color: Theme.surfaceContainerHigh
                                 Image {
                                     id: artwork
+                                    // Keep album art; video-shaped thumbnails use the music placeholder.
+                                    readonly property bool usableCover: status === Image.Ready && paintedHeight > 0 && paintedWidth < paintedHeight * 1.5
+                                    opacity: usableCover ? 1 : 0
                                     anchors.fill: parent
                                     anchors.margins: 4
                                     source: media.modelData.trackArtUrl
@@ -467,12 +491,13 @@ Item {
                                     asynchronous: true
                                     fillMode: Image.PreserveAspectFit
                                 }
-                                Label {
+                                MaterialIcon {
                                     anchors.centerIn: parent
-                                    visible: artwork.status !== Image.Ready
-                                    text: "♪"
-                                    font.pixelSize: 36
-                                    color: Theme.textOnSurfaceVariant
+                                    visible: !artwork.usableCover
+                                    name: "music_note"
+                                    width: 36
+                                    height: 36
+                                    tint: Theme.textOnSurfaceVariant
                                 }
                             }
                             ColumnLayout {
@@ -504,26 +529,27 @@ Item {
                         }
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: 4
-                            GroupButton {
-                                Layout.fillWidth: true
-                                text: "Previous"
+                            spacing: 2
+                            Accessible.role: Accessible.Grouping
+                            Accessible.name: "Playback controls for " + media.modelData.identity
+                            PlaybackButton {
+                                position: 0
+                                iconName: "skip_previous"
                                 description: "Previous track in " + media.modelData.identity
                                 enabled: media.modelData.canControl && media.modelData.canGoPrevious
                                 onClicked: media.modelData.previous()
                             }
-                            GroupButton {
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: 56
-                                text: media.modelData.isPlaying ? "Pause" : "Play"
+                            PlaybackButton {
+                                position: 1
+                                iconName: media.modelData.isPlaying ? "pause" : "play_arrow"
                                 prominent: true
-                                description: text + " in " + media.modelData.identity
+                                description: (media.modelData.isPlaying ? "Pause" : "Play") + " in " + media.modelData.identity
                                 enabled: media.modelData.canControl && media.modelData.canTogglePlaying
                                 onClicked: media.modelData.togglePlaying()
                             }
-                            GroupButton {
-                                Layout.fillWidth: true
-                                text: "Next"
+                            PlaybackButton {
+                                position: 2
+                                iconName: "skip_next"
                                 description: "Next track in " + media.modelData.identity
                                 enabled: media.modelData.canControl && media.modelData.canGoNext
                                 onClicked: media.modelData.next()

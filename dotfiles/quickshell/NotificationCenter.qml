@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import QtQuick.Effects
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
@@ -306,23 +305,6 @@ Scope {
         }
     }
 
-    component OsdIcon: Image {
-        id: icon
-        required property string name
-        property color tint: Theme.primary
-        width: 24
-        height: 24
-        source: Qt.resolvedUrl("icons/" + name + ".svg")
-        sourceSize.width: 24
-        sourceSize.height: 24
-        fillMode: Image.PreserveAspectFit
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            colorization: 1
-            colorizationColor: icon.tint
-        }
-    }
-
     PanelWindow {
         id: osd
         screen: root.osdScreen
@@ -375,7 +357,7 @@ Scope {
                         osdTimeout.restart();
                     }
                     contentItem: Item {
-                        OsdIcon {
+                        MaterialIcon {
                             anchors.centerIn: parent
                             name: root.lastMuted ? "volume_off" : "volume_up"
                             tint: muteButton.prominent ? Theme.textOnPrimary : Theme.primary
@@ -405,7 +387,7 @@ Scope {
                         root.audio.volume = value / 100;
                         osdTimeout.restart();
                     }
-                    OsdIcon {
+                    MaterialIcon {
                         parent: volumeSlider.inactiveTrack
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.top: parent.top
@@ -434,7 +416,7 @@ Scope {
                         border.color: Theme.primary
                     }
                     contentItem: Item {
-                        OsdIcon {
+                        MaterialIcon {
                             anchors.centerIn: parent
                             name: "tune"
                         }
