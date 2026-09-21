@@ -53,6 +53,12 @@ ShellRoot {
 
     NotificationCenter {
         id: notificationCenter
+        shell: desktop
+        osdRail: {
+            if (!notificationCenter.osdScreen)
+                return null;
+            return bars.instances.find(rail => rail.screen === notificationCenter.osdScreen) || null;
+        }
     }
     Connections {
         target: Hyprland

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
@@ -9,6 +10,10 @@ import Quickshell.Services.Pipewire
 
 Scope {
     id: root
+    required property var shell
+    property PanelWindow osdRail: null
+    onOsdRailChanged: if (!osdRail)
+        osdVisible = false
 
     property bool dnd: false
     // Entries own a RetainableLock: their notification remains readable after expiry.
@@ -19,8 +24,7 @@ Scope {
 
     function focusedScreen() {
         const monitor = Hyprland.focusedMonitor;
-        return Quickshell.screens.find(screen => monitor && screen.name === monitor.name)
-            || Quickshell.screens[0] || null;
+        return Quickshell.screens.find(screen => monitor && screen.name === monitor.name) || Quickshell.screens[0] || null;
     }
 
     function remove(entry, userDismissed) {
@@ -69,7 +73,9 @@ Scope {
         inlineReplySupported: false
         onNotification: notification => {
             notification.tracked = true;
-            const entry = entryFactory.createObject(root, { notification: notification });
+            const entry = entryFactory.createObject(root, {
+                notification: notification
+            });
             root.items = [entry].concat(root.items);
             entry.refresh();
             while (root.items.length > 100)
@@ -120,17 +126,39 @@ Scope {
             Connections {
                 target: entry.notification
                 // Replacements mutate this same QObject; coalesce the changed fields.
-                function onSummaryChanged() { Qt.callLater(entry.refresh); }
-                function onBodyChanged() { Qt.callLater(entry.refresh); }
-                function onAppNameChanged() { Qt.callLater(entry.refresh); }
-                function onAppIconChanged() { Qt.callLater(entry.refresh); }
-                function onImageChanged() { Qt.callLater(entry.refresh); }
-                function onActionsChanged() { Qt.callLater(entry.refresh); }
-                function onHintsChanged() { Qt.callLater(entry.refresh); }
-                function onExpireTimeoutChanged() { Qt.callLater(entry.refresh); }
-                function onUrgencyChanged() { Qt.callLater(entry.refresh); }
-                function onResidentChanged() { Qt.callLater(entry.refresh); }
-                function onTransientChanged() { Qt.callLater(entry.refresh); }
+                function onSummaryChanged() {
+                    Qt.callLater(entry.refresh);
+                }
+                function onBodyChanged() {
+                    Qt.callLater(entry.refresh);
+                }
+                function onAppNameChanged() {
+                    Qt.callLater(entry.refresh);
+                }
+                function onAppIconChanged() {
+                    Qt.callLater(entry.refresh);
+                }
+                function onImageChanged() {
+                    Qt.callLater(entry.refresh);
+                }
+                function onActionsChanged() {
+                    Qt.callLater(entry.refresh);
+                }
+                function onHintsChanged() {
+                    Qt.callLater(entry.refresh);
+                }
+                function onExpireTimeoutChanged() {
+                    Qt.callLater(entry.refresh);
+                }
+                function onUrgencyChanged() {
+                    Qt.callLater(entry.refresh);
+                }
+                function onResidentChanged() {
+                    Qt.callLater(entry.refresh);
+                }
+                function onTransientChanged() {
+                    Qt.callLater(entry.refresh);
+                }
                 function onClosed(reason) {
                     entry.active = false;
                     entry.popup = false;
@@ -151,8 +179,14 @@ Scope {
             screen: modelData
             visible: popups.length > 0
             color: "transparent"
-            anchors { top: true; right: true }
-            margins { top: 16; right: 16 }
+            anchors {
+                top: true
+                right: true
+            }
+            margins {
+                top: 16
+                right: 16
+            }
             implicitWidth: Math.max(160, Math.min(412, modelData.width - 112))
             implicitHeight: Math.min(popupColumn.implicitHeight, modelData.height - 32)
             exclusionMode: ExclusionMode.Ignore
@@ -188,11 +222,21 @@ Scope {
     readonly property var audio: sink ? sink.audio : null
     property bool audioArmed: false
     property var osdScreen: null
+    property bool osdVisible: false
+    property rect osdAnchor: Qt.rect(12, 12, 56, 88)
     property real lastVolume: -1
     property bool lastMuted: false
+    readonly property bool soundOpen: shell.panel === "sound"
+    onSoundOpenChanged: {
+        if (soundOpen) {
+            osdVisible = false;
+            osdTimeout.stop();
+        }
+    }
 
     function armAudio() {
         audioArmed = false;
+        osdVisible = false;
         if (osdTimeout)
             osdTimeout.stop();
         if (audioSettled)
@@ -207,21 +251,38 @@ Scope {
             return;
         lastVolume = volume;
         lastMuted = audio.muted;
-        osdScreen = focusedScreen();
+        if (soundOpen)
+            return;
+        if (!volumeSlider.pressed) {
+            osdScreen = focusedScreen();
+            if (!osdRail)
+                return;
+            const clock = osdRail.triggerForPanel("calendar");
+            osdAnchor = clock.mapToItem(osdRail.contentItem, 0, 0, clock.width, clock.height);
+        }
+        osdVisible = true;
         osdTimeout.restart();
     }
 
     onSinkChanged: armAudio()
     Component.onCompleted: armAudio()
-    PwObjectTracker { objects: root.sink ? [root.sink] : [] }
+    PwObjectTracker {
+        objects: root.sink ? [root.sink] : []
+    }
     Connections {
         target: root.sink
-        function onReadyChanged() { root.armAudio(); }
+        function onReadyChanged() {
+            root.armAudio();
+        }
     }
     Connections {
         target: root.audio
-        function onVolumesChanged() { root.showAudioChange(); }
-        function onMutedChanged() { root.showAudioChange(); }
+        function onVolumesChanged() {
+            root.showAudioChange();
+        }
+        function onMutedChanged() {
+            root.showAudioChange();
+        }
     }
     Timer {
         id: audioSettled
@@ -234,62 +295,149 @@ Scope {
             }
         }
     }
-    Timer { id: osdTimeout; interval: 1800 }
+    Timer {
+        id: osdTimeout
+        interval: 600
+        onTriggered: {
+            if (volumeSlider.pressed || muteButton.pressed || settingsButton.pressed)
+                restart();
+            else
+                root.osdVisible = false;
+        }
+    }
+
+    component OsdIcon: Image {
+        id: icon
+        required property string name
+        property color tint: Theme.primary
+        width: 24
+        height: 24
+        source: Qt.resolvedUrl("icons/" + name + ".svg")
+        sourceSize.width: 24
+        sourceSize.height: 24
+        fillMode: Image.PreserveAspectFit
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            colorization: 1
+            colorizationColor: icon.tint
+        }
+    }
 
     PanelWindow {
         id: osd
         screen: root.osdScreen
-        visible: osdTimeout.running && root.osdScreen !== null
-        anchors.bottom: true
-        margins.bottom: 48
-        implicitWidth: 340
-        implicitHeight: 100
+        visible: root.osdVisible && root.osdRail !== null && root.osdScreen !== null
+        anchors {
+            top: true
+            left: true
+        }
+        implicitWidth: 72
+        implicitHeight: Math.min(320, (root.osdScreen ? root.osdScreen.height : 1080) - 24)
+        margins.left: Math.max(12, Math.min((root.osdRail ? root.osdRail.width : 80) + 8, (root.osdScreen ? root.osdScreen.width : 1920) - width - 12))
+        margins.top: Math.max(12, Math.min(root.osdAnchor.y + root.osdAnchor.height / 2 - height / 2, (root.osdScreen ? root.osdScreen.height : 1080) - height - 12))
         color: "transparent"
+        mask: Region {
+            item: pill
+            radius: Math.round(pill.radius)
+        }
         exclusionMode: ExclusionMode.Ignore
-        WlrLayershell.namespace: "expressive-osd"
+        WlrLayershell.namespace: Theme.reducedMotion ? "expressive-osd-static" : "expressive-osd"
         WlrLayershell.layer: WlrLayer.Overlay
-        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
 
         Rectangle {
+            id: pill
             anchors.fill: parent
-            radius: Theme.radiusExtraLarge
-            color: Theme.secondaryContainer
-            Accessible.role: Accessible.ProgressBar
-            Accessible.name: root.lastMuted ? "Audio muted" : "Volume " + root.lastVolume + " percent"
+            radius: width / 2
+            color: Theme.surface
+            Accessible.role: Accessible.Grouping
+            Accessible.name: root.lastMuted ? "Volume controls, muted" : "Volume controls"
+            focus: true
+            Keys.onEscapePressed: {
+                root.osdVisible = false;
+                osdTimeout.stop();
+            }
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 20
-                spacing: 12
-                RowLayout {
-                    Layout.fillWidth: true
-                    Text {
-                        text: root.lastMuted ? "Audio muted" : "Volume"
-                        font.family: Theme.fontFamily
-                        font.styleName: "Rounded"
-                        font.pixelSize: 18
-                        font.weight: Font.Medium
-                        color: Theme.textOnSecondaryContainer
-                        Layout.fillWidth: true
+                anchors.margins: 8
+                spacing: 8
+                ExpressiveButton {
+                    id: muteButton
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.preferredWidth: 48
+                    Layout.preferredHeight: 48
+                    prominent: root.lastMuted
+                    enabled: !!root.sink && root.sink.ready && !!root.audio
+                    description: root.lastMuted ? "Unmute sound" : "Mute sound"
+                    onPressedChanged: osdTimeout.restart()
+                    onClicked: {
+                        root.audio.muted = !root.audio.muted;
+                        osdTimeout.restart();
                     }
-                    Text {
-                        text: root.lastVolume + "%"
-                        font.family: Theme.fontFamily
-                        font.styleName: "Rounded"
-                        font.pixelSize: 18
-                        color: Theme.textOnSecondaryContainer
+                    contentItem: Item {
+                        OsdIcon {
+                            anchors.centerIn: parent
+                            name: root.lastMuted ? "volume_off" : "volume_up"
+                            tint: muteButton.prominent ? Theme.textOnPrimary : Theme.primary
+                        }
                     }
                 }
-                Rectangle {
-                    Layout.fillWidth: true
-                    implicitHeight: 10
-                    radius: 5
-                    color: Theme.surfaceContainerHighest
-                    Rectangle {
-                        height: parent.height
-                        width: parent.width * (root.lastMuted ? 0 : Math.max(0, Math.min(1, root.lastVolume / 100)))
-                        radius: 5
-                        color: Theme.primary
-                        Behavior on width { NumberAnimation { duration: Theme.motionDuration; easing.type: Easing.OutCubic } }
+                ExpressiveSlider {
+                    id: volumeSlider
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.preferredWidth: 56
+                    Layout.fillHeight: true
+                    orientation: Qt.Vertical
+                    handleLength: 56
+                    endRadius: Theme.radiusMedium
+                    inactiveColor: Theme.surfaceContainerHigh
+                    from: 0
+                    to: 100
+                    stepSize: 1
+                    value: Math.max(0, Math.min(100, root.lastVolume))
+                    enabled: !!root.sink && root.sink.ready && !!root.audio
+                    wheelEnabled: true
+                    Accessible.name: "Sound volume"
+                    Accessible.description: root.lastMuted ? "Muted" : root.lastVolume + " percent"
+                    onPressedChanged: osdTimeout.restart()
+                    onMoved: {
+                        root.audio.muted = false;
+                        root.audio.volume = value / 100;
+                        osdTimeout.restart();
+                    }
+                    OsdIcon {
+                        parent: volumeSlider.inactiveTrack
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.top: parent.top
+                        anchors.topMargin: 12
+                        name: "music_note"
+                        visible: parent !== null && parent.height >= 48
+                    }
+                }
+                ExpressiveButton {
+                    id: settingsButton
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.preferredWidth: 48
+                    Layout.preferredHeight: 48
+                    description: "Open sound controls"
+                    onPressedChanged: osdTimeout.restart()
+                    onClicked: {
+                        root.osdVisible = false;
+                        osdTimeout.stop();
+                        if (root.osdRail)
+                            root.shell.togglePanel("sound", root.osdScreen, root.osdRail.triggerForPanel("calendar"));
+                    }
+                    background: Rectangle {
+                        radius: height / 2
+                        color: settingsButton.hovered ? Theme.surfaceContainerHigh : "transparent"
+                        border.width: settingsButton.visualFocus ? 2 : 0
+                        border.color: Theme.primary
+                    }
+                    contentItem: Item {
+                        OsdIcon {
+                            anchors.centerIn: parent
+                            name: "tune"
+                        }
                     }
                 }
             }

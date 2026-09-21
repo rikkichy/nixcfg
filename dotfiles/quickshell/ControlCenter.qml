@@ -118,72 +118,50 @@ Item {
                     Behavior on color {
                         ColorAnimation {
                             duration: Theme.motionDuration
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: [0.2, 0, 0, 1, 1, 1]
                         }
                     }
                     Rectangle {
-                        id: switchThumb
-                        width: 16
-                        height: width
-                        radius: width / 2
-                        x: audioSwitch.mirrored ? parent.width - 24 : 8
+                        // Fixed thumb geometry adapted from QmlMaterial (MIT; see LICENSE.QmlMaterial).
+                        // Fixed geometry keeps position independent of the thumb's visible size.
+                        width: 28
+                        height: 28
+                        radius: 14
+                        x: Math.max(2, Math.min(parent.width - 2 - width, audioSwitch.visualPosition * parent.width - width / 2))
                         y: (parent.height - height) / 2
                         color: audioSwitch.checked ? Theme.textOnPrimary : Theme.outline
-                        state: audioSwitch.down ? "pressed" : audioSwitch.checked ? "on" : "off"
-                        states: [
-                            State {
-                                name: "pressed"
-                                PropertyChanges {
-                                    target: switchThumb
-                                    width: 28
-                                    x: 2 + (audioSwitch.indicator.width - 32) * audioSwitch.visualPosition
-                                }
-                            },
-                            State {
-                                name: "on"
-                                PropertyChanges {
-                                    target: switchThumb
-                                    width: 24
-                                    x: audioSwitch.mirrored ? 4 : audioSwitch.indicator.width - 28
-                                }
-                            },
-                            State {
-                                name: "off"
-                                PropertyChanges {
-                                    target: switchThumb
-                                    width: 16
-                                    x: audioSwitch.mirrored ? audioSwitch.indicator.width - 24 : 8
-                                }
+                        scale: (audioSwitch.pressed ? 28 : audioSwitch.checked ? 24 : 16) / 28
+                        Behavior on x {
+                            enabled: !Theme.reducedMotion && !audioSwitch.pressed
+                            // m3e@2.8.2 showcase fast-spatial timing.
+                            NumberAnimation {
+                                duration: 350
+                                easing.type: Easing.BezierSpline
+                                easing.bezierCurve: [0.27, 1.06, 0.18, 1, 1, 1]
                             }
-                        ]
-                        // Material snaps the pressed shape, then springs size/offset to fixed endpoints.
-                        transitions: [
-                            Transition {
-                                to: "pressed"
-                                PropertyAction {
-                                    properties: "x,width"
-                                }
-                            },
-                            Transition {
-                                enabled: !Theme.reducedMotion
-                                SpringAnimation {
-                                    properties: "x,width"
-                                    spring: 3.2
-                                    damping: 0.13576
-                                    mass: 0.25
-                                    epsilon: 0.05
-                                }
+                        }
+                        Behavior on scale {
+                            enabled: !Theme.reducedMotion
+                            // m3e@2.8.2 showcase fast-effects timing.
+                            NumberAnimation {
+                                duration: 150
+                                easing.type: Easing.BezierSpline
+                                easing.bezierCurve: [0.31, 0.94, 0.34, 1, 1, 1]
                             }
-                        ]
+                        }
                         Behavior on color {
                             ColorAnimation {
                                 duration: Theme.motionDuration
+                                easing.type: Easing.BezierSpline
+                                easing.bezierCurve: [0.2, 0, 0, 1, 1, 1]
                             }
                         }
                     }
                 }
             }
         }
-        Slider {
+        ExpressiveSlider {
             id: slider
             Layout.fillWidth: true
             Layout.minimumHeight: 56
@@ -192,53 +170,10 @@ Item {
             to: 1
             stepSize: 0.01
             value: volumeControl.audio ? volumeControl.audio.volume : 0
-            focusPolicy: Qt.StrongFocus
             Accessible.name: volumeControl.title + " volume"
             Accessible.description: "Use left and right arrow keys to adjust the volume"
             onMoved: if (volumeControl.audio)
                 volumeControl.audio.volume = value
-            background: Item {
-                x: slider.leftPadding
-                y: slider.topPadding + slider.availableHeight / 2 - height / 2
-                width: slider.availableWidth
-                height: 40
-                // Separate tracks leave the Material 6px gap on both sides of the handle.
-                Rectangle {
-                    width: Math.max(0, slider.handle.x - slider.leftPadding - 6)
-                    height: parent.height
-                    radius: 2
-                    topLeftRadius: Theme.radiusSmall
-                    bottomLeftRadius: Theme.radiusSmall
-                    color: slider.enabled ? (slider.mirrored ? Theme.secondaryContainer : Theme.primary) : Theme.textOnSurface
-                    opacity: slider.enabled ? 1 : slider.mirrored ? 0.12 : 0.38
-                }
-                Rectangle {
-                    x: Math.min(parent.width, slider.handle.x - slider.leftPadding + slider.handle.width + 6)
-                    width: Math.max(0, parent.width - x)
-                    height: parent.height
-                    radius: 2
-                    topRightRadius: Theme.radiusSmall
-                    bottomRightRadius: Theme.radiusSmall
-                    color: slider.enabled ? (slider.mirrored ? Theme.primary : Theme.secondaryContainer) : Theme.textOnSurface
-                    opacity: slider.enabled ? 1 : slider.mirrored ? 0.38 : 0.12
-                }
-            }
-            handle: Rectangle {
-                x: slider.leftPadding + slider.visualPosition * (slider.availableWidth - width)
-                y: slider.topPadding + slider.availableHeight / 2 - height / 2
-                width: slider.pressed ? 2 : 4
-                height: 52
-                radius: width / 2
-                color: slider.enabled ? Theme.primary : Theme.textOnSurface
-                border.width: slider.visualFocus ? 2 : 0
-                border.color: Theme.textOnSurface
-                opacity: slider.enabled ? 1 : 0.38
-                Behavior on width {
-                    NumberAnimation {
-                        duration: Theme.motionDuration
-                    }
-                }
-            }
         }
         ComboBox {
             id: devicePicker

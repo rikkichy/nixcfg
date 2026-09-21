@@ -34,9 +34,24 @@ microphone input, sound output/media, networking, and Bluetooth. Left-clicking
 the microphone opens its controls; right-click toggles mute. Device popovers
 contain no clock or personalization section; DND remains in notification history.
 Audio headers show the selected device name and a native Qt `Switch` styled with
-Material tokens. On means unmuted. Thumb size and offset animate toward separate
-fixed endpoints with the fast spatial spring; pressed geometry snaps, matching
-AndroidX `Switch.kt`. Never spring-animate an offset derived from animated width.
+Material tokens. On means unmuted. The QmlMaterial-style thumb keeps fixed 28px
+geometry and scales to its 16/24/28px visible sizes. Motion follows the m3e 2.8.2
+showcase: movement is 350ms cubic-bezier(0.27, 1.06, 0.18, 1), size is 150ms
+cubic-bezier(0.31, 0.94, 0.34, 1), and colors use the 200ms standard curve.
+Dragging updates position directly. Never derive position from animated width.
+
+`ExpressiveSlider.qml` owns horizontal and vertical slider rendering and motion
+for Sound, Microphone and the volume OSD. Displayed position uses m3e fast-effects
+timing (150ms, cubic-bezier(0.31, 0.94, 0.34, 1)); actual audio values update
+immediately. A passive PointHandler uses Qt's axial drag threshold to distinguish
+track clicks (including pointer jitter) from dragging, which follows directly.
+Click release does not finish the animation. One native NumberAnimation retargets
+from the displayed position; a bound targetPosition observes settled native
+slider state. Hiding or disabling motion stops it and synchronizes immediately.
+The fixed handle geometry contains ink that
+compresses from 4px to 2px over 100ms with the standard curve. Tracks follow the
+same displayed position. Hidden controls and reduced motion skip position
+animation; keep these behaviors in the shared component, not its callers.
 
 Do not name an IPC method `show`: Quickshell's CLI consumes it as its own
 subcommand instead of calling the method. IPC arguments are typed. External
