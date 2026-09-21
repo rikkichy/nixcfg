@@ -59,7 +59,7 @@ cp /mnt/etc/nixos/hardware-configuration.nix /mnt/home/ri/nixcfg/
 ```
 
 The clone lands as `root:root` because you are root here. You do not need to fix
-that — `configuration.nix` reasserts `ri:users` on the tree at every boot,
+that — `system/storage.nix` reasserts `ri:users` on the tree at every boot,
 before the desktop starts.
 
 `hardware-configuration.nix` is tracked but specific to this machine. On a
@@ -77,7 +77,7 @@ comes from this repo.
 boot.initrd.luks.devices."cryptroot".device = "/dev/disk/by-uuid/<uuid>";
 ```
 
-`configuration.nix` extends that same mapping with discard and FIDO discovery
+`system/boot.nix` extends that same mapping with discard and FIDO discovery
 options; it does not enroll the disk. Keep the name `cryptroot` consistent.
 The retained passphrase remains the fallback; see **Touch-only disk unlock**
 below before enrolling a token.
@@ -133,7 +133,7 @@ No password is set in the config on purpose — this repo is public.
 
 Flatpak apps install themselves a couple of minutes after you log in — Flathub
 plus `org.vinegarhq.Sober` and `me.amankhanna.opendeck`. To add another, put it
-in the list in `configuration.nix` and rebuild. If one is missing:
+in the list in `system/applications.nix` and rebuild. If one is missing:
 
 ```
 systemctl --user start flatpak-bootstrap
@@ -427,7 +427,7 @@ layout move preserves ciphertext bytes/metadata and runtime identities: compare
 checksums, adapt relative paths/rules/imports, and do not rotate or reenroll
 hardware merely because a file moved.
 
-Two settings in `configuration.nix` are tied to `tun.device: mihomo` inside that
+Two settings in `system/networking.nix` are tied to `tun.device: mihomo` inside that
 file — `networking.firewall.trustedInterfaces` and
 `networking.networkmanager.unmanaged`. Rename the device in one place and all
 three need to change together.
@@ -473,7 +473,20 @@ it; stop the user service first so the two do not both bind 1443.
 | Path | What |
 |---|---|
 | `flake.nix` | inputs + `nixosConfigurations.nix` |
-| `configuration.nix` | system: boot, GPU, Hyprland, gaming, packages |
+| `configuration.nix` | host identity, user, locale and explicit system module imports |
+| `system/boot.nix` | bootloader, initrd/LUKS additions, kernel and crash resilience |
+| `system/hardware.nix` | CPU policy, NVIDIA, peripheral access and Bluetooth |
+| `system/storage.nix` | data mounts, permissions, XFS scrubbing and trim |
+| `system/security.nix` | polkit, PAM/U2F, sudo, hardened allocator and smart cards |
+| `system/networking.nix` | NetworkManager, Mihomo, firewall and service discovery |
+| `system/audio.nix` | PipeWire and the Blessing 3 equalizer |
+| `system/desktop.nix` | Hyprland/UWSM, greetd, portals, keyring and session environment |
+| `system/gaming.nix` | Steam, Gamescope, GameMode and scheduling |
+| `system/applications.nix` | system-managed applications, Flatpak, Docker and printing |
+| `system/packages.nix` | system package and font lists |
+| `system/nix.nix` | Nix settings, garbage collection and automated updates |
+| `pkgs/overlay.nix` | local package wiring and upstream patches |
+| `pkgs/vpn.nix` | VPN command package |
 | `home.nix` | Home Manager imports, state version and desktop packages |
 | `home/matugen.nix` | generated palettes, cursors, wallpaper pickers and restoration |
 | `home/fuzzel-tweaks.nix` | Fuzzel settings, desktop entries/actions and shared pickers |
@@ -489,7 +502,7 @@ it; stop the user service first so the two do not both bind 1443.
 `vhelper` and `openwave` are separate flake inputs and live in their own
 repos (`rikkichy/vhelper`, `rikkichy/openwave`) — edit them there, not here.
 
-The modules share only `desktopPicker` and `terminalColours` through standard
+The Home Manager modules share only `desktopPicker` and `terminalColours` through standard
 Nix module arguments. Import order and `lib.mkAfter` preserve package ordering
 and Fish initialization order.
 

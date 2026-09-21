@@ -41,7 +41,7 @@ rather than a symlinked directory, because the hint records the path as found �
 a symlink resolves to the store and a nixpkgs bump then moves it out from
 under the hint.
 
-`programs.chromium` in `configuration.nix` installs no browser. It writes
+`programs.chromium` in `system/applications.nix` installs no browser. It writes
 policy JSON, `/etc/chromium/policies/managed/` among other prefixes, and
 helium reads that directory as any Chromium build does; `chrome://policy` shows
 each one as Platform / Machine / Mandatory once it has been picked up.
@@ -140,7 +140,7 @@ Thunar's own preferences dialog exposes a fraction of them.
 `framework.ini` pins window mode, resolution, renderer and volumes, and
 `input.json` holds the input handlers — including the tablet's mapped area,
 rotation and pressure threshold. The tablet itself is arranged in
-`configuration.nix`, where OpenTabletDriver is installed for its udev rules and
+`system/hardware.nix`, where OpenTabletDriver is installed for its udev rules and
 its daemon deliberately left off.
 
 **None of those three can be home-manager files.** osu!framework writes every
@@ -179,7 +179,7 @@ along with `class_ModPreset`, `class_RulesetSetting`, skins, beatmaps and
 scores. `strings client.realm` is enough to confirm what a given release keeps
 there; nothing short of shipping a whole database preconfigures any of it.
 
-The six `application/x-osu-*` MIME types are declared in `configuration.nix`,
+The six `application/x-osu-*` MIME types are declared in `system/packages.nix`,
 because nixpkgs packages none of them and the desktop entry claims all six.
 Only `x-scheme-handler/osu` is load-bearing — an `osu://` link from the browser
 has nowhere to go without it.

@@ -50,13 +50,16 @@ does this interactively.
 
 `flake.nix` defines `nixosConfigurations.nix`, composing
 `hardware-configuration.nix`, `configuration.nix`, and Home Manager's
-`home.nix`, which imports the focused modules in `home/`. `nixcfgPath` is passed
+`home.nix`. `configuration.nix` owns host identity and explicitly imports `system/`;
+`home.nix` imports `home/`. `pkgs/overlay.nix` supplies local packages and patches.
+`nixcfgPath` is passed
 through `specialArgs` because install-time flake evaluation occurs from another
 path while runtime symlinks and services need the final checkout at `/home/ri/nixcfg`.
 
 | Area | Source of truth |
 | --- | --- |
-| system, boot, packages, system services | `configuration.nix` |
+| host identity, user, locale, system module imports | `configuration.nix` |
+| boot/initrd, security, hardware, storage, networking, audio, desktop, gaming, applications, packages and Nix maintenance | focused modules in `system/` |
 | system SOPS declarations, public recipient policy, encrypted Mihomo inputs | `.secrets/sops.nix`, `.secrets/.sops.yaml`, `.secrets/personal.yaml` |
 | Home Manager imports, state version, desktop packages | `home.nix` |
 | palettes, cursors, wallpapers and restoration | `home/matugen.nix` |
@@ -68,7 +71,7 @@ path while runtime symlinks and services need the final checkout at `/home/ri/ni
 | keybinds, rules, monitors | `hypr/` live out-of-store symlink |
 | generated app palettes | `dotfiles/matugen/templates/` via `theme-apply` |
 | Quickshell rail, controls, notifications, OSD and Hyprland symlink | `home/quickshell.nix`, `dotfiles/quickshell/` |
-| local package expressions | `pkgs/` and the overlay in `flake.nix` |
+| local package expressions, VPN command, package overrides | `pkgs/`, wired by `pkgs/overlay.nix` |
 | NokoChat development environment | `dev/nokochat/shell.nix` |
 
 ## Project skills

@@ -27,7 +27,7 @@ Consequences:
   which is what `wallpaper-restore` is for.
 - `hypr/` is mapped in with `mkOutOfStoreSymlink`, not copied, specifically so
   `scheme/current.lua` stays writable. That in turn requires the repo to be
-  owned by `ri` — the installer clones as root, so `configuration.nix` carries a
+  owned by `ri` — the installer clones as root, so `system/storage.nix` carries a
   `systemd.tmpfiles` `Z` rule reasserting `ri:users` before greetd.
 - **`--source-color-index` is not optional.** An image usually yields several
   candidate source colours, and with no preference matugen *asks* — then exits

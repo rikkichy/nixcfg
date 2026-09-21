@@ -1,6 +1,6 @@
 ---
 name: nix-system-operations
-description: NixOS and Home Manager safety and operations for this machine, including initrd and LUKS, crash resilience, CPU scheduling, hardened_malloc, systemd units, auto-upgrades, polkit, and mihomo VPN. Use when changing configuration.nix, hardware-configuration.nix, flake inputs, boot, services, security, performance, updates, or networking.
+description: NixOS and Home Manager safety and operations for this machine, including initrd and LUKS, crash resilience, CPU scheduling, hardened_malloc, systemd units, auto-upgrades, polkit, and mihomo VPN. Use when changing configuration.nix, system/ modules, hardware-configuration.nix, flake inputs, boot, services, security, performance, updates, or networking.
 ---
 
 # Nix System Operations
@@ -12,7 +12,7 @@ Detailed engineering reference for this NixOS configuration. Read the relevant s
 `hardware-configuration.nix` already declares the root LUKS device as
 `boot.initrd.luks.devices."cryptroot"`, named after the mapping opened during
 install, and `fileSystems."/"` mounts `/dev/mapper/cryptroot`.
-`configuration.nix` may only *add* to that attribute
+`system/boot.nix` may only *add* to that attribute
 (`allowDiscards` and `crypttabExtraOpts`). These are attribute names, not
 device paths, so a differently-named entry aimed at the same partition defines a
 **second mapping** rather than overriding the first. The generated crypttab then
@@ -177,7 +177,7 @@ cores 8–15 under 32 MB, while `acpi_cppc/highest_perf` reads the same sequence
 across both — so nothing in the topology tells the scheduler which half a
 lightly threaded workload belongs on. `amd_3d_vcache` exposes the one knob for
 it, `amd_x3d_mode` on the ACPI device `AMDI0101:00`, and a udev rule in
-`configuration.nix` sets it to `cache`, the 96 MB half. Two things about that:
+`system/hardware.nix` sets it to `cache`, the 96 MB half. Two things about that:
 
 - **The attribute does not exist until the driver binds.** The ACPI device
   appears with nothing under it, udev loads `amd_3d_vcache` from its MODALIAS,
@@ -276,7 +276,7 @@ What is reachable is three kernel parameters, described where they are set.
 `init_on_free` is deliberately not among them: it is the most valuable and the
 only one that costs measurably, and this machine also runs games.
 
-### systemd units in `configuration.nix`
+### systemd units in `system/` modules
 
 Keep long-running or network-dependent **user** units off `default.target` and
 drive them from a timer. Anything in the login target sits in the path of
