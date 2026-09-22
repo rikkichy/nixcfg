@@ -175,8 +175,6 @@ PanelWindow {
 
             Rectangle {
                 id: trayCapsule
-                // M3 default spatial: stiffness 380, damping ratio 0.8.
-                // Qt integrates at 16 ms: spring = k*dt*mass, damping = 2*zeta*sqrt(k)*dt*mass.
                 property real expansion: bar.trayExpanded ? 1 : 0
                 Behavior on expansion {
                     enabled: !Theme.reducedMotion
@@ -187,7 +185,6 @@ PanelWindow {
                         epsilon: 0.001
                     }
                 }
-                // M3 default effects: critically damped, stiffness 1600.
                 property real inkOpacity: bar.trayExpanded ? 1 : 0
                 Behavior on inkOpacity {
                     enabled: !Theme.reducedMotion
@@ -292,7 +289,6 @@ PanelWindow {
                             rotation: bar.trayExpanded ? 180 : 0
                             Behavior on rotation {
                                 enabled: !Theme.reducedMotion
-                                // M3 fast spatial: stiffness 800, damping ratio 0.6.
                                 SpringAnimation {
                                     spring: 3.2
                                     damping: 0.13576

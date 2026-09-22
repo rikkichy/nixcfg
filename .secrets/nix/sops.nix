@@ -1,6 +1,5 @@
 { config, lib, pkgs, ... }:
 let
-  # First provisioning needs real recipients and ciphertext; keep legacy inputs until then.
   provisioned = builtins.pathExists ./personal.yaml;
   python = pkgs.python3.withPackages (ps: [ ps.pyyaml ]);
   source = name: legacy:
@@ -22,7 +21,6 @@ in
     });
   };
 
-  # A stopped oneshot runs again on each Mihomo start, before LoadCredential.
   systemd.services.mihomo-config = {
     description = "Render Mihomo's private configuration";
     before = [ "mihomo.service" ];

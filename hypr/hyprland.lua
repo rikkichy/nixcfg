@@ -10,10 +10,6 @@ local function maybe_create(file, content)
         return
     end
 
-    -- The directory has to exist first: io.open in "w" mode returns nil rather
-    -- than creating one, and this function would then quietly do nothing --
-    -- leaving the require() below it to raise, which aborts the rest of this
-    -- file with no log line anywhere and takes every rule and keybind with it.
     os.execute("mkdir -p '" .. file:match("(.*)/") .. "'")
 
     f = io.open(file, "w")
@@ -43,9 +39,6 @@ end
 
 maybe_copy(hypr .. "/scheme/default.lua", hypr .. "/scheme/current.lua")
 
--- pcall rather than a bare require, for the same reason current_scheme.lua
--- falls back to a default: a missing or broken override file would otherwise
--- raise here and silently truncate everything below it.
 maybe_create(home .. "/.config/hypr-user/hypr-vars.lua", "return {}\n")
 local ok, overrides = pcall(require, "hypr-vars")
 if ok and type(overrides) == "table" then
@@ -62,10 +55,6 @@ hl.monitor({
     scale    = 1,
 })
 
--- Matched by description, not connector: the port name moves (this was "DP-1"
--- and the panel came up on DP-4, so the rule silently never fired and the
--- fallback rule above dropped it to its preferred 60Hz). Description comes from
--- `hyprctl monitors`, minus the trailing (portname).
 hl.monitor({
     output   = "desc:Invalid Vendor Codename - RTK HG645J41 0x10101010",
     mode     = "1920x1080@240",

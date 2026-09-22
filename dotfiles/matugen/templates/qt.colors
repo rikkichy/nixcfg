@@ -106,7 +106,6 @@ ForegroundVisited={{colors.tertiary.default.hex}}
 BackgroundAlternate={{colors.surface_container.default.hex}}
 BackgroundNormal={{colors.surface_dim.default.hex}}
 DecorationFocus={{colors.primary.default.hex}}
-#-----------------------------------------------
 DecorationHover={{colors.inverse_primary.default.hex}}
 ForegroundActive={{colors.inverse_surface.default.hex}}
 ForegroundInactive={{colors.outline.default.hex}}
@@ -127,7 +126,6 @@ ForegroundInactive={{colors.outline.default.hex}}
 ForegroundLink={{colors.primary.default.hex}}
 ForegroundNegative={{colors.error.default.hex}}
 ForegroundNeutral=#fcd34d
-#--- Window titles, context icons
 ForegroundNormal={{colors.on_surface_variant.default.hex}}
 ForegroundPositive=#a3e635
 ForegroundVisited={{colors.tertiary.default.hex}}

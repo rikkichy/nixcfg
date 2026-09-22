@@ -26,7 +26,6 @@ in
 {
   boot.kernelModules = [ "i2c-dev" "i2c-piix4" ];
 
-  # OpenRGB is only a service dependency: no GUI, tray app or SDK server.
   systemd.services.openrgb-off = {
     description = "Turn off RAM, GPU and motherboard RGB lighting";
     wantedBy = [ "multi-user.target" ];
@@ -48,8 +47,6 @@ in
       ProtectHome = true;
       PrivateTmp = true;
       NoNewPrivileges = true;
-      # OpenRGB's RTLD_DEEPBIND libusb backend mixes allocators under the global
-      # hardened_malloc preload. Isolate only this process; keep system hardening.
       BindReadOnlyPaths = lib.optional (config.environment.memoryAllocator.provider != "libc")
         "${pkgs.emptyFile}:${config.environment.etc."ld-nix.so.preload".source}";
       ExecStart = lib.escapeShellArgs [

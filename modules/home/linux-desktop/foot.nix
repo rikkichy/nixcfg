@@ -34,7 +34,6 @@
     };
   };
 
-  # Restore colors after shell integrations, before prompt hooks and user config.
   programs.fish.interactiveShellInit = lib.mkOrder 1491 ''
     cat ${builtins.dirOf terminalColours}/sequences.txt 2> /dev/null
   '';

@@ -4,7 +4,6 @@ import QtQuick.Controls
 AbstractButton {
     id: control
     property string glyph: ""
-    // Opt in for glyphs whose painted bounds are off-center within the font advance.
     property bool centerGlyphInk: false
     property bool prominent: false
     property string description: text

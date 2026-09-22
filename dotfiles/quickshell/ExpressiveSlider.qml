@@ -51,7 +51,6 @@ Slider {
             easing.bezierCurve: [0.2, 0, 0, 1, 1, 1]
         }
     }
-    // Passive observation preserves native Slider mouse, touch and keyboard input.
     PointHandler {
         target: null
         onActiveChanged: control.dragging = false
@@ -94,7 +93,6 @@ Slider {
         color: control.enabled ? (activeSegment ? Theme.primary : control.inactiveColor) : Theme.textOnSurface
         opacity: control.enabled ? 1 : activeSegment ? 0.38 : 0.12
     }
-    // Keep the positioning/hit-test geometry fixed while the visible ink compresses.
     handle: Item {
         x: control.horizontal ? control.leftPadding + control.displayedPosition * (control.availableWidth - width) : control.leftPadding + (control.availableWidth - width) / 2
         y: control.vertical ? control.topPadding + control.displayedPosition * (control.availableHeight - height) : control.topPadding + (control.availableHeight - height) / 2

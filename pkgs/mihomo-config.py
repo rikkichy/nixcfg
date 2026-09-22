@@ -1,4 +1,3 @@
-"""Render the public template at runtime; never include secret values in errors."""
 import json
 import os
 from pathlib import Path
@@ -25,7 +24,6 @@ if __name__ == "__main__":
         if len(values) != 3 or not all(values):
             raise ValueError("Missing input")
         result = render(Path(template).read_text(), *values)
-        # Atomic publication: a failed render leaves the last credential intact.
         temporary = Path(destination + ".tmp")
         temporary.write_text(result)
         temporary.chmod(0o600)

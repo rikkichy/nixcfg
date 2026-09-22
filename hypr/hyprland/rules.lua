@@ -64,11 +64,6 @@ hl.window_rule({
     idle_inhibit = "always",
 })
 
--- osu!lazer draws unlocked far above the 240Hz panel, so what decides how fresh
--- a presented frame is, is the wait for vblank rather than the game. `immediate`
--- takes the async page flip instead, worth up to a refresh interval and paid for
--- with a tear line. No `idle_inhibit`: play is continuous input, and the menus
--- are not somewhere to leave the screen on.
 hl.window_rule({
     match     = { class = "osu!" },
     immediate = true,
@@ -109,12 +104,7 @@ hl.window_rule({
     },
     workspace = "special:music",
 })
--- Rules are matched with RE2, not Lua patterns, so parens escape as \( not %(.
 hl.window_rule({ match = { initial_title = "Spotify( \\(Free\\))?" }, workspace = "special:music" })
--- Telegram matches on its Wayland app_id, which is not the WM_CLASS its
--- desktop file advertises: the entry says TelegramDesktop, the compositor
--- reports org.telegram.desktop. Read off hyprctl clients with a window
--- mapped -- it lives in the tray, so a running process shows nothing.
 hl.window_rule({ match = { class = "discord|equibop|vesktop|org\\.telegram\\.desktop" }, workspace = "special:communication" })
 hl.window_rule({ match = { class = "Todoist" }, workspace = "special:todo" })
 
@@ -129,6 +119,5 @@ hl.layer_rule({ match = { namespace = "logout_dialog" }, animation = "fade" })
 hl.layer_rule({ match = { namespace = "selection" }, animation = "fade" })
 hl.layer_rule({ match = { namespace = "wayfreeze" }, animation = "fade" })
 hl.layer_rule({ match = { namespace = "launcher" }, animation = "popin 80%" })
--- Hyprland owns popup/OSD scale and fade; the shell submits fixed-size surfaces.
 hl.layer_rule({ match = { namespace = "^expressive-(panel|osd)$" }, animation = "popin 96%" })
 hl.layer_rule({ match = { namespace = "^expressive-(panel|osd)-static$" }, no_anim = true })

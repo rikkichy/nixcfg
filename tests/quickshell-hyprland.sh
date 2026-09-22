@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Run inside Hyprland; no windows, notification server, or desktop changes.
 quickshell=${1:?usage: quickshell-hyprland.sh /absolute/path/to/quickshell}
 : "${HYPRLAND_INSTANCE_SIGNATURE:?Run inside a Hyprland session}"
 tmp=$(mktemp -d)

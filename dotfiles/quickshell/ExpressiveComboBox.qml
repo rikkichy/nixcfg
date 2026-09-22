@@ -84,7 +84,6 @@ ComboBox {
         height: Math.min(list.contentHeight + topPadding + bottomPadding, 280, Math.max(0, control.Window.height - 16))
         padding: 8
         margins: 8
-        // Stay inside the existing layer surface and its Hyprland focus grab.
         popupType: Popup.Item
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
         contentItem: ListView {

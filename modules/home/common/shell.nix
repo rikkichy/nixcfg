@@ -39,7 +39,6 @@
         starship init fish | source
         zoxide init fish --cmd cd | source
       '')
-      # Keep prompt/user configuration after colors, before direnv's mkAfter hook.
       (lib.mkOrder 1492 ''
         function mark_prompt_start --on-event fish_prompt
             echo -en "\e]133;A\e\\"

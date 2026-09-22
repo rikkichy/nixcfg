@@ -2,7 +2,6 @@
 
 final: prev: {
   omp = inputs.omp.packages.${final.stdenv.hostPlatform.system}.omp.override (args: {
-    # nix-bun's dependency predicates still use deprecated stdenv platform aliases.
     bun = args.bun.overrideAttrs {
       nativeBuildInputs = [ final.unzip ] ++ final.lib.optionals final.stdenv.hostPlatform.isLinux [ final.autoPatchelfHook ];
       buildInputs = final.lib.optionals final.stdenv.hostPlatform.isLinux [ final.stdenv.cc.cc.lib final.zlib ];
@@ -11,7 +10,6 @@ final: prev: {
 
   quickshell = prev.quickshell.overrideAttrs (old: {
     postPatch = (old.postPatch or "") + ''
-      # QLocalSocket emits channelReadyRead after readyRead; do not destroy its sender.
       substituteInPlace src/wayland/hyprland/ipc/connection.cpp \
         --replace-fail 'delete requestSocket;' 'requestSocket->deleteLater();'
     '';

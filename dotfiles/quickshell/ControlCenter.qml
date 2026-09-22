@@ -156,7 +156,6 @@ Item {
                     border.width: audioSwitch.visualFocus ? 2 : 0
                     border.color: Theme.primary
                 }
-                // Material Switch tokens: 52x32 track; 16/24px thumb, 28px while pressed.
                 indicator: Rectangle {
                     implicitWidth: 52
                     implicitHeight: 32
@@ -176,7 +175,6 @@ Item {
                     }
                     Rectangle {
                         // Fixed thumb geometry adapted from QmlMaterial (MIT; see LICENSE.QmlMaterial).
-                        // Fixed geometry keeps position independent of the thumb's visible size.
                         width: 28
                         height: 28
                         radius: 14
@@ -186,7 +184,6 @@ Item {
                         scale: (audioSwitch.pressed ? 28 : audioSwitch.checked ? 24 : 16) / 28
                         Behavior on x {
                             enabled: !Theme.reducedMotion && !audioSwitch.pressed
-                            // m3e@2.8.2 showcase fast-spatial timing.
                             NumberAnimation {
                                 duration: 350
                                 easing.type: Easing.BezierSpline
@@ -195,7 +192,6 @@ Item {
                         }
                         Behavior on scale {
                             enabled: !Theme.reducedMotion
-                            // m3e@2.8.2 showcase fast-effects timing.
                             NumberAnimation {
                                 duration: 150
                                 easing.type: Easing.BezierSpline
@@ -480,7 +476,6 @@ Item {
                                 color: Theme.surfaceContainerHigh
                                 Image {
                                     id: artwork
-                                    // Keep album art; video-shaped thumbnails use the music placeholder.
                                     readonly property bool usableCover: status === Image.Ready && paintedHeight > 0 && paintedWidth < paintedHeight * 1.5
                                     opacity: usableCover ? 1 : 0
                                     anchors.fill: parent

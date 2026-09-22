@@ -15,8 +15,6 @@ Scope {
         osdVisible = false
 
     property bool dnd: false
-    // Entries own a RetainableLock: their notification remains readable after expiry.
-    // Only active entries may invoke actions. dismiss() accepts an entry or its notification.
     readonly property var entries: items.filter(entry => !entry.notification.transient)
     readonly property int count: entries.length
     property var items: []
@@ -101,7 +99,6 @@ Scope {
                 screenName = screen ? screen.name : "";
                 popup = !root.dnd;
                 expiration.stop();
-                // Quickshell 0.3.1 forwards D-Bus milliseconds, despite its header's seconds comment.
                 const timeout = notification.expireTimeout;
                 if (timeout !== 0 && notification.urgency !== NotificationUrgency.Critical) {
                     expiration.interval = timeout < 0 ? 7000 : Math.max(1, timeout);
@@ -124,7 +121,6 @@ Scope {
 
             Connections {
                 target: entry.notification
-                // Replacements mutate this same QObject; coalesce the changed fields.
                 function onSummaryChanged() {
                     Qt.callLater(entry.refresh);
                 }

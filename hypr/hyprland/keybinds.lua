@@ -1,7 +1,6 @@
 local vars = require("variables")
 local fn   = require("hyprland.functions")
 
--- A second tap dismisses the launcher.
 hl.bind(
     "SUPER + SUPER_L",
     hl.dsp.exec_cmd("pkill -x fuzzel || fuzzel"),
@@ -22,18 +21,10 @@ for _, key in ipairs({ "Alt_L", "Alt_R", "Super_L", "Super_R" }) do
     )
 end
 
--- These reach the shell that draws the bar, and the media keys reach whatever
--- is playing. A global dispatcher is answered by a shell rather than by a
--- command, so anything bound as one fires into nothing and reports nothing --
--- the key is simply inert, which is indistinguishable from a key that was
--- never bound.
 hl.bind(vars.kbSession, hl.dsp.exec_cmd("powermenu"))
 hl.bind(vars.kbClearNotifs, hl.dsp.exec_cmd("quickshell -c expressive ipc call desktop dismissAll"), { locked = true })
 hl.bind(vars.kbShowPanels, hl.dsp.exec_cmd("quickshell -c expressive ipc call desktop toggle sound"))
 
--- playerctl talks MPRIS, so it reaches every player on the bus without any of
--- them being named here; playerctld is D-Bus activated and picks the most
--- recently active one.
 hl.bind("CTRL + SUPER + Space", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
@@ -125,25 +116,8 @@ hl.bind(vars.kbWindowBorderedFullscreen, hl.dsp.window.fullscreen({ mode = "maxi
 hl.bind(vars.kbToggleWindowFloating, hl.dsp.window.float())
 hl.bind(vars.kbCloseWindow, hl.dsp.window.close())
 
--- close() asks the window to go, which is a request the client is free to sit
--- on: a hung app, or one holding an unsaved-changes dialog, keeps the key
--- looking dead. kill() does not ask -- it SIGKILLs the process behind the
--- window, so anything unsaved in it is gone with no prompt. That is why it
--- sits behind SHIFT rather than sharing the plain key.
 hl.bind(vars.kbForceCloseWindow, hl.dsp.window.kill())
 
--- toggle_special takes the bare name: it prefixes "special:" itself, so
--- passing "special:communication" opens special:special:communication. It also
--- wants a plain string -- every table form ({ name = ... }, { workspace = ... })
--- is accepted, ignored, and silently degrades to the generic special workspace,
--- which looks like the keybind working on the wrong target rather than a bad
--- argument.
---
--- The spawn half is what a workspace toggle needs beyond raising it.
--- Without it a workspace whose app is not running opens as an empty overlay.
--- Matching is a literal, case-folded substring rather than a pattern: rules.lua
--- matches with RE2, this runs in Lua where the metacharacters are different
--- again, and a plain find has neither dialect's escaping to get wrong.
 local function toggle_ws(name, needle, spawn)
     return function()
         if needle and spawn then
@@ -165,8 +139,6 @@ hl.bind(vars.kbSpecialWs, toggle_ws("special"))
 hl.bind(vars.kbSystemMonitorWs, toggle_ws("sysmon", "btop", vars.terminal .. " --app-id=btop btop"))
 hl.bind(vars.kbMusicWs, toggle_ws("music", "spotify", "helium --app=https://open.spotify.com"))
 hl.bind(vars.kbCommunicationWs, toggle_ws("communication", "discord", "discord"))
--- No spawn: rules.lua routes class "Todoist" here, but nothing in this config
--- installs Todoist, so there is no command to start.
 hl.bind(vars.kbTodoWs, toggle_ws("todo"))
 
 hl.bind(vars.kbTerminal, hl.dsp.exec_cmd(vars.terminal))
@@ -176,22 +148,8 @@ hl.bind(vars.kbFileExplorer, hl.dsp.exec_cmd(vars.fileExplorer))
 hl.bind("CTRL + ALT + V", hl.dsp.exec_cmd(vars.audioSettings))
 hl.bind(vars.kbVpnPicker, hl.dsp.exec_cmd("vpnp"))
 
--- hyprshot carries grim, slurp, jq and wl-clipboard on an injected PATH, so
--- none of those need installing. -z freezes the screen before the region
--- is dragged, which is the only way to capture a menu or a hover state without
--- it changing under the selection -- that is what the old screenshotFreeze
--- global did.
---
--- -o is passed explicitly because hyprshot's default is
--- SAVEDIR=${XDG_PICTURES_DIR:=~}: that variable is unset in this session, and
--- had xdg-user-dir not been installed to resolve it, every screenshot would
--- have landed loose in the home directory. hyprshot mkdir -p's the target.
 local screenshotDir = "$HOME/Pictures/Screenshots"
 
--- "-m output" alone is not a full-screen grab: it hands off to slurp to pick a
--- monitor and blocks until something is clicked, which on a single-monitor
--- machine looks exactly like the key doing nothing. `active` is a modifier
--- rather than a mode, so it has to be passed alongside.
 hl.bind(
     "Print",
     hl.dsp.exec_cmd("hyprshot -m output -m active -o " .. screenshotDir),

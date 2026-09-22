@@ -1,6 +1,1 @@
-# scheme/current.lua is REGENERATED at runtime -- matugen rewrites it (and
-# fuzzel.ini, btop's theme, both gtk.css, the terminal palette) on every colour
-# change. It is bootstrapped from scheme/default.lua by hyprland.lua on first
-# start, so it must never be tracked or the working tree is dirty after every
-# wallpaper.
 scheme/current.lua

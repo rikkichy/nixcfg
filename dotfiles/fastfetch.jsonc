@@ -1,15 +1,5 @@
 {
     "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
-    // NixOS_small, not NixOS: the module box below renders 7 rows and the full
-    // logo is 21, so it would hang fourteen lines past the box and leave it
-    // floating at the top. The small variant is 8 rows, near enough the height
-    // of the box to sit beside it.
-    //
-    // Every icon here is a Material Design glyph from the astral private-use
-    // range that Nerd Fonts patches in at U+F0000 and up. Codepoints from the
-    // lower private-use blocks are present in DepartureMono's charset --
-    // fc-list ':charset=efc5' finds them -- and still come out blank, so
-    // fontconfig coverage is not evidence that a glyph will draw.
     "logo": {
         "type": "builtin",
         "source": "NixOS_small",
@@ -20,12 +10,6 @@
         "color": "white",
         "constants": ["\u001b[37m", "\u001b[38;5;16m", "\u001b[38;5;17m", "\u001b[38;5;18m"]
     },
-    // Every value is right-aligned into 24 columns so the closing │ forms a
-    // straight edge, which is what fixes the border at 37 dashes. 24 is set by
-    // the widest row, the CPU. fastfetch only pads inside a placeholder, so a
-    // row built from two variables has to pad the variable-width one and let
-    // the fixed remainder make up the difference -- there is no way to pad a
-    // composite as a whole.
     "modules": [
         "break",
         {
@@ -43,12 +27,6 @@
             "format": "{$3}{name>19} ({cores-logical}){$1} │"
         },
         {
-            // hideType drops the 9950X3D's integrated Radeon, which is present
-            // but is not the card anything renders on. The default pci
-            // detection reports the name without its vendor prefix; vulkan
-            // supplies the prefix, and the dedicated memory figure that pci
-            // leaves empty, but costs 130ms against 3ms on a config that runs
-            // at every shell start.
             "type": "gpu",
             "key": "│ {$3}󰢮{$1}  gpu   ",
             "format": "{$3}{name>24}{$1} │",

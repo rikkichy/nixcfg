@@ -63,7 +63,6 @@ ShellRoot {
     Connections {
         target: Hyprland
         function onRawEvent(event) {
-            // Quickshell 0.3.1 does not refresh monitor specialWorkspace for these events.
             if (event.name === "activespecial" || event.name === "activespecialv2")
                 Hyprland.refreshMonitors();
         }

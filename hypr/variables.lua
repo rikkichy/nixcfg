@@ -5,8 +5,6 @@ return {
 
     browser                    = "helium",
     editor                     = "zeditor",
-    -- Thunar keeps a D-Bus-activated daemon, but each invocation still opens
-    -- its own window, so the keybind needs no flag to stay repeatable.
     fileExplorer               = "thunar",
     audioSettings              = "pavucontrol",
 
@@ -81,8 +79,6 @@ return {
     kbEditor                   = "SUPER + C",
     kbFileExplorer             = "SUPER + E",
 
-    -- `vpnp` is the picker over the live node list; `vpn` underneath it comes
-    -- from configuration.nix, not from a package
     kbVpnPicker                = "SUPER + SHIFT + V",
 
     kbSession                  = "CTRL + ALT + Delete",

@@ -1,4 +1,3 @@
-# version: 1.0.0
 
 add_newline = false
 continuation_prompt = "[▸▹ ](dimmed white)"
@@ -94,7 +93,6 @@ format = "$symbol "
 success_symbol = "[◎](bold italic bright-yellow)"
 error_symbol = "[○](italic purple)"
 vimcmd_symbol = "[■](italic dimmed green)"
-# not supported in zsh
 vimcmd_replace_one_symbol = "◌"
 vimcmd_replace_symbol = "□"
 vimcmd_visual_symbol = "▼"

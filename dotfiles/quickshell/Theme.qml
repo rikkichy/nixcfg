@@ -5,7 +5,6 @@ import Quickshell.Io
 
 Singleton {
     id: theme
-    // Material color roles; the fallback also makes first login usable before matugen.
     property var palette: ({})
     readonly property color surface: palette.surface || "#141218"
     readonly property color surfaceContainer: palette.surfaceContainer || "#211f26"

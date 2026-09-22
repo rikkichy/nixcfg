@@ -1,11 +1,9 @@
-# nix build artefacts
 result
 result-*
 
-# hosts/nix/hardware.nix is deliberately tracked and machine-specific.
-
-# luac artefact (luac -l writes this unless -p is given)
 luac.out
 
-# Python bytecode (importing pkgs/bibata-tonal.py for a check writes this)
 __pycache__/
+AGENTS.md
+agents.md
+.omp/

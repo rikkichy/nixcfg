@@ -1,41 +1,8 @@
 #!/usr/bin/env python3
-"""Derive Bibata's three cursor colours from one accent.
-
-Bibata's SVGs carry three placeholder colours, and every themed variant is
-those three substituted: the body fill, the outline, and the disc behind the
-watch hand. material-bibata-cursor picks them per theme by hand, following
-Material Design 3's Container/Primary split -- a dark desaturated fill with a
-light vibrant outline, so contrast holds whatever the accent is. It ships 28
-such triples and matches a wallpaper to the nearest one.
-
-Here the wallpaper is already resolved to a Material palette, so the triple is
-computed from the accent instead of chosen. Fixing lightness and capping chroma
-reproduces the same design rule while keeping the exact hue matugen derived.
-
-The targets below are the median of material-bibata-cursor's own 28 dark
-themes, measured in OKLCh:
-
-    body     L 0.33   C <= 0.055
-    outline  L 0.83   C <= 0.095
-    watch    L 0.24   C <= 0.045
-
-Because both lightnesses are fixed, body-against-outline contrast is a constant
-~7.3:1 for every hue, which is what the hand-tuned set achieves at its median
-and better than its floor.
-
-Chroma is capped rather than assigned. Assigning it would paint a colour onto a
-grey wallpaper; capping keeps a low-chroma accent grey and only reins in the
-vivid ones, which is how the set's own Grey, Sand and Noir behave.
-
-OKLab rather than the CIELAB the matcher upstream uses: hue drifts under a
-lightness change in CIELAB, most visibly across the blues, and holding the
-wallpaper's hue is the whole point of computing this.
-"""
 
 import math
 import sys
 
-# (name, lightness, chroma cap)
 ROLES = (
     ('body', 0.33, 0.055),
     ('outline', 0.83, 0.095),
@@ -72,7 +39,6 @@ def hex_to_oklch(value: str) -> tuple[float, float, float]:
 
 
 def oklch_to_rgb(lightness: float, chroma: float, hue: float) -> tuple[float, float, float]:
-    """Linear-light sRGB, unclamped -- components outside [0, 1] are out of gamut."""
     a = chroma * math.cos(hue)
     b = chroma * math.sin(hue)
 
@@ -92,13 +58,6 @@ def in_gamut(rgb: tuple[float, float, float]) -> bool:
 
 
 def to_hex(lightness: float, chroma: float, hue: float) -> str:
-    """Render OKLCh as sRGB, reducing chroma until the colour fits the gamut.
-
-    Only chroma gives: lightness is the axis carrying the contrast guarantee,
-    and hue is what is being preserved. Sixteen halvings resolve chroma finer
-    than 8-bit output can represent, so the result is the most saturated
-    in-gamut colour at that lightness and hue rather than merely one of them.
-    """
     if not in_gamut(oklch_to_rgb(lightness, chroma, hue)):
         low, high = 0.0, chroma
         for _ in range(16):

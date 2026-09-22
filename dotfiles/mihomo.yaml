@@ -1,6 +1,3 @@
-# Public template for /run/mihomo/config.yaml. .secrets/nix/sops.nix supplies the
-# three private values to a runtime YAML/JSON serializer before LoadCredential.
-# Subscription links and the persistent HWID must never be stored here.
 
 mixed-port: 7890
 allow-lan: false
@@ -9,9 +6,6 @@ log-level: info
 ipv6: false
 external-controller: 127.0.0.1:9090
 
-# `device` is load-bearing: networking.firewall.trustedInterfaces and
-# networking.networkmanager.unmanaged in configuration.nix name it too, and all
-# three have to change together.
 tun:
   enable: true
   device: mihomo
@@ -31,29 +25,16 @@ dns:
     - "*.lan"
     - "*.local"
     - "+.internal"
-  # Plain UDP to these is known to work on this connection -- it is what the
-  # previous client resolved through. DoH is the usual advice but adds a
-  # bootstrap dependency for no benefit here.
   default-nameserver:
     - 1.1.1.1
     - 8.8.8.8
   nameserver:
     - 1.1.1.1
     - 8.8.8.8
-  # Resolved directly, never through the tunnel -- this is what breaks the
-  # chicken-and-egg of needing the proxy to reach the proxy.
   proxy-server-nameserver:
     - 1.1.1.1
     - 8.8.8.8
 
-# Each provider refreshes hourly and fetches outside the tunnel. A fetch routed
-# through MATCH,PROXY would depend on the nodes it is trying to update, so one
-# bad update could not repair itself and would surface only as a bare `EOF`.
-#
-# The primary panel (Remnawave) requires the device identity header. Without it
-# the response is valid Clash YAML containing one "App not supported" node at
-# 0.0.0.0:1, which makes the tunnel look healthy while all connections fail.
-# `clash.meta` selects YAML rather than the base64 format from both panels.
 proxy-providers:
   primary:
     type: http
@@ -100,10 +81,6 @@ proxy-providers:
       interval: 300
 
 proxy-groups:
-  # PROXY chooses a subscription or DIRECT. Each subscription group remembers
-  # its own AUTO/manual node selection, so switching providers restores exactly
-  # where that provider was left. DIRECT keeps the TUN and DNS hijack alive but
-  # sends traffic out the physical interface.
   - name: PROXY
     type: select
     proxies:
@@ -141,10 +118,6 @@ proxy-groups:
     interval: 300
     tolerance: 50
 
-# Remember what PROXY is set to across restarts, in cache.db under the
-# service's StateDirectory (/var/lib/private/mihomo). Without this every boot
-# silently resets PROXY to its first member, so choosing DIRECT would last
-# until the next reboot and the VPN would look like it re-enables itself.
 profile:
   store-selected: true
 

@@ -1,4 +1,3 @@
-"""Run with Python containing PyYAML; all private-looking inputs are dummy data."""
 import json
 from pathlib import Path
 import subprocess

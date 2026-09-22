@@ -14,7 +14,6 @@ Menu {
     padding: 8
     margins: 8
     overlap: 4
-    // A QML popup window escapes the narrow rail without using platform styling.
     popupType: Popup.Window
     font.family: Theme.fontFamily
     font.styleName: "Rounded"
@@ -29,7 +28,6 @@ Menu {
             close();
     }
     onAboutToShow: opener.menu = menuHandle
-    // Release DBus entries after Qt finishes dispatching the triggering event.
     onClosed: Qt.callLater(() => {
         if (!visible)
             opener.menu = null;
@@ -125,7 +123,6 @@ Menu {
             height: modelData.isSeparator ? 10 : 48
             property bool insertedAsMenu: false
             function remove() {
-                // Loader owns destruction; Menu.remove* would delete the same object.
                 for (let i = 0; i < root.count; ++i) {
                     if ((insertedAsMenu ? root.menuAt(i) : root.itemAt(i)) !== item)
                         continue;
