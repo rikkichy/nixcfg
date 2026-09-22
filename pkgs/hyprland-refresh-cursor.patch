@@ -1,0 +1,22 @@
+diff --git a/src/pointer/cursor/CursorManager.cpp b/src/pointer/cursor/CursorManager.cpp
+--- a/src/pointer/cursor/CursorManager.cpp
++++ b/src/pointer/cursor/CursorManager.cpp
+@@ -6,6 +6,7 @@
+ #include "../../output/Monitor.hpp"
+ #include "../../event/EventBus.hpp"
+ #include "../../state/MonitorState.hpp"
++#include "../../render/Renderer.hpp"
+ 
+ using namespace Pointer;
+ using namespace Pointer::Cursor;
+@@ -315,6 +316,10 @@ void CCursorManager::updateTheme() {
+         if (m_hyprcursor->valid())
+             m_hyprcursor->loadThemeStyle(m_currentStyleInfo);
+     }
+ 
++    // Reload the displayed shape too; the renderer skips unchanged shape names.
++    if (m_ourBufferConnected && g_pHyprRenderer->shouldRenderCursor() && !g_pHyprRenderer->m_lastCursorData.name.empty())
++        setCursorFromName(g_pHyprRenderer->m_lastCursorData.name);
++
+     for (auto const& m : State::monitorState()->monitors()) {
+         m->m_forceFullFrames = 5;

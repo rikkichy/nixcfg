@@ -200,9 +200,15 @@ palette files do not hide template changes or missing outputs.
 shipped gradient. Collection directories are not created by the configuration.
 
 `awpp` reads `~/Videos/Animated Wallpapers` and reports an empty collection.
-It plays the video over the desktop and takes the colours from a frame of it, so
-everything is themed the same way a still image would theme it. Picking a
-still with `wpp` puts the video away.
+It starts mpvpaper after extracting a valid frame, then derives the desktop colours
+and cursors from that frame without holding up playback. A theme-generation
+failure is reported but does not stop the selected video. Picking a still with
+`wpp` displays the image and stops the video before generating colours and cursors.
+At login, animated playback does not wait for theme restoration.
+
+Both pickers generate missing thumbnails with at most four workers and reuse
+fresh cache entries. Cursor rendering also reuses unchanged, complete outputs;
+changing the accent or renderer, or losing a cursor file, triggers regeneration.
 
 ## VPN (mihomo)
 
@@ -561,8 +567,8 @@ re-render after editing a template.
 
 Home Manager installs the template configuration at `~/.config/matugen/config.toml`,
 with noninteractive source-color selection. Direct Matugen commands render palettes;
-`wpp`/`awpp` also apply terminal and cursor updates, set the wallpaper, and record
-success. Those steps stay outside Matugen hooks because failed hooks do not
+`wpp`/`awpp` also apply terminal and cursor updates, set the wallpaper, and keep
+wallpaper records. Those steps stay outside Matugen hooks because failed hooks do not
 produce a failing exit status. `services.awww` owns the daemon; its readiness
 check orders wallpaper restoration after the socket is usable.
 

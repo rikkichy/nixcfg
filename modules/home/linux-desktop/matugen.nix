@@ -110,13 +110,10 @@ let
 
   themeApply = pkgs.writeShellApplication {
     name = "theme-apply";
-    runtimeInputs = [ pkgs.awww pkgs.matugen termSequences cursorApply ];
+    runtimeInputs = [ pkgs.matugen termSequences cursorApply ];
     text = ''
       wallpaper="''${1:?usage: theme-apply <image>}"
       record=${wallpaperRecord}
-
-      # Show the image immediately; palette and cursor generation follow.
-      awww img --resize crop --transition-type none "$wallpaper"
 
       matugen image "$wallpaper" \
         --type scheme-content \
@@ -157,7 +154,7 @@ let
 
   awpApply = pkgs.writeShellApplication {
     name = "awp-apply";
-    runtimeInputs = [ wallpaperFrame pkgs.systemd themeApply ];
+    runtimeInputs = [ wallpaperFrame pkgs.systemd pkgs.awww themeApply ];
     text = ''
       video="''${1:?usage: awp-apply <video>}"
       record=${animatedRecord}
@@ -166,11 +163,13 @@ let
 
       wallpaper-frame "$video" "$frame"
 
-      theme-apply "$frame"
-
       mkdir -p "$(dirname "$record")"
       printf '%s\n' "$video" > "$record"
       systemctl --user restart animated-wallpaper.service
+
+      # Playback does not depend on palette or cursor generation.
+      awww img --resize crop --transition-type none "$frame"
+      theme-apply "$frame"
     '';
   };
 in
@@ -201,11 +200,11 @@ in
       name = "wpp";
       runtimeInputs = [
         desktopPicker
-        gdk-pixbuf
         coreutils
         findutils
         libnotify
         systemd
+        awww
         themeApply
       ];
       text = ''
@@ -225,10 +224,12 @@ in
           for f in "''${files[@]}"; do
             base="''${f##*/}"
             thumb="$cache/$base.png"
-            if [ ! -e "$thumb" ] || [ "$f" -nt "$thumb" ]; then
-              gdk-pixbuf-thumbnailer -s 128 "$f" "$thumb" || true
+            if [ ! -s "$thumb" ] || [ "$f" -nt "$thumb" ]; then
+              printf '%s\0%s\0' "$f" "$thumb"
             fi
-          done
+          done | xargs -0 -r -n 2 -P 4 ${pkgs.writeShellScript "wallpaper-thumbnail" ''
+            ${pkgs.gdk-pixbuf}/bin/gdk-pixbuf-thumbnailer -s 128 "$1" "$2" || true
+          ''}
 
         idx=$(
           for f in "''${files[@]}"; do
@@ -246,9 +247,10 @@ in
         chosen="''${files[$idx]}"
         fi
 
-        theme-apply "$chosen"
+        awww img --resize crop --transition-type none "$chosen"
+        systemctl --user stop animated-wallpaper.service
         rm -f ${animatedRecord}
-        systemctl --user stop animated-wallpaper.service || true
+        theme-apply "$chosen"
       '';
     })
 
@@ -256,7 +258,6 @@ in
       name = "awpp";
       runtimeInputs = [
         desktopPicker
-        wallpaperFrame
         coreutils
         findutils
         libnotify
@@ -283,8 +284,12 @@ in
 
         for f in "''${files[@]}"; do
           thumb="$cache/''${f##*/}.png"
-          wallpaper-frame "$f" "$thumb" -vf scale=256:-2 || true
-        done
+          if [ ! -s "$thumb" ] || [ "$f" -nt "$thumb" ]; then
+            printf '%s\0%s\0' "$f" "$thumb"
+          fi
+        done | xargs -0 -r -n 2 -P 4 ${pkgs.writeShellScript "animated-wallpaper-thumbnail" ''
+          ${wallpaperFrame}/bin/wallpaper-frame "$1" "$2" -vf scale=256:-2 || true
+        ''}
 
         idx=$(
           for f in "''${files[@]}"; do
@@ -334,13 +339,13 @@ in
       ExecStart = toString (pkgs.writeShellScript "wallpaper-restore" ''
         set -eu
         record=${wallpaperRecord}
+        wallpaper=${defaultWallpaper}
         if [ -r "$record" ]; then
-          wallpaper=$(cat "$record")
-          if [ -e "$wallpaper" ]; then
-            exec ${themeApply}/bin/theme-apply "$wallpaper"
-          fi
+          saved=$(cat "$record")
+          [ ! -e "$saved" ] || wallpaper="$saved"
         fi
-        exec ${themeApply}/bin/theme-apply ${defaultWallpaper}
+        ${pkgs.awww}/bin/awww img --resize crop --transition-type none "$wallpaper"
+        exec ${themeApply}/bin/theme-apply "$wallpaper"
       '');
       TimeoutStartSec = "60s";
       Slice = "session.slice";
@@ -356,7 +361,6 @@ in
       After = [
         "graphical-session.target"
         "awww.service"
-        "wallpaper-restore.service"
       ];
     };
     Service = {

@@ -15,6 +15,10 @@ final: prev: {
     '';
   });
 
+  hyprland = prev.hyprland.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [ ./hyprland-refresh-cursor.patch ];
+  });
+
   tg-ws-proxy = final.callPackage ./tg-ws-proxy.nix {
     src = inputs.tg-ws-proxy;
   };

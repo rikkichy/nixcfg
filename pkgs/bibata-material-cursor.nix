@@ -4,9 +4,11 @@
   stdenvNoCC,
   writeShellApplication,
   coreutils,
+  findutils,
   librsvg,
   python3,
   xcursorgen,
+  util-linux,
 }:
 
 
@@ -51,6 +53,8 @@ writeShellApplication {
 
   runtimeInputs = [
     coreutils
+    findutils
+    util-linux
     librsvg
     python3
     xcursorgen
@@ -59,6 +63,7 @@ writeShellApplication {
   text = ''
     accent="''${1:?usage: bibata-material-render <accent-hex> <theme-dir> [hypr|x11]...}"
     dest="''${2:?usage: bibata-material-render <accent-hex> <theme-dir> [hypr|x11]...}"
+    dest=$(realpath -m -- "$dest")
     name="''${dest##*/}"
     shift 2
 
@@ -67,16 +72,29 @@ writeShellApplication {
       formats=(hypr x11)
     fi
 
+    mkdir -p "$dest"
+    exec 9>"$dest/.render.lock"
+    flock 9
+    key="$accent:$name:$(readlink -f -- "$0")"
+
     flags=()
     for format in "''${formats[@]}"; do
       case "$format" in
-        hypr | x11) flags+=("--$format") ;;
+        hypr | x11) ;;
         *)
           echo "bibata-material-render: unknown format '$format'" >&2
           exit 1
           ;;
       esac
+      if [ -r "$dest/.$format.sha256" ] \
+        && IFS= read -r cached < "$dest/.$format.sha256" \
+        && [ "$cached" = "# $key" ] \
+        && (cd "$dest" && sha256sum --check --status ".$format.sha256" 2>/dev/null); then
+        continue
+      fi
+      flags+=("--$format")
     done
+    [ "''${#flags[@]}" -gt 0 ] || exit 0
 
     colours=$(python3 ${tonal} "$accent")
     get() { printf '%s\n' "$colours" | sed -n "s/^$1=//p"; }
@@ -85,7 +103,6 @@ writeShellApplication {
     outline=$(get outline)
     watch=$(get watch)
 
-    mkdir -p "$dest"
     work=$(mktemp -d "$(dirname "$dest")/.bibata-render.XXXXXX")
     trap 'rm -rf "$work"' EXIT
 
@@ -120,6 +137,20 @@ writeShellApplication {
       fi
       mv "$dest/.$part.new" "$dest/$part"
       rm -rf "$dest/.$part.old"
+    done
+
+    for flag in "''${flags[@]}"; do
+      format="''${flag#--}"
+      case "$format" in
+        hypr) parts=(manifest.hl hyprcursors) ;;
+        x11) parts=(index.theme cursors) ;;
+      esac
+      {
+        printf '# %s\n' "$key"
+        (cd "$dest" && find -L "''${parts[@]}" -type f -print0 \
+          | sort -z | xargs -0 -r sha256sum)
+      } > "$work/$format.sha256"
+      mv -- "$work/$format.sha256" "$dest/.$format.sha256"
     done
   '';
 

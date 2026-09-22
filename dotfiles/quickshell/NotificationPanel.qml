@@ -8,7 +8,7 @@ Item {
     id: root
     required property var center
     implicitWidth: 440
-    implicitHeight: center.count > 0 ? Math.min(480, notificationList.implicitHeight + clearAll.implicitHeight + 16) : emptyState.implicitHeight + 32
+    implicitHeight: center.count > 0 ? Math.min(480, Math.max(1, notificationList.contentHeight) + clearAll.implicitHeight + 16) : emptyState.implicitHeight + 32
 
     ColumnLayout {
         anchors.fill: parent
@@ -46,18 +46,18 @@ Item {
                 contentWidth: availableWidth
                 clip: true
                 ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-                Column {
+                ListView {
                     id: notificationList
                     width: history.availableWidth
+                    height: history.availableHeight
                     spacing: 12
-                    Repeater {
-                        model: root.center.entries
-                        delegate: Card {
-                            required property var modelData
-                            width: history.availableWidth
-                            center: root.center
-                            entry: modelData
-                        }
+                    reuseItems: true
+                    model: root.center.entries
+                    delegate: Card {
+                        required property var modelData
+                        width: notificationList.width
+                        center: root.center
+                        entry: modelData
                     }
                 }
             }
@@ -116,6 +116,7 @@ Item {
                     readonly property string icon: card.notification ? card.notification.appIcon : ""
                     visible: icon !== "" && status !== Image.Error
                     source: icon === "" ? "" : icon.startsWith("/") ? "file://" + icon : icon.startsWith("file:") || icon.startsWith("image:") ? icon : Quickshell.iconPath(icon)
+                    asynchronous: true
                     sourceSize {
                         width: 32
                         height: 32
@@ -184,6 +185,7 @@ Item {
                 Layout.preferredHeight: card.compact ? 128 : 180
                 visible: source.toString() !== "" && status !== Image.Error
                 source: card.notification ? card.notification.image : ""
+                asynchronous: true
                 sourceSize {
                     width: 768
                     height: 360
