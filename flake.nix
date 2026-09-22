@@ -69,6 +69,8 @@
       nokochatShell = import ./dev/nokochat/shell.nix { pkgs = devPkgs; };
     in
     {
+      packages.${system}.rhythia = devPkgs.rhythia;
+
       devShells.${system} = {
         nokochat = nokochatShell;
         default = nokochatShell;

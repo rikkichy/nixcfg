@@ -9,6 +9,7 @@
     heroic
     protonplus
     osu-lazer-bin
+    rhythia
 
     (writeTextDir "share/mime/packages/osu.xml" ''
       <?xml version="1.0" encoding="UTF-8"?>
