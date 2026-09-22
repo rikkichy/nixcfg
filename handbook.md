@@ -680,8 +680,7 @@ the stock `pan-up` theme icon. Occupied-workspace selection retains its animated
 
 Implementation reference: [Quickshell v0.3.1](https://git.outfoxxed.me/quickshell/quickshell/src/tag/v0.3.1),
 including its native Hyprland IPC and service APIs. The flake applies a
-socket-lifetime correction required with the pinned Qt; verify it with
-`bash tests/quickshell-hyprland.sh /absolute/path/to/quickshell` inside Hyprland.
+socket-lifetime correction required with the pinned Qt.
 
 ## Auto-updates
 

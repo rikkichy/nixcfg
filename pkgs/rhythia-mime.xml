@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-rhythia-sspm">
+    <comment>Sound Space Plus map</comment>
+    <glob pattern="*.sspm"/>
+    <magic priority="60">
+      <match type="string" offset="0" value="SS+m"/>
+    </magic>
+    <icon name="rhythia"/>
+  </mime-type>
+  <mime-type type="application/x-rhythia-map">
+    <comment>Rhythia map</comment>
+    <glob pattern="*.phxm"/>
+    <sub-class-of type="application/zip"/>
+    <icon name="rhythia"/>
+  </mime-type>
+  <mime-type type="application/x-rhythia-replay">
+    <comment>Rhythia replay</comment>
+    <glob pattern="*.phxr"/>
+    <magic priority="60">
+      <match type="string" offset="0" value="phxr"/>
+    </magic>
+    <icon name="rhythia"/>
+  </mime-type>
+</mime-info>

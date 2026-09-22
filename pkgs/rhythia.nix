@@ -33,10 +33,15 @@ stdenvNoCC.mkDerivation (finalAttrs: {
       name = "rhythia";
       desktopName = "Rhythia";
       comment = "Aim-based rhythm game — Rhythia/Client";
-      exec = "rhythia";
+      exec = "rhythia -- %F";
       icon = "rhythia";
       categories = [ "Game" ];
       startupWMClass = "Rhythia";
+      mimeTypes = [
+        "application/x-rhythia-sspm"
+        "application/x-rhythia-map"
+        "application/x-rhythia-replay"
+      ];
     })
   ];
 
@@ -45,11 +50,17 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     mkdir -p "$out/lib/rhythia" "$out/bin"
     cp -r . "$out/lib/rhythia/"
     chmod +x "$out/lib/rhythia/Rhythia.x86_64"
+    cp ${./rhythia-open.gd} "$out/lib/rhythia/rhythia-open.gd"
+    cat > "$out/lib/rhythia/override.cfg" <<EOF
+    [autoload]
+    XdgOpen="*$out/lib/rhythia/rhythia-open.gd"
+    EOF
     makeWrapper ${lib.getExe steam-run} "$out/bin/rhythia" \
       --chdir "$out/lib/rhythia" \
       --add-flags "$out/lib/rhythia/Rhythia.x86_64" \
       --prefix LD_LIBRARY_PATH : "$out/lib/rhythia"
     install -Dm644 "$icon" "$out/share/icons/hicolor/1000x1000/apps/rhythia.png"
+    install -Dm644 ${./rhythia-mime.xml} "$out/share/mime/packages/rhythia.xml"
     runHook postInstall
   '';
 
