@@ -16,7 +16,7 @@ hl.on("hyprland.start", function()
 
 end)
 
-hl.on("window.title", function(win)
+local function resize_window(win)
     local d = {
         hl.dsp.window.float({ action = "on", window = win }),
         hl.dsp.window.center({ window = win }),
@@ -25,15 +25,7 @@ hl.on("window.title", function(win)
 
     fn.resizer(win, "Bitwarden", 20, 54, d, true)
     fn.resizer(win, "Picture[- ]in[- ][Pp]icture", 0, 0, pip, false)
-end)
+end
 
-hl.on("window.open", function(win)
-    local d = {
-        hl.dsp.window.float({ action = "on", window = win }),
-        hl.dsp.window.center({ window = win }),
-    }
-    local pip = fn.move_actions(win) or {}
-
-    fn.resizer(win, "Bitwarden", 20, 54, d, true)
-    fn.resizer(win, "Picture[- ]in[- ][Pp]icture", 0, 0, pip, false)
-end)
+hl.on("window.title", resize_window)
+hl.on("window.open", resize_window)

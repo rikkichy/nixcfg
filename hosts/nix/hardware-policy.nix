@@ -1,4 +1,4 @@
-{ pkgs, inputs, ... }:
+{ pkgs, inputs, lib, ... }:
 
 {
   services.udev.extraRules = ''
@@ -42,14 +42,11 @@
       SUBSYSTEM=="usb", ATTR{idVendor}=="0ac3", TAG+="uaccess"
     '')
 
-    (pkgs.runCommand "streamdeck-udev-rules" { } ''
-      mkdir -p $out/lib/udev/rules.d
-      r=$out/lib/udev/rules.d/40-streamdeck.rules
-      for pid in 0060 0063 006c 006d 0080 0084 0086 008f 0090 00b3 009a 00a5 00b8 00b9 00ba 00c6; do
-        printf 'SUBSYSTEM=="usb", ATTRS{idVendor}=="0fd9", ATTRS{idProduct}=="%s", MODE="0660", TAG+="uaccess"\n' "$pid" >> $r
-        printf 'KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0fd9", ATTRS{idProduct}=="%s", MODE="0660", TAG+="uaccess"\n' "$pid" >> $r
-      done
-    '')
+    (pkgs.writeTextDir "lib/udev/rules.d/40-streamdeck.rules"
+      (lib.concatMapStrings (pid: ''
+        SUBSYSTEM=="usb", ATTRS{idVendor}=="0fd9", ATTRS{idProduct}=="${pid}", MODE="0660", TAG+="uaccess"
+        KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0fd9", ATTRS{idProduct}=="${pid}", MODE="0660", TAG+="uaccess"
+      '') [ "0060" "0063" "006c" "006d" "0080" "0084" "0086" "008f" "0090" "00b3" "009a" "00a5" "00b8" "00b9" "00ba" "00c6" ]))
   ];
 
   hardware.bluetooth.enable = true;

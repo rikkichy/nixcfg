@@ -1,5 +1,4 @@
 local home   = os.getenv("HOME")
-local hypr   = home .. "/.config/hypr"
 package.path = package.path .. ";" .. home .. "/.config/hypr-user/?.lua"
 
 local function maybe_create(file, content)
@@ -18,26 +17,6 @@ local function maybe_create(file, content)
         f:close()
     end
 end
-
-local function maybe_copy(src, dst)
-    local out = io.open(dst)
-    if out then
-        out:close()
-        return
-    end
-
-    local input = io.open(src, "r")
-    if not input then return end
-
-    out = io.open(dst, "w")
-    if out then
-        out:write(input:read("*a"))
-        out:close()
-    end
-    input:close()
-end
-
-maybe_copy(hypr .. "/scheme/default.lua", hypr .. "/scheme/current.lua")
 
 maybe_create(home .. "/.config/hypr-user/hypr-vars.lua", "return {}\n")
 local ok, overrides = pcall(require, "hypr-vars")

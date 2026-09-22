@@ -36,14 +36,6 @@ writeShellApplication {
       esac
     }
 
-    subscription_provider() {
-      case "$1" in
-        PRIMARY) printf '%s\n' primary ;;
-        QUATTRO) printf '%s\n' quattro ;;
-        *) return 1 ;;
-      esac
-    }
-
     normalise_subscription() {
       case "''${1,,}" in
         primary) printf '%s\n' PRIMARY ;;
@@ -85,11 +77,10 @@ writeShellApplication {
 
     nodes() {
       active=$(active_subscription)
-      provider=$(subscription_provider "$active")
       jq -rn \
         --arg auto "$active-AUTO" \
         --slurpfile g <(api_get "$active") \
-        --slurpfile p <(api_provider "$provider") '
+        --slurpfile p <(api_provider "''${active,,}") '
         (($p[0].proxies // [])
           | map({key: .name, value: ((.history | last | .delay) // 0)})
           | from_entries) as $d

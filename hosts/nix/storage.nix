@@ -1,5 +1,16 @@
 { pkgs, nixcfgPath, ... }:
 
+let
+  scrubFailure = message: {
+    User = "root";
+    Group = "root";
+    SupplementaryGroups = [ "" ];
+    ExecStart = [
+      ""
+      "${pkgs.systemd}/bin/systemd-cat --identifier=xfs-scrub --priority=err ${pkgs.coreutils}/bin/echo ${message}"
+    ];
+  };
+in
 {
   systemd.tmpfiles.rules = [
     "Z ${nixcfgPath} - ri users - -"
@@ -33,40 +44,19 @@
   systemd.timers.xfs_scrub_all.wantedBy = [ "timers.target" ];
 
   systemd.services = {
-    xfs_scrub_all_fail.serviceConfig = {
-      User = "root";
-      Group = "root";
-      SupplementaryGroups = [ "" ];
-      ExecStart = [
-        ""
-        "${pkgs.systemd}/bin/systemd-cat --identifier=xfs-scrub --priority=err ${pkgs.coreutils}/bin/echo XFS scrub-all failed -- inspect journalctl -u xfs_scrub_all.service"
-      ];
-    };
+    xfs_scrub_all_fail.serviceConfig = scrubFailure
+      "XFS scrub-all failed -- inspect journalctl -u xfs_scrub_all.service";
 
     "xfs_scrub_fail@" = {
       overrideStrategy = "asDropin";
-      serviceConfig = {
-        User = "root";
-        Group = "root";
-        SupplementaryGroups = [ "" ];
-        ExecStart = [
-          ""
-          "${pkgs.systemd}/bin/systemd-cat --identifier=xfs-scrub --priority=err ${pkgs.coreutils}/bin/echo XFS metadata scrub failed for %f -- inspect journalctl -u xfs_scrub@%i.service"
-        ];
-      };
+      serviceConfig = scrubFailure
+        "XFS metadata scrub failed for %f -- inspect journalctl -u xfs_scrub@%i.service";
     };
 
     "xfs_scrub_media_fail@" = {
       overrideStrategy = "asDropin";
-      serviceConfig = {
-        User = "root";
-        Group = "root";
-        SupplementaryGroups = [ "" ];
-        ExecStart = [
-          ""
-          "${pkgs.systemd}/bin/systemd-cat --identifier=xfs-scrub --priority=err ${pkgs.coreutils}/bin/echo XFS media scrub failed for %f -- inspect journalctl -u xfs_scrub_media@%i.service"
-        ];
-      };
+      serviceConfig = scrubFailure
+        "XFS media scrub failed for %f -- inspect journalctl -u xfs_scrub_media@%i.service";
     };
   };
 

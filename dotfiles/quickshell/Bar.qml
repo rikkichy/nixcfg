@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Controls
-import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
@@ -147,20 +146,11 @@ PanelWindow {
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                             }
-                            Image {
+                            MaterialIcon {
                                 anchors.centerIn: parent
                                 visible: workspaceButton.workspaceIcon !== ""
-                                width: 24
-                                height: 24
-                                source: workspaceButton.workspaceIcon ? Qt.resolvedUrl("icons/" + workspaceButton.workspaceIcon + ".svg") : ""
-                                sourceSize.width: 24
-                                sourceSize.height: 24
-                                fillMode: Image.PreserveAspectFit
-                                layer.enabled: true
-                                layer.effect: MultiEffect {
-                                    colorization: 1
-                                    colorizationColor: workspaceButton.selected ? Theme.textOnPrimary : workspaceButton.modelData.urgent ? Theme.textOnTertiaryContainer : Theme.textOnSurface
-                                }
+                                name: workspaceButton.workspaceIcon
+                                tint: workspaceButton.selected ? Theme.textOnPrimary : workspaceButton.modelData.urgent ? Theme.textOnTertiaryContainer : Theme.textOnSurface
                             }
                         }
                         Behavior on implicitHeight {

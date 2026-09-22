@@ -7,7 +7,7 @@ Image {
     property color tint: Theme.primary
     width: 24
     height: 24
-    source: Qt.resolvedUrl("icons/" + name + ".svg")
+    source: name ? Qt.resolvedUrl("icons/" + name + ".svg") : ""
     sourceSize.width: width
     sourceSize.height: height
     fillMode: Image.PreserveAspectFit

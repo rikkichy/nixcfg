@@ -25,17 +25,12 @@ body {
     --dms-icon-color-after: var(--white);
 
     --custom-dms-background: off;
-    --dms-background-image-url: url("");
-    --dms-background-image-size: cover;
-    --dms-background-color: linear-gradient(70deg, var(--blue-2), var(--purple-2), var(--red-2));
 
     --background-image: off;
-    --background-image-url: url("");
 
     --transparency-tweaks: off;
     --remove-bg-layer: off;
     --panel-blur: off;
-    --blur-amount: 12px;
 
     --custom-chatbar: off;
     --chatbar-height: 47px;
