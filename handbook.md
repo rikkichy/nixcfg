@@ -192,7 +192,8 @@ So a fresh install themes itself once, from a gradient shipped in
 wallpaper back at every login — the shell itself remembers nothing, so without
 it you would log in to a blank desktop. It reads
 `~/.local/state/wallpaper/current`, which the wallpaper pipeline writes.
-If the included Fuzzel palette is missing, restoration themes the recorded image.
+Restoration regenerates every palette from the recorded image, so existing
+palette files do not hide template changes or missing outputs.
 
 **Wallpaper collections are user data — restore them from a backup.**
 `wpp` reads `~/Pictures/Wallpapers`; a missing or empty directory applies the
@@ -557,6 +558,13 @@ home-manager's `gtk` module is not used: it emits `gtk-4.0/gtk.css` too.
 templates are in `dotfiles/matugen/templates/` and are tracked; anything you
 type into the files listed above is gone at the next wallpaper. Run `wpp` to
 re-render after editing a template.
+
+Home Manager installs the template configuration at `~/.config/matugen/config.toml`,
+with noninteractive source-color selection. Direct Matugen commands render palettes;
+`wpp`/`awpp` also apply terminal and cursor updates, set the wallpaper, and record
+success. Those steps stay outside Matugen hooks because failed hooks do not
+produce a failing exit status. `services.awww` owns the daemon; its readiness
+check orders wallpaper restoration after the socket is usable.
 
 ## Expressive desktop shell
 

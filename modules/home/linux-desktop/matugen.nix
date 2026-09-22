@@ -26,7 +26,7 @@ let
     output_path = output;
   };
   matugenConfig = (pkgs.formats.toml {}).generate "matugen-config.toml" {
-    config = {};
+    config.source_color_index = 0;
     templates = let cfg = config.xdg.configHome; in {
       fuzzel = template "fuzzel.ini" "${cfg}/fuzzel/colors.ini";
       quickshell = template "quickshell.json" "${cfg}/quickshell/colors.json";
@@ -115,12 +115,12 @@ let
       wallpaper="''${1:?usage: theme-apply <image>}"
       record=${wallpaperRecord}
 
-      awww img --resize crop --transition-fps 240 "$wallpaper"
+      # Show the image immediately; palette and cursor generation follow.
+      awww img --resize crop --transition-type none "$wallpaper"
 
       matugen image "$wallpaper" \
         --type scheme-content \
         --mode dark \
-        --source-color-index 0 \
         --config ${matugenConfig}
 
       term-sequences
@@ -304,32 +304,27 @@ in
     })
   ]);
 
+  services.awww.enable = true;
+
   systemd.user.services.awww = {
     Unit = {
-      Description = "Still wallpaper renderer";
-      PartOf = [ "graphical-session.target" ];
-      After = [ "graphical-session.target" ];
       Before = [ "wallpaper-restore.service" ];
     };
     Service = {
-      ExecStart = "${pkgs.awww}/bin/awww-daemon";
       ExecStartPost = toString (pkgs.writeShellScript "awww-ready" ''
-        for attempt in $(seq 1 100); do
+        for attempt in $(${pkgs.coreutils}/bin/seq 1 100); do
           ${pkgs.awww}/bin/awww query >/dev/null 2>&1 && exit 0
-          sleep 0.1
+          ${pkgs.coreutils}/bin/sleep 0.1
         done
         exit 1
       '');
-      Restart = "on-failure";
-      RestartSec = "2s";
       Slice = "session.slice";
     };
-    Install.WantedBy = [ "graphical-session.target" ];
   };
 
   systemd.user.services.wallpaper-restore = {
     Unit = {
-      Description = "Restore the wallpaper, theming the machine if it never has been";
+      Description = "Restore the wallpaper and regenerate application palettes";
       PartOf = [ "graphical-session.target" ];
       Requires = [ "awww.service" ];
       After = [ "graphical-session.target" "awww.service" ];
@@ -342,10 +337,6 @@ in
         if [ -r "$record" ]; then
           wallpaper=$(cat "$record")
           if [ -e "$wallpaper" ]; then
-            if [ -r ${lib.escapeShellArg "${config.xdg.configHome}/fuzzel/colors.ini"} ] \
-              && [ -r ${lib.escapeShellArg "${config.xdg.configHome}/quickshell/colors.json"} ]; then
-              exec ${pkgs.awww}/bin/awww img --resize crop --transition-fps 240 "$wallpaper"
-            fi
             exec ${themeApply}/bin/theme-apply "$wallpaper"
           fi
         fi
@@ -384,6 +375,7 @@ in
   };
 
   xdg.configFile = {
+    "matugen/config.toml".source = matugenConfig;
     "Equicord/themes/wallpaper.theme.css" = {
       source = discordTheme;
       force = true;
