@@ -1,6 +1,6 @@
 ---
 name: desktop-shell
-description: Hyprland and Quickshell desktop-shell engineering for this machine, including native workspaces, fuzzel pickers and desktop actions, hyprsunset, screenshots, tearing, Lua configuration, and reliable validation. Use when changing home/ shell modules, hypr/, Quickshell, keybinds, launchers, workspaces, power actions, or screenshots.
+description: Hyprland and Quickshell desktop-shell engineering for this machine, including native workspaces, fuzzel pickers and desktop actions, hyprsunset, screenshots, tearing, Lua configuration, and reliable validation. Use when changing modules/home/ shell modules, hypr/, Quickshell, keybinds, launchers, workspaces, power actions, or screenshots.
 ---
 
 # Desktop Shell
@@ -9,7 +9,7 @@ Detailed engineering reference for this NixOS configuration. Read the relevant s
 
 ### Quickshell — the shell
 
-`home/quickshell.nix` owns the user service, QML deployment and live Hyprland
+`modules/home/linux-desktop/quickshell.nix` owns the user service, QML deployment and live Hyprland
 symlink. `dotfiles/quickshell/` owns the Material 3 Expressive UI. The service
 includes the QML store path in `Unit.X-Restart-Triggers`, so source changes
 change its unit and Home Manager restarts it. Both service and CLI use `-c expressive`.
@@ -172,9 +172,9 @@ to start and leaves Home Manager waiting for wallpaper readiness.
 
 ### Fuzzel — launcher and picker
 
-`home/fuzzel-tweaks.nix` owns launcher settings, desktop entries and shared
-pickers. Network recovery commands live in `home/network-reset.nix`; wallpaper
-pickers and their private theming dependencies live in `home/matugen.nix`.
+`modules/home/linux-desktop/fuzzel.nix` owns launcher settings, general desktop entries and shared
+pickers. Network recovery commands and their entry live in `modules/home/linux-desktop/network-reset.nix`;
+wallpaper entries, pickers and theming dependencies live in `modules/home/linux-desktop/matugen.nix`.
 
 `programs.fuzzel.settings` owns static `fuzzel/fuzzel.ini`; matugen writes only
 its included, writable `colors.ini`. The launcher uses font17, 40px rows and

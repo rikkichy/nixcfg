@@ -60,8 +60,8 @@ reset, production secret access, or reboot is implied by running validation.
 ### Non-production checks
 
 - Inspect source/staging paths for accidental plaintext/private material
-  without printing secrets. `.secrets/sops.nix`, `.secrets/.sops.yaml`, and
-  operator-created `.secrets/personal.yaml` are the intended public module,
+  without printing secrets. `.secrets/nix/sops.nix`, `.secrets/.sops.yaml`, and
+  operator-created `.secrets/nix/personal.yaml` are the intended public module,
   public policy, and ciphertext. Pending real provisioning, an absent
   ciphertext and empty/fail-closed recipient policy are intentional, not a
   reason to invent production values. No ignored plaintext may sit in a
@@ -70,7 +70,7 @@ reset, production secret access, or reboot is implied by running validation.
   the real checkout, the SOPS branch using dummy keys/ciphertext. Check both
   `path:` and Git-tracked source inclusion; the hidden policy must be tracked.
   Do not change production recipients to exercise a test.
-- With dummy data outside the checkout, prove `^personal\.yaml$` selects the
+- With dummy data outside the checkout, prove `^nix/personal\.yaml$` selects the
   nested policy from the repository root using explicit `--config`, and from
   `.secrets/`. Prove an authorized identity can add a new host recipient via
   `updatekeys`, that the new host decrypts alone, and that the dummy HWID is

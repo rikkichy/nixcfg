@@ -47,4 +47,17 @@
 
     GBM_BACKENDS_PATH = "/run/opengl-driver/lib/gbm:/run/opengl-driver-32/lib/gbm";
   };
+
+  fonts.packages = with pkgs; [
+    noto-fonts
+
+    noto-fonts-color-emoji
+    noto-fonts-cjk-sans
+
+    nerd-fonts.jetbrains-mono
+    nerd-fonts.caskaydia-cove
+
+    google-sans-rounded
+    nerd-fonts.departure-mono
+  ];
 }

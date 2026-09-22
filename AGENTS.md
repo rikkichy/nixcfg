@@ -1,9 +1,10 @@
 # AGENTS.md
 
-Single-machine NixOS configuration for host `nix`: Ryzen 9950X3D, RTX 3090,
-LUKS, Hyprland, and Quickshell. `handbook.md` is the install-facing guide; detailed
-engineering knowledge is progressively disclosed through the project skills in
-`.pi/skills/`.
+Host-oriented Nix configuration. The configured host is `nix`: Ryzen 9950X3D,
+RTX 3090, LUKS, Hyprland, and Quickshell. Shared NixOS and portable Home Manager
+modules are separate from desktop policy; server and Darwin hosts require their
+own concrete configuration before being exposed. `handbook.md` is the install
+guide; `.pi/skills/` contains detailed engineering constraints.
 
 ## Working rules
 
@@ -12,7 +13,7 @@ engineering knowledge is progressively disclosed through the project skills in
 - The repository is public. Plaintext secrets, private keys, identity descriptors,
   tokens, and private subscription URLs must never enter it, even in ignored
   files: `path:` flakes include them. Encrypted SOPS documents and public
-  recipient rules under `.secrets/` are permitted. `hardware-configuration.nix`
+  recipient rules under `.secrets/` are permitted. `hosts/nix/hardware.nix`
   is intentionally tracked but machine-specific.
 - Describe the current design, never its history. Documentation states what is
   true and why; changelog language such as "now", "used to", "replaced", and
@@ -28,7 +29,7 @@ engineering knowledge is progressively disclosed through the project skills in
 ## Commands
 
 ```sh
-sudo nixos-rebuild switch --flake path:/home/ri/nixcfg#nix
+sudo nixos-rebuild switch --flake path:/etc/nixos#nix
 nix build --dry-run 'path:.#nixosConfigurations.nix.config.system.build.toplevel'
 nix eval 'path:.#nixosConfigurations.nix.config.<option>'
 Hyprland --verify-config
@@ -48,29 +49,33 @@ does this interactively.
 
 ## Architecture
 
-`flake.nix` defines `nixosConfigurations.nix`, composing
-`hardware-configuration.nix`, `configuration.nix`, and Home Manager's
-`home.nix`. `configuration.nix` owns host identity and explicitly imports `system/`;
-`home.nix` imports `home/`. `pkgs/overlay.nix` supplies local packages and patches.
+`flake.nix` defines `nixosConfigurations.nix` from `hosts/nix/default.nix`
+and Home Manager's `hosts/nix/home.nix`. Host entry points explicitly import
+`modules/nixos/common/`, `modules/nixos/desktop/`, `modules/home/common/`, and
+`modules/home/linux-desktop/`. Hardware, boot, storage and lighting live under
+`hosts/nix/`. `pkgs/overlay.nix` supplies Linux packages and patches.
 `nixcfgPath` is passed
 through `specialArgs` because install-time flake evaluation occurs from another
-path while runtime symlinks and services need the final checkout at `/home/ri/nixcfg`.
+path while runtime symlinks and services need the final checkout at `/etc/nixos`.
 
 | Area | Source of truth |
 | --- | --- |
-| host identity, user, locale, system module imports | `configuration.nix` |
-| boot/initrd, security, hardware, storage, networking, audio, desktop, gaming, applications, packages and Nix maintenance | focused modules in `system/` |
-| system SOPS declarations, public recipient policy, encrypted Mihomo inputs | `.secrets/sops.nix`, `.secrets/.sops.yaml`, `.secrets/personal.yaml` |
-| Home Manager imports, state version, desktop packages | `home.nix` |
-| palettes, cursors, wallpapers and restoration | `home/matugen.nix` |
-| Fuzzel, desktop entries, maintenance actions and pickers | `home/fuzzel-tweaks.nix` |
-| scoped network recovery commands | `home/network-reset.nix` |
-| app settings, MIME defaults, GTK/Qt and Telegram proxy | `home/applications.nix` |
-| Foot, Fish, direnv and CLI configuration | `home/shell.nix` |
-| hardware and root LUKS mapping | `hardware-configuration.nix` |
+| host identity, user, system module imports | `hosts/nix/default.nix` |
+| boot/initrd, hardware policy, storage and lighting | `hosts/nix/` |
+| shared CLI packages, locale and Nix settings | `modules/nixos/common/` |
+| desktop applications, session, security, networking, audio, gaming and maintenance | `modules/nixos/desktop/` |
+| system SOPS declarations, public recipient policy, encrypted Mihomo inputs | `.secrets/nix/sops.nix`, `.secrets/.sops.yaml`, `.secrets/nix/personal.yaml` |
+| Home Manager imports and state version | `hosts/nix/home.nix` |
+| palettes, cursors, wallpapers and restoration | `modules/home/linux-desktop/matugen.nix` |
+| Fuzzel, general desktop entries, maintenance actions and pickers | `modules/home/linux-desktop/fuzzel.nix` |
+| scoped network recovery commands and desktop entry | `modules/home/linux-desktop/network-reset.nix` |
+| app settings, MIME defaults, GTK/Qt and Telegram proxy | `modules/home/linux-desktop/applications.nix` |
+| portable Fish, direnv and CLI configuration | `modules/home/common/shell.nix` |
+| Foot and Linux terminal palette integration | `modules/home/linux-desktop/foot.nix` |
+| hardware and root LUKS mapping | `hosts/nix/hardware.nix` |
 | keybinds, rules, monitors | `hypr/` live out-of-store symlink |
 | generated app palettes | `dotfiles/matugen/templates/` via `theme-apply` |
-| Quickshell rail, controls, notifications, OSD and Hyprland symlink | `home/quickshell.nix`, `dotfiles/quickshell/` |
+| Quickshell rail, controls, notifications, OSD and Hyprland symlink | `modules/home/linux-desktop/quickshell.nix`, `dotfiles/quickshell/` |
 | local package expressions, VPN command, package overrides | `pkgs/`, wired by `pkgs/overlay.nix` |
 | NokoChat development environment | `dev/nokochat/shell.nix` |
 

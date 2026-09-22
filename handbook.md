@@ -1,8 +1,8 @@
 # nixcfg
 
 NixOS config for `nix` — 9950X3D / RTX 3090 / LUKS / Hyprland + Quickshell.
-Clone to **`/home/ri/nixcfg`** — `nixcfgPath` in `flake.nix` supplies that runtime
-path to services and the live Hyprland symlink.
+Clone to **`/etc/nixos`** — `nixcfgPath` in `flake.nix` supplies this path to
+`nh`, services and the live Hyprland symlink.
 
 ## Install, step by step
 
@@ -51,33 +51,34 @@ mount /dev/nvme0n1p1 /mnt/boot
 
 ```
 nixos-generate-config --root /mnt
+mv /mnt/etc/nixos /mnt/etc/nixos.generated
 
 nix-shell -p git --run '
-  git clone https://github.com/rikkichy/nixcfg /mnt/home/ri/nixcfg
+  git clone https://github.com/rikkichy/nixcfg /mnt/etc/nixos
 '
-cp /mnt/etc/nixos/hardware-configuration.nix /mnt/home/ri/nixcfg/
+cp /mnt/etc/nixos.generated/hardware-configuration.nix /mnt/etc/nixos/hosts/nix/hardware.nix
 ```
 
 The clone lands as `root:root` because you are root here. You do not need to fix
-that — `system/storage.nix` reasserts `ri:users` on the tree at every boot,
+that — `hosts/nix/storage.nix` reasserts `ri:users` on the tree at every boot,
 before the desktop starts.
 
-`hardware-configuration.nix` is tracked but specific to this machine. On a
-different machine, replace it with that machine's generated configuration and
-verify every disk/boot setting. `flake.nix` imports it from the flake root.
-Ignore the generated `/mnt/etc/nixos/configuration.nix`; the system module
+`hosts/nix/hardware.nix` is tracked and specific to this machine.
+For another host, create its own `hosts/<name>/` configuration and verify every
+disk/boot setting. `hosts/nix/default.nix` imports this desktop's hardware.
+Ignore the generated `/mnt/etc/nixos.generated/configuration.nix`; the system module
 comes from this repo.
 
 ### 4. Fill in the LUKS device name
 
 `nixos-generate-config` already wrote the LUKS device into
-`hardware-configuration.nix`, named after the mapping you opened in step 1:
+the generated hardware configuration, copied to `hosts/nix/hardware.nix`, named after the mapping you opened in step 1:
 
 ```
 boot.initrd.luks.devices."cryptroot".device = "/dev/disk/by-uuid/<uuid>";
 ```
 
-`system/boot.nix` extends that same mapping with discard and FIDO discovery
+`hosts/nix/boot.nix` extends that same mapping with discard and FIDO discovery
 options; it does not enroll the disk. Keep the name `cryptroot` consistent.
 The retained passphrase remains the fallback; see **Touch-only disk unlock**
 below before enrolling a token.
@@ -104,14 +105,14 @@ provisioning. `path:` includes untracked and ignored files, so **no plaintext,
 identity descriptor, or private key may be staged anywhere inside the checkout**.
 
 ```
-cd /mnt/home/ri/nixcfg
-git add hardware-configuration.nix
+cd /mnt/etc/nixos
+git add hosts/nix/hardware.nix
 ```
 
 ### 6. Install
 
 ```
-nixos-install --flake /mnt/home/ri/nixcfg#nix
+nixos-install --flake /mnt/etc/nixos#nix
 ```
 
 It prompts for a **root** password at the end. Set one you remember.
@@ -133,7 +134,7 @@ No password is set in the config on purpose — this repo is public.
 
 Flatpak apps install themselves a couple of minutes after you log in — Flathub
 plus `org.vinegarhq.Sober` and `me.amankhanna.opendeck`. To add another, put it
-in the list in `system/applications.nix` and rebuild. If one is missing:
+in the list in `modules/nixos/desktop/flatpak.nix` and rebuild. If one is missing:
 
 ```
 systemctl --user start flatpak-bootstrap
@@ -146,14 +147,14 @@ At the first keyring prompt leave the password **empty** and confirm —
 autologin types no password, so a non-blank keyring would stay locked forever.
 At rest it is protected by LUKS.
 
-Later changes are `sudo nixos-rebuild switch --flake path:/home/ri/nixcfg#nix`
+Later changes are `sudo nixos-rebuild switch --flake path:/etc/nixos#nix`
 (first build also writes `flake.lock` — commit it). Press META+ALT and select
 **Nix maintenance**: the parent lists generations in a held terminal,
 and native actions include **Rebuild and switch**, rollback and garbage collection.
-`nh os switch` is the terminal alternative: `NH_FLAKE` defaults to
-`path:/home/ri/nixcfg`. Run it as your normal user; it requests elevation as needed.
-Fish exports this default at shell startup, including terminals opened from an
-existing desktop session after a switch.
+`nh os switch` is the terminal alternative: `programs.nh.flake` sets
+`NH_FLAKE=/etc/nixos` declaratively. No custom Fish export is needed.
+Run it as your normal user; it requests elevation as needed. An explicit
+`NH_OS_FLAKE` takes precedence for OS commands.
 
 Wallpaper, animated wallpaper, clipboard, emoji, blue-light filter, VPN,
 network recovery and session tools are available through META+ALT.
@@ -262,7 +263,7 @@ provider/state files can also contain credentials; keep those outside Git.
 
 ### Private inputs and first provisioning
 
-`.secrets/personal.yaml` contains the encrypted inputs, and the nested policy
+`.secrets/nix/personal.yaml` contains the encrypted inputs, and the nested policy
 authorizes the administrator YubiKey and host key. SOPS supplies the active
 runtime inputs. Keep `/etc/mihomo/subscription.url`, `/etc/mihomo/quattro.url`,
 and `/etc/mihomo/hwid` for rollback. On an unprovisioned checkout without
@@ -275,9 +276,9 @@ operator/provider rather than inventing a migration value.
 
 | Path | Contents |
 | --- | --- |
-| `.secrets/.sops.yaml` | Public recipient policy, matching `^personal\.yaml$` |
-| `.secrets/personal.yaml` | Operator-created ciphertext, intended for Git |
-| `.secrets/sops.nix` | System secret declarations and conditional cutover |
+| `.secrets/.sops.yaml` | Public recipient policy, matching `^nix/personal\.yaml$` |
+| `.secrets/nix/personal.yaml` | Operator-created ciphertext for host `nix`, intended for Git |
+| `.secrets/nix/sops.nix` | Host secret declarations and conditional cutover |
 | `/var/lib/sops-nix/key.txt` | Root-only native host age private key |
 | `~/.config/sops/age/yubikey.txt` | Administrator PIV identity descriptor, outside Git |
 | `/run/secrets/mihomo/{primary_url,quattro_url,hwid}` | Root-owned mode `0400` decrypted runtime inputs |
@@ -361,11 +362,11 @@ export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/yubikey.txt"
 umask 077
 export TMPDIR="$(mktemp -d /run/user/"$(id -u)"/sops-edit.XXXXXX)"
 # From the repository root; also creates a new encrypted document via the editor:
-sops --config .secrets/.sops.yaml edit .secrets/personal.yaml
+sops --config .secrets/.sops.yaml edit .secrets/nix/personal.yaml
 # Equivalent after cd .secrets:
-sops --config .sops.yaml edit personal.yaml
+sops --config .sops.yaml edit nix/personal.yaml
 # Only after a reviewed change to real recipients, using an authorized identity:
-sops --config .sops.yaml updatekeys personal.yaml
+sops --config .sops.yaml updatekeys nix/personal.yaml
 ```
 
 The last two commands are alternatives run **inside `.secrets/`**, not subsequent
@@ -379,7 +380,7 @@ age identities, SOPS key environment variables/commands, SSH keys, or GPG
 keyring; an explicit `SOPS_AGE_KEY_FILE` alone is not proof of isolation.
 Leave unused identity variables/commands unset, not empty. In that isolated
 environment, use `sops --config .secrets/.sops.yaml decrypt
-.secrets/personal.yaml > /dev/null` from the repository root, not a command that
+.secrets/nix/personal.yaml > /dev/null` from the repository root, not a command that
 prints plaintext. Replug the YubiKey before the
 administrator-only test: no routine PIN, touch required, no-touch must not
 complete decryption. Repeat with only the root host key and no token. Do not
@@ -395,7 +396,7 @@ public recipient alongside the administrator in the policy, then use an
 already-authorized identity to run:
 
 ```bash
-sops --config .secrets/.sops.yaml updatekeys .secrets/personal.yaml
+sops --config .secrets/.sops.yaml updatekeys .secrets/nix/personal.yaml
 ```
 
 Test the new host alone, with the YubiKey removed and all other identities
@@ -427,7 +428,7 @@ layout move preserves ciphertext bytes/metadata and runtime identities: compare
 checksums, adapt relative paths/rules/imports, and do not rotate or reenroll
 hardware merely because a file moved.
 
-Two settings in `system/networking.nix` are tied to `tun.device: mihomo` inside that
+Two settings in `modules/nixos/desktop/networking.nix` are tied to `tun.device: mihomo` inside that
 file — `networking.firewall.trustedInterfaces` and
 `networking.networkmanager.unmanaged`. Rename the device in one place and all
 three need to change together.
@@ -470,7 +471,7 @@ it; stop the user service first so the two do not both bind 1443.
 
 ## RGB lighting
 
-`system/lighting.nix` runs `openrgb-off` once at boot, without a GUI, tray app or
+`hosts/nix/lighting.nix` runs `openrgb-off` once at boot, without a GUI, tray app or
 SDK server. It sets both ENE RAM modules and the Gainward RTX 3090 to Off, and
 sends black in Direct mode to MSI Mystic Light's JAF/JARGB headers.
 Wooting and Elgato detectors are disabled; explicit device-name selectors also
@@ -487,32 +488,53 @@ the allocator preload only for this service; system-wide hardening stays enabled
 | Path | What |
 |---|---|
 | `flake.nix` | inputs + `nixosConfigurations.nix` |
-| `configuration.nix` | host identity, user, locale and explicit system module imports |
-| `system/boot.nix` | bootloader, initrd/LUKS additions, kernel and crash resilience |
-| `system/hardware.nix` | CPU policy, NVIDIA, peripheral access and Bluetooth |
-| `system/lighting.nix` | headless RGB shutdown, device exclusions and process isolation |
-| `system/storage.nix` | data mounts, permissions, XFS scrubbing and trim |
-| `system/security.nix` | polkit, PAM/U2F, sudo, hardened allocator and smart cards |
-| `system/networking.nix` | NetworkManager, Mihomo, firewall and service discovery |
-| `system/audio.nix` | PipeWire and the Blessing 3 equalizer |
-| `system/desktop.nix` | Hyprland/UWSM, greetd, portals, keyring and session environment |
-| `system/gaming.nix` | Steam, Gamescope, GameMode and scheduling |
-| `system/applications.nix` | system-managed applications, Flatpak, Docker and printing |
-| `system/packages.nix` | system package and font lists |
-| `system/nix.nix` | Nix settings, garbage collection and automated updates |
+| `hosts/nix/default.nix` | desktop identity, user and explicit system module imports |
+| `hosts/nix/hardware.nix` | detected hardware, root LUKS device and root/boot filesystems |
+| `hosts/nix/boot.nix` | bootloader, initrd/LUKS additions, kernel and crash resilience |
+| `hosts/nix/hardware-policy.nix` | CPU policy, NVIDIA, peripheral access and Bluetooth |
+| `hosts/nix/lighting.nix` | headless RGB shutdown, device exclusions and process isolation |
+| `hosts/nix/storage.nix` | data mounts, permissions, XFS scrubbing and trim |
+| `modules/nixos/common/base_apps.nix` | system-wide CLI/admin package inventory |
+| `modules/nixos/common/locale.nix` | shared locale and timezone |
+| `modules/nixos/common/nix.nix` | Nix settings and garbage collection |
+| `modules/nixos/desktop/security.nix` | polkit, PAM/U2F, sudo, hardened allocator and smart cards |
+| `modules/nixos/desktop/networking.nix` | NetworkManager, Mihomo, firewall and service discovery |
+| `modules/nixos/desktop/audio.nix` | PipeWire and the Blessing 3 equalizer |
+| `modules/nixos/desktop/session.nix` | Hyprland/UWSM, greetd, portals, keyring, session environment and fonts |
+| `modules/nixos/desktop/gaming.nix` | Steam, Gamescope, GameMode, game packages, osu! MIME and scheduling |
+| `modules/nixos/desktop/base_apps.nix` | desktop package inventory, application integration, Docker and printing |
+| `modules/nixos/desktop/flatpak.nix` | Flatpak service and bootstrap/update units |
+| `modules/nixos/desktop/maintenance.nix` | checkout helpers, automated updates and desktop notifications |
 | `pkgs/overlay.nix` | local package wiring and upstream patches |
 | `pkgs/vpn.nix` | VPN command package |
-| `home.nix` | Home Manager imports, state version and desktop packages |
-| `home/matugen.nix` | generated palettes, cursors, wallpaper pickers and restoration |
-| `home/fuzzel-tweaks.nix` | Fuzzel settings, desktop entries/actions and shared pickers |
-| `home/network-reset.nix` | network recovery backend and terminal launcher |
-| `home/quickshell.nix` | Quickshell service, QML deployment and live Hyprland symlink |
+| `hosts/nix/home.nix` | Home Manager imports, state version and desktop packages |
+| `modules/home/linux-desktop/matugen.nix` | generated palettes, cursors, wallpaper entries/pickers and restoration |
+| `modules/home/linux-desktop/fuzzel.nix` | Fuzzel settings, general desktop entries/actions and shared pickers |
+| `modules/home/linux-desktop/network-reset.nix` | network recovery backend, desktop entry and terminal launcher |
+| `modules/home/linux-desktop/quickshell.nix` | Quickshell service, QML deployment and live Hyprland symlink |
 | `dotfiles/quickshell/` | Material 3 Expressive rail, controls, notifications and calendar |
-| `home/applications.nix` | application settings, MIME defaults, GTK/Qt and Telegram proxy |
-| `home/shell.nix` | Foot, Fish, direnv and CLI dotfiles |
+| `modules/home/linux-desktop/applications.nix` | application settings, MIME defaults, GTK/Qt and Telegram proxy |
+| `modules/home/common/shell.nix` | portable Fish, direnv and CLI dotfiles |
+| `modules/home/linux-desktop/foot.nix` | Foot and terminal palette integration |
 | `hypr/` | Hyprland Lua config, symlinked live into `~/.config/hypr` |
-| `dotfiles/` | tracked assets/templates used by `home/` (plus `mihomo.yaml`, used by `.secrets/sops.nix`) |
-| `.secrets/` | public SOPS module/policy and operator-provisioned encrypted Mihomo values |
+| `dotfiles/` | tracked assets/templates used by home modules and the public Mihomo template |
+| `.secrets/.sops.yaml`, `.secrets/nix/` | public recipient policy and host-specific declarations/ciphertext |
+
+Host composition uses explicit imports. Only `nix` is configured; server and
+Darwin outputs require real host settings before they can be evaluated or deployed.
+A server imports selected `modules/nixos/common/` modules, never the desktop
+bundle. Its boot, disks, networking, users and workloads belong in its own
+`hosts/<name>/` directory. Server-specific reusable modules belong in
+`modules/nixos/server/` when needed. A Mac uses nix-darwin with platform modules
+under `modules/darwin/` and Home Manager's Darwin integration.
+
+Portable shell settings are in `modules/home/common/`; their CLI executables
+are currently supplied by the NixOS common package inventory. A Darwin host must
+provide the tools it uses through its own package inventory. Linux themes, Foot
+and systemd user services are confined to `modules/home/linux-desktop/`.
+Keep architecture, checkout path, username, state versions and secrets explicit
+per host. Do not reuse this desktop's hardware file, PAM enrollment, secret
+recipients or Linux package overlay on another host by default.
 
 `vhelper` and `openwave` are separate flake inputs and live in their own
 repos (`rikkichy/vhelper`, `rikkichy/openwave`) — edit them there, not here.
@@ -541,7 +563,7 @@ re-render after editing a template.
 `quickshell.service` runs the pinned Quickshell package with
 `dotfiles/quickshell/`. The unit's restart trigger includes the QML store path,
 so a configuration rebuild updates the unit as well as its files. Apply with the
-normal `nixos-rebuild switch --flake path:/home/ri/nixcfg#nix`; no manual
+normal `nixos-rebuild switch --flake path:/etc/nixos#nix`; no manual
 notification daemon or wallpaper daemon should run alongside the managed ones.
 
 The left rail groups a folded tray toggle, notifications, the centered
@@ -655,11 +677,11 @@ update, use **Limine recovery with a zero timeout** below to select a previous
 generation; the default menu is not visible.
 Watch it with `journalctl -u nixos-upgrade.service`.
 
-`--flake /home/ri/nixcfg` reads the tree through git, so the rule is about
-tracking, not committing. Editing a file that is already in git works without
-committing. A **new** file is invisible until `git add` — no error, it is just
-silently ignored, the same trap as step 5. Stage only reviewed intended source
-paths, or use `path:/home/ri/nixcfg`; neither makes plaintext safe in the tree.
+`nh`'s default `/etc/nixos` and `--flake /etc/nixos` read the tree through Git.
+Tracked modifications are visible without committing; new source files need
+`git add` (or `git add -N` to mark intent without staging their contents).
+For untracked iteration use `nh os switch path:/etc/nixos` or an explicit
+`--flake path:/etc/nixos#nix`. Neither mode makes plaintext safe in the tree.
 
 ## Touch-only disk unlock
 

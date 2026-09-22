@@ -18,11 +18,11 @@ let
       ''
     } > $out
     sed '/fonts\.googleapis\.com/d' ${pkgs.midnight-discord} >> $out
-    cat ${../dotfiles/discord/theme.css} >> $out
+    cat ${../../../dotfiles/discord/theme.css} >> $out
   '';
 
   template = input: output: {
-    input_path = "${../dotfiles/matugen/templates}/${input}";
+    input_path = "${../../../dotfiles/matugen/templates}/${input}";
     output_path = output;
   };
   matugenConfig = (pkgs.formats.toml {}).generate "matugen-config.toml" {
@@ -102,7 +102,7 @@ let
     '';
   };
 
-  defaultWallpaper = ../dotfiles/default-wallpaper.png;
+  defaultWallpaper = ../../../dotfiles/default-wallpaper.png;
 
   wallpaperRecord = lib.escapeShellArg "${config.xdg.stateHome}/wallpaper/current";
   animatedRecord = lib.escapeShellArg "${config.xdg.stateHome}/wallpaper/animated";
@@ -176,6 +176,25 @@ let
 in
 {
   _module.args.terminalColours = terminalColours;
+
+  xdg.desktopEntries = {
+    wpp = {
+      name = "Wallpaper";
+      exec = "wpp";
+      icon = "preferences-desktop-wallpaper";
+      terminal = false;
+      categories = [ "System" ];
+      settings.OnlyShowIn = "X-DesktopTools;";
+    };
+    awpp = {
+      name = "Animated wallpaper";
+      exec = "awpp";
+      icon = "applications-multimedia";
+      terminal = false;
+      categories = [ "System" ];
+      settings.OnlyShowIn = "X-DesktopTools;";
+    };
+  };
 
   home.packages = lib.mkAfter (with pkgs; [
     (writeShellApplication {

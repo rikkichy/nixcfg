@@ -103,22 +103,6 @@ in
     spotify = webApp "Spotify" "https://open.spotify.com" "spotify"
       "chrome-open.spotify.com__-Default";
 
-    wpp = {
-      name = "Wallpaper";
-      exec = "wpp";
-      icon = "preferences-desktop-wallpaper";
-      terminal = false;
-      categories = [ "System" ];
-      settings.OnlyShowIn = "X-DesktopTools;";
-    };
-    awpp = {
-      name = "Animated wallpaper";
-      exec = "awpp";
-      icon = "applications-multimedia";
-      terminal = false;
-      categories = [ "System" ];
-      settings.OnlyShowIn = "X-DesktopTools;";
-    };
     clipp = {
       name = "Clipboard";
       exec = "clipp";
@@ -159,21 +143,6 @@ in
       terminal = false;
       categories = [ "System" ];
       settings.OnlyShowIn = "X-DesktopTools;";
-    };
-    network-reset = {
-      name = "Network recovery";
-      exec = "troubleshootp all";
-      icon = "${papirus}/24x24/actions/view-refresh.svg";
-      terminal = false;
-      categories = [ "System" ];
-      settings.Keywords = "troubleshootp;troubleshoot;network;system;helium;browser;discord;cache;";
-      settings.OnlyShowIn = "X-DesktopTools;";
-      actions = {
-        system = { name = "Reset system networking"; exec = "troubleshootp system"; };
-        helium = { name = "Kill Helium and reset networking"; exec = "troubleshootp helium"; };
-        discord = { name = "Kill Discord, reset networking and clean cache"; exec = "troubleshootp discord"; };
-        reconnect = { name = "Reconnect Ethernet"; exec = "troubleshootp reconnect"; };
-      };
     };
     nixp = {
       name = "Nix maintenance";

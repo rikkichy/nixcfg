@@ -1,29 +1,12 @@
 { config, pkgs, nixcfgPath, ... }:
 
 {
-  nix.settings = {
-    experimental-features = [ "nix-command" "flakes" ];
-
-    auto-optimise-store = false;
-
-    fsync-store-paths = true;
-  };
-
-  nix.gc = {
-    automatic = true;
-    dates = "weekly";
-    options = "--delete-older-than 30d";
-  };
-
   programs.nh = {
     enable = true;
-    flake = "path:${nixcfgPath}";
+    flake = nixcfgPath;
   };
 
-  programs.git = {
-    enable = true;
-    config.safe.directory = nixcfgPath;
-  };
+  programs.git.config.safe.directory = nixcfgPath;
 
   system.autoUpgrade = {
     enable = true;
@@ -107,6 +90,4 @@
     '';
   };
   systemd.services.nixos-upgrade.onFailure = [ "nixos-upgrade-failed.service" ];
-
-  nixpkgs.config.allowUnfree = true;
 }

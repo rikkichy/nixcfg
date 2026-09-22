@@ -24,7 +24,7 @@
     run mkdir -p "$osudir"
     for f in game.ini input.json; do
       if [ ! -e "$osudir/$f" ]; then
-        run cp ${../dotfiles/osu}/"$f" "$osudir/$f"
+        run cp ${../../../dotfiles/osu}/"$f" "$osudir/$f"
         run chmod u+w "$osudir/$f"
       fi
     done

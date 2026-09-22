@@ -1,6 +1,6 @@
 ---
 name: nix-system-operations
-description: NixOS and Home Manager safety and operations for this machine, including initrd and LUKS, crash resilience, CPU scheduling, hardened_malloc, systemd units, auto-upgrades, polkit, and mihomo VPN. Use when changing configuration.nix, system/ modules, hardware-configuration.nix, flake inputs, boot, services, security, performance, updates, or networking.
+description: NixOS and Home Manager safety and operations for this machine, including initrd and LUKS, crash resilience, CPU scheduling, hardened_malloc, systemd units, auto-upgrades, polkit, and mihomo VPN. Use when changing hosts/, modules/nixos/, flake inputs, boot, services, security, performance, updates, or networking.
 ---
 
 # Nix System Operations
@@ -9,10 +9,10 @@ Detailed engineering reference for this NixOS configuration. Read the relevant s
 
 ### boot.initrd — the one place a mistake costs a live USB
 
-`hardware-configuration.nix` already declares the root LUKS device as
+`hosts/nix/hardware.nix` already declares the root LUKS device as
 `boot.initrd.luks.devices."cryptroot"`, named after the mapping opened during
 install, and `fileSystems."/"` mounts `/dev/mapper/cryptroot`.
-`system/boot.nix` may only *add* to that attribute
+`hosts/nix/boot.nix` may only *add* to that attribute
 (`allowDiscards` and `crypttabExtraOpts`). These are attribute names, not
 device paths, so a differently-named entry aimed at the same partition defines a
 **second mapping** rather than overriding the first. The generated crypttab then
@@ -177,7 +177,7 @@ cores 8–15 under 32 MB, while `acpi_cppc/highest_perf` reads the same sequence
 across both — so nothing in the topology tells the scheduler which half a
 lightly threaded workload belongs on. `amd_3d_vcache` exposes the one knob for
 it, `amd_x3d_mode` on the ACPI device `AMDI0101:00`, and a udev rule in
-`system/hardware.nix` sets it to `cache`, the 96 MB half. Two things about that:
+`hosts/nix/hardware-policy.nix` sets it to `cache`, the 96 MB half. Two things about that:
 
 - **The attribute does not exist until the driver binds.** The ACPI device
   appears with nothing under it, udev loads `amd_3d_vcache` from its MODALIAS,
@@ -247,7 +247,7 @@ change. Confirm by setting the provider to `libc` and reproducing before
 chasing anything else. Programs carrying their own allocator — Chromium's
 PartitionAlloc, a JVM heap — are mostly untouched, since the preload only
 replaces `malloc`.
-`system/lighting.nix` isolates OpenRGB's allocator boundary: its libusb backend
+`hosts/nix/lighting.nix` isolates OpenRGB's allocator boundary: its libusb backend
 uses `RTLD_DEEPBIND`, which conflicts with the global allocator preload.
 `openrgb-off` bind-mounts an empty file over the preload source inside its private
 mount namespace; do not disable system-wide hardened_malloc for lighting.
@@ -285,7 +285,7 @@ What is reachable is three kernel parameters, described where they are set.
 `init_on_free` is deliberately not among them: it is the most valuable and the
 only one that costs measurably, and this machine also runs games.
 
-### systemd units in `system/` modules
+### systemd units in `modules/nixos/` modules
 
 Keep long-running or network-dependent **user** units off `default.target` and
 drive them from a timer. Anything in the login target sits in the path of
@@ -321,7 +321,7 @@ root-only `/run/mihomo/config.yaml`. The locked module consumes that path via
 protects quoting/backslash/newline values. Never put secret strings into Nix,
 `writeText`, derivation inputs, logs, command arguments, or this documentation.
 
-`.secrets/sops.nix` selects SOPS only when `.secrets/personal.yaml` exists.
+`.secrets/nix/sops.nix` selects SOPS only when `.secrets/nix/personal.yaml` exists.
 The encrypted document and two-recipient policy are provisioned. A checkout
 without ciphertext uses the legacy inputs instead; never fabricate recipients.
 SOPS supplies the active runtime inputs. Retain the legacy
@@ -341,16 +341,16 @@ loaded service credential.
 
 ### SOPS authoring and recovery
 
-The root flake imports `.secrets/sops.nix` and upstream sops-nix once, without a
+The root flake imports `.secrets/nix/sops.nix` and upstream sops-nix once, without a
 second Home Manager instance. Only public module/policy and encrypted
-`.secrets/personal.yaml` belong in Git. Ignoring a plaintext file is insufficient:
+`.secrets/nix/personal.yaml` belong in Git. Ignoring a plaintext file is insufficient:
 `path:` includes it. Author/edit plaintext only in protected temporary storage
 outside the checkout/store, preferably tmpfs; disable editor backup/swap/undo.
 
-The nested `.secrets/.sops.yaml` rule matches `^personal\.yaml$` relative to its
+The nested `.secrets/.sops.yaml` rule matches `^nix/personal\.yaml$` relative to its
 own directory. From the repository root use
-`sops --config .secrets/.sops.yaml edit .secrets/personal.yaml`; inside `.secrets/`
-use `sops --config .sops.yaml edit personal.yaml`. Config discovery walks up,
+`sops --config .secrets/.sops.yaml edit .secrets/nix/personal.yaml`; inside `.secrets/`
+use `sops --config .sops.yaml edit nix/personal.yaml`. Config discovery walks up,
 not into child directories. Set `SOPS_AGE_KEY_FILE` to the external administrator
 descriptor `~/.config/sops/age/yubikey.txt`; do not borrow the root host key.
 
@@ -373,7 +373,7 @@ the host and secret-consuming processes.
 
 On a replacement machine retain the administrator PIV identity, create a new
 root host key, add its real public recipient, then run
-`sops --config .secrets/.sops.yaml updatekeys .secrets/personal.yaml` using an
+`sops --config .secrets/.sops.yaml updatekeys .secrets/nix/personal.yaml` using an
 already-authorized identity. Policy edits alone do not rewrap ciphertext.
 Test the new host independently without a token before activation. Hardware
 configuration, LUKS enrollment, and sudo registration must independently match

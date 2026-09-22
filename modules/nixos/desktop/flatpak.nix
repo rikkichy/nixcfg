@@ -1,46 +1,6 @@
 { pkgs, ... }:
 
 {
-  programs.localsend = {
-    enable = true;
-    openFirewall = false;
-  };
-
-  programs.obs-studio = {
-    enable = true;
-  };
-
-  services.gvfs.enable = true;
-
-  services.udisks2.enable = true;
-
-  programs.thunar = {
-    enable = true;
-    plugins = with pkgs; [
-      thunar-volman
-      thunar-archive-plugin
-      thunar-vcs-plugin
-    ];
-  };
-
-  services.tumbler.enable = true;
-  programs.xfconf.enable = true;
-
-  programs.chromium = {
-    enable = true;
-    extensions = [
-      "ddkjiahejlhfcafbddmgiahcphecmpfh"
-      "mnjggcdmjocbbbhaepdhchncahnbgone"
-      "gebbhagfogifgggkldgodflihgfeippi"
-      "ammjkodgmmoknidbanneddgankgfejfh"
-    ];
-
-    extraOpts = {
-      TranslateEnabled = false;
-      PasswordManagerEnabled = false;
-    };
-  };
-
   services.flatpak.enable = true;
 
   systemd.user.services.flatpak-bootstrap = {
@@ -84,11 +44,4 @@
       Persistent = true;
     };
   };
-
-  virtualisation.docker = {
-    enable = true;
-    autoPrune.enable = true;
-  };
-
-  services.printing.enable = true;
 }

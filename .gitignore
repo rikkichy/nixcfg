@@ -2,8 +2,7 @@
 result
 result-*
 
-# hardware-configuration.nix is deliberately NOT ignored -- it belongs in the
-# repo once generated. It is simply absent until the first install.
+# hosts/nix/hardware.nix is deliberately tracked and machine-specific.
 
 # luac artefact (luac -l writes this unless -p is given)
 luac.out

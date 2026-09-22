@@ -137,6 +137,24 @@ let
   };
 in
 {
+  xdg.desktopEntries = {
+    network-reset = {
+      name = "Network recovery";
+      exec = "troubleshootp all";
+      icon = "${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/view-refresh.svg";
+      terminal = false;
+      categories = [ "System" ];
+      settings.Keywords = "troubleshootp;troubleshoot;network;system;helium;browser;discord;cache;";
+      settings.OnlyShowIn = "X-DesktopTools;";
+      actions = {
+        system = { name = "Reset system networking"; exec = "troubleshootp system"; };
+        helium = { name = "Kill Helium and reset networking"; exec = "troubleshootp helium"; };
+        discord = { name = "Kill Discord, reset networking and clean cache"; exec = "troubleshootp discord"; };
+        reconnect = { name = "Reconnect Ethernet"; exec = "troubleshootp reconnect"; };
+      };
+    };
+  };
+
   home.packages = lib.mkAfter (with pkgs; [
     (writeShellApplication {
       name = "troubleshootp";

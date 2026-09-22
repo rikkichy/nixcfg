@@ -52,7 +52,7 @@
   outputs =
     { nixpkgs, home-manager, ... }@inputs:
     let
-      nixcfgPath = "/home/ri/nixcfg";
+      nixcfgPath = "/etc/nixos";
       system = "x86_64-linux";
 
       overlay = import ./pkgs/overlay.nix { inherit inputs; };
@@ -78,10 +78,9 @@
         inherit system;
         specialArgs = { inherit inputs nixcfgPath; };
         modules = [
-          ./hardware-configuration.nix
-          ./configuration.nix
+          ./hosts/nix
           inputs.sops-nix.nixosModules.sops
-          ./.secrets/sops.nix
+          ./.secrets/nix/sops.nix
 
           { nixpkgs.overlays = [ overlay ]; }
 
@@ -90,7 +89,7 @@
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.extraSpecialArgs = { inherit inputs nixcfgPath; };
-            home-manager.users.ri = import ./home.nix;
+            home-manager.users.ri = import ./hosts/nix/home.nix;
           }
         ];
       };

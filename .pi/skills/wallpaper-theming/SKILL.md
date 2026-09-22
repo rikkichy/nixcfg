@@ -11,7 +11,7 @@ Detailed engineering reference for this NixOS configuration. Read the relevant s
 
 `matugen` derives a Material palette from the wallpaper and renders every
 themed file from templates tracked in `dotfiles/matugen/templates/`. The config
-naming each template and its destination uses `pkgs.formats.toml` in `home/matugen.nix`.
+naming each template and its destination uses `pkgs.formats.toml` in `modules/home/linux-desktop/matugen.nix`.
 Private `theme-apply` runs awww → matugen → terminal OSC delivery → cursor
 rendering, then records success. Matugen writes `hypr/scheme/current.lua`,
 `quickshell/colors.json`, `fuzzel/colors.ini`, both GTK and Thunar styles,
@@ -27,7 +27,7 @@ Consequences:
   which is what `wallpaper-restore` is for.
 - `hypr/` is mapped in with `mkOutOfStoreSymlink`, not copied, specifically so
   `scheme/current.lua` stays writable. That in turn requires the repo to be
-  owned by `ri` — the installer clones as root, so `system/storage.nix` carries a
+  owned by `ri` — the installer clones as root, so `hosts/nix/storage.nix` carries a
   `systemd.tmpfiles` `Z` rule reasserting `ri:users` before greetd.
 - **`--source-color-index` is not optional.** An image usually yields several
   candidate source colours, and with no preference matugen *asks* — then exits

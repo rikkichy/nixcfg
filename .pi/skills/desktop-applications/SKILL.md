@@ -11,8 +11,8 @@ Detailed engineering reference for this NixOS configuration. Read the relevant s
 
 Helium, a Chromium build, from the `helium` flake input. It is the browser
 `hypr/variables.lua` names, the `x-scheme-handler/*` and `text/html` default in
-`home/applications.nix`, and the runtime behind the Bitwarden and Spotify entries
-in `home/fuzzel-tweaks.nix`, which are `--app=URL` windows.
+`modules/home/linux-desktop/applications.nix`, and the runtime behind the Bitwarden and Spotify entries
+in `modules/home/linux-desktop/fuzzel.nix`, which are `--app=URL` windows.
 
 **Widevine is not in the package**, and every streaming web app here is
 DRM-gated. Without it Spotify loads, searches and browses normally and then
@@ -27,7 +27,7 @@ A build takes the CDM by one of two routes and this one has only the second:
   `third_party/widevine/cdm/BUILD.gn` to get it — so dropping the directory
   into a binary release's tree achieves nothing at all.
 - **As a component**, from `~/.config/net.imput.helium/WidevineCdm/<version>/`,
-  which `home/applications.nix` seeds from `pkgs.widevine-cdm`. Startup scans that
+  which `modules/home/linux-desktop/applications.nix` seeds from `pkgs.widevine-cdm`. Startup scans that
   directory, registers the highest version whose `manifest.json` agrees with
   the directory name, and records it in `latest-component-updated-widevine-cdm`
   beside it, holding `{"Path": …}`. Registration happens from that hint, so
@@ -41,7 +41,7 @@ rather than a symlinked directory, because the hint records the path as found �
 a symlink resolves to the store and a nixpkgs bump then moves it out from
 under the hint.
 
-`programs.chromium` in `system/applications.nix` installs no browser. It writes
+`programs.chromium` in `modules/nixos/desktop/base_apps.nix` installs no browser. It writes
 policy JSON, `/etc/chromium/policies/managed/` among other prefixes, and
 helium reads that directory as any Chromium build does; `chrome://policy` shows
 each one as Platform / Machine / Mandatory once it has been picked up.
@@ -140,7 +140,7 @@ Thunar's own preferences dialog exposes a fraction of them.
 `framework.ini` pins window mode, resolution, renderer and volumes, and
 `input.json` holds the input handlers — including the tablet's mapped area,
 rotation and pressure threshold. The tablet itself is arranged in
-`system/hardware.nix`, where OpenTabletDriver is installed for its udev rules and
+`hosts/nix/hardware-policy.nix`, where OpenTabletDriver is installed for its udev rules and
 its daemon deliberately left off.
 
 **None of those three can be home-manager files.** osu!framework writes every
@@ -179,7 +179,7 @@ along with `class_ModPreset`, `class_RulesetSetting`, skins, beatmaps and
 scores. `strings client.realm` is enough to confirm what a given release keeps
 there; nothing short of shipping a whole database preconfigures any of it.
 
-The six `application/x-osu-*` MIME types are declared in `system/packages.nix`,
+The six `application/x-osu-*` MIME types are declared in `modules/nixos/desktop/gaming.nix`,
 because nixpkgs packages none of them and the desktop entry claims all six.
 Only `x-scheme-handler/osu` is load-bearing — an `osu://` link from the browser
 has nowhere to go without it.
@@ -238,7 +238,7 @@ imported separately from the system one so it can carry
 `android_sdk.accept_license`; the overlay is shared, which is why it lives in a
 `let` binding rather than inline in the NixOS module. `dev/nokochat/shell.nix`
 is the shell for the NokoChat monorepo at `~/Documents/nokochat`, entered by a
-one-line `.envrc` (`use flake /home/ri/nixcfg#nokochat`) that is kept out of
+one-line `.envrc` (`use flake /etc/nixos#nokochat`) that is kept out of
 that repo through `~/.config/git/ignore`. The project's own `setup.sh` cannot
 run here — it dispatches on apt/dnf/pacman/brew and installs Google's prebuilt
 SDK binaries, which need an FHS environment.

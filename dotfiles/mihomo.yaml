@@ -1,4 +1,4 @@
-# Public template for /run/mihomo/config.yaml. .secrets/sops.nix supplies the
+# Public template for /run/mihomo/config.yaml. .secrets/nix/sops.nix supplies the
 # three private values to a runtime YAML/JSON serializer before LoadCredential.
 # Subscription links and the persistent HWID must never be stored here.
 
