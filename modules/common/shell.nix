@@ -64,9 +64,9 @@
   };
 
   xdg.configFile = {
-    "starship.toml".source = ../../../dotfiles/starship.toml;
-    "btop/btop.conf".source = ../../../dotfiles/btop.conf;
-    "fastfetch/config.jsonc".source = ../../../dotfiles/fastfetch.jsonc;
+    "starship.toml".source = ../../dotfiles/common/starship.toml;
+    "btop/btop.conf".source = ../../dotfiles/common/btop.conf;
+    "fastfetch/config.jsonc".source = ../../dotfiles/common/fastfetch.jsonc;
     "micro/settings.json".text = ''
       {
           "colorscheme": "simple"

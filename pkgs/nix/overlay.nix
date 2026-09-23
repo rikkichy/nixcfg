@@ -16,27 +16,27 @@ final: prev: {
   });
 
   hyprland = prev.hyprland.overrideAttrs (old: {
-    patches = (old.patches or [ ]) ++ [ ./hyprland-refresh-cursor.patch ];
+    patches = (old.patches or [ ]) ++ [ ./ricing/hyprland-refresh-cursor.patch ];
   });
 
-  tg-ws-proxy = final.callPackage ./tg-ws-proxy.nix {
+  tg-ws-proxy = final.callPackage ./bypasses/tg-ws-proxy.nix {
     src = inputs.tg-ws-proxy;
   };
 
   nokochat = final.callPackage ./nokochat.nix { };
-  rhythia = final.callPackage ./rhythia.nix { };
+  rhythia = final.callPackage ./gaming/rhythia.nix { };
 
-  bibata-material-cursor = final.callPackage ./bibata-material-cursor.nix {
+  bibata-material-cursor = final.callPackage ./cursor-theming/bibata-material-cursor.nix {
     src = inputs.bibata-cursor;
   };
 
   kotlin-lsp = final.callPackage ./kotlin-lsp.nix { };
 
   google-sans-rounded =
-    final.callPackage ./google-sans-rounded.nix { };
+    final.callPackage ./ricing/google-sans-rounded.nix { };
 
   midnight-discord =
-    final.callPackage ./midnight-discord.nix { };
+    final.callPackage ./ricing/midnight-discord.nix { };
 
   ananicy-cpp = prev.ananicy-cpp.overrideAttrs (old: {
     postPatch = (old.postPatch or "") + ''
@@ -44,5 +44,5 @@ final: prev: {
     '';
   });
 
-  vpn = final.callPackage ./vpn.nix { };
+  vpn = final.callPackage ./bypasses/vpn.nix { };
 }

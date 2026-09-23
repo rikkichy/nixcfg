@@ -33,9 +33,9 @@ in
       RuntimeDirectory = "mihomo";
       RuntimeDirectoryMode = "0700";
       RuntimeDirectoryPreserve = "yes";
-      ExecStart = "${python}/bin/python ${../../pkgs/mihomo-config.py} ${if provisioned then "sops" else "legacy"} ${../../dotfiles/mihomo.yaml} ${source "primary_url" "subscription.url"} ${source "quattro_url" "quattro.url"} ${source "hwid" "hwid"} /run/mihomo/config.yaml";
+      ExecStart = "${python}/bin/python ${../../pkgs/nix/bypasses/mihomo-config.py} ${if provisioned then "sops" else "legacy"} ${../../dotfiles/nix/mihomo.yaml} ${source "primary_url" "subscription.url"} ${source "quattro_url" "quattro.url"} ${source "hwid" "hwid"} /run/mihomo/config.yaml";
     };
   };
   services.mihomo.configFile = "/run/mihomo/config.yaml";
-  systemd.services.mihomo.restartTriggers = [ ../../dotfiles/mihomo.yaml ../../pkgs/mihomo-config.py ];
+  systemd.services.mihomo.restartTriggers = [ ../../dotfiles/nix/mihomo.yaml ../../pkgs/nix/bypasses/mihomo-config.py ];
 }

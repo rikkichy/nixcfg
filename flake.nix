@@ -60,7 +60,7 @@
       nixcfgPath = "/etc/nixos";
       system = "x86_64-linux";
 
-      overlay = import ./pkgs/overlay.nix { inherit inputs; };
+      overlay = import ./pkgs/nix/overlay.nix { inherit inputs; };
 
       devPkgs = import nixpkgs {
         inherit system;

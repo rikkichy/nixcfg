@@ -18,31 +18,31 @@ let
       ''
     } > $out
     sed '/fonts\.googleapis\.com/d' ${pkgs.midnight-discord} >> $out
-    cat ${../../../dotfiles/discord/theme.css} >> $out
+    cat ${../../../dotfiles/nix/discord/theme.css} >> $out
   '';
 
   template = input: output: {
-    input_path = "${../../../dotfiles/matugen/templates}/${input}";
+    input_path = "${input}";
     output_path = output;
   };
   matugenConfig = (pkgs.formats.toml {}).generate "matugen-config.toml" {
     config.source_color_index = 0;
     templates = let cfg = config.xdg.configHome; in {
-      fuzzel = template "fuzzel.ini" "${cfg}/fuzzel/colors.ini";
-      quickshell = template "quickshell.json" "${cfg}/quickshell/colors.json";
-      gtk3 = template "gtk.css" "${cfg}/gtk-3.0/gtk.css";
-      gtk4 = template "gtk.css" "${cfg}/gtk-4.0/gtk.css";
-      thunar3 = template "thunar.css" "${cfg}/gtk-3.0/thunar.css";
-      thunar4 = template "thunar.css" "${cfg}/gtk-4.0/thunar.css";
-      hypr = template "hypr-scheme.lua" "${cfg}/hypr/scheme/current.lua";
-      terminal = template "terminal-colors.conf" terminalColours;
-      btop = template "btop.theme" "${cfg}/btop/themes/wallpaper.theme" // {
+      fuzzel = template ../../../dotfiles/nix/matugen/templates/fuzzel.ini "${cfg}/fuzzel/colors.ini";
+      quickshell = template ../../../dotfiles/nix/matugen/templates/quickshell.json "${cfg}/quickshell/colors.json";
+      gtk3 = template ../../../dotfiles/nix/matugen/templates/gtk.css "${cfg}/gtk-3.0/gtk.css";
+      gtk4 = template ../../../dotfiles/nix/matugen/templates/gtk.css "${cfg}/gtk-4.0/gtk.css";
+      thunar3 = template ../../../dotfiles/nix/matugen/templates/thunar.css "${cfg}/gtk-3.0/thunar.css";
+      thunar4 = template ../../../dotfiles/nix/matugen/templates/thunar.css "${cfg}/gtk-4.0/thunar.css";
+      hypr = template ../../../dotfiles/nix/matugen/templates/hypr-scheme.lua "${cfg}/hypr/scheme/current.lua";
+      terminal = template ../../../dotfiles/common/matugen/templates/terminal-colors.conf terminalColours;
+      btop = template ../../../dotfiles/common/matugen/templates/btop.theme "${cfg}/btop/themes/wallpaper.theme" // {
         post_hook = "${pkgs.psmisc}/bin/killall -USR2 btop 2>/dev/null || true";
       };
-      nvtop = template "nvtop.colors" "${cfg}/nvtop/nvtop.colors";
-      qt = template "qt.colors" "${cfg}/qtengine/scheme.colors";
-      cursor = template "cursor.conf" cursorColours;
-      discord = template "discord-palette.css" "${cfg}/Equicord/settings/quickCss.css";
+      nvtop = template ../../../dotfiles/nix/matugen/templates/nvtop.colors "${cfg}/nvtop/nvtop.colors";
+      qt = template ../../../dotfiles/nix/matugen/templates/qt.colors "${cfg}/qtengine/scheme.colors";
+      cursor = template ../../../dotfiles/nix/matugen/templates/cursor.conf cursorColours;
+      discord = template ../../../dotfiles/nix/matugen/templates/discord-palette.css "${cfg}/Equicord/settings/quickCss.css";
     };
   };
 
@@ -102,7 +102,7 @@ let
     '';
   };
 
-  defaultWallpaper = ../../../dotfiles/default-wallpaper.png;
+  defaultWallpaper = ../../../dotfiles/nix/default-wallpaper.png;
 
   wallpaperRecord = lib.escapeShellArg "${config.xdg.stateHome}/wallpaper/current";
   animatedRecord = lib.escapeShellArg "${config.xdg.stateHome}/wallpaper/animated";
