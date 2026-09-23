@@ -67,19 +67,11 @@
         overlays = [ overlay ];
         config = {
           allowUnfree = true;
-          android_sdk.accept_license = true;
         };
       };
-
-      nokochatShell = import ./dev/nokochat/shell.nix { pkgs = devPkgs; };
     in
     {
       packages.${system}.rhythia = devPkgs.rhythia;
-
-      devShells.${system} = {
-        nokochat = nokochatShell;
-        default = nokochatShell;
-      };
 
       darwinConfigurations.ne = inputs.nix-darwin.lib.darwinSystem {
         modules = [

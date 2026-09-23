@@ -11,7 +11,8 @@ The separate host lives in `hosts/ne/default.nix`. It manages Nix with Lix,
 installs `nh`, and enables Fish as the login shell. `hosts/ne/home.nix` imports
 the same `modules/home/common/shell.nix` as NixOS: Fish abbreviations, aliases,
 Starship, zoxide, direnv, and the shared Starship/fastfetch/btop/micro configs.
-It does not import the Linux desktop, secrets, or overlays, or manage Homebrew apps.
+It does not import the Linux desktop, secrets, or overlays. The Darwin host
+manages `omp` through Homebrew; activation leaves other Homebrew packages installed.
 
 Install [Lix](https://lix.systems/install/) in an interactive terminal:
 
@@ -45,6 +46,15 @@ Home Manager backs up other conflicting managed files with the
 `.before-nix-darwin` suffix; an existing backup is not silently overwritten.
 Open a new terminal after activation. Optional machine-local Fish additions
 can go in `~/.config/fish/user-config.fish`, sourced by the shared module.
+
+The Darwin home configuration also manages Matugen, `wallpaper-theme`, and
+Ghostty's settings, leaving the installed Ghostty app and local shader files alone.
+Ghostty uses the shared `dotfiles/matugen/templates/terminal-colors.conf` palette
+and the same `scheme-content` mode as NixOS, including Fastfetch's accent slots 16–18.
+Run `wallpaper-theme` (or `wallpaper-theme light`) after changing the macOS wallpaper,
+then use Ghostty's Reload Configuration action. The command reads the first desktop's
+wallpaper and writes the mutable `~/.config/ghostty/themes/Matugen` palette;
+wallpaper changes are not watched automatically.
 
 
 If activation reports an existing `/etc` file conflict, inspect and back up that

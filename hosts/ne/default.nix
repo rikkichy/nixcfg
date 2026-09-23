@@ -10,6 +10,13 @@
 
   programs.fish.enable = true;
 
+  homebrew = {
+    enable = true;
+    taps = [ "can1357/tap" ];
+    brews = [ "can1357/tap/omp" ];
+    onActivation.cleanup = "none";
+  };
+
   networking.hostName = "ne";
   system.primaryUser = "rii";
   users.users.rii.home = "/Users/rii";
