@@ -9,14 +9,8 @@
     maxGenerations = 10;
   };
   boot.loader.efi.canTouchEfiVariables = true;
-  boot.initrd.systemd.enable = true;
-  boot.initrd.systemd.fido2.enable = true;
   boot.initrd.luks.devices."cryptroot" = {
     allowDiscards = true;
-    crypttabExtraOpts = [
-      "fido2-device=auto"
-      "token-timeout=10s"
-    ];
   };
   boot.kernelPackages = pkgs.linuxPackages_latest;
 

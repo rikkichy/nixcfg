@@ -17,27 +17,7 @@
 
   security.protectKernelImage = true;
 
-  security.sudo-rs = {
-    enable = true;
-    wheelNeedsPassword = true;
-  };
-  security.pam.u2f.settings = {
-    authfile = "/etc/u2f-mappings";
-    origin = "pam://nix";
-    appid = "pam://nix";
-    userpresence = 1;
-    pinverification = 0;
-    userverification = 0;
-    cue = true;
-  };
-  security.pam.services.sudo.u2f = {
-    enable = true;
-    control = "sufficient";
-  };
-  security.pam.services.sudo-i.u2f = {
-    enable = true;
-    control = "sufficient";
-  };
+  imports = [ ../../../../common/modules/nixos-yubikey.nix ];
 
   environment.memoryAllocator.provider = "graphene-hardened-light";
 

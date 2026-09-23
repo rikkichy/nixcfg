@@ -147,6 +147,60 @@ If activation reports an existing `/etc` file conflict, inspect and back up that
 specific file before following the reported migration instructions; do not
 delete existing configuration blindly.
 
+## Interactive Linux installer
+
+`install.nix` packages `scripts/install.sh` as `nix run path:.#install`.
+From a trusted checkout containing the installer on a networked NixOS UEFI
+live ISO:
+
+```sh
+nix --extra-experimental-features 'nix-command flakes' run path:.#install -- --plan "$PWD"
+sudo nix --extra-experimental-features 'nix-command flakes' run path:.#install -- "$PWD"
+```
+
+Select `nixos-server` for the headless server. `nix` is specifically the
+Ryzen/NVIDIA desktop, not a generic desktop profile; `ne` is not installable
+with this Linux tool. The server uses DHCP and console login, with no desktop,
+SSH daemon, or application workloads enabled.
+
+The installer selects an unused whole disk, requires `ERASE /dev/...`, and
+creates a 4 GiB EFI partition plus a LUKS2/XFS root. Mounted disks, active
+device-mapper/RAID holders, swap, live-media backing devices, mounted Btrfs
+members and unresolved usage are rejected. ZFS members require manual
+installation. Selection and disk identity are rechecked before partitioning.
+This destroys the selected disk's existing data; it is not an upgrade tool.
+
+Only public source and encrypted ciphertext belong in the checkout. The
+installer snapshots tracked and nonignored untracked files without Git/OMP
+metadata, evaluates the host before erasing, and copies the snapshot to
+`/mnt/etc/nixos`. Generated hardware and UUIDs replace only the installed
+`hosts/<host>/hardware.nix`; the source checkout is unchanged. The installed
+configuration is a source snapshot, not a Git clone. Use `path:` rebuilds.
+Evaluation is not a full build, and post-erase failures require manual recovery.
+
+Enter disk, root and `ri` passwords interactively; retain them independently
+of the YubiKey. The token must be USB-visible to the server: KVM keyboard
+forwarding is insufficient. Missing forwarding requires explicit `DEFER`.
+Boot and sudo enrollments each require separate approval. Boot enrollment
+requires an existing mounted encrypted off-target filesystem for protected
+LUKS header backups. Skip enrollment if that storage is unavailable; do not
+store unencrypted headers in this checkout or on the installer USB.
+
+`common/modules/nixos-yubikey.nix` provides both Linux hosts' systemd-initrd
+FIDO2 discovery and touch-only sudo policy. Sudo registration is host-specific
+(`pam://<hostname>`), stored root-owned at `/etc/u2f-mappings`, and keeps
+password fallback. No token reset, recovery-slot removal, SOPS provisioning,
+or automatic reboot is performed. On failure, keep the recovery shell and
+inspect `/mnt` and `cryptroot`; do not rerun the erasing installer as recovery.
+Use the [disk](#touch-only-disk-unlock) and
+[sudo](#touch-only-sudo-with-password-fallback) acceptance checklists
+with the selected hostname before relying on touch-only authentication.
+
+Developer checks: `bash scripts/install-test.sh`, packaged `--help`/`--plan`,
+the standard full validation, and
+`nix build --dry-run 'path:.#nixosConfigurations.nixos-server.config.system.build.toplevel'`.
+Mocks and evaluation do not prove disk installation, live PAM, or cold boot.
+
 ## Install, step by step
 
 Boot the NixOS 26.05 minimal ISO. **Secure Boot must be OFF** — the ISO is not
@@ -221,8 +275,9 @@ the generated hardware configuration, copied to `hosts/nix/hardware.nix`, named 
 boot.initrd.luks.devices."cryptroot".device = "/dev/disk/by-uuid/<uuid>";
 ```
 
-`hosts/nix/boot.nix` extends that same mapping with discard and FIDO discovery
-options; it does not enroll the disk. Keep the name `cryptroot` consistent.
+`hosts/nix/boot.nix` adds discard support; `common/modules/nixos-yubikey.nix`
+adds systemd FIDO discovery to that same mapping. Neither enrolls the disk.
+Keep the name `cryptroot` consistent.
 The retained passphrase remains the fallback; see **Touch-only disk unlock**
 below before enrolling a token.
 
@@ -658,7 +713,7 @@ Secrets remain separate in `.secrets/`.
 | `hosts/nix/storage.nix` | data mounts, permissions, XFS scrubbing and trim |
 | `hosts/nix/modules/system/locale.nix` | desktop locale and timezone |
 | `hosts/nix/modules/system/nix.nix` | Nix settings and garbage collection |
-| `hosts/nix/modules/system/security.nix` | polkit, PAM/U2F, sudo, hardened allocator and smart cards |
+| `hosts/nix/modules/system/security.nix` | polkit, shared authentication import, hardened allocator and smart cards |
 | `hosts/nix/modules/system/networking.nix` | NetworkManager, Mihomo, firewall and service discovery |
 | `hosts/nix/modules/system/audio.nix` | PipeWire and the Blessing 3 equalizer |
 | `hosts/nix/modules/system/session.nix` | Hyprland/UWSM, greetd, portals, keyring, session environment and fonts |

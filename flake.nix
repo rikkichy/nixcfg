@@ -1,5 +1,5 @@
 {
-  description = "NixOS desktop and macOS hosts";
+  description = "NixOS desktop, server and macOS hosts";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -71,7 +71,19 @@
       };
     in
     {
-      packages.${system}.rhythia = devPkgs.rhythia;
+      packages.${system} = {
+        rhythia = devPkgs.rhythia;
+        install = nixpkgs.legacyPackages.${system}.callPackage ./install.nix { };
+      };
+      apps.${system}.install = {
+        type = "app";
+        program = "${nixpkgs.legacyPackages.${system}.callPackage ./install.nix { }}/bin/nixcfg-install";
+      };
+
+      nixosConfigurations.nixos-server = nixpkgs.lib.nixosSystem {
+        inherit system;
+        modules = [ ./hosts/nixos-server ];
+      };
 
       darwinConfigurations.ne = inputs.nix-darwin.lib.darwinSystem {
         specialArgs = { inherit nixcfgPath; };
