@@ -58,6 +58,5 @@
     nerd-fonts.caskaydia-cove
 
     google-sans-rounded
-    nerd-fonts.departure-mono
   ];
 }

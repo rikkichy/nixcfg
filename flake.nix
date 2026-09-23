@@ -74,6 +74,7 @@
       packages.${system}.rhythia = devPkgs.rhythia;
 
       darwinConfigurations.ne = inputs.nix-darwin.lib.darwinSystem {
+        specialArgs = { inherit nixcfgPath; };
         modules = [
           ./hosts/ne
           home-manager.darwinModules.home-manager

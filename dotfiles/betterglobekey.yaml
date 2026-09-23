@@ -1,0 +1,22 @@
+version: 2
+
+logger:
+  path: ~/Library/Logs/betterglobekey.log
+  level: info
+  retention:
+    days: 30
+    files: 3
+
+# single collection + no double-press = every Globe press is an instant toggle
+double_press:
+  enabled: false
+
+# no on-screen overlay at all
+hud:
+  enabled: false
+
+collections:
+  - name: default
+    sources:
+      - com.apple.keylayout.US
+      - com.apple.keylayout.Russian

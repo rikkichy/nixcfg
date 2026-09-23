@@ -14,6 +14,10 @@ let
       );
       output_path = "${config.xdg.configHome}/ghostty/themes/Matugen";
     };
+    templates.btop = {
+      input_path = ../../dotfiles/matugen/templates/btop.theme;
+      output_path = "${config.xdg.configHome}/btop/themes/wallpaper.theme";
+    };
   };
   wallpaperTheme = pkgs.writeShellApplication {
     name = "wallpaper-theme";
@@ -35,8 +39,7 @@ in
 
   programs.fish.shellInit = ''
     /opt/homebrew/bin/brew shellenv fish | source
-    fish_add_path --global --path /opt/homebrew/opt/rustup/bin /opt/homebrew/opt/openjdk@21/bin
-    set -gx JAVA_HOME /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
+    fish_add_path --global --path /opt/homebrew/opt/rustup/bin
     set -gx BUN_INSTALL "$HOME/.bun"
     fish_add_path --global --path "$BUN_INSTALL/bin"
   '';
@@ -49,6 +52,7 @@ in
       command = "/run/current-system/sw/bin/fish";
       background-opacity = 0.6;
       background-blur-radius = 20;
+      font-family = "DepartureMono Nerd Font";
       font-size = 18;
       cursor-style = "block";
       cursor-style-blink = false;
@@ -61,20 +65,21 @@ in
         "${config.xdg.configHome}/ghostty/shaders/cursor_sweep.glsl"
         "${config.xdg.configHome}/ghostty/shaders/in-game-crt-cursor.glsl"
       ];
-      custom-shader-animation = "always";
+      custom-shader-animation = false;
     };
   };
 
-  xdg.configFile."matugen/config.toml".source = matugenConfig;
+  xdg.configFile = {
+    "matugen/config.toml".source = matugenConfig;
+    "zed/settings.json".source = ../../dotfiles/zed/settings.json;
+    "zed/themes/matugen.json".source = ../../dotfiles/zed/themes/matugen.json;
+    "ghostty/shaders/cursor_sweep.glsl".source = ../../dotfiles/ghostty/shaders/cursor_sweep.glsl;
+    "ghostty/shaders/in-game-crt-cursor.glsl".source = ../../dotfiles/ghostty/shaders/in-game-crt-cursor.glsl;
+  };
+  home.file.".betterglobekey.yaml".source = ../../dotfiles/betterglobekey.yaml;
   home.file.".local/bin/wallpaper-theme".source = "${wallpaperTheme}/bin/wallpaper-theme";
 
   home.packages = with pkgs; [
-    starship
-    zoxide
-    eza
-    lazygit
-    git
-    fastfetch
     matugen
     wallpaperTheme
   ];

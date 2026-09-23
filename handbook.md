@@ -12,7 +12,19 @@ installs `nh`, and enables Fish as the login shell. `hosts/ne/home.nix` imports
 the same `modules/home/common/shell.nix` as NixOS: Fish abbreviations, aliases,
 Starship, zoxide, direnv, and the shared Starship/fastfetch/btop/micro configs.
 It does not import the Linux desktop, secrets, or overlays. The Darwin host
-manages `omp` through Homebrew; activation leaves other Homebrew packages installed.
+declares the installed Homebrew formulae, casks, and taps in `hosts/ne/default.nix`;
+activation neither upgrades nor removes packages. Applications installed outside
+Homebrew remain owned by their existing installers.
+Nokochat's Java/Node toolchain, Go tooling, XcodeGen, Docker/Compose clients,
+and Gitleaks belong to its own `~/src/nokochat/flake.nix`: enter that checkout
+with `nix develop`. Do not add them back to the global Brew inventory or export
+a global `JAVA_HOME`. Its development shell also supplies and starts Colima;
+Xcode and the writable Android SDK remain host-managed. Docker Desktop is not
+required. See Nokochat's README for the container lifecycle.
+
+The host also owns reduced-motion, Dock, Finder, keyboard, trackpad, and
+per-power-source sleep/energy preferences. Some macOS preferences require
+logging out or restarting before taking effect; individual apps may still animate.
 
 Install [Lix](https://lix.systems/install/) in an interactive terminal:
 
@@ -27,7 +39,7 @@ Keep the checkout owned by your normal user so lock updates do not require sudo.
 ```sh
 cd /etc/nixos
 # New source files must be visible to Git flakes before the first build.
-git add -N hosts/ne/default.nix hosts/ne/home.nix
+git add -N hosts/ne dotfiles/betterglobekey.yaml dotfiles/zed dotfiles/ghostty
 nix flake lock
 nix run --inputs-from . nix-darwin#darwin-rebuild -- build --flake .#ne
 # Once, before first activation: back up the old Fish directory so unmanaged
@@ -47,14 +59,30 @@ Home Manager backs up other conflicting managed files with the
 Open a new terminal after activation. Optional machine-local Fish additions
 can go in `~/.config/fish/user-config.fish`, sourced by the shared module.
 
-The Darwin home configuration also manages Matugen, `wallpaper-theme`, and
-Ghostty's settings, leaving the installed Ghostty app and local shader files alone.
+BetterGlobeKey starts through Homebrew at login. Its native Globe action is
+disabled so the service alone switches input sources. Home Manager owns
+`~/.betterglobekey.yaml`: change `dotfiles/betterglobekey.yaml` for keyboard
+collections and behavior. On a fresh Mac, grant Accessibility permission when
+prompted, then run `betterglobekey doctor`. Colima is project-scoped in Nokochat's
+development shell, not installed or started through Homebrew.
+
+The shared Home Manager shell module owns the portable CLI packages and
+Departure Mono Nerd Font for both users. Ghostty selects that font explicitly;
+macOS font installation takes effect on activation and may require restarting Ghostty.
+
+The Darwin home configuration also manages Matugen, `wallpaper-theme`,
+Ghostty's settings and selected shaders, and Zed's settings and captured Matugen
+theme. Ghostty and Zed applications remain externally installed. Edit their
+managed assets under `dotfiles/`, not the store-backed files in `~/.config`.
+Ghostty's continuous shader animation is disabled; shaders still render on terminal updates.
 Ghostty uses the shared `dotfiles/matugen/templates/terminal-colors.conf` palette
 and the same `scheme-content` mode as NixOS, including Fastfetch's accent slots 16–18.
 Run `wallpaper-theme` (or `wallpaper-theme light`) after changing the macOS wallpaper,
 then use Ghostty's Reload Configuration action. The command reads the first desktop's
-wallpaper and writes the mutable `~/.config/ghostty/themes/Matugen` palette;
-wallpaper changes are not watched automatically.
+wallpaper and writes the mutable Ghostty palette and btop `wallpaper.theme` using
+the shared templates. Restart an open btop after regenerating its theme.
+Wallpaper changes are not watched automatically.
+The captured Zed theme is static; `wallpaper-theme` does not regenerate it.
 
 
 If activation reports an existing `/etc` file conflict, inspect and back up that
@@ -585,17 +613,16 @@ the allocator preload only for this service; system-wide hardening stays enabled
 | `dotfiles/` | tracked assets/templates used by home modules and the public Mihomo template |
 | `.secrets/.sops.yaml`, `.secrets/nix/` | public recipient policy and host-specific declarations/ciphertext |
 
-Host composition uses explicit imports. Only `nix` is configured; server and
-Darwin outputs require real host settings before they can be evaluated or deployed.
+Host composition uses explicit imports. `nix` is the NixOS desktop and `ne`
+is the Apple Silicon Darwin host; new hosts require their own real settings.
 A server imports selected `modules/nixos/common/` modules, never the desktop
 bundle. Its boot, disks, networking, users and workloads belong in its own
 `hosts/<name>/` directory. Server-specific reusable modules belong in
-`modules/nixos/server/` when needed. A Mac uses nix-darwin with platform modules
-under `modules/darwin/` and Home Manager's Darwin integration.
+`modules/nixos/server/` when needed. The Mac uses `hosts/ne/` with
+nix-darwin and Home Manager's Darwin integration.
 
-Portable shell settings are in `modules/home/common/`; their CLI executables
-are currently supplied by the NixOS common package inventory. A Darwin host must
-provide the tools it uses through its own package inventory. Linux themes, Foot
+Portable shell settings and their CLI packages are owned together by
+`modules/home/common/`, shared by both hosts. Linux themes, Foot
 and systemd user services are confined to `modules/home/linux-desktop/`.
 Keep architecture, checkout path, username, state versions and secrets explicit
 per host. Do not reuse this desktop's hardware file, PAM enrollment, secret

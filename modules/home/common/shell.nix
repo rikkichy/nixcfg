@@ -1,6 +1,16 @@
-{ lib, ... }:
+{ lib, pkgs, ... }:
 
 {
+  home.packages = with pkgs; [
+    sops age
+    btop git gh wget
+    starship zoxide eza fzf bat ripgrep lazygit jq fastfetch micro
+    file unzip
+    nerd-fonts.departure-mono
+  ];
+
+  fonts.fontconfig.enable = pkgs.stdenv.hostPlatform.isLinux;
+
   programs.direnv = {
     enable = true;
     nix-direnv.enable = true;
