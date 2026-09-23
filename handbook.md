@@ -1,8 +1,55 @@
 # nixcfg
 
-NixOS config for `nix` — 9950X3D / RTX 3090 / LUKS / Hyprland + Quickshell.
-Clone to **`/etc/nixos`** — `nixcfgPath` in `flake.nix` supplies this path to
-`nh`, services and the live Hyprland symlink.
+NixOS config for `nix` — 9950X3D / RTX 3090 / LUKS / Hyprland + Quickshell —
+and nix-darwin config for the Apple Silicon Mac `ne`.
+Clone to **`/etc/nixos`** on either machine. For NixOS, `nixcfgPath` in
+`flake.nix` supplies this path to `nh`, services and the live Hyprland symlink.
+
+## macOS bootstrap
+
+The separate host lives in `hosts/ne/default.nix`. It manages Nix with Lix,
+installs `nh`, and enables Fish as the login shell. `hosts/ne/home.nix` imports
+the same `modules/home/common/shell.nix` as NixOS: Fish abbreviations, aliases,
+Starship, zoxide, direnv, and the shared Starship/fastfetch/btop/micro configs.
+It does not import the Linux desktop, secrets, or overlays, or manage Homebrew apps.
+
+Install [Lix](https://lix.systems/install/) in an interactive terminal:
+
+```sh
+curl -sSfL https://install.lix.systems/lix | sh -s -- install
+```
+
+Open a new terminal. If the initial checkout is at `~/nixcfg`, move it once
+with `sudo mv ~/nixcfg /etc/nixos` (the destination must not already exist).
+Keep the checkout owned by your normal user so lock updates do not require sudo.
+
+```sh
+cd /etc/nixos
+# New source files must be visible to Git flakes before the first build.
+git add -N hosts/ne/default.nix hosts/ne/home.nix
+nix flake lock
+nix run --inputs-from . nix-darwin#darwin-rebuild -- build --flake .#ne
+# Once, before first activation: back up the old Fish directory so unmanaged
+# conf.d scripts and functions cannot override the shared configuration.
+# Use a fresh backup name if this destination already exists.
+mv ~/.config/fish ~/.config/fish.before-nix-darwin
+sudo /nix/var/nix/profiles/default/bin/nix run --inputs-from . nix-darwin#darwin-rebuild -- switch --flake .#ne
+```
+
+Review and commit the updated `flake.lock` with the configuration. Later changes:
+
+```sh
+nh darwin switch /etc/nixos --hostname ne
+```
+Home Manager backs up other conflicting managed files with the
+`.before-nix-darwin` suffix; an existing backup is not silently overwritten.
+Open a new terminal after activation. Optional machine-local Fish additions
+can go in `~/.config/fish/user-config.fish`, sourced by the shared module.
+
+
+If activation reports an existing `/etc` file conflict, inspect and back up that
+specific file before following the reported migration instructions; do not
+delete existing configuration blindly.
 
 ## Install, step by step
 
@@ -494,7 +541,8 @@ the allocator preload only for this service; system-wide hardening stays enabled
 
 | Path | What |
 |---|---|
-| `flake.nix` | inputs + `nixosConfigurations.nix` |
+| `flake.nix` | inputs + NixOS and Darwin host outputs |
+| `hosts/ne/default.nix` | macOS host configuration |
 | `hosts/nix/default.nix` | desktop identity, user and explicit system module imports |
 | `hosts/nix/hardware.nix` | detected hardware, root LUKS device and root/boot filesystems |
 | `hosts/nix/boot.nix` | bootloader, initrd/LUKS additions, kernel and crash resilience |
