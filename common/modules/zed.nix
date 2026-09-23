@@ -42,7 +42,7 @@ in
     package = if isLinux then pkgs.zed-editor else null;
     extraPackages = lib.optionals isLinux [ pkgs.qt6.qtdeclarative ];
     mutableUserSettings = false;
-    themes.matugen = ../../dotfiles/common/zed/themes/matugen.json;
+    themes.matugen = ../dotfiles/zed/themes/matugen.json;
     extensions = [
       "nix"
       "kotlin"

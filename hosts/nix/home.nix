@@ -2,14 +2,14 @@
 
 {
   imports = [
-    ../../modules/nix/home/quickshell.nix
-    ../../modules/nix/home/fuzzel.nix
-    ../../modules/nix/home/matugen.nix
-    ../../modules/nix/home/network-reset.nix
-    ../../modules/nix/home/applications.nix
-    ../../modules/common/shell.nix
-    ../../modules/common/zed.nix
-    ../../modules/nix/home/foot.nix
+    ./modules/home/quickshell.nix
+    ./modules/home/fuzzel.nix
+    ./modules/home/matugen.nix
+    ./modules/home/network-reset.nix
+    ./modules/home/applications.nix
+    ../../common/modules/shell.nix
+    ../../common/modules/zed.nix
+    ./modules/home/foot.nix
   ];
 
   home.stateVersion = "26.05";
@@ -23,7 +23,5 @@
     bemoji
 
     hyprshot
-
-    matugen
   ];
 }

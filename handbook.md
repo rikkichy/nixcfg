@@ -9,10 +9,10 @@ Clone to **`/etc/nixos`** on either machine. For NixOS, `nixcfgPath` in
 
 The separate host lives in `hosts/ne/default.nix`. It manages Nix with Lix,
 installs `nh`, and enables Fish as the login shell. `hosts/ne/home.nix` imports
-the same `modules/common/shell.nix` as NixOS: Fish abbreviations, aliases,
+the same `common/modules/shell.nix` as NixOS: Fish abbreviations, aliases,
 Starship, zoxide, direnv, and the shared Starship/fastfetch/btop/micro configs.
 It does not import the Linux desktop, secrets, or overlays. The Darwin host
-declares the installed Homebrew formulae, casks, and taps in `hosts/ne/default.nix`;
+declares Brew-owned formulae, casks, and taps in `hosts/ne/default.nix`;
 activation neither upgrades nor removes packages. Applications installed outside
 Homebrew remain owned by their existing installers.
 Nokochat's Java/Node toolchain, Go tooling, XcodeGen, Docker/Compose clients,
@@ -39,7 +39,7 @@ Keep the checkout owned by your normal user so lock updates do not require sudo.
 ```sh
 cd /etc/nixos
 # New source files must be visible to Git flakes before the first build.
-git add -N hosts/ne modules/common modules/ne pkgs/ne dotfiles/common dotfiles/ne
+git add -N hosts/ne common
 nix flake lock
 nix run --inputs-from . nix-darwin#darwin-rebuild -- build --flake .#ne
 # Once, before first activation: back up the old Fish directory so unmanaged
@@ -58,24 +58,32 @@ Home Manager backs up other conflicting managed files with the
 `.before-nix-darwin` suffix; an existing backup is not silently overwritten.
 Open a new terminal after activation. Optional machine-local Fish additions
 can go in `~/.config/fish/user-config.fish`, sourced by the shared module.
+Existing macOS accounts can retain their previous login shell after activation.
+Before removing a Brew Fish installation, check `dscl . -read /Users/"$USER" UserShell`
+and verify `/run/current-system/sw/bin/fish` starts. After activation registers
+that path in `/etc/shells`, select it with `chsh -s /run/current-system/sw/bin/fish`.
+macOS may request authentication for this account change.
 
 BetterGlobeKey starts through Homebrew at login. Its native Globe action is
 disabled so the service alone switches input sources. Home Manager owns
-`~/.betterglobekey.yaml`: change `dotfiles/ne/betterglobekey.yaml` for keyboard
+`~/.betterglobekey.yaml`: change `hosts/ne/dotfiles/betterglobekey.yaml` for keyboard
 collections and behavior. On a fresh Mac, grant Accessibility permission when
 prompted, then run `betterglobekey doctor`. Colima is project-scoped in Nokochat's
 development shell, not installed or started through Homebrew.
 
-The shared Home Manager shell module owns the portable CLI packages and
-Departure Mono Nerd Font for both users. Ghostty selects that font explicitly;
+The shared Home Manager shell module owns the portable CLI packages, Matugen,
+and Departure Mono Nerd Font for both users. Ghostty selects that font explicitly;
 macOS font installation takes effect on activation and may require restarting Ghostty.
+Do not duplicate these tools in the Brew inventory. Removing a Brew declaration
+does not uninstall an existing copy: cleanup remains disabled. Before a targeted
+uninstall, verify the deployed Nix binary, login-shell paths, and Brew dependents.
 
-The Darwin home configuration also manages Matugen, `wallpaper-theme`, and
+The Darwin home configuration also manages Matugen's configuration, `wallpaper-theme`, and
 Ghostty's settings and selected shaders. Ghostty and Zed applications remain
-externally installed on macOS. Edit Ghostty's managed assets under `dotfiles/ne/ghostty/`,
+externally installed on macOS. Edit Ghostty's managed assets under `hosts/ne/dotfiles/ghostty/`,
 not the store-backed files in `~/.config`.
 Ghostty's continuous shader animation is disabled; shaders still render on terminal updates.
-Ghostty uses the shared `dotfiles/common/matugen/templates/terminal-colors.conf` palette
+Ghostty uses the shared `common/dotfiles/matugen/templates/terminal-colors.conf` palette
 and the same `scheme-content` mode as NixOS, including Fastfetch's accent slots 16–18.
 Run `wallpaper-theme` (or `wallpaper-theme light`) after changing the macOS wallpaper,
 then use Ghostty's Reload Configuration action. The command reads the first desktop's
@@ -84,7 +92,7 @@ the shared templates. Restart an open btop after regenerating its theme.
 Wallpaper changes are not watched automatically.
 The captured Zed theme is static; `wallpaper-theme` does not regenerate it.
 
-Both hosts import `modules/common/zed.nix`, which owns Zed's read-only
+Both hosts import `common/modules/zed.nix`, which owns Zed's read-only
 settings, extension selection, language-server commands, and the captured theme.
 On Linux it also owns the Zed package; on Darwin it configures the existing app.
 Edit this module rather than Zed's settings UI. Extensions are installed by Zed
@@ -92,8 +100,8 @@ on startup, not version-pinned by Nix. Before the first Linux activation, back u
 any unmanaged `~/.config/zed/settings.json` or conflicting Matugen theme file.
 Restart Zed after activation so language servers use the new generation.
 
-On Darwin, `modules/ne/home.nix` owns the text/source file associations.
-Its user activation runs `pkgs/ne/zed-file-associations.nix` using the native `NSWorkspace` API, including for extensions
+On Darwin, `hosts/ne/modules/home.nix` owns the text/source file associations.
+Its user activation runs `hosts/ne/pkgs/zed-file-associations.nix` using the native `NSWorkspace` API, including for extensions
 with dynamic content types that `duti` cannot set. Zed must already be installed;
 macOS may ask for approval when a default changes. Associations already pointing
 to Zed are skipped. The activation leaves folder, media, archive, PDF, and Adobe
@@ -109,7 +117,7 @@ QML language-server support is Linux-only, with Qt and Quickshell import
 metadata passed explicitly; Darwin retains QML syntax support.
 
 JetBrains Kotlin LSP pre-release builds expire. If its log reports an expired
-build, update `pkgs/nix/kotlin-lsp.nix` from the upstream release and checksum and
+build, update `hosts/nix/pkgs/kotlin-lsp.nix` from the upstream release and checksum and
 upgrade only the Darwin cask with `brew upgrade --cask kotlin-lsp`.
 Darwin activation deliberately does not upgrade Homebrew packages.
 
@@ -248,7 +256,7 @@ No password is set in the config on purpose — this repo is public.
 
 Flatpak apps install themselves a couple of minutes after you log in — Flathub
 plus `org.vinegarhq.Sober` and `me.amankhanna.opendeck`. To add another, put it
-in the list in `modules/nix/system/flatpak.nix` and rebuild. If one is missing:
+in the list in `hosts/nix/modules/system/flatpak.nix` and rebuild. If one is missing:
 
 ```
 systemctl --user start flatpak-bootstrap
@@ -301,7 +309,7 @@ Their templates are tracked, but generated destinations must remain writable.
 Fuzzel's static `fuzzel.ini` is managed separately and includes its palette.
 
 So a fresh install themes itself once, from a gradient shipped in
-`dotfiles/nix/ricing/`, and you get a coloured desktop without doing anything. The
+`hosts/nix/dotfiles/ricing/`, and you get a coloured desktop without doing anything. The
 `wallpaper-restore` user unit does this, and from then on it is what puts your
 wallpaper back at every login — the shell itself remembers nothing, so without
 it you would log in to a blank desktop. It reads
@@ -375,7 +383,7 @@ To stop the service outright — `systemctl stop mihomo` — you do not need it 
 this, and it also takes the DNS hijack down with it. DIRECT is the toggle you
 want.
 
-The public template is `dotfiles/nix/bypasses/mihomo.yaml`. `mihomo-config` serializes the
+The public template is `hosts/nix/dotfiles/bypasses/mihomo.yaml`. `mihomo-config` serializes the
 three private strings into a root-only `/run/mihomo/config.yaml`; Mihomo receives
 it through systemd `LoadCredential`, retaining `DynamicUser`. SOPS scalar values
 are preserved exactly; legacy file inputs retain their existing whitespace
@@ -549,7 +557,7 @@ layout move preserves ciphertext bytes/metadata and runtime identities: compare
 checksums, adapt relative paths/rules/imports, and do not rotate or reenroll
 hardware merely because a file moved.
 
-Two settings in `modules/nix/system/networking.nix` are tied to `tun.device: mihomo` inside that
+Two settings in `hosts/nix/modules/system/networking.nix` are tied to `tun.device: mihomo` inside that
 file — `networking.firewall.trustedInterfaces` and
 `networking.networkmanager.unmanaged`. Rename the device in one place and all
 three need to change together.
@@ -566,7 +574,7 @@ carrying anything.
 
 ## Telegram proxy (tg-ws-proxy)
 
-`Flowseal/tg-ws-proxy` is packaged from source in `pkgs/nix/bypasses/tg-ws-proxy.nix` and
+`Flowseal/tg-ws-proxy` is packaged from source in `hosts/nix/pkgs/bypasses/tg-ws-proxy.nix` and
 pulled in as a `flake = false` input, so the nightly `autoUpgrade` bumps it
 like everything else.
 
@@ -606,70 +614,70 @@ the allocator preload only for this service; system-wide hardening stays enabled
 
 ## Layout
 
-Modules, packages, and dotfiles are grouped by ownership: `common/` for files
-used by both hosts, `nix/` for the NixOS desktop, and `ne/` for the Mac.
-Create a group only when it has real content; there are no shared local package
-definitions yet. Within `modules/nix/`, `system/` and `home/` distinguish the
-NixOS and Home Manager module types.
+Ownership comes first: `common/` contains configuration used by both hosts,
+while `hosts/nix/` and `hosts/ne/` contain each host's entry points, modules,
+packages and dotfiles. Create subdirectories only for real content; there are
+no shared local packages yet. Within `hosts/nix/modules/`, `system/` and `home/`
+distinguish NixOS and Home Manager modules. Secrets remain separate in `.secrets/`.
 
 | Path | What |
 |---|---|
 | `flake.nix` | inputs + NixOS and Darwin host outputs |
 | `hosts/ne/default.nix` | macOS host configuration |
 | `hosts/ne/home.nix` | Home Manager imports and state version |
-| `modules/ne/home.nix` | Darwin shell environment, Ghostty, wallpaper theming and file associations |
-| `pkgs/ne/zed-file-associations.nix` | native macOS file-association helper |
+| `hosts/ne/modules/home.nix` | Darwin shell environment, Ghostty, wallpaper theming and file associations |
+| `hosts/ne/pkgs/zed-file-associations.nix` | native macOS file-association helper |
 | `hosts/nix/default.nix` | desktop identity, user and explicit system module imports |
 | `hosts/nix/hardware.nix` | detected hardware, root LUKS device and root/boot filesystems |
 | `hosts/nix/boot.nix` | bootloader, initrd/LUKS additions, kernel and crash resilience |
 | `hosts/nix/hardware-policy.nix` | CPU policy, NVIDIA, peripheral access and Bluetooth |
 | `hosts/nix/lighting.nix` | headless RGB shutdown, device exclusions and process isolation |
 | `hosts/nix/storage.nix` | data mounts, permissions, XFS scrubbing and trim |
-| `modules/nix/system/cli.nix` | system-wide CLI/admin package inventory |
-| `modules/nix/system/locale.nix` | desktop locale and timezone |
-| `modules/nix/system/nix.nix` | Nix settings and garbage collection |
-| `modules/nix/system/security.nix` | polkit, PAM/U2F, sudo, hardened allocator and smart cards |
-| `modules/nix/system/networking.nix` | NetworkManager, Mihomo, firewall and service discovery |
-| `modules/nix/system/audio.nix` | PipeWire and the Blessing 3 equalizer |
-| `modules/nix/system/session.nix` | Hyprland/UWSM, greetd, portals, keyring, session environment and fonts |
-| `modules/nix/system/gaming.nix` | Steam, Gamescope, GameMode, game packages, osu! MIME and scheduling |
-| `modules/nix/system/applications.nix` | desktop package inventory, application integration, Docker and printing |
-| `modules/nix/system/flatpak.nix` | Flatpak service and bootstrap/update units |
-| `modules/nix/system/maintenance.nix` | checkout helpers, automated updates and desktop notifications |
-| `pkgs/nix/overlay.nix` | desktop package wiring and upstream patches |
-| `pkgs/nix/bypasses/vpn.nix` | VPN command package |
+| `hosts/nix/modules/system/cli.nix` | system-wide CLI/admin package inventory |
+| `hosts/nix/modules/system/locale.nix` | desktop locale and timezone |
+| `hosts/nix/modules/system/nix.nix` | Nix settings and garbage collection |
+| `hosts/nix/modules/system/security.nix` | polkit, PAM/U2F, sudo, hardened allocator and smart cards |
+| `hosts/nix/modules/system/networking.nix` | NetworkManager, Mihomo, firewall and service discovery |
+| `hosts/nix/modules/system/audio.nix` | PipeWire and the Blessing 3 equalizer |
+| `hosts/nix/modules/system/session.nix` | Hyprland/UWSM, greetd, portals, keyring, session environment and fonts |
+| `hosts/nix/modules/system/gaming.nix` | Steam, Gamescope, GameMode, game packages, osu! MIME and scheduling |
+| `hosts/nix/modules/system/applications.nix` | desktop package inventory, application integration, Docker and printing |
+| `hosts/nix/modules/system/flatpak.nix` | Flatpak service and bootstrap/update units |
+| `hosts/nix/modules/system/maintenance.nix` | checkout helpers, automated updates and desktop notifications |
+| `hosts/nix/pkgs/overlay.nix` | desktop package wiring and upstream patches |
+| `hosts/nix/pkgs/bypasses/vpn.nix` | VPN command package |
 | `hosts/nix/home.nix` | Home Manager imports, state version and desktop packages |
-| `modules/nix/home/matugen.nix` | generated palettes, cursors, wallpaper entries/pickers and restoration |
-| `modules/nix/home/fuzzel.nix` | Fuzzel settings, general desktop entries/actions and shared pickers |
-| `modules/nix/home/network-reset.nix` | network recovery backend, desktop entry and terminal launcher |
-| `modules/nix/home/quickshell.nix` | Quickshell service, QML deployment and live Hyprland symlink |
-| `dotfiles/nix/ricing/quickshell/` | Material 3 Expressive rail, controls, notifications and calendar |
-| `modules/nix/home/applications.nix` | application settings, MIME defaults, GTK/Qt and Telegram proxy |
-| `modules/common/shell.nix` | portable Fish, direnv and CLI dotfiles |
-| `modules/nix/home/foot.nix` | Foot and terminal palette integration |
-| `dotfiles/nix/ricing/hypr/` | Hyprland Lua config, symlinked live into `~/.config/hypr` |
-| `dotfiles/common/`, `dotfiles/nix/`, `dotfiles/ne/` | shared and host-owned assets/templates |
-| `dotfiles/nix/ricing/`, `dotfiles/nix/gaming/`, `dotfiles/nix/bypasses/` | desktop appearance, game settings and proxy configuration |
+| `hosts/nix/modules/home/matugen.nix` | generated palettes, cursors, wallpaper entries/pickers and restoration |
+| `hosts/nix/modules/home/fuzzel.nix` | Fuzzel settings, general desktop entries/actions and shared pickers |
+| `hosts/nix/modules/home/network-reset.nix` | network recovery backend, desktop entry and terminal launcher |
+| `hosts/nix/modules/home/quickshell.nix` | Quickshell service, QML deployment and live Hyprland symlink |
+| `hosts/nix/dotfiles/ricing/quickshell/` | Material 3 Expressive rail, controls, notifications and calendar |
+| `hosts/nix/modules/home/applications.nix` | application settings, MIME defaults, GTK/Qt and Telegram proxy |
+| `common/modules/shell.nix` | portable Fish, direnv and CLI dotfiles |
+| `hosts/nix/modules/home/foot.nix` | Foot and terminal palette integration |
+| `hosts/nix/dotfiles/ricing/hypr/` | Hyprland Lua config, symlinked live into `~/.config/hypr` |
+| `common/dotfiles/`, `hosts/nix/dotfiles/`, `hosts/ne/dotfiles/` | shared and host-owned assets/templates |
+| `hosts/nix/dotfiles/ricing/`, `hosts/nix/dotfiles/gaming/`, `hosts/nix/dotfiles/bypasses/` | desktop appearance, game settings and proxy configuration |
 | `.secrets/.sops.yaml`, `.secrets/nix/` | public recipient policy and host-specific declarations/ciphertext |
 
 Host composition uses explicit imports. `nix` is the NixOS desktop and `ne`
 is the Apple Silicon Darwin host; new hosts require their own real settings.
 A new host keeps its boot, disks, networking, users and workloads in
-`hosts/<name>/`, with host-owned modules in `modules/<name>/`. Move a module into
-`common/` only when multiple hosts actually use it. The Mac uses nix-darwin and
+`hosts/<name>/`, alongside its `modules/`, `pkgs/` and `dotfiles/`. Move a module
+into `common/modules/` only when multiple hosts actually use it. The Mac uses nix-darwin and
 Home Manager's Darwin integration; Linux system modules are not portable to it.
 
 Portable shell settings and their CLI packages are owned together by
-`modules/common/`, shared by both hosts. Linux themes, Foot
-and systemd user services are confined to `modules/nix/home/`.
+`common/modules/`, shared by both hosts. Linux themes, Foot
+and systemd user services are confined to `hosts/nix/modules/home/`.
 Keep architecture, checkout path, username, state versions and secrets explicit
 per host. Do not reuse this desktop's hardware file, PAM enrollment, secret
 recipients or Linux package overlay on another host by default.
 
 After adopting this layout on `nix`, switch the host configuration to retarget
-the live `~/.config/hypr` symlink to `dotfiles/nix/ricing/hypr/` before reloading Hyprland.
-Preserve any locally generated `hypr/scheme/current.lua` at its new location;
-the ignore rule moves with the Hyprland directory.
+the live `~/.config/hypr` symlink to `hosts/nix/dotfiles/ricing/hypr/` before reloading Hyprland.
+Preserve any locally generated `scheme/current.lua` within the moved Hyprland
+directory; its ignore rule moves with it.
 
 `vhelper` and `openwave` are separate flake inputs and live in their own
 repos (`rikkichy/vhelper`, `rikkichy/openwave`) — edit them there, not here.
@@ -689,8 +697,8 @@ read-only store symlinks, so **do not** put any of those under
 home-manager's `gtk` module is not used: it emits `gtk-4.0/gtk.css` too.
 
 **Change the colours by editing templates, not the generated files.** The
-terminal and btop templates are in `dotfiles/common/matugen/templates/`; the
-Linux-only templates are in `dotfiles/nix/ricing/matugen/templates/`. Anything you type
+terminal and btop templates are in `common/dotfiles/matugen/templates/`; the
+Linux-only templates are in `hosts/nix/dotfiles/ricing/matugen/templates/`. Anything you type
 into the generated files is gone at the next wallpaper. Run `wpp` to re-render
 after editing a template.
 
@@ -704,7 +712,7 @@ check orders wallpaper restoration after the socket is usable.
 ## Expressive desktop shell
 
 `quickshell.service` runs the pinned Quickshell package with
-`dotfiles/nix/ricing/quickshell/`. The unit's restart trigger includes the QML store path,
+`hosts/nix/dotfiles/ricing/quickshell/`. The unit's restart trigger includes the QML store path,
 so a configuration rebuild updates the unit as well as its files. Apply with the
 normal `nixos-rebuild switch --flake path:/etc/nixos#nix`; no manual
 notification daemon or wallpaper daemon should run alongside the managed ones.
@@ -718,7 +726,7 @@ The folded tray and notification buttons both occupy 56 × 48 logical pixels.
 Special workspaces use Google's official Material Symbols Rounded:
 `communication` uses `chat`, `music` uses `music_note`, and other special
 workspaces use `layers`. Bundled SVGs and their Apache-2.0 license live in
-`dotfiles/nix/ricing/quickshell/icons/`. Icons follow workspace names rather than temporary IDs;
+`hosts/nix/dotfiles/ricing/quickshell/icons/`. Icons follow workspace names rather than temporary IDs;
 ordinary workspaces retain their numeric labels.
 Microphone, volume, network and Bluetooth remain at the bottom.
 Each of those buttons opens only its own controls: microphone input,

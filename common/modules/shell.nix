@@ -6,6 +6,7 @@
     btop git gh wget
     starship zoxide eza fzf bat ripgrep lazygit jq fastfetch micro
     file unzip
+    matugen
     nerd-fonts.departure-mono
   ];
 
@@ -64,9 +65,9 @@
   };
 
   xdg.configFile = {
-    "starship.toml".source = ../../dotfiles/common/starship.toml;
-    "btop/btop.conf".source = ../../dotfiles/common/btop.conf;
-    "fastfetch/config.jsonc".source = ../../dotfiles/common/fastfetch.jsonc;
+    "starship.toml".source = ../dotfiles/starship.toml;
+    "btop/btop.conf".source = ../dotfiles/btop.conf;
+    "fastfetch/config.jsonc".source = ../dotfiles/fastfetch.jsonc;
     "micro/settings.json".text = ''
       {
           "colorscheme": "simple"

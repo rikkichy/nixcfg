@@ -8,7 +8,7 @@
       Description = "Material 3 Expressive desktop shell";
       PartOf = [ "graphical-session.target" ];
       After = [ "graphical-session.target" ];
-      X-Restart-Triggers = [ "${../../../dotfiles/nix/ricing/quickshell}" ];
+      X-Restart-Triggers = [ "${../../dotfiles/ricing/quickshell}" ];
     };
     Service = {
       ExecStart = "${pkgs.quickshell}/bin/quickshell --no-duplicate --config expressive";
@@ -24,7 +24,7 @@
   };
 
   xdg.configFile = {
-    "quickshell/expressive".source = ../../../dotfiles/nix/ricing/quickshell;
-    "hypr".source = config.lib.file.mkOutOfStoreSymlink "${nixcfgPath}/dotfiles/nix/ricing/hypr";
+    "quickshell/expressive".source = ../../dotfiles/ricing/quickshell;
+    "hypr".source = config.lib.file.mkOutOfStoreSymlink "${nixcfgPath}/hosts/nix/dotfiles/ricing/hypr";
   };
 }

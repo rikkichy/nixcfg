@@ -18,7 +18,7 @@ let
       ''
     } > $out
     sed '/fonts\.googleapis\.com/d' ${pkgs.midnight-discord} >> $out
-    cat ${../../../dotfiles/nix/ricing/discord/theme.css} >> $out
+    cat ${../../dotfiles/ricing/discord/theme.css} >> $out
   '';
 
   template = input: output: {
@@ -28,21 +28,21 @@ let
   matugenConfig = (pkgs.formats.toml {}).generate "matugen-config.toml" {
     config.source_color_index = 0;
     templates = let cfg = config.xdg.configHome; in {
-      fuzzel = template ../../../dotfiles/nix/ricing/matugen/templates/fuzzel.ini "${cfg}/fuzzel/colors.ini";
-      quickshell = template ../../../dotfiles/nix/ricing/matugen/templates/quickshell.json "${cfg}/quickshell/colors.json";
-      gtk3 = template ../../../dotfiles/nix/ricing/matugen/templates/gtk.css "${cfg}/gtk-3.0/gtk.css";
-      gtk4 = template ../../../dotfiles/nix/ricing/matugen/templates/gtk.css "${cfg}/gtk-4.0/gtk.css";
-      thunar3 = template ../../../dotfiles/nix/ricing/matugen/templates/thunar.css "${cfg}/gtk-3.0/thunar.css";
-      thunar4 = template ../../../dotfiles/nix/ricing/matugen/templates/thunar.css "${cfg}/gtk-4.0/thunar.css";
-      hypr = template ../../../dotfiles/nix/ricing/matugen/templates/hypr-scheme.lua "${cfg}/hypr/scheme/current.lua";
-      terminal = template ../../../dotfiles/common/matugen/templates/terminal-colors.conf terminalColours;
-      btop = template ../../../dotfiles/common/matugen/templates/btop.theme "${cfg}/btop/themes/wallpaper.theme" // {
+      fuzzel = template ../../dotfiles/ricing/matugen/templates/fuzzel.ini "${cfg}/fuzzel/colors.ini";
+      quickshell = template ../../dotfiles/ricing/matugen/templates/quickshell.json "${cfg}/quickshell/colors.json";
+      gtk3 = template ../../dotfiles/ricing/matugen/templates/gtk.css "${cfg}/gtk-3.0/gtk.css";
+      gtk4 = template ../../dotfiles/ricing/matugen/templates/gtk.css "${cfg}/gtk-4.0/gtk.css";
+      thunar3 = template ../../dotfiles/ricing/matugen/templates/thunar.css "${cfg}/gtk-3.0/thunar.css";
+      thunar4 = template ../../dotfiles/ricing/matugen/templates/thunar.css "${cfg}/gtk-4.0/thunar.css";
+      hypr = template ../../dotfiles/ricing/matugen/templates/hypr-scheme.lua "${cfg}/hypr/scheme/current.lua";
+      terminal = template ../../../../common/dotfiles/matugen/templates/terminal-colors.conf terminalColours;
+      btop = template ../../../../common/dotfiles/matugen/templates/btop.theme "${cfg}/btop/themes/wallpaper.theme" // {
         post_hook = "${pkgs.psmisc}/bin/killall -USR2 btop 2>/dev/null || true";
       };
-      nvtop = template ../../../dotfiles/nix/ricing/matugen/templates/nvtop.colors "${cfg}/nvtop/nvtop.colors";
-      qt = template ../../../dotfiles/nix/ricing/matugen/templates/qt.colors "${cfg}/qtengine/scheme.colors";
-      cursor = template ../../../dotfiles/nix/ricing/matugen/templates/cursor.conf cursorColours;
-      discord = template ../../../dotfiles/nix/ricing/matugen/templates/discord-palette.css "${cfg}/Equicord/settings/quickCss.css";
+      nvtop = template ../../dotfiles/ricing/matugen/templates/nvtop.colors "${cfg}/nvtop/nvtop.colors";
+      qt = template ../../dotfiles/ricing/matugen/templates/qt.colors "${cfg}/qtengine/scheme.colors";
+      cursor = template ../../dotfiles/ricing/matugen/templates/cursor.conf cursorColours;
+      discord = template ../../dotfiles/ricing/matugen/templates/discord-palette.css "${cfg}/Equicord/settings/quickCss.css";
     };
   };
 
@@ -102,7 +102,7 @@ let
     '';
   };
 
-  defaultWallpaper = ../../../dotfiles/nix/ricing/default-wallpaper.png;
+  defaultWallpaper = ../../dotfiles/ricing/default-wallpaper.png;
 
   wallpaperRecord = lib.escapeShellArg "${config.xdg.stateHome}/wallpaper/current";
   animatedRecord = lib.escapeShellArg "${config.xdg.stateHome}/wallpaper/animated";

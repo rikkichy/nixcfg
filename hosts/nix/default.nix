@@ -4,20 +4,20 @@
   imports = [
     ./hardware.nix
     ./storage.nix
-    ../../modules/nix/system/nix.nix
-    ../../modules/nix/system/maintenance.nix
+    ./modules/system/nix.nix
+    ./modules/system/maintenance.nix
     ./boot.nix
     ./hardware-policy.nix
     ./lighting.nix
-    ../../modules/nix/system/security.nix
-    ../../modules/nix/system/session.nix
-    ../../modules/nix/system/audio.nix
-    ../../modules/nix/system/gaming.nix
-    ../../modules/nix/system/flatpak.nix
-    ../../modules/nix/system/networking.nix
-    ../../modules/nix/system/cli.nix
-    ../../modules/nix/system/applications.nix
-    ../../modules/nix/system/locale.nix
+    ./modules/system/security.nix
+    ./modules/system/session.nix
+    ./modules/system/audio.nix
+    ./modules/system/gaming.nix
+    ./modules/system/flatpak.nix
+    ./modules/system/networking.nix
+    ./modules/system/cli.nix
+    ./modules/system/applications.nix
+    ./modules/system/locale.nix
   ];
 
   networking.hostName = "nix";

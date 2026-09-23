@@ -29,12 +29,12 @@ let
             ]
             ++ builtins.genList (i: "palette=${toString i}=#") 19
           )
-          (builtins.readFile ../../dotfiles/common/matugen/templates/terminal-colors.conf)
+          (builtins.readFile ../../../common/dotfiles/matugen/templates/terminal-colors.conf)
       );
       output_path = "${config.xdg.configHome}/ghostty/themes/Matugen";
     };
     templates.btop = {
-      input_path = ../../dotfiles/common/matugen/templates/btop.theme;
+      input_path = ../../../common/dotfiles/matugen/templates/btop.theme;
       output_path = "${config.xdg.configHome}/btop/themes/wallpaper.theme";
     };
   };
@@ -50,7 +50,7 @@ let
       matugen image "$wallpaper" --type scheme-content --mode "''${1:-dark}" --config ${matugenConfig}
     '';
   };
-  zedFileAssociations = pkgs.callPackage ../../pkgs/ne/zed-file-associations.nix { };
+  zedFileAssociations = pkgs.callPackage ../pkgs/zed-file-associations.nix { };
 in
 {
   # Launch Services defaults, scoped to text/source files rather than all data.
@@ -96,15 +96,12 @@ in
 
   xdg.configFile = {
     "matugen/config.toml".source = matugenConfig;
-    "ghostty/shaders/cursor_sweep.glsl".source = ../../dotfiles/ne/ghostty/shaders/cursor_sweep.glsl;
+    "ghostty/shaders/cursor_sweep.glsl".source = ../dotfiles/ghostty/shaders/cursor_sweep.glsl;
     "ghostty/shaders/in-game-crt-cursor.glsl".source =
-      ../../dotfiles/ne/ghostty/shaders/in-game-crt-cursor.glsl;
+      ../dotfiles/ghostty/shaders/in-game-crt-cursor.glsl;
   };
-  home.file.".betterglobekey.yaml".source = ../../dotfiles/ne/betterglobekey.yaml;
+  home.file.".betterglobekey.yaml".source = ../dotfiles/betterglobekey.yaml;
   home.file.".local/bin/wallpaper-theme".source = "${wallpaperTheme}/bin/wallpaper-theme";
 
-  home.packages = with pkgs; [
-    matugen
-    wallpaperTheme
-  ];
+  home.packages = [ wallpaperTheme ];
 }
