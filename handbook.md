@@ -656,7 +656,6 @@ Secrets remain separate in `.secrets/`.
 | `hosts/nix/hardware-policy.nix` | CPU policy, NVIDIA, peripheral access and Bluetooth |
 | `hosts/nix/lighting.nix` | headless RGB shutdown, device exclusions and process isolation |
 | `hosts/nix/storage.nix` | data mounts, permissions, XFS scrubbing and trim |
-| `hosts/nix/modules/system/cli.nix` | system-wide CLI/admin package inventory |
 | `hosts/nix/modules/system/locale.nix` | desktop locale and timezone |
 | `hosts/nix/modules/system/nix.nix` | Nix settings and garbage collection |
 | `hosts/nix/modules/system/security.nix` | polkit, PAM/U2F, sudo, hardened allocator and smart cards |

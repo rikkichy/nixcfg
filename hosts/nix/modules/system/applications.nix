@@ -1,6 +1,8 @@
 { pkgs, inputs, ... }:
 
 {
+  programs.git.enable = true;
+
   environment.systemPackages = with pkgs; [
     vpn
     omp
@@ -57,6 +59,7 @@
     xdg-user-dirs
 
     tg-ws-proxy
+    trash-cli
   ];
 
   programs.localsend = {

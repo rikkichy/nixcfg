@@ -15,7 +15,6 @@
     ./modules/system/gaming.nix
     ./modules/system/flatpak.nix
     ./modules/system/networking.nix
-    ./modules/system/cli.nix
     ./modules/system/applications.nix
     ./modules/system/locale.nix
   ];
