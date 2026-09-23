@@ -12,7 +12,7 @@ installs `nh`, and enables Fish as the login shell. `hosts/ne/home.nix` imports
 the same `common/modules/shell.nix` as NixOS: Fish abbreviations, aliases,
 Starship, zoxide, direnv, and the shared Starship/fastfetch/btop/micro configs.
 It does not import the Linux desktop, secrets, or overlays. The Darwin host
-declares Brew-owned formulae, casks, and taps in `hosts/ne/default.nix`;
+declares Brew-owned formulae, casks, and taps in `hosts/ne/modules/system/homebrew.nix`;
 activation neither upgrades nor removes packages. Applications installed outside
 Homebrew remain owned by their existing installers.
 Nokochat's Java/Node toolchain, Go tooling, XcodeGen, Docker/Compose clients,
@@ -109,7 +109,7 @@ Home Manager adds `marta` to the user package profile after switching; it invoke
 Marta's official launcher, supporting `marta .`, two directory arguments, and
 `--existing-tab` without adding unrelated user toolchain shims to `PATH`.
 To restore native reveal actions to Finder, remove the `NSFileViewer` declaration
-from `hosts/ne/default.nix`, switch, and run `defaults delete -g NSFileViewer`.
+from `hosts/ne/modules/system/preferences.nix`, switch, and run `defaults delete -g NSFileViewer`.
 Removing the declaration alone does not clear the stored preference; applications
 that cache it may need restarting.
 
@@ -121,7 +121,7 @@ on startup, not version-pinned by Nix. Before the first Linux activation, back u
 any unmanaged `~/.config/zed/settings.json` or conflicting Matugen theme file.
 Restart Zed after activation so language servers use the new generation.
 
-On Darwin, `hosts/ne/modules/home.nix` owns the text/source file associations.
+On Darwin, `hosts/ne/modules/home/file-associations.nix` owns the text/source file associations.
 Its user activation runs `hosts/ne/pkgs/zed-file-associations.nix` using the native `NSWorkspace` API, including for extensions
 with dynamic content types that `duti` cannot set. Zed must already be installed;
 macOS may ask for approval when a default changes. Associations already pointing
@@ -638,15 +638,17 @@ the allocator preload only for this service; system-wide hardening stays enabled
 Ownership comes first: `common/` contains configuration used by both hosts,
 while `hosts/nix/` and `hosts/ne/` contain each host's entry points, modules,
 packages and dotfiles. Create subdirectories only for real content; there are
-no shared local packages yet. Within `hosts/nix/modules/`, `system/` and `home/`
-distinguish NixOS and Home Manager modules. Secrets remain separate in `.secrets/`.
+no shared local packages yet. Within each host's `modules/`, `system/` contains
+NixOS or nix-darwin modules and `home/` contains Home Manager modules.
+Secrets remain separate in `.secrets/`.
 
 | Path | What |
 |---|---|
 | `flake.nix` | inputs + NixOS and Darwin host outputs |
-| `hosts/ne/default.nix` | macOS host configuration |
+| `hosts/ne/default.nix` | macOS host identity, primary-user wiring and system module imports |
 | `hosts/ne/home.nix` | Home Manager imports and state version |
-| `hosts/ne/modules/home.nix` | Darwin shell environment, Ghostty, wallpaper theming and file associations |
+| `hosts/ne/modules/system/` | Homebrew inventory, Nix policy, macOS preferences and power settings |
+| `hosts/ne/modules/home/` | shell environment, Ghostty, Matugen, Marta, keyboard and file associations |
 | `hosts/ne/pkgs/zed-file-associations.nix` | native macOS file-association helper |
 | `hosts/nix/default.nix` | desktop identity, user and explicit system module imports |
 | `hosts/nix/hardware.nix` | detected hardware, root LUKS device and root/boot filesystems |
