@@ -301,7 +301,7 @@ Their templates are tracked, but generated destinations must remain writable.
 Fuzzel's static `fuzzel.ini` is managed separately and includes its palette.
 
 So a fresh install themes itself once, from a gradient shipped in
-`dotfiles/nix/`, and you get a coloured desktop without doing anything. The
+`dotfiles/nix/ricing/`, and you get a coloured desktop without doing anything. The
 `wallpaper-restore` user unit does this, and from then on it is what puts your
 wallpaper back at every login — the shell itself remembers nothing, so without
 it you would log in to a blank desktop. It reads
@@ -375,7 +375,7 @@ To stop the service outright — `systemctl stop mihomo` — you do not need it 
 this, and it also takes the DNS hijack down with it. DIRECT is the toggle you
 want.
 
-The public template is `dotfiles/nix/mihomo.yaml`. `mihomo-config` serializes the
+The public template is `dotfiles/nix/bypasses/mihomo.yaml`. `mihomo-config` serializes the
 three private strings into a root-only `/run/mihomo/config.yaml`; Mihomo receives
 it through systemd `LoadCredential`, retaining `DynamicUser`. SOPS scalar values
 are preserved exactly; legacy file inputs retain their existing whitespace
@@ -643,12 +643,13 @@ NixOS and Home Manager module types.
 | `modules/nix/home/fuzzel.nix` | Fuzzel settings, general desktop entries/actions and shared pickers |
 | `modules/nix/home/network-reset.nix` | network recovery backend, desktop entry and terminal launcher |
 | `modules/nix/home/quickshell.nix` | Quickshell service, QML deployment and live Hyprland symlink |
-| `dotfiles/nix/quickshell/` | Material 3 Expressive rail, controls, notifications and calendar |
+| `dotfiles/nix/ricing/quickshell/` | Material 3 Expressive rail, controls, notifications and calendar |
 | `modules/nix/home/applications.nix` | application settings, MIME defaults, GTK/Qt and Telegram proxy |
 | `modules/common/shell.nix` | portable Fish, direnv and CLI dotfiles |
 | `modules/nix/home/foot.nix` | Foot and terminal palette integration |
-| `dotfiles/nix/hypr/` | Hyprland Lua config, symlinked live into `~/.config/hypr` |
+| `dotfiles/nix/ricing/hypr/` | Hyprland Lua config, symlinked live into `~/.config/hypr` |
 | `dotfiles/common/`, `dotfiles/nix/`, `dotfiles/ne/` | shared and host-owned assets/templates |
+| `dotfiles/nix/ricing/`, `dotfiles/nix/gaming/`, `dotfiles/nix/bypasses/` | desktop appearance, game settings and proxy configuration |
 | `.secrets/.sops.yaml`, `.secrets/nix/` | public recipient policy and host-specific declarations/ciphertext |
 
 Host composition uses explicit imports. `nix` is the NixOS desktop and `ne`
@@ -666,7 +667,7 @@ per host. Do not reuse this desktop's hardware file, PAM enrollment, secret
 recipients or Linux package overlay on another host by default.
 
 After adopting this layout on `nix`, switch the host configuration to retarget
-the live `~/.config/hypr` symlink to `dotfiles/nix/hypr/` before reloading Hyprland.
+the live `~/.config/hypr` symlink to `dotfiles/nix/ricing/hypr/` before reloading Hyprland.
 Preserve any locally generated `hypr/scheme/current.lua` at its new location;
 the ignore rule moves with the Hyprland directory.
 
@@ -689,7 +690,7 @@ home-manager's `gtk` module is not used: it emits `gtk-4.0/gtk.css` too.
 
 **Change the colours by editing templates, not the generated files.** The
 terminal and btop templates are in `dotfiles/common/matugen/templates/`; the
-Linux-only templates are in `dotfiles/nix/matugen/templates/`. Anything you type
+Linux-only templates are in `dotfiles/nix/ricing/matugen/templates/`. Anything you type
 into the generated files is gone at the next wallpaper. Run `wpp` to re-render
 after editing a template.
 
@@ -703,7 +704,7 @@ check orders wallpaper restoration after the socket is usable.
 ## Expressive desktop shell
 
 `quickshell.service` runs the pinned Quickshell package with
-`dotfiles/nix/quickshell/`. The unit's restart trigger includes the QML store path,
+`dotfiles/nix/ricing/quickshell/`. The unit's restart trigger includes the QML store path,
 so a configuration rebuild updates the unit as well as its files. Apply with the
 normal `nixos-rebuild switch --flake path:/etc/nixos#nix`; no manual
 notification daemon or wallpaper daemon should run alongside the managed ones.
@@ -717,7 +718,7 @@ The folded tray and notification buttons both occupy 56 × 48 logical pixels.
 Special workspaces use Google's official Material Symbols Rounded:
 `communication` uses `chat`, `music` uses `music_note`, and other special
 workspaces use `layers`. Bundled SVGs and their Apache-2.0 license live in
-`dotfiles/nix/quickshell/icons/`. Icons follow workspace names rather than temporary IDs;
+`dotfiles/nix/ricing/quickshell/icons/`. Icons follow workspace names rather than temporary IDs;
 ordinary workspaces retain their numeric labels.
 Microphone, volume, network and Bluetooth remain at the bottom.
 Each of those buttons opens only its own controls: microphone input,
