@@ -4,6 +4,3 @@ result-*
 luac.out
 
 __pycache__/
-AGENTS.md
-agents.md
-.omp/
