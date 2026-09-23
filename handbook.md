@@ -102,6 +102,17 @@ Darwin also preserves Marta's native first-launch-completed preference to skip
 the onboarding tutorial; its manual Tutorial action remains available. Patreon
 reminder behavior is left unchanged rather than manipulating its launch counter.
 
+Darwin sets the native `NSFileViewer` preference to Marta for file-reveal actions
+that honor it. This does not replace Finder globally: ordinary folder opening
+still uses Finder, and no folder or `public.item` association is overridden.
+Home Manager adds `marta` to the user package profile after switching; it invokes
+Marta's official launcher, supporting `marta .`, two directory arguments, and
+`--existing-tab` without adding unrelated user toolchain shims to `PATH`.
+To restore native reveal actions to Finder, remove the `NSFileViewer` declaration
+from `hosts/ne/default.nix`, switch, and run `defaults delete -g NSFileViewer`.
+Removing the declaration alone does not clear the stored preference; applications
+that cache it may need restarting.
+
 Both hosts import `common/modules/zed.nix`, which owns Zed's read-only
 settings, extension selection, language-server commands, and the captured theme.
 On Linux it also owns the Zed package; on Darwin it configures the existing app.

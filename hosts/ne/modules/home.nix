@@ -55,6 +55,9 @@ let
     '';
   };
   zedFileAssociations = pkgs.callPackage ../pkgs/zed-file-associations.nix { };
+  martaLauncher = pkgs.writeShellScriptBin "marta" ''
+    exec /Applications/Marta.app/Contents/Resources/Launcher "$@"
+  '';
 in
 {
   # Launch Services defaults, scoped to text/source files rather than all data.
@@ -107,5 +110,5 @@ in
   home.file.".betterglobekey.yaml".source = ../dotfiles/betterglobekey.yaml;
   home.file.".local/bin/wallpaper-theme".source = "${wallpaperTheme}/bin/wallpaper-theme";
 
-  home.packages = [ wallpaperTheme ];
+  home.packages = [ wallpaperTheme martaLauncher ];
 }
