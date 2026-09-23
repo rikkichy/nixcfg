@@ -60,6 +60,7 @@
       "gcloud-cli"
       "helium-browser"
       "kotlin-lsp"
+      "marta"
       "prismlauncher"
       "wallspace"
       "wireshark-app"

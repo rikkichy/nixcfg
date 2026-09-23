@@ -8,6 +8,7 @@
     ../../modules/home/linux-desktop/network-reset.nix
     ../../modules/home/linux-desktop/applications.nix
     ../../modules/home/common/shell.nix
+    ../../modules/home/common/zed.nix
     ../../modules/home/linux-desktop/foot.nix
   ];
 

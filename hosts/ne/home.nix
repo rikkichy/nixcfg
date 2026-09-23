@@ -1,4 +1,9 @@
-{ config, pkgs, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
 let
   matugenConfig = (pkgs.formats.toml { }).generate "matugen-config.toml" {
@@ -6,10 +11,24 @@ let
     templates.ghostty = {
       input_path = pkgs.writeText "ghostty-template" (
         builtins.replaceStrings
-          ([ "foreground=" "background=" "cursor=" "selection=" ]
-            ++ builtins.genList (i: "color${toString i}=") 19)
-          ([ "foreground=#" "background=#" "cursor-color=#" "selection-background=#" ]
-            ++ builtins.genList (i: "palette=${toString i}=#") 19)
+          (
+            [
+              "foreground="
+              "background="
+              "cursor="
+              "selection="
+            ]
+            ++ builtins.genList (i: "color${toString i}=") 19
+          )
+          (
+            [
+              "foreground=#"
+              "background=#"
+              "cursor-color=#"
+              "selection-background=#"
+            ]
+            ++ builtins.genList (i: "palette=${toString i}=#") 19
+          )
           (builtins.readFile ../../dotfiles/matugen/templates/terminal-colors.conf)
       );
       output_path = "${config.xdg.configHome}/ghostty/themes/Matugen";
@@ -31,11 +50,58 @@ let
       matugen image "$wallpaper" --type scheme-content --mode "''${1:-dark}" --config ${matugenConfig}
     '';
   };
+  zedFileAssociations =
+    pkgs.runCommandCC "zed-file-associations"
+      {
+        nativeBuildInputs = [ pkgs.swift ];
+      }
+      ''
+        mkdir -p "$out/bin"
+        swiftc ${pkgs.writeText "zed-file-associations.swift" ''
+          import AppKit
+          import UniformTypeIdentifiers
+
+          Task { @MainActor in
+              guard let app = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "dev.zed.Zed") else {
+                  fputs("Zed must be installed before setting file associations.\n", stderr)
+                  exit(1)
+              }
+              do {
+                  for ext in CommandLine.arguments.dropFirst() {
+                      guard let type = UTType(filenameExtension: ext) else {
+                          fputs("No content type for .\(ext)\n", stderr)
+                          exit(1)
+                      }
+                      if NSWorkspace.shared.urlForApplication(toOpen: type) == app { continue }
+                      try await NSWorkspace.shared.setDefaultApplication(at: app, toOpen: type)
+                      print(".\(ext) → Zed")
+                  }
+                  exit(0)
+              } catch {
+                  fputs("Could not set Zed file associations: \(error)\n", stderr)
+                  exit(1)
+              }
+          }
+          RunLoop.main.run()
+        ''} -o "$out/bin/zed-file-associations"
+      '';
 in
 {
-  imports = [ ../../modules/home/common/shell.nix ];
+  imports = [
+    ../../modules/home/common/shell.nix
+    ../../modules/home/common/zed.nix
+  ];
 
   home.stateVersion = "26.05";
+
+  # Launch Services defaults, scoped to text/source files rather than all data.
+  home.activation.zedFileAssociations = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    run ${zedFileAssociations}/bin/zed-file-associations \
+      json jsonc yaml yml toml nix \
+      go rs py js jsx mjs cjs ts tsx kt kts lua qml \
+      md markdown txt conf cfg ini \
+      sh bash zsh fish
+  '';
 
   programs.fish.shellInit = ''
     /opt/homebrew/bin/brew shellenv fish | source
@@ -71,10 +137,9 @@ in
 
   xdg.configFile = {
     "matugen/config.toml".source = matugenConfig;
-    "zed/settings.json".source = ../../dotfiles/zed/settings.json;
-    "zed/themes/matugen.json".source = ../../dotfiles/zed/themes/matugen.json;
     "ghostty/shaders/cursor_sweep.glsl".source = ../../dotfiles/ghostty/shaders/cursor_sweep.glsl;
-    "ghostty/shaders/in-game-crt-cursor.glsl".source = ../../dotfiles/ghostty/shaders/in-game-crt-cursor.glsl;
+    "ghostty/shaders/in-game-crt-cursor.glsl".source =
+      ../../dotfiles/ghostty/shaders/in-game-crt-cursor.glsl;
   };
   home.file.".betterglobekey.yaml".source = ../../dotfiles/betterglobekey.yaml;
   home.file.".local/bin/wallpaper-theme".source = "${wallpaperTheme}/bin/wallpaper-theme";

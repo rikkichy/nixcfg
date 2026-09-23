@@ -81,6 +81,7 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
+            home-manager.extraSpecialArgs = { inherit nixcfgPath; };
             home-manager.backupFileExtension = "before-nix-darwin";
             home-manager.users.rii = import ./hosts/ne/home.nix;
           }

@@ -21,11 +21,11 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "kotlin-lsp";
-  version = "262.9593.0";
+  version = "263.4702.0";
 
   src = fetchurl {
     url = "https://download-cdn.jetbrains.com/language-server/kotlin-server/${finalAttrs.version}/kotlin-server-${finalAttrs.version}.tar.gz";
-    hash = "sha256-LZnY4Zj75KqPRIHjd5lyTOlIA7TqEqYLQWBA4/zXzF4=";
+    hash = "sha256-HhHS5f77+eohWtjda+lfIiKJfNCG6Mt6ZhpSCEpZBAU=";
   };
 
   nativeBuildInputs = [

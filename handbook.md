@@ -70,10 +70,10 @@ The shared Home Manager shell module owns the portable CLI packages and
 Departure Mono Nerd Font for both users. Ghostty selects that font explicitly;
 macOS font installation takes effect on activation and may require restarting Ghostty.
 
-The Darwin home configuration also manages Matugen, `wallpaper-theme`,
-Ghostty's settings and selected shaders, and Zed's settings and captured Matugen
-theme. Ghostty and Zed applications remain externally installed. Edit their
-managed assets under `dotfiles/`, not the store-backed files in `~/.config`.
+The Darwin home configuration also manages Matugen, `wallpaper-theme`, and
+Ghostty's settings and selected shaders. Ghostty and Zed applications remain
+externally installed on macOS. Edit Ghostty's managed assets under `dotfiles/`,
+not the store-backed files in `~/.config`.
 Ghostty's continuous shader animation is disabled; shaders still render on terminal updates.
 Ghostty uses the shared `dotfiles/matugen/templates/terminal-colors.conf` palette
 and the same `scheme-content` mode as NixOS, including Fastfetch's accent slots 16–18.
@@ -83,6 +83,35 @@ wallpaper and writes the mutable Ghostty palette and btop `wallpaper.theme` usin
 the shared templates. Restart an open btop after regenerating its theme.
 Wallpaper changes are not watched automatically.
 The captured Zed theme is static; `wallpaper-theme` does not regenerate it.
+
+Both hosts import `modules/home/common/zed.nix`, which owns Zed's read-only
+settings, extension selection, language-server commands, and the captured theme.
+On Linux it also owns the Zed package; on Darwin it configures the existing app.
+Edit this module rather than Zed's settings UI. Extensions are installed by Zed
+on startup, not version-pinned by Nix. Before the first Linux activation, back up
+any unmanaged `~/.config/zed/settings.json` or conflicting Matugen theme file.
+Restart Zed after activation so language servers use the new generation.
+
+On Darwin, `hosts/ne/home.nix` also owns the text/source file associations.
+Its user activation uses the native `NSWorkspace` API, including for extensions
+with dynamic content types that `duti` cannot set. Zed must already be installed;
+macOS may ask for approval when a default changes. Associations already pointing
+to Zed are skipped. The activation leaves folder, media, archive, PDF, and Adobe
+project defaults alone. To retain a different default for a managed extension,
+remove it from `zedFileAssociations` before changing it in Finder.
+
+Project environments still come from direnv. Zed's Node runtime and the fallback
+Go runtime are editor-scoped, not global project toolchains. Darwin Rust keeps
+using rustup; install `rust-src` and `rustfmt` for each project toolchain that
+needs standard-library navigation and formatting. Linux supplies default Rust
+tools and sources; project development shells can override them.
+QML language-server support is Linux-only, with Qt and Quickshell import
+metadata passed explicitly; Darwin retains QML syntax support.
+
+JetBrains Kotlin LSP pre-release builds expire. If its log reports an expired
+build, update `pkgs/kotlin-lsp.nix` from the upstream release and checksum and
+upgrade only the Darwin cask with `brew upgrade --cask kotlin-lsp`.
+Darwin activation deliberately does not upgrade Homebrew packages.
 
 
 If activation reports an existing `/etc` file conflict, inspect and back up that

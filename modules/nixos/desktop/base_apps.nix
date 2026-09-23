@@ -38,7 +38,6 @@
     telegram-desktop
 
     pavucontrol
-    zed-editor
 
     android-tools
 
