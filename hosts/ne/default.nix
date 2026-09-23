@@ -100,6 +100,7 @@
     CustomUserPreferences = {
       "com.apple.finder".DisableAllAnimations = true;
       NSGlobalDomain.QLPanelAnimationDuration = 0.0;
+      "org.yanex.marta"."core.launchedBefore" = true; # Skip the first-launch tutorial.
     };
   };
 

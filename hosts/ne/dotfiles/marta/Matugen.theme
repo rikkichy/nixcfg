@@ -1,0 +1,119 @@
+name "Matugen"
+
+base {
+    appearance "{{mode}}"
+    background {{colors.surface.default.hex}}
+    separator {{colors.outline_variant.default.hex}}
+    text {{colors.on_surface.default.hex}}
+}
+
+actionBar {
+    separator {{colors.outline_variant.default.hex}}
+    button {
+        background {{colors.surface_container.default.hex}}
+        hotkey {{colors.primary.default.hex}}
+        text {{colors.on_surface.default.hex}}
+    }
+}
+
+asyncProgressBar {
+    border {{colors.outline.default.hex}}
+    progress {{colors.primary.default.hex}}
+    itemProgress {{colors.tertiary.default.hex}}
+}
+
+breadcrumbs {
+    color1 {{colors.surface.default.hex}}
+    color2 {{colors.surface_container.default.hex}}
+    color3 {{colors.surface_container_high.default.hex}}
+    separator {{colors.outline.default.hex}}
+    text {{colors.on_surface_variant.default.hex}}
+}
+
+files {
+    background {
+        alternate {{colors.surface_container_low.default.hex}}
+        current {{colors.primary_container.default.hex}}
+        currentSelected {{colors.primary.default.hex}}
+        selected {{colors.secondary_container.default.hex}}
+    }
+    dragDropSelection {
+        width 1
+    }
+    text {
+        current {{colors.on_primary_container.default.hex}}
+        currentSelected {{colors.on_primary.default.hex}}
+        hidden {{colors.on_surface_variant.default.hex}}
+        matched {{colors.tertiary.default.hex}}
+        selected {{colors.on_secondary_container.default.hex}}
+        highlighting1 {{colors.primary.default.hex}}
+        highlighting2 {{colors.secondary.default.hex}}
+        highlighting3 {{colors.tertiary.default.hex}}
+        highlighting4 {{colors.error.default.hex}}
+    }
+}
+
+searchBar {
+    query {
+        text {{colors.on_surface.default.hex}}
+        placeholder {{colors.on_surface_variant.default.hex}}
+    }
+    results {
+        highlighting {{colors.primary.default.hex}}
+        selection {{colors.secondary_container.default.hex}}
+        subtitle {{colors.on_surface_variant.default.hex}}
+        text {{colors.on_surface.default.hex}}
+    }
+    rowSeparator {
+        color {{colors.outline_variant.default.hex}}
+        show true
+    }
+}
+
+statusBar {
+    border {{colors.outline_variant.default.hex}}
+    text {{colors.on_surface_variant.default.hex}}
+    quickSelectNoResultsHighlighting {{colors.error.default.hex}}
+}
+
+tableHeader {
+    separator {{colors.outline_variant.default.hex}}
+    text {{colors.on_surface_variant.default.hex}}
+    pressed {
+        background {{colors.surface_container_high.default.hex}}
+    }
+}
+
+tabs {
+    active {
+        text {{colors.primary.default.hex}}
+    }
+    inactive {
+        background {{colors.surface_container_low.default.hex}}
+        text {{colors.on_surface_variant.default.hex}}
+    }
+}
+
+terminal {
+    caret {
+        background {{colors.primary.default.hex}}
+        text {{colors.on_primary.default.hex}}
+    }
+}
+
+textEditor {
+    error {{colors.error.default.hex}}
+    warning {{colors.tertiary.default.hex}}
+    keyword {{colors.primary.default.hex}}
+    comment {{colors.on_surface_variant.default.hex}}
+    identifier {{colors.on_surface.default.hex}}
+    literal {
+        string {{colors.secondary.default.hex}}
+        number {{colors.tertiary.default.hex}}
+        color {{colors.tertiary.default.hex}}
+    }
+    gutter {
+        background {{colors.surface_container.default.hex}}
+        text {{colors.on_surface_variant.default.hex}}
+    }
+}

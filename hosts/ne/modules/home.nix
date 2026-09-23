@@ -37,6 +37,10 @@ let
       input_path = ../../../common/dotfiles/matugen/templates/btop.theme;
       output_path = "${config.xdg.configHome}/btop/themes/wallpaper.theme";
     };
+    templates.marta = {
+      input_path = ../dotfiles/marta/Matugen.theme;
+      output_path = "${config.home.homeDirectory}/Library/Application Support/org.yanex.marta/Themes/Matugen.theme";
+    };
   };
   wallpaperTheme = pkgs.writeShellApplication {
     name = "wallpaper-theme";

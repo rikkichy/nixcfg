@@ -87,10 +87,20 @@ Ghostty uses the shared `common/dotfiles/matugen/templates/terminal-colors.conf`
 and the same `scheme-content` mode as NixOS, including Fastfetch's accent slots 16–18.
 Run `wallpaper-theme` (or `wallpaper-theme light`) after changing the macOS wallpaper,
 then use Ghostty's Reload Configuration action. The command reads the first desktop's
-wallpaper and writes the mutable Ghostty palette and btop `wallpaper.theme` using
-the shared templates. Restart an open btop after regenerating its theme.
+wallpaper and writes the mutable Ghostty palette, btop `wallpaper.theme`, and Marta
+`Matugen.theme`. Restart an open btop after regenerating its theme.
 Wallpaper changes are not watched automatically.
 The captured Zed theme is static; `wallpaper-theme` does not regenerate it.
+Marta's template lives in `hosts/ne/dotfiles/marta/Matugen.theme`; its generated
+output is `~/Library/Application Support/org.yanex.marta/Themes/Matugen.theme`.
+Keep that output writable rather than linking it to the Nix store. Select
+`Matugen` once through Marta's **Switch Theme** action; existing Marta preferences
+are not managed or replaced by Home Manager. The template follows the mode passed
+to `wallpaper-theme`. If an open Marta window retains the previous colors, restart
+Marta; automatic theme-file reloading is not assumed.
+Darwin also preserves Marta's native first-launch-completed preference to skip
+the onboarding tutorial; its manual Tutorial action remains available. Patreon
+reminder behavior is left unchanged rather than manipulating its launch counter.
 
 Both hosts import `common/modules/zed.nix`, which owns Zed's read-only
 settings, extension selection, language-server commands, and the captured theme.
