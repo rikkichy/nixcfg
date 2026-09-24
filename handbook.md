@@ -195,23 +195,15 @@ root-equivalent. Pruning may remove stopped containers and unused resources,
 but does not opt into volume pruning. PC/SC access is granted only to `ri` for
 context/card operations; SSH authentication does not forward a client YubiKey.
 
-Both Linux hosts share NetworkManager, Mihomo/TUN, the `vpn` command and Avahi.
+Both Linux hosts share NetworkManager and Avahi. Mihomo/TUN, the `vpn` command
+and VPN secret provisioning belong only to the desktop host `nix`.
 The server does not import desktop gaming/LAN firewall ports. The first approved
 network migration belongs at the console/KVM: it replaces dhcpcd ownership and
 disables IPv6, so an existing SSH connection can drop. Verify addressing, DNS
 and SSH before leaving that console; no network activation is automatic here.
 
-The server secret wrapper is `.secrets/nixos-server/sops.nix`. Provision its own
-`.secrets/nixos-server/personal.yaml` and root-owned native age identity at
-`/var/lib/sops-nix/key.txt` using the
-[private provisioning procedure](docs/nix.md#private-inputs-and-first-provisioning).
-Its recipient rule and ciphertext remain operator-provisioned: add
-`^nixos-server/personal\.yaml$` to `.secrets/.sops.yaml` with the real
-administrator and server public recipients. Do not copy the desktop private
-key, ciphertext or HWID as a substitute for server provisioning.
-Without ciphertext, the same three `/etc/mihomo` files are read locally on the
-server; missing inputs fail closed before Mihomo starts. The public provider
-device label follows the hostname, while the private HWID is never invented.
+`nixos-server` has no Mihomo service, configuration renderer or SOPS import.
+It needs no `/etc/mihomo` inputs or VPN age identity.
 
 ## Shared shell and editor
 
@@ -265,10 +257,10 @@ Secrets remain separate in `.secrets/`.
 | `common/modules/nixos-yubikey.nix` | Linux-only shared cryptroot FIDO2 and sudo U2F policy |
 | `common/modules/nixos-limine.nix` | shared Linux UEFI Limine policy; menu timeouts remain host-owned |
 | `common/modules/nh.nix` | system-wide nh package and default checkout for all three hosts |
-| `common/modules/nixos-networking.nix` | shared Linux NetworkManager, Mihomo/TUN and Avahi policy |
-| `common/modules/nixos-mihomo-secrets.nix` | host-selected SOPS/legacy inputs and private runtime rendering |
+| `common/modules/nixos-networking.nix` | shared Linux NetworkManager and Avahi policy |
+| `common/modules/nixos-mihomo-secrets.nix` | desktop SOPS/legacy inputs and private runtime rendering |
 | `common/pkgs/overlay.nix` | shared Linux OMP release-binary package and VPN command package |
-| `common/pkgs/mihomo-config.py`, `common/dotfiles/mihomo.yaml` | shared private-config renderer and public tunnel template |
+| `common/pkgs/mihomo-config.py`, `common/dotfiles/mihomo.yaml` | desktop private-config renderer and public tunnel template |
 | `hosts/nixos-server/modules/system/services.nix` | headless tooling, PIV permissions, Docker and timezone |
 | `hosts/ne/default.nix` | macOS host identity, primary-user wiring and system module imports |
 | `hosts/ne/home.nix` | Home Manager imports and state version |

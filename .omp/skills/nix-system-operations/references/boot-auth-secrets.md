@@ -112,10 +112,10 @@ and fallback tests. See [Touch-only sudo](../../../../docs/nix.md#touch-only-sud
 
 ## SOPS authoring and identity boundaries
 
-`flake.nix` imports upstream sops-nix and each Linux host's
-`.secrets/<host>/sops.nix` once, not through a second Home Manager instance.
-The wrappers select the shared consumer module with host-specific ciphertext;
-SOPS activates only when that host's `personal.yaml` exists. Adding ciphertext
+`flake.nix` imports upstream sops-nix and `.secrets/nix/sops.nix` for the
+desktop only, not through a second Home Manager instance. The server has no
+SOPS import. The desktop wrapper selects the consumer module; SOPS activates
+only when `.secrets/nix/personal.yaml` exists. Adding ciphertext
 therefore changes the next evaluation. Finish key provisioning and independent
 decryption checks **before activation**.
 [Mihomo rendering](mihomo.md) describes the secret consumers and legacy fallback.
@@ -142,11 +142,6 @@ independent recovery recipient by operator choice; losing both keys loses
 access. Login and LUKS passwords are not SOPS identities. Preserve established
 keys; host key/parent are root-owned `0600`/`0700`, automatic generation is
 disabled, and SSH/GPG host-key discovery is disabled. Never fabricate recipients.
-For `nixos-server`, provision a separate native host key and a
-`^nixos-server/personal\.yaml$` recipient rule before creating its ciphertext.
-The desktop rule does not authorize the server. Follow the
-[server provisioning boundary](../../../../handbook.md#server-services-and-private-provisioning);
-do not reuse desktop private identity material or invent subscription identity.
 
 PIV via age-plugin-yubikey is independent of boot/sudo FIDO enrollment:
 

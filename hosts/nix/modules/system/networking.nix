@@ -1,7 +1,24 @@
-{ ... }:
+{ pkgs, ... }:
 
 {
   imports = [ ../../../../common/modules/nixos-networking.nix ];
+
+  environment.systemPackages = [ pkgs.vpn ];
+
+  services.mihomo = {
+    enable = true;
+    tunMode = true;
+    webui = pkgs.metacubexd;
+  };
+
+  systemd.services.mihomo.serviceConfig = {
+    Restart = "on-failure";
+    RestartSec = "5s";
+  };
+
+  networking.networkmanager.unmanaged = [ "interface-name:mihomo" ];
+  networking.firewall.trustedInterfaces = [ "mihomo" ];
+  networking.firewall.checkReversePath = "loose";
 
   networking.firewall.interfaces =
     let

@@ -8,9 +8,9 @@ description: Linux-only safety and operations for NixOS hosts nix and nixos-serv
 Owns **NixOS hosts `nix` and `nixos-server`**: their system modules and
 package/runtime dependencies, including shared Linux modules and packages in
 `common/`. Host-specific hardware and desktop policy stay in their host.
-Public secret wiring lives in `.secrets/<host>/sops.nix`; private material is
-not an exploration source. Desktop procedures are in
-[docs/nix.md](../../../docs/nix.md), server provisioning in
+Desktop VPN secret wiring lives in `.secrets/nix/sops.nix`; the server has no
+VPN or SOPS import. Private material is not an exploration source. Desktop
+procedures are in [docs/nix.md](../../../docs/nix.md), server services in
 [the handbook](../../../handbook.md#server-services-and-private-provisioning).
 
 ## Read only the relevant reference

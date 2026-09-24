@@ -86,8 +86,6 @@
         specialArgs = { inherit nixcfgPath; };
         modules = [
           ./hosts/nixos-server
-          inputs.sops-nix.nixosModules.sops
-          ./.secrets/nixos-server/sops.nix
           { nixpkgs.overlays = [ commonOverlay ]; }
           home-manager.nixosModules.home-manager
           {

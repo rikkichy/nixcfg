@@ -1,11 +1,11 @@
-# Mihomo networking — Linux hosts
+# Mihomo networking — desktop host nix
 
-Sources: `common/modules/nixos-networking.nix`,
+Sources: `hosts/nix/modules/system/networking.nix`,
 `common/modules/nixos-mihomo-secrets.nix`, `common/dotfiles/mihomo.yaml`,
-`common/pkgs/{mihomo-config.py,vpn.nix}`, and each host's `.secrets/<host>/sops.nix`.
-Desktop-only LAN ports remain in `hosts/nix/modules/system/networking.nix`.
-Operator procedures: [VPN in docs/nix.md](../../../../docs/nix.md#vpn-mihomo)
-and [server provisioning](../../../../handbook.md#server-services-and-private-provisioning).
+`common/pkgs/{mihomo-config.py,vpn.nix}`, and `.secrets/nix/sops.nix`.
+Mihomo, the `vpn` command and tunnel-specific network rules are desktop-only;
+`nixos-server` imports neither the VPN service nor its secret renderer.
+Operator procedures: [VPN in docs/nix.md](../../../../docs/nix.md#vpn-mihomo).
 Read [SOPS safety](boot-auth-secrets.md#sops-authoring-and-identity-boundaries)
 before changing secret inputs and [nixcfg-validation](../../nixcfg-validation/SKILL.md)
 for validation and security acceptance checks.
@@ -21,10 +21,8 @@ Never replace serialization with
 textual placeholder splicing or put secret strings into Nix, `writeText`,
 derivation inputs, command arguments, logs, or documentation.
 
-Each host wrapper uses SOPS only when its own `.secrets/<host>/personal.yaml`
-exists. Keys are `mihomo/primary_url`, `mihomo/quattro_url`, and `mihomo/hwid`.
-Server provisioning requires its own real recipient rule and host key; never
-borrow the desktop private identity or silently reuse its HWID.
+The desktop wrapper uses SOPS only when `.secrets/nix/personal.yaml` exists.
+Keys are `mihomo/primary_url`, `mihomo/quattro_url`, and `mihomo/hwid`.
 Without ciphertext the legacy files are the inputs:
 `/etc/mihomo/subscription.url`, `/etc/mihomo/quattro.url`, and
 `/etc/mihomo/hwid`. Keep those root-owned mode `0600` files for rollback even
@@ -54,7 +52,7 @@ Keep these three names synchronized when renaming the TUN device:
 
 - `tun.device` in `common/dotfiles/mihomo.yaml`;
 - `networking.networkmanager.unmanaged` in
-  `common/modules/nixos-networking.nix`;
+  `hosts/nix/modules/system/networking.nix`;
 - `networking.firewall.trustedInterfaces` in that same module.
 
 The current device is `mihomo`; IPv6 is disabled, reverse-path filtering is
