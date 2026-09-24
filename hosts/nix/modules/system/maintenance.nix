@@ -1,11 +1,6 @@
 { config, pkgs, nixcfgPath, ... }:
 
 {
-  programs.nh = {
-    enable = true;
-    flake = nixcfgPath;
-  };
-
   programs.git.config.safe.directory = nixcfgPath;
 
   system.autoUpgrade = {

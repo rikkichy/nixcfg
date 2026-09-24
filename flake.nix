@@ -82,6 +82,7 @@
 
       nixosConfigurations.nixos-server = nixpkgs.lib.nixosSystem {
         inherit system;
+        specialArgs = { inherit nixcfgPath; };
         modules = [ ./hosts/nixos-server ];
       };
 

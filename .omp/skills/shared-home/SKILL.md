@@ -12,6 +12,8 @@ contract. Paths below are repository-relative.
 
 ## Ownership
 
+- `common/modules/nh.nix`: system-level nh package and checkout default for all
+  three hosts, imported from host `default.nix` files, not Home Manager.
 - `common/modules/shell.nix`: portable CLI packages, Matugen, Departure Mono
   Nerd Font, Fish abbreviations/aliases/greeting, Starship, zoxide and direnv.
 - `common/modules/zed.nix`: Zed settings, extensions, captured theme, language

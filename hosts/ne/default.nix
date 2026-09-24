@@ -2,6 +2,7 @@
 
 {
   imports = [
+    ../../common/modules/nh.nix
     ./modules/system/nix.nix
     ./modules/system/homebrew.nix
     ./modules/system/preferences.nix

@@ -2,6 +2,7 @@
 
 {
   imports = [
+    ../../common/modules/nh.nix
     ./hardware.nix
     ../../common/modules/nixos-yubikey.nix
   ];

@@ -2,6 +2,7 @@
 
 {
   imports = [
+    ../../common/modules/nh.nix
     ./hardware.nix
     ./storage.nix
     ./modules/system/nix.nix

@@ -108,6 +108,11 @@ the standard full validation, and
 `nix build --dry-run 'path:.#nixosConfigurations.nixos-server.config.system.build.toplevel'`.
 Mocks and evaluation do not prove disk installation, live PAM, or cold boot.
 
+All three hosts import the system module `common/modules/nh.nix`, which installs
+`nh` and sets `NH_FLAKE=/etc/nixos`. Use `nh os switch` on either Linux host and
+`nh darwin switch --hostname ne` on the Mac. The server does not need Home Manager
+for this shared command.
+
 ## Shared shell and editor
 
 `common/modules/shell.nix` owns portable CLI packages, Fish abbreviations and
@@ -152,6 +157,7 @@ Secrets remain separate in `.secrets/`.
 | `install.nix`, `scripts/install.sh` | interactive UEFI installer and its packaged runtime dependencies |
 | `hosts/nixos-server/` | headless server policy and installer-replaced hardware configuration |
 | `common/modules/nixos-yubikey.nix` | Linux-only shared cryptroot FIDO2 and sudo U2F policy |
+| `common/modules/nh.nix` | system-wide nh package and default checkout for all three hosts |
 | `hosts/ne/default.nix` | macOS host identity, primary-user wiring and system module imports |
 | `hosts/ne/home.nix` | Home Manager imports and state version |
 | `hosts/ne/modules/system/` | Homebrew inventory, Nix policy, macOS preferences and power settings |

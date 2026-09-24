@@ -175,8 +175,8 @@ Later changes are `sudo nixos-rebuild switch --flake path:/etc/nixos#nix`
 (first build also writes `flake.lock` — commit it). Press META+ALT and select
 **Nix maintenance**: the parent lists generations in a held terminal,
 and native actions include **Rebuild and switch**, rollback and garbage collection.
-`nh os switch` is the terminal alternative: `programs.nh.flake` sets
-`NH_FLAKE=/etc/nixos` declaratively. No custom Fish export is needed.
+`nh os switch` is the terminal alternative: the shared system module
+`common/modules/nh.nix` sets `NH_FLAKE=/etc/nixos`. No custom Fish export is needed.
 Run it as your normal user; it requests elevation as needed. An explicit
 `NH_OS_FLAKE` takes precedence for OS commands.
 
