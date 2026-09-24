@@ -28,9 +28,6 @@ final: prev: {
   google-sans-rounded =
     final.callPackage ./ricing/google-sans-rounded.nix { };
 
-  midnight-discord =
-    final.callPackage ./ricing/midnight-discord.nix { };
-
   ananicy-cpp = prev.ananicy-cpp.overrideAttrs (old: {
     postPatch = (old.postPatch or "") + ''
       find src -name "*.cpp" -exec sed -i "1i #include <cstring>\n#include <cstdint>" {} +

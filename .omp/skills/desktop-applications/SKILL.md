@@ -13,7 +13,7 @@ load only the relevant reference below.
 
 - `hosts/nix/modules/system/applications.nix`: package inventory and app services.
 - `hosts/nix/modules/home/applications.nix`: Widevine, MIME defaults, Thunar and
-  absent-only osu!/Equicord settings seeds.
+  absent-only osu!/theme seeds plus declarative writable Equicord plugins.
 - `hosts/nix/modules/home/fuzzel.nix`: desktop entries; use
   [desktop-shell](../desktop-shell/SKILL.md) for launcher/keybind behavior.
 - `hosts/nix/modules/system/gaming.nix` and `hosts/nix/modules/system/flatpak.nix`:
@@ -36,8 +36,10 @@ load only the relevant reference below.
 
 ## Mandatory rules
 
-- Preserve application-owned mutable settings: seed only when absent; do not
-  replace them with store symlinks. Never commit osu! credentials or account data.
+- Preserve application-owned mutable settings; do not replace them with store
+  symlinks. Seed only when absent except for explicitly managed Equicord plugin
+  preferences; preserve its private and runtime state when merging declarations.
+  Never commit credentials or account data.
 - Separate launcher icon resolution from a running window's `StartupWMClass`;
   measure the real window class and activation path before changing integration.
 - Do not mistake sandbox visibility for host visibility or a working JVM for a

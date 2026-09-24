@@ -15,7 +15,7 @@ Own shared palette semantics and the Linux `nix` runtime. Start from
 - `hosts/nix/modules/home/matugen.nix`: Linux template destinations, private
   helpers, public `wpp`/`awpp`, awww readiness and wallpaper restoration.
 - `hosts/nix/dotfiles/ricing/`: Linux Matugen templates, Hyprland, Quickshell and
-  Discord styling. `hosts/nix/pkgs/ricing/` owns cursor/font/Midnight packages.
+  Discord styling. `hosts/nix/pkgs/ricing/` owns cursor/font packages.
 - `hosts/ne/modules/home/matugen.nix`: separate Darwin `wallpaper-theme` command,
   owned by [darwin-host](../darwin-host/SKILL.md), not the Linux pipeline.
 - [shared-home](../shared-home/SKILL.md): shared shell, font package and static Zed
@@ -29,7 +29,7 @@ Own shared palette semantics and the Linux `nix` runtime. Start from
 | Shared palette format/math, writable outputs, terminal colors or font names | [Palettes](references/palettes.md) |
 | Linux still/animated pickers, cache, readiness, restoration or failure ordering | [Wallpapers](references/wallpapers.md) |
 | Bibata rendering, color math, cache, Hyprland reload or cursor verification | [Cursors](references/cursors.md) |
-| Equicord static theme, QuickCSS, settings seeds or animation rules | [Discord](references/discord.md) |
+| Equicord static theme, QuickCSS or declarative plugin preferences | [Discord](references/discord.md) |
 
 ## Mandatory rules
 
@@ -40,6 +40,7 @@ Own shared palette semantics and the Linux `nix` runtime. Start from
 - Keep terminal ANSI hues distinct on low-chroma wallpapers; shared templates are
   not Linux-only. Do not attach Darwin to Linux services or OSC delivery.
 - Keep Equicord's static theme separate from in-place-written QuickCSS; atomic
-  rename breaks the file watcher. Settings remain application-owned and seeded only once.
+  rename breaks the QuickCSS file watcher. Keep settings writable; plugin
+  declarations merge on activation while private/runtime state stays local.
 - Use [nixcfg-validation](../nixcfg-validation/SKILL.md) after changes and the relevant
   reference's runtime checks; `hyprctl setcursor` returning `ok` is not visual proof.

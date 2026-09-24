@@ -1,50 +1,94 @@
+/**
+ * @name Wallpaper
+ * @description Discord's native UI, coloured from the current wallpaper by matugen.
+ */
 
-body {
-    --font: "Google Sans Flex";
-    --code-font: "DepartureMono Nerd Font";
-    font-weight: 400;
+body,
+.theme-dark:not(.custom-user-profile-theme),
+.theme-light:not(.custom-user-profile-theme) {
+    --background-primary: var(--bg-4);
+    --background-secondary: var(--bg-3);
+    --background-secondary-alt: var(--bg-3);
+    --background-tertiary: var(--bg-3);
+    --background-floating: var(--bg-floating);
+    --background-accent: var(--bg-2);
+    --background-base-low: var(--bg-4);
+    --background-base-lower: var(--bg-4);
+    --background-base-lowest: var(--bg-4);
+    --background-surface-high: var(--bg-3);
+    --background-surface-higher: var(--bg-3);
+    --background-surface-highest: var(--bg-3);
+    --background-brand: var(--accent-2);
+    --background-code: var(--bg-3);
+    --background-mod-muted: var(--hover);
+    --background-mod-normal: var(--bg-2);
+    --background-mod-strong: var(--bg-1);
+    --background-mod-subtle: var(--hover);
+    --background-modifier-hover: var(--hover);
+    --background-modifier-active: var(--active);
+    --background-modifier-selected: var(--active-2);
+    --background-message-hover: var(--message-hover);
+    --background-mentioned: color-mix(in srgb, var(--accent-2), transparent 90%);
+    --background-mentioned-hover: color-mix(in srgb, var(--accent-2), transparent 85%);
+    --bg-surface-overlay: var(--bg-floating);
+    --bg-surface-overlay-tmp: var(--bg-floating);
+    --bg-surface-raised: var(--bg-3);
+    --chat-background-default: var(--bg-4);
+    --channeltextarea-background: var(--bg-3);
+    --card-background-default: var(--bg-3);
+    --modal-background: var(--bg-4);
+    --modal-footer-background: var(--bg-3);
+    --app-frame-background: var(--bg-3);
+    --app-frame-border: var(--border);
 
-    --gap: 12px;
-    --divider-thickness: 4px;
-    --border-thickness: 1px;
+    --text-normal: var(--text-3);
+    --text-primary: var(--text-3);
+    --text-secondary: var(--text-4);
+    --text-muted: var(--text-5);
+    --text-link: var(--accent-1);
+    --text-brand: var(--accent-1);
+    --text-positive: var(--green-1);
+    --text-warning: var(--yellow-1);
+    --text-danger: var(--red-1);
+    --header-primary: var(--text-1);
+    --header-secondary: var(--text-2);
+    --channels-default: var(--text-4);
+    --channel-icon: var(--text-4);
+    --channel-text-area-placeholder: var(--text-5);
+    --interactive-normal: var(--text-3);
+    --interactive-hover: var(--text-2);
+    --interactive-active: var(--text-1);
+    --interactive-muted: var(--text-5);
+    --icon-primary: var(--text-3);
+    --icon-secondary: var(--text-4);
+    --icon-tertiary: var(--text-5);
 
-    --animations: off;
-
-    --top-bar-height: var(--gap);
-    --top-bar-button-position: titlebar;
-    --top-bar-title-position: off;
-    --subtle-top-bar-title: off;
-
-    --custom-window-controls: on;
-    --window-control-size: 14px;
-
-    --custom-dms-icon: custom;
-    --dms-icon-svg-url: url("https://refact0r.github.io/midnight-discord/assets/Font_Awesome_5_solid_moon.svg");
-    --dms-icon-svg-size: 90%;
-    --dms-icon-color-before: var(--icon-subtle);
-    --dms-icon-color-after: var(--white);
-
-    --custom-dms-background: off;
-
-    --background-image: off;
-
-    --transparency-tweaks: off;
-    --remove-bg-layer: off;
-    --panel-blur: off;
-
-    --custom-chatbar: off;
-    --chatbar-height: 47px;
-
-    --small-user-panel: off;
-}
-
-*,
-*::before,
-*::after {
-    animation-delay: 0s !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-delay: 0s !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+    --border-muted: var(--border-light);
+    --border-normal: var(--border);
+    --border-strong: var(--border);
+    --border-subtle: var(--border);
+    --border-focus: var(--accent-2);
+    --control-brand-foreground: var(--accent-2);
+    --control-primary-background-default: var(--accent-3);
+    --control-primary-background-hover: var(--accent-4);
+    --control-primary-background-active: var(--accent-5);
+    --control-primary-text-default: var(--text-0);
+    --control-primary-text-hover: var(--text-0);
+    --control-primary-text-active: var(--text-0);
+    --control-primary-icon-default: var(--text-0);
+    --control-primary-icon-hover: var(--text-0);
+    --control-primary-icon-active: var(--text-0);
+    --button-filled-brand-background: var(--accent-3);
+    --button-filled-brand-background-hover: var(--accent-4);
+    --button-filled-brand-background-active: var(--accent-5);
+    --button-filled-brand-text: var(--text-0);
+    --status-positive: var(--online);
+    --status-warning: var(--idle);
+    --status-danger: var(--dnd);
+    --status-speaking: var(--online);
+    --user-status-online: var(--online);
+    --user-status-idle: var(--idle);
+    --user-status-dnd: var(--dnd);
+    --user-status-invisible: var(--offline);
+    --user-status-streaming: var(--streaming);
 }

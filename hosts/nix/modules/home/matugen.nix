@@ -6,21 +6,6 @@ let
   cursorTheme = "Bibata-Material-Dynamic";
   cursorDir = "${config.xdg.dataHome}/icons/${cursorTheme}";
 
-  discordTheme = pkgs.runCommand "wallpaper.theme.css" { } ''
-    cat ${
-      pkgs.writeText "discord-theme-meta.css" ''
-        /**
-         * @name Wallpaper
-         * @description Midnight, coloured from the current wallpaper by matugen.
-         * @author refact0r
-         * @website https://github.com/refact0r/midnight-discord
-        */
-      ''
-    } > $out
-    sed '/fonts\.googleapis\.com/d' ${pkgs.midnight-discord} >> $out
-    cat ${../../dotfiles/ricing/discord/theme.css} >> $out
-  '';
-
   template = input: output: {
     input_path = "${input}";
     output_path = output;
@@ -381,7 +366,7 @@ in
   xdg.configFile = {
     "matugen/config.toml".source = matugenConfig;
     "Equicord/themes/wallpaper.theme.css" = {
-      source = discordTheme;
+      source = ../../dotfiles/ricing/discord/theme.css;
       force = true;
     };
   };
