@@ -18,11 +18,12 @@ Usage: nixcfg-install [--help | --list-disks | --plan] [REPOSITORY]
 Without a mode, interactively install nix or nixos-server from a mutable Git
 checkout. Run from a trusted, public-source-only checkout on an x86_64 NixOS
 UEFI live ISO, with networking and a root KVM terminal:
-  sudo nix --extra-experimental-features 'nix-command flakes' run path:.#install -- "$PWD"
+  sudo nix --extra-experimental-features 'nix-command flakes' run path:.#install
 
 --help        No privilege requirements or device access.
 --list-disks  Read-only disk inventory and exclusion reasons; no selection.
---plan        The same read-only inventory plus installation/recovery steps.
+--plan        Optional read-only inventory and step outline; no host evaluation.
+REPOSITORY    Defaults to the current directory.
 
 Installation ERASES ONE WHOLE DISK after a single ERASE confirmation. It creates
 GPT, a 4 GiB FAT32 EFI partition, and a passphrase-protected LUKS2/XFS root.

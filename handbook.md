@@ -33,12 +33,15 @@ cd /etc/nixos
 If `/etc/nixos` already contains a checkout, use it instead; do not overwrite
 existing configuration. The live ISO's `/etc/nixos` is the source checkout;
 `/mnt/etc/nixos` is the installed target, populated by the installer.
-Review the source and run the read-only plan before starting installation:
+Review the source, then start the guided installation from this directory:
 
 ```sh
-sudo nix --extra-experimental-features 'nix-command flakes' run path:.#install -- --plan "$PWD"
-sudo nix --extra-experimental-features 'nix-command flakes' run path:.#install -- "$PWD"
+sudo nix --extra-experimental-features 'nix-command flakes' run path:.#install
 ```
+
+Optional: append `-- --plan` for read-only disk inventory and an outline of the
+installation/recovery steps. This preview does not evaluate the host; the
+installation itself evaluates it and repeats disk safety checks before erasing.
 
 Select `nixos-server` for the headless server. `nix` is specifically the
 Ryzen/NVIDIA desktop, not a generic desktop profile; `ne` is not installable
@@ -80,6 +83,8 @@ metadata, evaluates the host before erasing, and copies the snapshot to
 `/mnt/etc/nixos`. Generated hardware and UUIDs replace only the installed
 `hosts/<host>/hardware.nix`; the source checkout is unchanged. The installed
 configuration is a source snapshot, not a Git clone. Use `path:` rebuilds.
+For Git-based maintenance after installation, follow
+[Adopt the installed snapshot](#adopt-the-installed-snapshot).
 Evaluation is not a full build, and post-erase failures require manual recovery.
 
 Enter disk, root and `ri` passwords interactively; retain them independently
@@ -112,6 +117,52 @@ All three hosts import the system module `common/modules/nh.nix`, which installs
 `nh` and sets `NH_FLAKE=/etc/nixos`. Use `nh os switch` on either Linux host and
 `nh darwin switch --hostname ne` on the Mac. The server does not need Home Manager
 for this shared command.
+
+### Adopt the installed snapshot
+
+After booting, `/etc/nixos` contains the exact installed source and generated
+hardware configuration, but no Git metadata. Keep using `path:` rebuilds until
+adoption is complete. Do not clone over it or replace its hardware file.
+
+Run the following in Bash as `ri`, only when `/etc/nixos/.git` does not exist.
+First preserve a separate, root-only backup, then give `ri` ownership of the
+public configuration tree:
+
+```sh
+backup=$(sudo mktemp -d /var/lib/nixcfg-installed.XXXXXX)
+sudo cp -a /etc/nixos "$backup/"
+printf 'Installed snapshot backup: %s/nixos\n' "$backup"
+sudo chown -R "$(id -u):$(id -g)" /etc/nixos
+```
+
+Create fresh metadata and fetch the public upstream. A **mixed** reset populates
+the index and establishes a baseline without changing any working files:
+
+```sh
+cd /etc/nixos
+git init -b installed
+git remote add origin https://github.com/rikkichy/nixcfg.git
+git fetch origin
+git remote set-head origin --auto
+git reset --mixed origin/HEAD
+git status --short
+git diff
+```
+
+The baseline is the fetched upstream default branch, not necessarily the
+revision used for installation. Review the differences before updating or
+publishing: they include generated hardware, installation-time source edits,
+and any upstream changes since installation. The installer omits `.omp`, so
+its tracked files appear deleted; restore only that excluded directory with
+`git restore --source=HEAD --staged --worktree -- .omp` if desired.
+Never use `reset --hard` or a blanket restore to resolve this diff.
+
+Stage only reviewed public paths (including `hosts/<host>/hardware.nix`) and
+commit the installed configuration before merging upstream updates. Do not
+stage plaintext secrets or private identities. The `installed` branch has no
+tracking branch; use an explicit `git fetch origin` and reviewed
+`git merge origin/HEAD` for updates. Keep the backup until the adopted
+configuration has built and booted successfully.
 
 ### Server services and private provisioning
 

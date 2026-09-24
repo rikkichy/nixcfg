@@ -8,7 +8,8 @@ unless an installation step specifies otherwise.
 
 ## Contents
 
-- [Installation](#install-step-by-step)
+- [Installation](#installation)
+- [Manual installation / recovery reference](#manual-installation--recovery-reference)
 - [Rebuilds and desktop tools](#rebuilds-and-desktop-tools)
 - [Wallpapers and colours](#wallpapers-and-colours)
 - [Theme ownership rules](#two-rules-that-are-easy-to-break)
@@ -21,11 +22,20 @@ unless an installation step specifies otherwise.
 - [Limine recovery](#limine-recovery-with-a-zero-timeout)
 - [Touch-only sudo](#touch-only-sudo-with-password-fallback)
 
-## Install, step by step
+## Installation
 
-For guided host/disk selection and separately approved YubiKey enrollment,
-use the [interactive Linux installer](../handbook.md#interactive-linux-installer).
-The manual procedure below is for the `nix` desktop.
+Use the [interactive Linux installer](../handbook.md#interactive-linux-installer)
+for the normal installation path. It guides host/disk selection, generates the
+hardware configuration, sets recovery passwords and offers separately approved
+YubiKey enrollment. After installation, follow
+[checkout adoption](../handbook.md#adopt-the-installed-snapshot) for Git-based
+maintenance.
+
+## Manual installation / recovery reference
+
+The procedure below is the manual alternative for the `nix` desktop, not a
+second sequence to run after the guided installer. For recovery of an existing
+installation, use only the relevant steps; do not partition or format its disk.
 
 Boot the NixOS 26.05 minimal ISO. **Secure Boot must be OFF** — the ISO is not
 signed with custom keys, and the stick simply will not appear in the boot menu

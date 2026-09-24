@@ -56,18 +56,19 @@ curl -sSfL https://install.lix.systems/lix | sh -s -- install
 Open a new terminal. If the initial checkout is at `~/nixcfg`, move it once
 with `sudo mv ~/nixcfg /etc/nixos` (the destination must not already exist).
 Keep the checkout owned by your normal user so lock updates do not require sudo.
+Use the committed `flake.lock` for bootstrap; dependency updates are a separate
+maintenance operation. `path:` includes new files without staging them, but also
+includes ignored files: keep plaintext secrets and private identities outside
+the checkout.
 
 ```sh
 cd /etc/nixos
-# New source files must be visible to Git flakes before the first build.
-git add -N hosts/ne common
-nix flake lock
-nix run --inputs-from . nix-darwin#darwin-rebuild -- build --flake .#ne
+nix run --inputs-from path:. nix-darwin#darwin-rebuild -- build --flake path:.#ne
 # Once, before first activation: back up the old Fish directory so unmanaged
 # conf.d scripts and functions cannot override the shared configuration.
 # Use a fresh backup name if this destination already exists.
 mv ~/.config/fish ~/.config/fish.before-nix-darwin
-sudo /nix/var/nix/profiles/default/bin/nix run --inputs-from . nix-darwin#darwin-rebuild -- switch --flake .#ne
+sudo /nix/var/nix/profiles/default/bin/nix run --inputs-from path:. nix-darwin#darwin-rebuild -- switch --flake path:.#ne
 ```
 
 If activation reports an existing `/etc` file conflict, inspect and back up that
@@ -76,7 +77,8 @@ delete existing configuration blindly.
 
 ## Updates and shell migration
 
-Review and commit the updated `flake.lock` with the configuration. Later changes:
+When intentionally updating dependencies, review and commit `flake.lock` with
+the configuration. Apply later configuration changes with:
 
 ```sh
 nh darwin switch /etc/nixos --hostname ne
