@@ -696,13 +696,7 @@ cryptsetup open --test-passphrase "$disk"
 ```
 
 Confirm LUKS **version 2**, the correct physical disk, a working passphrase,
-and free token/keyslot capacity. Back up the header with `cryptsetup
-luksHeaderBackup "$disk" --header-backup-file /mounted-offline-backup/cryptroot.header`,
-substituting a real protected external backup location. Keep that backup mode
-`0600` or equivalent on encrypted media outside this disk/repo, and verify the
-backup is readable. A header backup plus an old valid passphrase can restore
-old access: treat it as sensitive and do not casually restore it after revocation.
-Do not proceed without passphrase and backup confirmation.
+and free token/keyslot capacity. Do not proceed without passphrase confirmation.
 
 List devices with `systemd-cryptenroll --fido2-device=list` and check installed
 `--help`. After confirming the specific compatible `/dev/hidrawN`, enroll:

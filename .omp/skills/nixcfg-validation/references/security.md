@@ -66,7 +66,7 @@ reset, production secret access, or reboot is implied by running validation.
   missing/malformed mapping. Record fallback waits. No-touch is not hardware
   success; wrong password without a usable key must fail.
 - Before disk enrollment verify backing partition, LUKS2, working passphrase,
-  spare capacity, protected off-disk header backup, and recovery media.
+  spare capacity and recovery media.
   After approved enrollment inspect actual UP/PIN/UV metadata and test cold
   boot with touch/no PIN, no-key/passphrase, and no-touch/wrong-token fallback.
   Keep the known-working generation and all unrelated slots.

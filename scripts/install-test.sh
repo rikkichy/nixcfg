@@ -72,39 +72,35 @@ host=nixos-server
 confirm_erase <<<$'yes\nERASE /dev/sdj\nERASE' >/dev/null
 if (confirm_erase <<<'yes') >/dev/null 2>&1; then fail 'Inexact confirmation followed by EOF authorized erase.'; fi
 
-# Real enrollment planning must let sudo proceed without backup media.
+# Enrollment approvals are independent and require no backup media.
 (
   select_fido() { fido=/dev/hidraw5; }
-  findmnt() { printf '{"filesystems":[]}\n'; }
   plan_enrollment <<<$'y\ny' >/dev/null
-  [[ $sudo_enroll == true && $boot_enroll == false ]] || fail 'Missing backup blocked sudo or enabled boot enrollment.'
+  [[ $sudo_enroll == true && $boot_enroll == true ]] || fail 'Approved enrollment was deferred.'
+  plan_enrollment <<<$'n\ny' >/dev/null
+  [[ $sudo_enroll == false && $boot_enroll == true ]] || fail 'Boot approval enabled sudo.'
+  plan_enrollment <<<$'y\nn' >/dev/null
+  [[ $sudo_enroll == true && $boot_enroll == false ]] || fail 'Sudo approval enabled boot.'
 )
 
-# Backup selection accepts a numbered mounted destination, including spaces.
+# Refuse a boot configuration whose LUKS reference differs from the real header,
+# even if udev's stale symlink would still resolve to the same block device.
 (
-  select_fido() { fido=/dev/hidraw5; }
-  findmnt() { printf '{"filesystems":[{"target":"/encrypted flash"},{"target":"/plain"}]}\n'; }
-  realpath() { printf '%s\n' "${*: -1}"; }
-  backup_device() { [[ $1 == '/encrypted flash' ]] || return 1; printf '253:7\n'; }
-  plan_enrollment <<<$'n\ny\n1' >/dev/null
-  [[ $sudo_enroll == false && $boot_enroll == true &&
-    $backup_parent == '/encrypted flash' && $backup_device_id == 253:7 ]] ||
-    fail 'Numbered backup selection or independent enrollment approval failed.'
-)
-
-# A disappeared backup destination must not create a header or enroll a key.
-(
-  fido_visible() { return 0; }
-  backup_device() { return 1; }
-  backup_header() { fail 'Attempted backup after storage disappeared.'; }
-  systemd-cryptenroll() { fail 'Enrolled without backup storage.'; }
-  fido=/dev/hidraw5 backup_parent=/missing backup_device_id=253:5
-  enroll_boot >/dev/null
+  rootpart=/dev/test-root esp=/dev/test-esp
+  nixcmd=(bash -c "cat \"\$1\"" _ "$testdir/devices.json")
+  cryptsetup() { printf '11111111-2222-3333-4444-555555555555\n'; }
+  blkid() { printf 'ABCD-1234\n'; }
+  printf '%s\n' '{"luks":{"cryptroot":"/dev/disk/by-uuid/stale"},"root":"/dev/mapper/cryptroot","esp":"/dev/disk/by-uuid/ABCD-1234"}' >"$testdir/devices.json"
+  if (verify_boot_devices) >/dev/null 2>&1; then fail 'Stale LUKS UUID accepted for installation.'; fi
+  jq '.luks.cryptroot = "/dev/disk/by-uuid/11111111-2222-3333-4444-555555555555"' \
+    "$testdir/devices.json" >"$testdir/fresh.json"
+  mv "$testdir/fresh.json" "$testdir/devices.json"
+  verify_boot_devices
 )
 
 losetup() { printf '{"loopdevices":[{"back-file":"/nonexistent-live-backing-file"}]}\n'; }
 if scan_disks >/dev/null 2>&1; then fail 'Unresolvable live loop backing was accepted.'; fi
 findmnt() { return 1; }
 if scan_disks >/dev/null 2>&1; then fail 'Usage collection failure did not fail closed.'; fi
-printf 'PASS: disk-use exclusions, external opt-in, numbered menus, erase confirmation, independent enrollment approvals and missing-backup deferral.\n'
+printf 'PASS: disk-use exclusions, external opt-in, numbered menus, erase confirmation, independent enrollment approvals and fresh boot UUID validation.\n'
 printf 'Mocks prove safety decisions only, NOT actual disk topology, installation, boot, or token/PAM authentication.\n'

@@ -5,6 +5,7 @@
     ../../common/modules/nh.nix
     ./hardware.nix
     ../../common/modules/nixos-yubikey.nix
+    ../../common/modules/nixos-limine.nix
     ../../common/modules/nixos-networking.nix
     ./modules/system/services.nix
   ];
@@ -23,8 +24,6 @@
     };
   };
 
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.timeout = 5;
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];

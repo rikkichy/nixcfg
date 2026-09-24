@@ -26,9 +26,6 @@ Enrollment is a separate, approved operator mutation:
 - Verify the **backing UUID from hardware configuration**, physical disk,
   LUKS2, working passphrase, and free token/keyslot capacity. Never enroll
   `/dev/mapper/cryptroot`, which is the opened mapping.
-- Require a readable, protected off-disk LUKS header backup, mode `0600` or
-  equivalent on encrypted media outside the repository. A header backup plus
-  an old passphrase can restore revoked access; do not casually restore it.
 - Inspect installed help and the actual compatible token; hidraw numbering can
   change. Request `--fido2-with-client-pin=no
   --fido2-with-user-presence=yes --fido2-with-user-verification=no` and verify

@@ -1,14 +1,10 @@
 { config, pkgs, ... }:
 
 {
+  imports = [ ../../common/modules/nixos-limine.nix ];
+
   boot.loader.timeout = 0;
 
-  boot.loader.limine = {
-    enable = true;
-    efiSupport = true;
-    maxGenerations = 10;
-  };
-  boot.loader.efi.canTouchEfiVariables = true;
   boot.initrd.luks.devices."cryptroot" = {
     allowDiscards = true;
   };

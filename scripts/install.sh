@@ -34,9 +34,7 @@ path: flakes include ignored files even before this program starts.
 
 Numbered menus select the host, disk and YubiKey. USB/removable targets are
 hidden until "Show external disks"; --list-disks includes all exclusion reasons.
-Boot and sudo enrollment have separate y/N approvals BEFORE erase. Boot needs
-a protected header backup on mounted encrypted off-target media; without one,
-only boot enrollment is deferred. No device paths or backup paths to type.
+Boot and sudo enrollment have separate y/N approvals BEFORE erase.
 Passwords are entered directly into cryptsetup/passwd, never command arguments.
 No reboot, forced unmount, enrollment removal, or automatic recovery cleanup.
 HELP
@@ -45,7 +43,7 @@ HELP
 plan() {
   cat <<'PLAN'
 Plan: select host -> snapshot and evaluate build plan -> select unused disk
--> select YubiKey (or skip) -> approve sudo/boot enrollment and select backup
+-> select YubiKey (or skip) -> approve sudo/boot enrollment
 -> ERASE confirmation -> recheck disk -> GPT/EFI/LUKS2/XFS -> mount /mnt
 -> copy repository and generate hosts/HOST/hardware.nix from actual hardware
 -> nixos-install -> set root and ri passwords -> approved FIDO2 enrollments
@@ -255,87 +253,21 @@ check_mount_target() {
   if findmnt --mountpoint /mnt --noheadings >/dev/null; then fail '/mnt is already mounted.'; fi
 }
 
-# Return the mounted device identity only for an encrypted off-target location.
-backup_device() {
-  local parent=$1 id ancestry
-  [[ -d $parent && -w $parent && $parent != "$source" && $parent != "$source/"* &&
-    $parent != /mnt && $parent != /mnt/* && $parent != /iso && $parent != /iso/* ]] || return 1
-  findmnt --mountpoint "$parent" --noheadings >/dev/null || return 1
-  id=$(file_device "$parent") || return 1
-  [[ -b /dev/block/$id ]] || return 1
-  ancestry=$(lsblk --inverse --json --paths --output NAME,TYPE "/dev/block/$id") || return 1
-  jq -e --arg disk "$disk" '
-    [.. | objects | select(has("type"))] as $nodes |
-    any($nodes[]; .type == "crypt") and any($nodes[]; .type == "disk") and
-    all($nodes[]; .name != $disk)
-  ' <<<"$ancestry" >/dev/null || return 1
-  printf '%s\n' "$id"
-}
-
-select_backup() {
-  local mounts parent id
-  local -a parents=() ids=()
-  backup_parent=''
-  mounts=$(findmnt --json --list --output TARGET) || {
-    printf 'Cannot discover backup storage; boot enrollment deferred.\n'; return;
-  }
-  mounts=$(jq -r '.filesystems[].target' <<<"$mounts") || fail 'Invalid mount inventory.'
-  while IFS= read -r parent; do
-    [[ -n $parent ]] || continue
-    parent=$(realpath -e -- "$parent") || continue
-    id=$(backup_device "$parent") || continue
-    parents+=("$parent")
-    ids+=("$id")
-  done <<<"$mounts"
-  if (( ${#parents[@]} == 0 )); then
-    printf 'No mounted encrypted off-target backup drive; boot enrollment deferred. Sudo is unaffected.\n'
-    return
-  fi
-  choose 'LUKS header backup destination (encrypted, off-target)' 'Defer boot enrollment' "${parents[@]}"
-  if (( choice > 0 )); then
-    backup_parent=${parents[choice-1]}
-    backup_device_id=${ids[choice-1]}
-  fi
-}
-
 plan_enrollment() {
   boot_enroll=false
   sudo_enroll=false
   select_fido
   [[ -n $fido ]] || return 0
   if approve 'Enable YubiKey for sudo?'; then sudo_enroll=true; fi
-  if approve 'Enable YubiKey for disk unlock (includes protected header backups)?'; then
-    select_backup
-    if [[ -n $backup_parent ]]; then boot_enroll=true; fi
-  fi
-}
-
-backup_header() {
-  local uuid
-  uuid=$(cryptsetup luksUUID "$rootpart")
-  backup="$backup_parent/$host-$uuid"
-  [[ ! -e $backup && ! -L $backup ]] || fail 'Backup directory exists; will not overwrite it.'
-  mkdir -m 0700 -- "$backup"
-  cryptsetup luksHeaderBackup "$rootpart" --header-backup-file "$backup/before-fido2.header"
-  chmod 0600 -- "$backup/before-fido2.header"
-  [[ -s $backup/before-fido2.header && -r $backup/before-fido2.header ]] || fail 'Header backup is not readable.'
-  sync
+  if approve 'Enable YubiKey for disk unlock?'; then boot_enroll=true; fi
 }
 
 enroll_boot() {
   local metadata token
   fido_visible "$fido" || fail 'Selected FIDO2 device disappeared or changed; enrollment stopped.'
-  if [[ $(backup_device "$backup_parent") != "$backup_device_id" ]]; then
-    printf 'Backup storage disappeared or changed; boot enrollment deferred. Sudo is unaffected.\n'
-    return
-  fi
   printf '\nEnrolling boot FIDO2; retaining the tested recovery passphrase slot.\n'
-  backup_header
   systemd-cryptenroll "$rootpart" --fido2-device="$fido" \
     --fido2-with-client-pin=no --fido2-with-user-presence=yes --fido2-with-user-verification=no
-  cryptsetup luksHeaderBackup "$rootpart" --header-backup-file "$backup/after-fido2.header"
-  chmod 0600 -- "$backup/after-fido2.header"
-  sync
   metadata=$(cryptsetup luksDump --dump-json-metadata "$rootpart")
   token=$(jq -er '[.tokens | to_entries[] | select(.value.type == "systemd-fido2") |
     select(.value["fido2-clientPin-required"] == false and .value["fido2-up-required"] == true and .value["fido2-uv-required"] == false) | .key] |
@@ -362,6 +294,28 @@ enroll_sudo() {
   chmod 0600 "$mapping"
   rm -- "$work/u2f-mapping"
   printf 'Sudo registration installed root:root 0600; PAM authentication remains UNTESTED.\n'
+}
+
+generate_hardware_config() {
+  # Formatting changes UUIDs without necessarily refreshing udev's by-uuid links.
+  # The hardware generator picks those links by device number, not on-disk UUID.
+  udevadm trigger --action=change --settle "$esp" "$rootpart" /dev/mapper/cryptroot
+  nixos-generate-config --root "$1" --show-hardware-config >"$work/hardware.nix"
+}
+
+verify_boot_devices() {
+  local luks_uuid esp_uuid devices
+  luks_uuid=$(cryptsetup luksUUID "$rootpart")
+  esp_uuid=$(blkid --probe --match-tag UUID --output value "$esp")
+  [[ -n $luks_uuid && -n $esp_uuid ]] || fail 'Cannot read fresh disk UUIDs; refusing installation.'
+  devices=$("${nixcmd[@]}" eval --json --no-write-lock-file \
+    "path:/mnt/etc/nixos#nixosConfigurations.$host.config" --apply \
+    'c: { luks = builtins.mapAttrs (_: v: v.device) c.boot.initrd.luks.devices;
+          root = c.fileSystems."/".device; esp = c.fileSystems."/boot".device; }')
+  jq -e --arg luks "/dev/disk/by-uuid/$luks_uuid" --arg esp "/dev/disk/by-uuid/$esp_uuid" \
+    '. == {luks: {cryptroot: $luks}, root: "/dev/mapper/cryptroot", esp: $esp}' \
+    <<<"$devices" >/dev/null ||
+    fail 'Boot configuration does not match the freshly formatted disk UUIDs; refusing installation.'
 }
 
 main() {
@@ -439,9 +393,10 @@ main() {
   mount "$esp" /mnt/boot
   cp -a "$work/repo/." /mnt/etc/nixos/
   # Generate only after the real target root and ESP are mounted. Never edit source.
-  nixos-generate-config --root /mnt --show-hardware-config >"$work/hardware.nix"
+  generate_hardware_config /mnt
   rm -- "/mnt/etc/nixos/hosts/$host/hardware.nix"
   install -m 0644 "$work/hardware.nix" "/mnt/etc/nixos/hosts/$host/hardware.nix"
+  verify_boot_devices
   nixos-install --root /mnt --flake "path:/mnt/etc/nixos#$host" --no-root-passwd --no-write-lock-file
   printf '\nSet a nonempty ROOT recovery password:\n'
   nixos-enter --root /mnt -c 'passwd root'
@@ -459,8 +414,8 @@ main() {
   cat <<'DONE'
 
 Installation commands completed. The target stays mounted at /mnt; no reboot.
-Keep the root shell, tested recovery ISO, passphrases and protected off-disk
-header backups. Boot/sudo authentication is NOT proven by installation.
+Keep the root shell, tested recovery ISO and passphrases.
+Boot/sudo authentication is NOT proven by installation.
 Before an operator-approved reboot inspect the target crypttab/initrd: exactly
 one cryptroot mapping, FIDO2/USB/HID support, no headless/passwordless fallback.
 From a separate ri terminal in the target, test sudo AND sudo -i with fresh

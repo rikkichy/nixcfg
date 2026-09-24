@@ -49,6 +49,18 @@ with this Linux tool. The server uses NetworkManager-managed DHCP, console
 login, and key-only SSH on port 22; SSH password/keyboard-interactive
 authentication and root login are disabled. No desktop session is enabled.
 
+Both Linux hosts use the shared UEFI Limine policy in
+`common/modules/nixos-limine.nix`, retaining ten generations. The desktop keeps
+its zero-second timeout; the server displays the menu for five seconds.
+Darwin does not import this module. LUKS/FIDO2 policy is independent of the loader.
+
+On an existing server, migration is a bootloader update, not a reinstall.
+For an approved migration, use `nh os boot path:/etc/nixos --hostname nixos-server
+--install-bootloader`. Before separately approving reboot, inspect
+`/boot/limine/limine.conf` and the Limine firmware entry. Retain the existing
+systemd-boot EFI files, working generation, disk passphrase and recovery USB
+until Limine has successfully booted and unlocked the installed system.
+
 Before installation, ensure this checkout contains your FIDO2 SSH public key
 in `hosts/nixos-server/default.nix`; local edits on another machine are not
 included by cloning GitHub. After booting the installed system, find its address
@@ -85,18 +97,15 @@ metadata, evaluates the host before erasing, and copies the snapshot to
 configuration is a source snapshot, not a Git clone. Use `path:` rebuilds.
 For Git-based maintenance after installation, follow
 [Adopt the installed snapshot](#adopt-the-installed-snapshot).
+After formatting, udev identities are refreshed before hardware generation.
+Before installation, the evaluated root, EFI and cryptroot configuration must
+match the mapper and UUIDs read directly from the new filesystems/LUKS header.
 Evaluation is not a full build, and post-erase failures require manual recovery.
 
 Enter disk, root and `ri` passwords interactively; retain them independently
 of the YubiKey. The token must be USB-visible to the server: KVM keyboard
 forwarding is insufficient. Choose `0` to skip token enrollment.
 Sudo and boot enrollments have separate `y/N` approvals before disk erasure.
-Boot enrollment also selects a numbered mounted encrypted off-target backup
-destination; protected LUKS header backups are created automatically.
-Missing backup storage or choosing `0` defers only boot enrollment, not sudo
-or installation. If that mount disappears or changes before enrollment,
-boot enrollment is deferred again. Keep the headers off the target disk and
-outside the checkout; backups can restore revoked access.
 
 `common/modules/nixos-yubikey.nix` provides both Linux hosts' systemd-initrd
 FIDO2 discovery and touch-only sudo policy. Sudo registration is host-specific
@@ -112,6 +121,11 @@ Developer checks: `bash scripts/install-test.sh`, packaged `--help`/`--plan`,
 the standard full validation, and
 `nix build --dry-run 'path:.#nixosConfigurations.nixos-server.config.system.build.toplevel'`.
 Mocks and evaluation do not prove disk installation, live PAM, or cold boot.
+The real stale-UUID regression is `sudo bash scripts/install-uuid-test.sh` in a
+disposable Linux VM with the installer's runtime tools on PATH. It uses private
+loop devices and briefly pauses udev; do not run it on a production host.
+It checks hardware generation against changed on-disk metadata, not a full
+installation or boot.
 
 All three hosts import the system module `common/modules/nh.nix`, which installs
 `nh` and sets `NH_FLAKE=/etc/nixos`. Use `nh os switch` on either Linux host and
@@ -241,6 +255,7 @@ Secrets remain separate in `.secrets/`.
 | `install.nix`, `scripts/install.sh` | interactive UEFI installer and its packaged runtime dependencies |
 | `hosts/nixos-server/` | headless server policy and installer-replaced hardware configuration |
 | `common/modules/nixos-yubikey.nix` | Linux-only shared cryptroot FIDO2 and sudo U2F policy |
+| `common/modules/nixos-limine.nix` | shared Linux UEFI Limine policy; menu timeouts remain host-owned |
 | `common/modules/nh.nix` | system-wide nh package and default checkout for all three hosts |
 | `common/modules/nixos-networking.nix` | shared Linux NetworkManager, Mihomo/TUN and Avahi policy |
 | `common/modules/nixos-mihomo-secrets.nix` | host-selected SOPS/legacy inputs and private runtime rendering |
