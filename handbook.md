@@ -267,7 +267,7 @@ Secrets remain separate in `.secrets/`.
 | `common/modules/nh.nix` | system-wide nh package and default checkout for all three hosts |
 | `common/modules/nixos-networking.nix` | shared Linux NetworkManager, Mihomo/TUN and Avahi policy |
 | `common/modules/nixos-mihomo-secrets.nix` | host-selected SOPS/legacy inputs and private runtime rendering |
-| `common/pkgs/overlay.nix` | shared Linux OMP override and VPN command package |
+| `common/pkgs/overlay.nix` | shared Linux OMP release-binary package and VPN command package |
 | `common/pkgs/mihomo-config.py`, `common/dotfiles/mihomo.yaml` | shared private-config renderer and public tunnel template |
 | `hosts/nixos-server/modules/system/services.nix` | headless tooling, PIV permissions, Docker and timezone |
 | `hosts/ne/default.nix` | macOS host identity, primary-user wiring and system module imports |
