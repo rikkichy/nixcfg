@@ -83,7 +83,17 @@
       nixosConfigurations.nixos-server = nixpkgs.lib.nixosSystem {
         inherit system;
         specialArgs = { inherit nixcfgPath; };
-        modules = [ ./hosts/nixos-server ];
+        modules = [
+          ./hosts/nixos-server
+          home-manager.nixosModules.home-manager
+          {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.extraSpecialArgs = { inherit nixcfgPath; };
+            home-manager.backupFileExtension = "before-home-manager";
+            home-manager.users.ri = import ./hosts/nixos-server/home.nix;
+          }
+        ];
       };
 
       darwinConfigurations.ne = inputs.nix-darwin.lib.darwinSystem {

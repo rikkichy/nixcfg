@@ -26,9 +26,11 @@
   boot.loader.timeout = 5;
 
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  programs.fish.enable = true;
   environment.systemPackages = with pkgs; [ git vim pam_u2f ghostty.terminfo ];
   users.users.ri = {
     isNormalUser = true;
+    shell = pkgs.fish;
     extraGroups = [ "wheel" ];
     openssh.authorizedKeys.keys = [
       "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAILf+Jn/kb+/9xR8dND9SjvG6k1hS+jcQImmzyp3LAFDwAAAABHNzaDo= ri@nixos-server"

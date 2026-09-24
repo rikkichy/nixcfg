@@ -5,8 +5,9 @@ description: Portable Home Manager shell, CLI, fonts and Zed configuration share
 
 # Shared Home Manager
 
-Both `hosts/nix/home.nix` and `hosts/ne/home.nix` explicitly import
-`common/modules/shell.nix` and `common/modules/zed.nix`. Read
+All three hosts import `common/modules/shell.nix` from their `home.nix`.
+The desktop and Mac also import `common/modules/zed.nix`; the server does not
+import editor or desktop modules. Read
 [the shared handbook](../../../handbook.md#shared-shell-and-editor) for the user
 contract. Paths below are repository-relative.
 

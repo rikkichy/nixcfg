@@ -115,13 +115,19 @@ for this shared command.
 
 ## Shared shell and editor
 
-`common/modules/shell.nix` owns portable CLI packages, Fish abbreviations and
+All three hosts import `common/modules/shell.nix` through Home Manager for their
+primary user. It owns portable CLI packages, Fish abbreviations and
 aliases, Starship, zoxide, direnv, Matugen, Departure Mono Nerd Font, and shared
 Starship/fastfetch/btop/micro configuration. Optional local Fish additions belong
 in `~/.config/fish/user-config.fish`. Host modules own platform-specific shell
 initialization and terminal integration.
 
-Both hosts import `common/modules/zed.nix`, which owns Zed's read-only
+The server's `hosts/nixos-server/home.nix` imports only the shared shell module.
+Fish is `ri`'s system login shell; reconnect SSH after activation to start it.
+Conflicting managed files are preserved with `.before-home-manager`; existing
+backups are not overwritten.
+
+Only the desktop and Mac import `common/modules/zed.nix`, which owns Zed's read-only
 settings, extension selection, language-server commands, and the captured theme.
 On Linux it also owns the Zed package; on Darwin it configures the existing app.
 Edit this module rather than Zed's settings UI. Extensions are installed by Zed
