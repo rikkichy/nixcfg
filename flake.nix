@@ -60,11 +60,12 @@
       nixcfgPath = "/etc/nixos";
       system = "x86_64-linux";
 
+      commonOverlay = import ./common/pkgs/overlay.nix { inherit inputs; };
       overlay = import ./hosts/nix/pkgs/overlay.nix { inherit inputs; };
 
       devPkgs = import nixpkgs {
         inherit system;
-        overlays = [ overlay ];
+        overlays = [ commonOverlay overlay ];
         config = {
           allowUnfree = true;
         };
@@ -85,6 +86,9 @@
         specialArgs = { inherit nixcfgPath; };
         modules = [
           ./hosts/nixos-server
+          inputs.sops-nix.nixosModules.sops
+          ./.secrets/nixos-server/sops.nix
+          { nixpkgs.overlays = [ commonOverlay ]; }
           home-manager.nixosModules.home-manager
           {
             home-manager.useGlobalPkgs = true;
@@ -119,7 +123,7 @@
           inputs.sops-nix.nixosModules.sops
           ./.secrets/nix/sops.nix
 
-          { nixpkgs.overlays = [ overlay ]; }
+          { nixpkgs.overlays = [ commonOverlay overlay ]; }
 
           home-manager.nixosModules.home-manager
           {

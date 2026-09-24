@@ -42,9 +42,9 @@ sudo nix --extra-experimental-features 'nix-command flakes' run path:.#install -
 
 Select `nixos-server` for the headless server. `nix` is specifically the
 Ryzen/NVIDIA desktop, not a generic desktop profile; `ne` is not installable
-with this Linux tool. The server uses DHCP, console login, and key-only SSH
-on port 22; SSH password/keyboard-interactive authentication and root login
-are disabled. No desktop or application workloads are enabled.
+with this Linux tool. The server uses NetworkManager-managed DHCP, console
+login, and key-only SSH on port 22; SSH password/keyboard-interactive
+authentication and root login are disabled. No desktop session is enabled.
 
 Before installation, ensure this checkout contains your FIDO2 SSH public key
 in `hosts/nixos-server/default.nix`; local edits on another machine are not
@@ -113,6 +113,33 @@ All three hosts import the system module `common/modules/nh.nix`, which installs
 `nh darwin switch --hostname ne` on the Mac. The server does not need Home Manager
 for this shared command.
 
+### Server services and private provisioning
+
+`hosts/nixos-server/modules/system/services.nix` supplies OMP, YubiKey Manager,
+`age-plugin-yubikey`, PC/SC, Docker with weekly native pruning, and the Moscow
+timezone. `ri` can manage Docker and NetworkManager; Docker membership is
+root-equivalent. Pruning may remove stopped containers and unused resources,
+but does not opt into volume pruning. PC/SC access is granted only to `ri` for
+context/card operations; SSH authentication does not forward a client YubiKey.
+
+Both Linux hosts share NetworkManager, Mihomo/TUN, the `vpn` command and Avahi.
+The server does not import desktop gaming/LAN firewall ports. The first approved
+network migration belongs at the console/KVM: it replaces dhcpcd ownership and
+disables IPv6, so an existing SSH connection can drop. Verify addressing, DNS
+and SSH before leaving that console; no network activation is automatic here.
+
+The server secret wrapper is `.secrets/nixos-server/sops.nix`. Provision its own
+`.secrets/nixos-server/personal.yaml` and root-owned native age identity at
+`/var/lib/sops-nix/key.txt` using the
+[private provisioning procedure](docs/nix.md#private-inputs-and-first-provisioning).
+Its recipient rule and ciphertext remain operator-provisioned: add
+`^nixos-server/personal\.yaml$` to `.secrets/.sops.yaml` with the real
+administrator and server public recipients. Do not copy the desktop private
+key, ciphertext or HWID as a substitute for server provisioning.
+Without ciphertext, the same three `/etc/mihomo` files are read locally on the
+server; missing inputs fail closed before Mihomo starts. The public provider
+device label follows the hostname, while the private HWID is never invented.
+
 ## Shared shell and editor
 
 All three hosts import `common/modules/shell.nix` through Home Manager for their
@@ -150,11 +177,11 @@ Darwin activation deliberately does not upgrade Homebrew packages.
 
 ## Layout
 
-Ownership comes first: `common/` contains configuration used by both hosts,
-while `hosts/nix/` and `hosts/ne/` contain each host's entry points, modules,
-packages and dotfiles. Create subdirectories only for real content; there are
-no shared local packages yet. Within each host's `modules/`, `system/` contains
-NixOS or nix-darwin modules and `home/` contains Home Manager modules.
+Ownership comes first: `common/` contains configuration and packages shared by
+multiple hosts; `hosts/{nix,nixos-server,ne}/` contain their own entry points,
+modules, packages and dotfiles. Create subdirectories only for real content.
+Within each host's `modules/`, `system/` contains NixOS or nix-darwin modules
+and `home/` contains Home Manager modules.
 Secrets remain separate in `.secrets/`.
 
 | Path | What |
@@ -164,6 +191,11 @@ Secrets remain separate in `.secrets/`.
 | `hosts/nixos-server/` | headless server policy and installer-replaced hardware configuration |
 | `common/modules/nixos-yubikey.nix` | Linux-only shared cryptroot FIDO2 and sudo U2F policy |
 | `common/modules/nh.nix` | system-wide nh package and default checkout for all three hosts |
+| `common/modules/nixos-networking.nix` | shared Linux NetworkManager, Mihomo/TUN and Avahi policy |
+| `common/modules/nixos-mihomo-secrets.nix` | host-selected SOPS/legacy inputs and private runtime rendering |
+| `common/pkgs/overlay.nix` | shared Linux OMP override and VPN command package |
+| `common/pkgs/mihomo-config.py`, `common/dotfiles/mihomo.yaml` | shared private-config renderer and public tunnel template |
+| `hosts/nixos-server/modules/system/services.nix` | headless tooling, PIV permissions, Docker and timezone |
 | `hosts/ne/default.nix` | macOS host identity, primary-user wiring and system module imports |
 | `hosts/ne/home.nix` | Home Manager imports and state version |
 | `hosts/ne/modules/system/` | Homebrew inventory, Nix policy, macOS preferences and power settings |
@@ -178,7 +210,7 @@ Secrets remain separate in `.secrets/`.
 | `hosts/nix/modules/system/locale.nix` | desktop locale and timezone |
 | `hosts/nix/modules/system/nix.nix` | Nix settings and garbage collection |
 | `hosts/nix/modules/system/security.nix` | polkit, shared authentication import, hardened allocator and smart cards |
-| `hosts/nix/modules/system/networking.nix` | NetworkManager, Mihomo, firewall and service discovery |
+| `hosts/nix/modules/system/networking.nix` | shared network import and desktop-only interface-scoped LAN ports |
 | `hosts/nix/modules/system/audio.nix` | PipeWire and the Blessing 3 equalizer |
 | `hosts/nix/modules/system/session.nix` | Hyprland/UWSM, greetd, portals, keyring, session environment and fonts |
 | `hosts/nix/modules/system/gaming.nix` | Steam, Gamescope, GameMode, game packages, osu! MIME and scheduling |
@@ -186,7 +218,7 @@ Secrets remain separate in `.secrets/`.
 | `hosts/nix/modules/system/flatpak.nix` | Flatpak service and bootstrap/update units |
 | `hosts/nix/modules/system/maintenance.nix` | checkout helpers, automated updates and desktop notifications |
 | `hosts/nix/pkgs/overlay.nix` | desktop package wiring and upstream patches |
-| `hosts/nix/pkgs/bypasses/vpn.nix` | VPN command package |
+| `common/pkgs/vpn.nix` | shared Linux VPN command package |
 | `hosts/nix/home.nix` | Home Manager imports, state version and desktop packages |
 | `hosts/nix/modules/home/matugen.nix` | generated palettes, cursors, wallpaper entries/pickers and restoration |
 | `hosts/nix/modules/home/fuzzel.nix` | Fuzzel settings, general desktop entries/actions and shared pickers |
@@ -200,7 +232,7 @@ Secrets remain separate in `.secrets/`.
 | `hosts/nix/dotfiles/ricing/hypr/` | Hyprland Lua config, symlinked live into `~/.config/hypr` |
 | `common/dotfiles/`, `hosts/nix/dotfiles/`, `hosts/ne/dotfiles/` | shared and host-owned assets/templates |
 | `hosts/nix/dotfiles/ricing/`, `hosts/nix/dotfiles/gaming/`, `hosts/nix/dotfiles/bypasses/` | desktop appearance, game settings and proxy configuration |
-| `.secrets/.sops.yaml`, `.secrets/nix/` | public recipient policy and host-specific declarations/ciphertext |
+| `.secrets/.sops.yaml`, `.secrets/{nix,nixos-server}/` | public recipient policy and host-isolated secret declarations/ciphertext |
 
 Host composition uses explicit imports. `nix` is the NixOS desktop,
 `nixos-server` the headless Linux server, and `ne` the Apple Silicon Darwin

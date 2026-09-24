@@ -1,13 +1,6 @@
 { inputs }:
 
 final: prev: {
-  omp = inputs.omp.packages.${final.stdenv.hostPlatform.system}.omp.override (args: {
-    bun = args.bun.overrideAttrs {
-      nativeBuildInputs = [ final.unzip ] ++ final.lib.optionals final.stdenv.hostPlatform.isLinux [ final.autoPatchelfHook ];
-      buildInputs = final.lib.optionals final.stdenv.hostPlatform.isLinux [ final.stdenv.cc.cc.lib final.zlib ];
-    };
-  });
-
   quickshell = prev.quickshell.overrideAttrs (old: {
     postPatch = (old.postPatch or "") + ''
       substituteInPlace src/wayland/hyprland/ipc/connection.cpp \
@@ -43,6 +36,4 @@ final: prev: {
       find src -name "*.cpp" -exec sed -i "1i #include <cstring>\n#include <cstdint>" {} +
     '';
   });
-
-  vpn = final.callPackage ./bypasses/vpn.nix { };
 }

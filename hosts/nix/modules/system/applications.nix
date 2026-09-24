@@ -4,7 +4,6 @@
   programs.git.enable = true;
 
   environment.systemPackages = with pkgs; [
-    vpn
     omp
 
     inputs.helium.packages.${pkgs.stdenv.hostPlatform.system}.default

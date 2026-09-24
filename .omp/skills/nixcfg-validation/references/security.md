@@ -9,9 +9,9 @@ reset, production secret access, or reboot is implied by running validation.
 ### Non-production checks
 
 - Inspect source/staging paths for accidental plaintext/private material
-  without printing secrets. `.secrets/nix/sops.nix`, `.secrets/.sops.yaml`, and
-  operator-created `.secrets/nix/personal.yaml` are the intended public module,
-  public policy, and ciphertext. Pending real provisioning, an absent
+  without printing secrets. `.secrets/<host>/sops.nix`, `.secrets/.sops.yaml`,
+  and operator-created `.secrets/<host>/personal.yaml` are the public host
+  module, public policy, and ciphertext. Pending real provisioning, an absent
   ciphertext and empty/fail-closed recipient policy are intentional, not a
   reason to invent production values. No ignored plaintext may sit in a
   `path:` source.
@@ -19,8 +19,9 @@ reset, production secret access, or reboot is implied by running validation.
   the real checkout, the SOPS branch using dummy keys/ciphertext. Check both
   `path:` and Git-tracked source inclusion; the hidden policy must be tracked.
   Do not change production recipients to exercise a test.
-- With dummy data outside the checkout, prove `^nix/personal\.yaml$` selects the
-  nested policy from the repository root using explicit `--config`, and from
+- With dummy data outside the checkout, prove each provisioned host's
+  `^<host>/personal\.yaml$` rule selects the nested policy from the repository root
+  using explicit `--config`, and from
   `.secrets/`. Prove an authorized identity can add a new host recipient via
   `updatekeys`, that the new host decrypts alone, and that the dummy HWID is
   unchanged. A policy edit without `updatekeys` is not successful enrollment.
@@ -28,6 +29,8 @@ reset, production secret access, or reboot is implied by running validation.
   newlines; assert exact SOPS scalar values survive decoding. Check a failed
   render does not publish a partial configuration, output is root-only, and
   missing HWID cannot silently become a new machine identity.
+  Run `python scripts/mihomo-config-test.py` with the renderer's Python/PyYAML
+  environment for the dummy-data regression.
 - Inspect secret-install/render/service ordering, lack of stale
   `RemainAfterExit` state, and restart propagation to `LoadCredential`.
   In an approved isolated runtime, change a dummy secret and verify that
@@ -35,10 +38,10 @@ reset, production secret access, or reboot is implied by running validation.
   prove this transition.
 - Inspect generated PAM for both `sudo` and `sudo-i`: U2F `sufficient`, literal
   `userpresence=1 pinverification=0 userverification=0`, cue, root-controlled
-  `/etc/u2f-mappings`, origin/appid `pam://nix`, retained Unix/account/session
+  `/etc/u2f-mappings`, origin/appid `pam://<hostname>`, retained Unix/account/session
   checks. No global enablement, NOPASSWD, `nouserok`, or `alwaysok`.
 - Inspect generated crypttab: one root `cryptroot` mapping, original backing
-  UUID, discard plus `fido2-device=auto,token-timeout=10s`, no `headless`.
+  UUID, intended discard policy and `fido2-device=auto,token-timeout=10s`, no `headless`.
   Inspect FIDO2 library/udev and USB/HID inclusion in the built initrd, and
   associate that initrd with its actual Limine generation entry. Verify
   zero-timeout recovery instructions against the installed EFI version.

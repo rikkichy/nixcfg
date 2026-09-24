@@ -52,7 +52,7 @@ proxy-providers:
       x-ver-os:
         - "NixOS"
       x-device-model:
-        - "nix"
+        - "@HOSTNAME@"
     health-check:
       enable: true
       url: https://www.gstatic.com/generate_204
@@ -74,7 +74,7 @@ proxy-providers:
       x-ver-os:
         - "NixOS"
       x-device-model:
-        - "nix"
+        - "@HOSTNAME@"
     health-check:
       enable: true
       url: https://www.gstatic.com/generate_204

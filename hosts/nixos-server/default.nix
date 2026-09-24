@@ -5,10 +5,12 @@
     ../../common/modules/nh.nix
     ./hardware.nix
     ../../common/modules/nixos-yubikey.nix
+    ../../common/modules/nixos-networking.nix
+    ./modules/system/services.nix
   ];
 
   networking.hostName = "nixos-server";
-  networking.useDHCP = true;
+  networking.useDHCP = false; # NetworkManager owns DHCP.
   networking.firewall.enable = true;
 
   services.openssh = {

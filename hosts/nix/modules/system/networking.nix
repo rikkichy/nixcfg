@@ -1,26 +1,7 @@
-{ pkgs, ... }:
+{ ... }:
 
 {
-  networking.enableIPv6 = false;
-  networking.networkmanager.enable = true;
-
-  services.mihomo = {
-    enable = true;
-    tunMode = true;
-    webui = pkgs.metacubexd;
-  };
-
-  systemd.services.mihomo = {
-    serviceConfig = {
-      Restart = "on-failure";
-      RestartSec = "5s";
-    };
-  };
-
-  systemd.services.NetworkManager-wait-online.enable = false;
-
-  networking.networkmanager.unmanaged = [ "interface-name:mihomo" ];
-  networking.firewall.trustedInterfaces = [ "mihomo" ];
+  imports = [ ../../../../common/modules/nixos-networking.nix ];
 
   networking.firewall.interfaces =
     let
@@ -34,12 +15,4 @@
       enp11s0 = lan;
       wlp8s0 = lan;
     };
-
-  networking.firewall.checkReversePath = "loose";
-
-  services.avahi = {
-    enable = true;
-    nssmdns4 = true;
-    openFirewall = true;
-  };
 }

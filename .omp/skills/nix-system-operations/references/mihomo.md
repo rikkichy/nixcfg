@@ -1,10 +1,11 @@
-# Mihomo networking — host nix
+# Mihomo networking — Linux hosts
 
-Sources: `hosts/nix/modules/system/networking.nix`,
-`hosts/nix/dotfiles/bypasses/mihomo.yaml`,
-`hosts/nix/pkgs/bypasses/{mihomo-config.py,vpn.nix}`,
-`hosts/nix/modules/system/applications.nix`, and `.secrets/nix/sops.nix`.
-Operator procedures: [VPN in docs/nix.md](../../../../docs/nix.md#vpn-mihomo).
+Sources: `common/modules/nixos-networking.nix`,
+`common/modules/nixos-mihomo-secrets.nix`, `common/dotfiles/mihomo.yaml`,
+`common/pkgs/{mihomo-config.py,vpn.nix}`, and each host's `.secrets/<host>/sops.nix`.
+Desktop-only LAN ports remain in `hosts/nix/modules/system/networking.nix`.
+Operator procedures: [VPN in docs/nix.md](../../../../docs/nix.md#vpn-mihomo)
+and [server provisioning](../../../../handbook.md#server-services-and-private-provisioning).
 Read [SOPS safety](boot-auth-secrets.md#sops-authoring-and-identity-boundaries)
 before changing secret inputs and [nixcfg-validation](../../nixcfg-validation/SKILL.md)
 for validation and security acceptance checks.
@@ -13,14 +14,17 @@ for validation and security acceptance checks.
 
 The NixOS Mihomo module runs a `DynamicUser` service, with `CAP_NET_ADMIN` from
 `tunMode`, and consumes `/run/mihomo/config.yaml` through `LoadCredential`.
-The repository template is public. `mihomo-config.py` parses YAML, inserts the
-three private values, and serializes JSON (valid YAML) at runtime; this safely
-preserves quotes, backslashes, and newlines. Never replace serialization with
+The repository template is public. `mihomo-config.py` takes a public hostname
+for `x-device-model`, inserts the three private values, and serializes JSON
+(valid YAML) at runtime; this safely preserves quotes, backslashes, and newlines.
+Never replace serialization with
 textual placeholder splicing or put secret strings into Nix, `writeText`,
 derivation inputs, command arguments, logs, or documentation.
 
-`.secrets/nix/sops.nix` uses SOPS only when `.secrets/nix/personal.yaml` exists.
-Its keys are `mihomo/primary_url`, `mihomo/quattro_url`, and `mihomo/hwid`.
+Each host wrapper uses SOPS only when its own `.secrets/<host>/personal.yaml`
+exists. Keys are `mihomo/primary_url`, `mihomo/quattro_url`, and `mihomo/hwid`.
+Server provisioning requires its own real recipient rule and host key; never
+borrow the desktop private identity or silently reuse its HWID.
 Without ciphertext the legacy files are the inputs:
 `/etc/mihomo/subscription.url`, `/etc/mihomo/quattro.url`, and
 `/etc/mihomo/hwid`. Keep those root-owned mode `0600` files for rollback even
@@ -48,9 +52,9 @@ Mihomo restart reruns the renderer.
 
 Keep these three names synchronized when renaming the TUN device:
 
-- `tun.device` in `hosts/nix/dotfiles/bypasses/mihomo.yaml`;
+- `tun.device` in `common/dotfiles/mihomo.yaml`;
 - `networking.networkmanager.unmanaged` in
-  `hosts/nix/modules/system/networking.nix`;
+  `common/modules/nixos-networking.nix`;
 - `networking.firewall.trustedInterfaces` in that same module.
 
 The current device is `mihomo`; IPv6 is disabled, reverse-path filtering is

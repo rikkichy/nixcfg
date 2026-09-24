@@ -423,7 +423,7 @@ To stop the service outright — `systemctl stop mihomo` — you do not need it 
 this, and it also takes the DNS hijack down with it. DIRECT is the toggle you
 want.
 
-The public template is `hosts/nix/dotfiles/bypasses/mihomo.yaml`. `mihomo-config` serializes the
+The public template is `common/dotfiles/mihomo.yaml`. `mihomo-config` serializes the
 three private strings into a root-only `/run/mihomo/config.yaml`; Mihomo receives
 it through systemd `LoadCredential`, retaining `DynamicUser`. SOPS scalar values
 are preserved exactly; legacy file inputs retain their existing whitespace
@@ -447,7 +447,7 @@ operator/provider rather than inventing a migration value.
 | --- | --- |
 | `.secrets/.sops.yaml` | Public recipient policy, matching `^nix/personal\.yaml$` |
 | `.secrets/nix/personal.yaml` | Operator-created ciphertext for host `nix`, intended for Git |
-| `.secrets/nix/sops.nix` | Host secret declarations and conditional cutover |
+| `.secrets/nix/sops.nix` | Desktop wrapper selecting its ciphertext for the shared secret module |
 | `/var/lib/sops-nix/key.txt` | Root-only native host age private key |
 | `~/.config/sops/age/yubikey.txt` | Administrator PIV identity descriptor, outside Git |
 | `/run/secrets/mihomo/{primary_url,quattro_url,hwid}` | Root-owned mode `0400` decrypted runtime inputs |

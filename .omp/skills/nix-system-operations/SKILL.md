@@ -1,15 +1,17 @@
 ---
 name: nix-system-operations
-description: Linux-only safety and operations for NixOS host nix, including initrd/LUKS and FIDO2, sudo U2F, SOPS/PIV recovery, polkit, crash resilience, CPU scheduling, hardened_malloc, systemd services, updates, and Mihomo VPN. Use when changing hosts/nix system modules, hardware, boot, services, security, performance, networking, or .secrets/nix/sops.nix.
+description: Linux-only safety and operations for NixOS hosts nix and nixos-server, including initrd/LUKS and FIDO2, sudo U2F, SOPS/PIV recovery, polkit, crash resilience, CPU scheduling, hardened_malloc, systemd services, updates, and Mihomo VPN. Use for Linux host system modules, shared Linux services/packages, hardware, boot, security, networking, and .secrets host modules.
 ---
 
 # Nix System Operations
 
-Owns **NixOS host `nix` only**: `hosts/nix/*.nix`,
-`hosts/nix/modules/system/`, and their system package/runtime dependencies in
-`hosts/nix/pkgs/` and `hosts/nix/dotfiles/`. Public secret wiring lives in
-`.secrets/nix/sops.nix`; private material is not an exploration source.
-Operator procedures are in [docs/nix.md](../../../docs/nix.md).
+Owns **NixOS hosts `nix` and `nixos-server`**: their system modules and
+package/runtime dependencies, including shared Linux modules and packages in
+`common/`. Host-specific hardware and desktop policy stay in their host.
+Public secret wiring lives in `.secrets/<host>/sops.nix`; private material is
+not an exploration source. Desktop procedures are in
+[docs/nix.md](../../../docs/nix.md), server provisioning in
+[the handbook](../../../handbook.md#server-services-and-private-provisioning).
 
 ## Read only the relevant reference
 
