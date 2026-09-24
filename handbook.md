@@ -89,14 +89,20 @@ view. ZFS members require manual installation. Selection and disk identity
 are rechecked before partitioning. This destroys the selected disk's existing
 data; it is not an upgrade tool.
 
-Only public source and encrypted ciphertext belong in the checkout. The
-installer snapshots tracked and nonignored untracked files without Git/OMP
-metadata, evaluates the host before erasing, and copies the snapshot to
-`/mnt/etc/nixos`. Generated hardware and UUIDs replace only the installed
-`hosts/<host>/hardware.nix`; the source checkout is unchanged. The installed
-configuration is a source snapshot, not a Git clone. Use `path:` rebuilds.
-For Git-based maintenance after installation, follow
-[Adopt the installed snapshot](#adopt-the-installed-snapshot).
+Only public source and encrypted ciphertext belong in the checkout. Before
+erasing, the installer creates an independent Git checkout at the reviewed
+source HEAD and overlays the reviewed working files, including local edits,
+deletions, new files and tracked `.omp` resources. Source Git configuration,
+hooks and credentials are not copied. The installed `main` branch tracks
+`origin/main` at `https://github.com/rikkichy/nixcfg.git`.
+
+Generated hardware and UUIDs replace only the installed
+`hosts/<host>/hardware.nix`; the source checkout is unchanged. After user
+creation, the installer assigns `/etc/nixos` to the target's `ri:users`.
+Generated hardware and local edits remain uncommitted; new files are marked
+intent-to-add so Git-based flakes can see them. As `ri`, use
+`git pull --ff-only` and `nh os switch`; resolve upstream conflicts rather than
+discarding the generated hardware file. No snapshot adoption is needed.
 After formatting, udev identities are refreshed before hardware generation.
 Before installation, the evaluated root, EFI and cryptroot configuration must
 match the mapper and UUIDs read directly from the new filesystems/LUKS header.
@@ -117,7 +123,8 @@ Use the [disk](docs/nix.md#touch-only-disk-unlock) and
 [sudo](docs/nix.md#touch-only-sudo-with-password-fallback) acceptance checklists
 with the selected hostname before relying on touch-only authentication.
 
-Developer checks: `bash scripts/install-test.sh`, packaged `--help`/`--plan`,
+Developer checks: `bash scripts/install-test.sh` with Git, Nix, jq and GNU tar
+on PATH (also available through the packaged installer), packaged `--help`/`--plan`,
 the standard full validation, and
 `nix build --dry-run 'path:.#nixosConfigurations.nixos-server.config.system.build.toplevel'`.
 Mocks and evaluation do not prove disk installation, live PAM, or cold boot.
@@ -134,9 +141,10 @@ for this shared command.
 
 ### Adopt the installed snapshot
 
-After booting, `/etc/nixos` contains the exact installed source and generated
-hardware configuration, but no Git metadata. Keep using `path:` rebuilds until
-adoption is complete. Do not clone over it or replace its hardware file.
+Use this recovery procedure only when `/etc/nixos` contains installed source
+and generated hardware but lacks Git metadata. The guided installer normally
+creates a user-owned checkout. Keep using `path:` rebuilds until adoption is
+complete; do not clone over the snapshot or replace its hardware file.
 
 Run the following in Bash as `ri`, only when `/etc/nixos/.git` does not exist.
 First preserve a separate, root-only backup, then give `ri` ownership of the
@@ -166,8 +174,8 @@ git diff
 The baseline is the fetched upstream default branch, not necessarily the
 revision used for installation. Review the differences before updating or
 publishing: they include generated hardware, installation-time source edits,
-and any upstream changes since installation. The installer omits `.omp`, so
-its tracked files appear deleted; restore only that excluded directory with
+and any upstream changes since installation. If the snapshot lacks tracked
+`.omp` resources, those files appear deleted; restore only that directory with
 `git restore --source=HEAD --staged --worktree -- .omp` if desired.
 Never use `reset --hard` or a blanket restore to resolve this diff.
 

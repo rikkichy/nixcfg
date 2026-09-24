@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # No root, real device discovery, partitioning, mount, enrollment, or Nix build.
+# Requires Git, Nix, jq and GNU tar (the packaged installer's runtime tools).
 set -euo pipefail
 # shellcheck source=scripts/install.sh
 source "$(dirname -- "${BASH_SOURCE[0]}")/install.sh"
@@ -96,6 +97,66 @@ if (confirm_erase <<<'yes') >/dev/null 2>&1; then fail 'Inexact confirmation fol
     "$testdir/devices.json" >"$testdir/fresh.json"
   mv "$testdir/fresh.json" "$testdir/devices.json"
   verify_boot_devices
+)
+
+# Exercise the installed checkout with real Git, including a later fast-forward.
+(
+  export GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null
+  export GIT_AUTHOR_NAME=InstallerTest GIT_AUTHOR_EMAIL=installer@example.invalid
+  export GIT_COMMITTER_NAME=$GIT_AUTHOR_NAME GIT_COMMITTER_EMAIL=$GIT_AUTHOR_EMAIL
+  source="$testdir/git source"
+  work="$testdir/git-work"
+  mkdir -p "$source/.omp" "$source/hosts/nixos-server" "$work"
+  git init --quiet --initial-branch=main --template= "$source"
+  printf '{ outputs = _: { value = "base"; }; }\n' >"$source/flake.nix"
+  printf 'original\n' >"$source/edited"
+  printf 'remove me\n' >"$source/deleted"
+  printf 'template\n' >"$source/hosts/nixos-server/hardware.nix"
+  printf 'tracked resource\n' >"$source/.omp/resource"
+  printf 'initial\n' >"$source/upstream"
+  printf 'ignored.tmp\n' >"$source/.gitignore"
+  git -C "$source" add .
+  git -C "$source" commit --quiet -m initial
+  revision=$(git -C "$source" rev-parse HEAD)
+  printf 'reviewed edit\n' >"$source/edited"
+  rm "$source/deleted"
+  printf 'new module\n' >"$source/new file.nix"
+  printf '{ outputs = _: { value = builtins.readFile (./. + "/new file.nix"); }; }\n' >"$source/flake.nix"
+  printf 'staged content\n' >"$source/staged"
+  git -C "$source" add staged
+  printf 'ignored data\n' >"$source/ignored.tmp"
+  ln -s /nonexistent "$source/dangling"
+  ln -s /nonexistent "$source/result"
+  mkdir -p "$source/.git/hooks"
+  printf '#!/bin/sh\nexit 99\n' >"$source/.git/hooks/post-checkout"
+  chmod +x "$source/.git/hooks/post-checkout"
+  git -C "$source" config credential.helper do-not-copy
+
+  prepare_checkout
+  [[ $(git -C "$work/repo" rev-parse HEAD) == "$revision" ]] || fail 'Installed revision changed.'
+  [[ $(git -C "$work/repo" remote get-url origin) == https://github.com/rikkichy/nixcfg.git ]] || fail 'Installed origin points at the live source.'
+  [[ $(git -C "$work/repo" rev-parse --abbrev-ref '@{upstream}') == origin/main ]] || fail 'Missing pull tracking.'
+  [[ $(<"$work/repo/edited") == 'reviewed edit' && ! -e $work/repo/deleted ]] || fail 'Local edits/deletions were lost.'
+  [[ -f $work/repo/.omp/resource && -f $work/repo/staged && -L $work/repo/dangling ]] || fail 'Reviewed files were omitted.'
+  [[ ! -e $work/repo/ignored.tmp && ! -L $work/repo/result ]] || fail 'Ignored/generated files were copied.'
+  [[ ! -e $work/repo/.git/hooks/post-checkout && ! -e $work/repo/.git/objects/info/alternates ]] || fail 'Source Git metadata leaked.'
+  if git -C "$work/repo" config --local --get credential.helper; then fail 'Source credentials were copied.'; fi
+  [[ $(nix --extra-experimental-features 'nix-command flakes' eval --raw "git+file://$work/repo#value") == 'new module' ]] || fail 'New files are invisible to Git flakes.'
+
+  printf 'generated disk UUID\n' >"$work/repo/hosts/nixos-server/hardware.nix"
+  [[ $(<"$source/hosts/nixos-server/hardware.nix") == template ]] || fail 'Source hardware was modified.'
+  printf 'updated upstream\n' >"$source/upstream"
+  git -C "$source" add upstream
+  git -C "$source" commit --quiet --only -m update upstream
+  git -C "$work/repo" remote set-url origin "$source"
+  git -C "$work/repo" pull --quiet --ff-only
+  [[ $(<"$work/repo/upstream") == 'updated upstream' ]] || fail 'Installed checkout cannot pull updates.'
+  [[ $(<"$work/repo/hosts/nixos-server/hardware.nix") == 'generated disk UUID' ]] || fail 'Pull replaced generated hardware.'
+  printf 'conflicting upstream hardware\n' >"$source/hosts/nixos-server/hardware.nix"
+  git -C "$source" commit --quiet --only -m hardware hosts/nixos-server/hardware.nix
+  if git -C "$work/repo" pull --quiet --ff-only >/dev/null 2>&1; then fail 'Conflicting hardware update was silently applied.'; fi
+  [[ $(<"$work/repo/hosts/nixos-server/hardware.nix") == 'generated disk UUID' ]] || fail 'Conflict damaged installed hardware.'
+  printf 'PASS: real Git checkout, reviewed changes, Git-flake new files, clean metadata and hardware-safe pulls.\n'
 )
 
 losetup() { printf '{"loopdevices":[{"back-file":"/nonexistent-live-backing-file"}]}\n'; }

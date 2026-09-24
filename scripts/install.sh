@@ -27,8 +27,10 @@ REPOSITORY    Defaults to the current directory.
 
 Installation ERASES ONE WHOLE DISK after a single ERASE confirmation. It creates
 GPT, a 4 GiB FAT32 EFI partition, and a passphrase-protected LUKS2/XFS root.
-The source checkout is never modified. Tracked and nonignored untracked files
-are copied; .git, .omp, result links and Python cache state are excluded.
+The source checkout is never modified. Its reviewed HEAD and working files
+become an independent ri-owned checkout tracking the public origin/main.
+Local edits, deletions and nonignored new files are retained, including .omp.
+Source Git hooks/configuration, result links and Python caches are not copied.
 Never keep plaintext secrets, private keys or identities in this checkout:
 path: flakes include ignored files even before this program starts.
 
@@ -296,6 +298,37 @@ enroll_sudo() {
   printf 'Sudo registration installed root:root 0600; PAM authentication remains UNTESTED.\n'
 }
 
+prepare_checkout() {
+  local revision file
+  local -a source_git=(git -c safe.directory="$source" -C "$source")
+  revision=$("${source_git[@]}" rev-parse --verify HEAD)
+  mkdir -m 0755 "$work/repo"
+  # Fetch objects, not .git: no source hooks, credentials, alternates or hardlinks.
+  git init --quiet --initial-branch=main --template= "$work/repo"
+  git -c safe.directory="$source" -C "$work/repo" fetch --quiet --no-tags \
+    "$source" "$revision:refs/remotes/origin/main"
+  git -C "$work/repo" reset --quiet --mixed refs/remotes/origin/main
+  git -C "$work/repo" remote add origin https://github.com/rikkichy/nixcfg.git
+  git -C "$work/repo" branch --quiet --set-upstream-to=origin/main main
+
+  "${source_git[@]}" ls-files --cached --others --exclude-standard --deduplicate -z >"$work/source-files"
+  while IFS= read -r -d '' file; do
+    # An absent tracked file is a local deletion, not a tar error.
+    if [[ -e $source/$file || -L $source/$file ]]; then printf '%s\0' "$file"; fi
+  done <"$work/source-files" >"$work/files"
+  tar --create --file="$work/source.tar" --directory="$source" --null --verbatim-files-from \
+    --exclude=.git --exclude=result --exclude='result-*' --exclude=__pycache__ \
+    --no-recursion --files-from="$work/files"
+  tar --extract --file="$work/source.tar" --directory="$work/repo" --no-same-owner
+  rm -- "$work/source.tar"
+  # Make new source files visible to Git-based flakes without committing them.
+  git -C "$work/repo" ls-files --others --exclude-standard -z >"$work/new-files"
+  if [[ -s $work/new-files ]]; then
+    git --literal-pathspecs -C "$work/repo" add --intent-to-add \
+      --pathspec-from-file="$work/new-files" --pathspec-file-nul
+  fi
+}
+
 generate_hardware_config() {
   # Formatting changes UUIDs without necessarily refreshing udev's by-uuid links.
   # The hardware generator picks those links by device number, not on-disk UUID.
@@ -319,7 +352,7 @@ verify_boot_devices() {
 }
 
 main() {
-  local mode=install selection identity current seq esp row files password_status
+  local mode=install selection identity current seq esp row password_status
   local -a nixcmd=(nix --extra-experimental-features 'nix-command flakes')
   if [[ ${1:-} == --help || ${1:-} == -h ]]; then usage; return; fi
   if [[ ${1:-} == --list-disks || ${1:-} == --plan ]]; then mode=${1#--}; shift; fi
@@ -349,14 +382,7 @@ main() {
   [[ -f $source/hosts/$host/hardware.nix ]] || fail 'Selected host hardware source is missing.'
   printf '\nSource: %s — public configuration/encrypted ciphertext only; no private identities.\n' "$source"
   work=$(mktemp -d /run/nixcfg-install.XXXXXX)
-  mkdir -m 0755 "$work/repo"
-  git -c safe.directory="$source" -C "$source" ls-files --cached --others --exclude-standard --deduplicate -z >"$work/files"
-  files=$work/files
-  tar --create --file="$work/source.tar" --directory="$source" --null --verbatim-files-from \
-    --exclude=.git --exclude=.omp --exclude=result --exclude='result-*' --exclude=__pycache__ \
-    --no-recursion --files-from="$files"
-  tar --extract --file="$work/source.tar" --directory="$work/repo" --no-same-owner
-  rm -- "$work/source.tar"
+  prepare_checkout
   printf '\nEvaluating the selected build plan BEFORE erase (not a full build):\n'
   "${nixcmd[@]}" build --dry-run --no-link --no-write-lock-file "path:$work/repo#nixosConfigurations.$host.config.system.build.toplevel"
   disks=$(scan_disks) || fail 'Cannot establish device usage; refusing erase.'
@@ -398,6 +424,7 @@ main() {
   install -m 0644 "$work/hardware.nix" "/mnt/etc/nixos/hosts/$host/hardware.nix"
   verify_boot_devices
   nixos-install --root /mnt --flake "path:/mnt/etc/nixos#$host" --no-root-passwd --no-write-lock-file
+  nixos-enter --root /mnt -c 'chown -R ri:users /etc/nixos'
   printf '\nSet a nonempty ROOT recovery password:\n'
   nixos-enter --root /mnt -c 'passwd root'
   password_status=$(nixos-enter --root /mnt -c 'passwd --status root')
@@ -414,6 +441,8 @@ main() {
   cat <<'DONE'
 
 Installation commands completed. The target stays mounted at /mnt; no reboot.
+The Git checkout at /etc/nixos belongs to ri and tracks the public origin/main.
+Generated hardware and reviewed local edits remain uncommitted; preserve them.
 Keep the root shell, tested recovery ISO and passphrases.
 Boot/sudo authentication is NOT proven by installation.
 Before an operator-approved reboot inspect the target crypttab/initrd: exactly

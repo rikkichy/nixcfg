@@ -27,9 +27,9 @@ unless an installation step specifies otherwise.
 Use the [interactive Linux installer](../handbook.md#interactive-linux-installer)
 for the normal installation path. It guides host/disk selection, generates the
 hardware configuration, sets recovery passwords and offers separately approved
-YubiKey enrollment. After installation, follow
-[checkout adoption](../handbook.md#adopt-the-installed-snapshot) for Git-based
-maintenance.
+YubiKey enrollment. It leaves an `ri`-owned Git checkout for normal maintenance.
+Use [checkout adoption](../handbook.md#adopt-the-installed-snapshot) only to
+recover an installed configuration that has no Git metadata.
 
 ## Manual installation / recovery reference
 
