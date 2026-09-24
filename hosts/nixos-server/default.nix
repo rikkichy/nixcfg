@@ -10,6 +10,16 @@
   networking.useDHCP = true;
   networking.firewall.enable = true;
 
+  services.openssh = {
+    enable = true;
+    openFirewall = true;
+    settings = {
+      PasswordAuthentication = false;
+      KbdInteractiveAuthentication = false;
+      PermitRootLogin = "no";
+    };
+  };
+
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.timeout = 5;
@@ -19,6 +29,9 @@
   users.users.ri = {
     isNormalUser = true;
     extraGroups = [ "wheel" ];
+    openssh.authorizedKeys.keys = [
+      "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAILf+Jn/kb+/9xR8dND9SjvG6k1hS+jcQImmzyp3LAFDwAAAABHNzaDo= ri@nixos-server"
+    ];
   };
 
   system.stateVersion = "26.05";

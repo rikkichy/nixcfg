@@ -26,7 +26,10 @@ fixture='{"blockdevices":[
   {"name":"/dev/sdh","type":"disk","size":17179869184,"children":[
     {"name":"/dev/sdh1","type":"part","fstype":"btrfs","maj:min":"8:113"}]},
   {"name":"/dev/sdi","type":"disk","size":17179869184,"children":[
-    {"name":"/dev/sdi1","type":"part","fstype":"btrfs","maj:min":"8:129"}]}
+    {"name":"/dev/sdi1","type":"part","fstype":"btrfs","maj:min":"8:129"}]},
+  {"name":"/dev/sdj","type":"disk","size":1024209543168,"vendor":"AirDisk","model":"External SSD","tran":"usb","rm":false},
+  {"name":"/dev/sdk","type":"disk","size":17179869184,"tran":"sata","rm":true},
+  {"name":"/dev/sdl","type":"disk","size":17179869184,"tran":"usb","ro":true}
 ]}'
 
 # Exercise the real usage collector and classifier, replacing only device APIs.
@@ -45,17 +48,63 @@ findmnt() {
 }
 
 result=$(scan_disks)
-jq -e '[.[] | select(.reason == "") | .name] == ["/dev/sda", "/dev/sdh"]' <<<"$result" >/dev/null || fail 'An in-use disk was offered or an unmounted Btrfs target excluded.'
+jq -e '[.[] | select(.reason == "") | .name] == ["/dev/sda", "/dev/sdh", "/dev/sdj", "/dev/sdk"]' <<<"$result" >/dev/null || fail 'An in-use disk was offered or an unused disk excluded.'
 
-require_exact 'ERASE /dev/sda' <<<'ERASE /dev/sda' 2>/dev/null || fail 'Exact target confirmation rejected.'
-for answer in yes YES /dev/sda 'ERASE /dev/sdb' 'ERASE /dev/sda ' ' ERASE /dev/sda'; do
-  if require_exact 'ERASE /dev/sda' <<<"$answer" 2>/dev/null; then fail 'Inexact target confirmation accepted.'; fi
-done
-if require_exact 'ERASE /dev/sda' </dev/null 2>/dev/null; then fail 'EOF confirmed erase.'; fi
+disks=$result
+internal=$(disk_candidates false)
+jq -e 'map(.name) == ["/dev/sda", "/dev/sdh"]' <<<"$internal" >/dev/null || fail 'External media was offered by default or an internal SATA disk hidden.'
+external=$(disk_candidates true)
+jq -e 'map(.name) == ["/dev/sda", "/dev/sdh", "/dev/sdj", "/dev/sdk"]' <<<"$external" >/dev/null || fail 'External opt-in bypassed safety exclusions.'
+select_disk <<<'1' >"$testdir/menu"
+[[ $disk == /dev/sda ]] || fail 'Menu selected the wrong disk.'
+[[ $(<"$testdir/menu") != *'/dev/sdj'* ]] || fail 'Default menu displayed an external target.'
+select_disk <<<$'3\n3' >"$testdir/menu"
+[[ $disk == /dev/sdj ]] || fail 'External opt-in could not select a USB SSD.'
+[[ $(<"$testdir/menu") == *'0.93 TiB'* ]] || fail 'Disk size was not displayed in readable binary units.'
+
+# Invalid menu input must never become a shell expression or an array index.
+choose Host '' nix nixos-server <<<$'0\n999999999999999999999999\n1+1\n2' >/dev/null
+[[ $choice == 2 ]] || fail 'Invalid selection was accepted.'
+if (choose Host '' nix </dev/null) >/dev/null 2>&1; then fail 'EOF selected a host.'; fi
+if approve Enroll <<<'' >/dev/null; then fail 'Empty approval enabled enrollment.'; fi
+
+host=nixos-server
+confirm_erase <<<$'yes\nERASE /dev/sdj\nERASE' >/dev/null
+if (confirm_erase <<<'yes') >/dev/null 2>&1; then fail 'Inexact confirmation followed by EOF authorized erase.'; fi
+
+# Real enrollment planning must let sudo proceed without backup media.
+(
+  select_fido() { fido=/dev/hidraw5; }
+  findmnt() { printf '{"filesystems":[]}\n'; }
+  plan_enrollment <<<$'y\ny' >/dev/null
+  [[ $sudo_enroll == true && $boot_enroll == false ]] || fail 'Missing backup blocked sudo or enabled boot enrollment.'
+)
+
+# Backup selection accepts a numbered mounted destination, including spaces.
+(
+  select_fido() { fido=/dev/hidraw5; }
+  findmnt() { printf '{"filesystems":[{"target":"/encrypted flash"},{"target":"/plain"}]}\n'; }
+  realpath() { printf '%s\n' "${*: -1}"; }
+  backup_device() { [[ $1 == '/encrypted flash' ]] || return 1; printf '253:7\n'; }
+  plan_enrollment <<<$'n\ny\n1' >/dev/null
+  [[ $sudo_enroll == false && $boot_enroll == true &&
+    $backup_parent == '/encrypted flash' && $backup_device_id == 253:7 ]] ||
+    fail 'Numbered backup selection or independent enrollment approval failed.'
+)
+
+# A disappeared backup destination must not create a header or enroll a key.
+(
+  fido_visible() { return 0; }
+  backup_device() { return 1; }
+  backup_header() { fail 'Attempted backup after storage disappeared.'; }
+  systemd-cryptenroll() { fail 'Enrolled without backup storage.'; }
+  fido=/dev/hidraw5 backup_parent=/missing backup_device_id=253:5
+  enroll_boot >/dev/null
+)
 
 losetup() { printf '{"loopdevices":[{"back-file":"/nonexistent-live-backing-file"}]}\n'; }
 if scan_disks >/dev/null 2>&1; then fail 'Unresolvable live loop backing was accepted.'; fi
 findmnt() { return 1; }
 if scan_disks >/dev/null 2>&1; then fail 'Usage collection failure did not fail closed.'; fi
-printf 'PASS: mounted/live, mapper, swap-file, loop-backing, source, read-only and multi-device exclusions; exact confirmation and fail-closed discovery.\n'
+printf 'PASS: disk-use exclusions, external opt-in, numbered menus, erase confirmation, independent enrollment approvals and missing-backup deferral.\n'
 printf 'Mocks prove safety decisions only, NOT actual disk topology, installation, boot, or token/PAM authentication.\n'

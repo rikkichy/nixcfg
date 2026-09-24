@@ -1,8 +1,8 @@
 # nixcfg
 
 NixOS and nix-darwin configurations with shared Home Manager shell and editor
-settings. Clone to **`/etc/nixos`** on either machine; `nixcfgPath` in `flake.nix`
-provides that runtime path to both hosts.
+settings. Clone to **`/etc/nixos`** on every host; `nixcfgPath` in `flake.nix`
+provides that runtime path to the desktop and Mac.
 
 ## Hosts and guides
 
@@ -23,25 +23,56 @@ provides that runtime path to both hosts.
 ## Interactive Linux installer
 
 `install.nix` packages `scripts/install.sh` as `nix run path:.#install`.
-From a trusted checkout containing the installer on a networked NixOS UEFI
-live ISO:
+On a networked x86_64 NixOS UEFI live ISO, clone into `/etc/nixos`:
 
 ```sh
-nix --extra-experimental-features 'nix-command flakes' run path:.#install -- --plan "$PWD"
+sudo nix-shell -p git --run 'git clone https://github.com/rikkichy/nixcfg.git /etc/nixos'
+cd /etc/nixos
+```
+
+If `/etc/nixos` already contains a checkout, use it instead; do not overwrite
+existing configuration. The live ISO's `/etc/nixos` is the source checkout;
+`/mnt/etc/nixos` is the installed target, populated by the installer.
+Review the source and run the read-only plan before starting installation:
+
+```sh
+sudo nix --extra-experimental-features 'nix-command flakes' run path:.#install -- --plan "$PWD"
 sudo nix --extra-experimental-features 'nix-command flakes' run path:.#install -- "$PWD"
 ```
 
 Select `nixos-server` for the headless server. `nix` is specifically the
 Ryzen/NVIDIA desktop, not a generic desktop profile; `ne` is not installable
-with this Linux tool. The server uses DHCP and console login, with no desktop,
-SSH daemon, or application workloads enabled.
+with this Linux tool. The server uses DHCP, console login, and key-only SSH
+on port 22; SSH password/keyboard-interactive authentication and root login
+are disabled. No desktop or application workloads are enabled.
 
-The installer selects an unused whole disk, requires `ERASE /dev/...`, and
-creates a 4 GiB EFI partition plus a LUKS2/XFS root. Mounted disks, active
-device-mapper/RAID holders, swap, live-media backing devices, mounted Btrfs
-members and unresolved usage are rejected. ZFS members require manual
-installation. Selection and disk identity are rechecked before partitioning.
-This destroys the selected disk's existing data; it is not an upgrade tool.
+Before installation, ensure this checkout contains your FIDO2 SSH public key
+in `hosts/nixos-server/default.nix`; local edits on another machine are not
+included by cloning GitHub. After booting the installed system, find its address
+with `ip -br address` at the console. Connect from the Mac:
+
+```sh
+ssh -o IdentitiesOnly=yes -i ~/.ssh/nixos-server ri@SERVER_IP
+```
+
+Verify the server host-key fingerprint through the console before accepting it.
+The SSH YubiKey stays connected to the client and requires touch; the server
+does not request FIDO2 user verification. An authenticator's AlwaysUV policy
+or a local key-file passphrase can still require an additional prompt.
+SSH does not unlock LUKS or forward the token for sudo: without a server-side
+token, use the configured password fallback for those operations.
+
+Numbered menus select the host, disk and YubiKey. The target menu shows only
+unused internal disks, with vendor/model and GiB/TiB sizes; choose "Show external
+disks" to include eligible USB/removable targets. `--list-disks` shows the full
+inventory and exclusion reasons. The final disk summary includes its serial
+and requires `ERASE`; an incorrect response retries, while Ctrl+C cancels.
+The installer creates a 4 GiB EFI partition plus a LUKS2/XFS root. Mounted disks,
+active device-mapper/RAID holders, swap, live-media backing devices, mounted
+Btrfs members and unresolved usage are rejected, including in the external
+view. ZFS members require manual installation. Selection and disk identity
+are rechecked before partitioning. This destroys the selected disk's existing
+data; it is not an upgrade tool.
 
 Only public source and encrypted ciphertext belong in the checkout. The
 installer snapshots tracked and nonignored untracked files without Git/OMP
@@ -53,11 +84,14 @@ Evaluation is not a full build, and post-erase failures require manual recovery.
 
 Enter disk, root and `ri` passwords interactively; retain them independently
 of the YubiKey. The token must be USB-visible to the server: KVM keyboard
-forwarding is insufficient. Missing forwarding requires explicit `DEFER`.
-Boot and sudo enrollments each require separate approval. Boot enrollment
-requires an existing mounted encrypted off-target filesystem for protected
-LUKS header backups. Skip enrollment if that storage is unavailable; do not
-store unencrypted headers in this checkout or on the installer USB.
+forwarding is insufficient. Choose `0` to skip token enrollment.
+Sudo and boot enrollments have separate `y/N` approvals before disk erasure.
+Boot enrollment also selects a numbered mounted encrypted off-target backup
+destination; protected LUKS header backups are created automatically.
+Missing backup storage or choosing `0` defers only boot enrollment, not sudo
+or installation. If that mount disappears or changes before enrollment,
+boot enrollment is deferred again. Keep the headers off the target disk and
+outside the checkout; backups can restore revoked access.
 
 `common/modules/nixos-yubikey.nix` provides both Linux hosts' systemd-initrd
 FIDO2 discovery and touch-only sudo policy. Sudo registration is host-specific

@@ -24,16 +24,18 @@ UEFI live ISO, with networking and a root KVM terminal:
 --list-disks  Read-only disk inventory and exclusion reasons; no selection.
 --plan        The same read-only inventory plus installation/recovery steps.
 
-Installation ERASES ONE WHOLE DISK after exact typed confirmation. It creates
+Installation ERASES ONE WHOLE DISK after a single ERASE confirmation. It creates
 GPT, a 4 GiB FAT32 EFI partition, and a passphrase-protected LUKS2/XFS root.
 The source checkout is never modified. Tracked and nonignored untracked files
 are copied; .git, .omp, result links and Python cache state are excluded.
 Never keep plaintext secrets, private keys or identities in this checkout:
 path: flakes include ignored files even before this program starts.
 
-YubiKey/FIDO2 discovery happens BEFORE erase; absence requires explicit DEFER.
-Boot and sudo enrollment each require separate approval. Boot enrollment also
-requires a protected header backup on mounted, encrypted, off-target media.
+Numbered menus select the host, disk and YubiKey. USB/removable targets are
+hidden until "Show external disks"; --list-disks includes all exclusion reasons.
+Boot and sudo enrollment have separate y/N approvals BEFORE erase. Boot needs
+a protected header backup on mounted encrypted off-target media; without one,
+only boot enrollment is deferred. No device paths or backup paths to type.
 Passwords are entered directly into cryptsetup/passwd, never command arguments.
 No reboot, forced unmount, enrollment removal, or automatic recovery cleanup.
 HELP
@@ -41,12 +43,12 @@ HELP
 
 plan() {
   cat <<'PLAN'
-Plan: select host -> review public source -> snapshot and evaluate build plan
--> verify FIDO2 visibility (or explicitly defer) -> select unused whole disk
--> exact ERASE confirmation -> recheck disk -> GPT/EFI/LUKS2/XFS -> mount /mnt
+Plan: select host -> snapshot and evaluate build plan -> select unused disk
+-> select YubiKey (or skip) -> approve sudo/boot enrollment and select backup
+-> ERASE confirmation -> recheck disk -> GPT/EFI/LUKS2/XFS -> mount /mnt
 -> copy repository and generate hosts/HOST/hardware.nix from actual hardware
--> nixos-install -> set root and ri passwords -> optional separate boot/sudo
-FIDO2 enrollment -> retain mounted system and recovery shell; NEVER auto-reboot.
+-> nixos-install -> set root and ri passwords -> approved FIDO2 enrollments
+-> retain mounted system and recovery shell; NEVER auto-reboot.
 
 nix is the repository's AMD 9950X3D/NVIDIA desktop, NOT a generic desktop.
 nixos-server is the generic headless/KVM host. Both use user ri.
@@ -97,7 +99,7 @@ mounted_btrfs_devices() {
 
 scan_disks() {
   local blocks used swaps loops file id
-  blocks=$(lsblk --json --bytes --paths --output NAME,TYPE,SIZE,MODEL,SERIAL,RO,MAJ:MIN,MOUNTPOINTS,FSTYPE) || return 1
+  blocks=$(lsblk --json --bytes --paths --output NAME,TYPE,SIZE,VENDOR,MODEL,SERIAL,TRAN,RM,RO,MAJ:MIN,MOUNTPOINTS,FSTYPE) || return 1
   used=$(findmnt --kernel --noheadings --raw --output MAJ:MIN) || return 1
   id=$(mounted_btrfs_devices) || return 1
   used+=$'\n'"$id"
@@ -125,25 +127,116 @@ scan_disks() {
   classify_disks "$blocks" "$used"
 }
 
+disk_label() {
+  jq -r '[
+    .name,
+    ([.vendor, .model] | map(. // "" | gsub("^\\s+|\\s+$"; "")) | map(select(length > 0)) | join(" ")),
+    (if .size >= 1000000000000 then
+      (((.size / 1099511627776 * 100 | round) / 100 | tostring) + " TiB")
+    else (((.size / 1073741824 * 10 | round) / 10 | tostring) + " GiB") end)
+  ] | @tsv' <<<"$1"
+}
+
 show_disks() {
-  printf '\nWhole disks (all usage is rechecked immediately before erase):\n'
-  jq -r '.[] | [.name, (.size|tostring)+" bytes", (.model // "unknown model"), (.serial // "no serial"), (if .reason == "" then "candidate" else "EXCLUDED: "+.reason end)] | @tsv' <<<"$disks"
+  local row
+  printf '\nWhole disks (including excluded and external devices):\n'
+  while IFS= read -r row; do
+    printf '%s  %s\n' "$(disk_label "$row")" \
+      "$(jq -r 'if .reason == "" then "candidate" else "EXCLUDED: " + .reason end' <<<"$row")"
+  done < <(jq -c '.[]' <<<"$disks")
   if (( EUID != 0 )); then
     printf 'Non-root inventory is advisory; root must repeat all usage checks.\n'
   fi
 }
 
-require_exact() {
+# Menus return a validated index in choice; zero is available only when labelled.
+choose() {
+  local title=$1 zero=$2 label i=0 max
+  shift 2
+  max=$#
+  printf '\n%s\n' "$title"
+  for label in "$@"; do
+    i=$((i + 1))
+    printf '  %s  %s\n' "$i" "$label"
+  done
+  [[ -z $zero ]] || printf '  0  %s\n' "$zero"
+  while :; do
+    printf 'Select: '
+    IFS= read -r choice || fail 'Input closed; cancelled.'
+    if [[ $choice =~ ^(0|[1-9][0-9]*)$ && ${#choice} -le ${#max} ]] &&
+      (( choice <= max )) && { (( choice > 0 )) || [[ -n $zero ]]; }; then return; fi
+    printf 'Choose a listed number, or Ctrl+C to cancel.\n'
+  done
+}
+
+approve() {
   local answer
-  printf '\nType exactly %s: ' "$1" >&2
-  IFS= read -r answer || return 1
-  [[ $answer == "$1" ]]
+  while :; do
+    printf '%s [y/N]: ' "$1"
+    IFS= read -r answer || fail 'Input closed; cancelled.'
+    case "$answer" in
+      y|Y|yes|YES) return 0 ;;
+      ''|n|N|no|NO) return 1 ;;
+      *) printf 'Enter y or n.\n' ;;
+    esac
+  done
+}
+
+confirm_erase() {
+  local answer
+  printf '\nERASE ALL DATA for %s:\n%s\nSerial: %s\n' "$host" \
+    "$(disk_label "$row")" "$(jq -r '.serial // "unknown"' <<<"$row")"
+  while :; do
+    printf 'Type ERASE (Ctrl+C cancels): '
+    IFS= read -r answer || fail 'Input closed; nothing erased.'
+    [[ $answer != ERASE ]] || return 0
+    printf 'Confirmation did not match; nothing erased.\n'
+  done
+}
+
+disk_candidates() {
+  jq --argjson external "$1" '[.[] | select(.reason == "") |
+    select($external or ((.tran != "usb") and (.rm != true) and (.rm != 1)))]' <<<"$disks"
+}
+
+select_disk() {
+  local external=false candidates count
+  local -a labels
+  while :; do
+    candidates=$(disk_candidates "$external")
+    count=$(jq 'length' <<<"$candidates")
+    labels=()
+    while IFS= read -r row; do labels+=("$(disk_label "$row")"); done < <(jq -c '.[]' <<<"$candidates")
+    if [[ $external == false ]]; then labels+=("Show external disks"); fi
+    (( ${#labels[@]} > 0 )) || fail 'No unused disks available; use --list-disks for exclusion reasons.'
+    choose 'Installation disk (unused whole disks only)' '' "${labels[@]}"
+    if (( choice > count )); then external=true; continue; fi
+    row=$(jq -c --argjson index "$((choice - 1))" '.[$index]' <<<"$candidates")
+    disk=$(jq -r '.name' <<<"$row")
+    return
+  done
+}
+
+select_fido() {
+  local listing device description
+  local -a devices=() labels=()
+  listing=$(systemd-cryptenroll --fido2-device=list) || listing=''
+  while read -r device description; do
+    [[ $device =~ ^/dev/hidraw[0-9]+$ && -c $device ]] || continue
+    devices+=("$device")
+    labels+=("$description ($device)")
+  done <<<"$listing"
+  choose 'YubiKey / FIDO2 (USB forwarding required)' 'Skip enrollment; use passwords' "${labels[@]}"
+  fido=''
+  if (( choice > 0 )); then
+    fido=${devices[choice-1]}
+    fido_visible "$fido" || fail 'Selected FIDO2 device disappeared.'
+  fi
 }
 
 fido_visible() {
   local listing device found=1
   listing=$(systemd-cryptenroll --fido2-device=list) || return 1
-  printf '%s\n' "$listing" >&2
   while read -r device _; do
     if [[ $device == "$1" && $device =~ ^/dev/hidraw[0-9]+$ && -c $device ]]; then found=0; fi
   done <<<"$listing"
@@ -161,24 +254,65 @@ check_mount_target() {
   if findmnt --mountpoint /mnt --noheadings >/dev/null; then fail '/mnt is already mounted.'; fi
 }
 
-backup_header() {
-  local parent id ancestry uuid
-  printf '\nHeader backups can restore revoked access. Keep them protected, outside the\nrepository and target disk, with your recovery passphrase and a tested ISO.\n'
-  printf 'Existing directory on mounted encrypted OFF-TARGET media: '
-  IFS= read -r parent
-  parent=$(realpath -e -- "$parent")
-  [[ -d $parent && $parent != "$source" && $parent != "$source/"* && $parent != /mnt && $parent != /mnt/* ]] || fail 'Unsafe header backup location.'
-  id=$(file_device "$parent")
-  [[ -b /dev/block/$id ]] || fail 'Backup must be on a mounted block filesystem, not tmpfs/network storage.'
-  ancestry=$(lsblk --inverse --json --paths --output NAME,TYPE "/dev/block/$id")
+# Return the mounted device identity only for an encrypted off-target location.
+backup_device() {
+  local parent=$1 id ancestry
+  [[ -d $parent && -w $parent && $parent != "$source" && $parent != "$source/"* &&
+    $parent != /mnt && $parent != /mnt/* && $parent != /iso && $parent != /iso/* ]] || return 1
+  findmnt --mountpoint "$parent" --noheadings >/dev/null || return 1
+  id=$(file_device "$parent") || return 1
+  [[ -b /dev/block/$id ]] || return 1
+  ancestry=$(lsblk --inverse --json --paths --output NAME,TYPE "/dev/block/$id") || return 1
   jq -e --arg disk "$disk" '
     [.. | objects | select(has("type"))] as $nodes |
     any($nodes[]; .type == "crypt") and any($nodes[]; .type == "disk") and
     all($nodes[]; .name != $disk)
-  ' <<<"$ancestry" >/dev/null || fail 'Cannot prove backup is encrypted and off the target disk.'
-  require_exact 'BACK UP HEADER' || fail 'Header backup not approved; no enrollment performed.'
+  ' <<<"$ancestry" >/dev/null || return 1
+  printf '%s\n' "$id"
+}
+
+select_backup() {
+  local mounts parent id
+  local -a parents=() ids=()
+  backup_parent=''
+  mounts=$(findmnt --json --list --output TARGET) || {
+    printf 'Cannot discover backup storage; boot enrollment deferred.\n'; return;
+  }
+  mounts=$(jq -r '.filesystems[].target' <<<"$mounts") || fail 'Invalid mount inventory.'
+  while IFS= read -r parent; do
+    [[ -n $parent ]] || continue
+    parent=$(realpath -e -- "$parent") || continue
+    id=$(backup_device "$parent") || continue
+    parents+=("$parent")
+    ids+=("$id")
+  done <<<"$mounts"
+  if (( ${#parents[@]} == 0 )); then
+    printf 'No mounted encrypted off-target backup drive; boot enrollment deferred. Sudo is unaffected.\n'
+    return
+  fi
+  choose 'LUKS header backup destination (encrypted, off-target)' 'Defer boot enrollment' "${parents[@]}"
+  if (( choice > 0 )); then
+    backup_parent=${parents[choice-1]}
+    backup_device_id=${ids[choice-1]}
+  fi
+}
+
+plan_enrollment() {
+  boot_enroll=false
+  sudo_enroll=false
+  select_fido
+  [[ -n $fido ]] || return 0
+  if approve 'Enable YubiKey for sudo?'; then sudo_enroll=true; fi
+  if approve 'Enable YubiKey for disk unlock (includes protected header backups)?'; then
+    select_backup
+    if [[ -n $backup_parent ]]; then boot_enroll=true; fi
+  fi
+}
+
+backup_header() {
+  local uuid
   uuid=$(cryptsetup luksUUID "$rootpart")
-  backup="$parent/$host-$uuid"
+  backup="$backup_parent/$host-$uuid"
   [[ ! -e $backup && ! -L $backup ]] || fail 'Backup directory exists; will not overwrite it.'
   mkdir -m 0700 -- "$backup"
   cryptsetup luksHeaderBackup "$rootpart" --header-backup-file "$backup/before-fido2.header"
@@ -190,10 +324,11 @@ backup_header() {
 enroll_boot() {
   local metadata token
   fido_visible "$fido" || fail 'Selected FIDO2 device disappeared or changed; enrollment stopped.'
-  printf '\nBoot enrollment adds a slot; it never replaces or removes passphrase slots.\n'
-  if ! require_exact 'ENROLL BOOT'; then printf 'Boot FIDO2 enrollment deferred.\n'; return; fi
-  printf 'Test the recovery passphrase (NOT the token):\n'
-  cryptsetup open --test-passphrase --disable-external-tokens "$rootpart"
+  if [[ $(backup_device "$backup_parent") != "$backup_device_id" ]]; then
+    printf 'Backup storage disappeared or changed; boot enrollment deferred. Sudo is unaffected.\n'
+    return
+  fi
+  printf '\nEnrolling boot FIDO2; retaining the tested recovery passphrase slot.\n'
   backup_header
   systemd-cryptenroll "$rootpart" --fido2-device="$fido" \
     --fido2-with-client-pin=no --fido2-with-user-presence=yes --fido2-with-user-verification=no
@@ -216,7 +351,6 @@ enroll_sudo() {
   local mapping=/mnt/etc/u2f-mappings registration
   [[ ! -e $mapping && ! -L $mapping ]] || fail 'Existing /etc/u2f-mappings must be backed up and merged manually, never overwritten.'
   printf '\nSudo enrollment: leave only the intended YubiKey connected; touch it when requested.\n'
-  if ! require_exact 'ENROLL SUDO'; then printf 'Sudo U2F enrollment deferred; use the ri password.\n'; return; fi
   pamu2fcfg --username=ri --origin="pam://$host" --appid="pam://$host" >"$work/u2f-mapping"
   registration=$(<"$work/u2f-mapping")
   [[ $registration == ri:?* && $registration != *$'\n'* ]] || fail 'Unexpected U2F registration output.'
@@ -255,13 +389,10 @@ main() {
   export SYSTEMD_COLORS=0 SYSTEMD_PAGER=cat
   trap 'report_exit "$?"' EXIT
   trap 'printf "\nInterrupted. Leaving disks, mappings, mounts and recovery files untouched.\n" >&2; exit 130' INT TERM
-  plan
-  printf '\nHost [nix / nixos-server]: '
-  IFS= read -r host
-  case "$host" in nix|nixos-server) ;; *) fail 'Unknown host.' ;; esac
+  choose 'Host' '' 'nix (AMD/NVIDIA desktop)' 'nixos-server'
+  case "$choice" in 1) host=nix ;; 2) host=nixos-server ;; esac
   [[ -f $source/hosts/$host/hardware.nix ]] || fail 'Selected host hardware source is missing.'
-  printf '\nReview this checkout before continuing: %s\nOnly PUBLIC configuration and encrypted ciphertext may be included.\nDo not add private SOPS identities; this installer does not provision them.\n' "$source"
-  require_exact 'PUBLIC SOURCE ONLY' || fail 'Source review not confirmed.'
+  printf '\nSource: %s — public configuration/encrypted ciphertext only; no private identities.\n' "$source"
   work=$(mktemp -d /run/nixcfg-install.XXXXXX)
   mkdir -m 0755 "$work/repo"
   git -c safe.directory="$source" -C "$source" ls-files --cached --others --exclude-standard --deduplicate -z >"$work/files"
@@ -273,25 +404,13 @@ main() {
   rm -- "$work/source.tar"
   printf '\nEvaluating the selected build plan BEFORE erase (not a full build):\n'
   "${nixcmd[@]}" build --dry-run --no-link --no-write-lock-file "path:$work/repo#nixosConfigurations.$host.config.system.build.toplevel"
-  printf '\nVisible FIDO2 devices (must be forwarded through your KVM, not merely a keyboard):\n'
-  systemd-cryptenroll --fido2-device=list || printf 'FIDO2 discovery failed; only explicit DEFER may continue.\n'
-  printf 'Enter a listed /dev/hidrawN, or type DEFER for password-only installation: '
-  IFS= read -r fido
-  if [[ $fido != DEFER ]]; then
-    fido_visible "$fido" || fail 'Not a visible FIDO2 device. Restart and explicitly DEFER if necessary.'
-  else
-    printf 'Boot and sudo token enrollment explicitly deferred; password recovery is mandatory.\n'
-  fi
   disks=$(scan_disks) || fail 'Cannot establish device usage; refusing erase.'
-  show_disks
-  printf '\nEnter the exact candidate disk path, e.g. /dev/nvme0n1: '
-  IFS= read -r disk
-  row=$(jq -cer --arg disk "$disk" '[.[] | select(.name == $disk and .reason == "")] | if length == 1 then .[0] else error("not an unused whole disk") end' <<<"$disks")
+  select_disk
   [[ -b $disk ]] || fail 'Selected disk is not a block device.'
   identity=$(jq -c '[.name, .["maj:min"], .size, .model, .serial]' <<<"$row")
   seq=$(cat "/sys/class/block/${disk##*/}/diskseq")
-  printf '\nALL DATA ON THIS DISK WILL BE DESTROYED for host %s:\n%s\n' "$host" "$row"
-  require_exact "ERASE $disk" || fail 'Exact erase confirmation did not match; nothing erased.'
+  plan_enrollment
+  confirm_erase
   # Hold a device lock and repeat every exclusion after the human confirmation.
   exec {disk_lock}<"$disk"
   flock --nonblock "$disk_lock" || fail 'Another process has locked the disk.'
@@ -310,7 +429,7 @@ main() {
   rootpart=$(jq -er '.blockdevices[0].children | map(select(.type == "part" and .partlabel == "cryptroot")) | if length == 1 then .[0].name else error("root partition missing/ambiguous") end' <<<"$selection")
   mkfs.fat -F 32 -n BOOT "$esp"
   printf '\nChoose a strong RECOVERY passphrase. Keep it independently of the YubiKey.\n'
-  cryptsetup luksFormat --type luks2 "$rootpart"
+  cryptsetup luksFormat --type luks2 --batch-mode --verify-passphrase "$rootpart"
   cryptsetup open "$rootpart" cryptroot
   mkfs.xfs -L nixos /dev/mapper/cryptroot
   install -d -m 0755 /mnt
@@ -333,7 +452,8 @@ main() {
   [[ $password_status == 'ri P '* ]] || fail 'ri does not have an unlocked password.'
   printf '\nConfirm the original LUKS passphrase independently of any token:\n'
   cryptsetup open --test-passphrase --disable-external-tokens "$rootpart"
-  if [[ $fido != DEFER ]]; then enroll_boot; enroll_sudo; fi
+  if [[ $boot_enroll == true ]]; then enroll_boot; fi
+  if [[ $sudo_enroll == true ]]; then enroll_sudo; fi
   sync
   cat <<'DONE'
 
