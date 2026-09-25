@@ -1,6 +1,7 @@
 {
   imports = [
     ../../common/modules/shell.nix
+    ../../common/modules/ssh.nix
     ../../common/modules/zed.nix
     ./modules/home/shell.nix
     ./modules/home/ghostty.nix

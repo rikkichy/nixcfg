@@ -63,12 +63,26 @@ until Limine has successfully booted and unlocked the installed system.
 
 Before installation, ensure this checkout contains your FIDO2 SSH public key
 in `hosts/nixos-server/default.nix`; local edits on another machine are not
-included by cloning GitHub. After booting the installed system, find its address
-with `ip -br address` at the console. Connect from the Mac:
+included by cloning GitHub. The shared SSH module on `ne` and `nix` connects
+as `ri` to `nixos-server.local`, which the server advertises over local-network
+mDNS. After activating the server and client configurations, connect with:
 
 ```sh
-ssh -o IdentitiesOnly=yes -i ~/.ssh/nixos-server ri@SERVER_IP
+ssh nixos-server
 ```
+
+Securely provision the existing `~/.ssh/nixos-server` FIDO2 credential-handle
+file on each client outside the checkout and Nix store. Home Manager activation
+sets `~/.ssh` to mode `0700` and the handle file to `0600` when they exist;
+it does not create or copy keys. Provision files with these permissions if
+copying them after activation. The same YubiKey is required on either client.
+Only resident credentials can recover their handle files with `ssh-keygen -K`;
+non-resident credentials require the original handle file.
+
+If mDNS is unavailable, find the server address with `ip -br address` at its
+console and use `ssh -o HostName=SERVER_IP nixos-server`. Before client
+activation, use `ssh -o IdentitiesOnly=yes -i ~/.ssh/nixos-server ri@SERVER_IP`.
+Back up an unmanaged client `~/.ssh/config` before Home Manager takes ownership.
 
 Verify the server host-key fingerprint through the console before accepting it.
 The SSH YubiKey stays connected to the client and requires touch; the server
