@@ -1,0 +1,14 @@
+# Copy to ~/.config/hysteria/client.yaml; edit only that private copy.
+server: PUBLIC_IP_OR_DNS:443
+auth: REPLACE_WITH_AUTH_PASSWORD
+obfs:
+  type: salamander
+  salamander:
+    password: REPLACE_WITH_OBFS_PASSWORD
+tls:
+  sni: nixos-server
+  ca: /REPLACE_WITH_ABSOLUTE_PATH_TO/server.crt
+  insecure: false
+tcpForwarding:
+  - listen: 127.0.0.1:2222
+    remote: 127.0.0.1:22

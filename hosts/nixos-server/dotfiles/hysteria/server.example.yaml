@@ -1,0 +1,16 @@
+# Copy to /etc/hysteria/server.yaml; replace placeholders only outside the repo.
+listen: 0.0.0.0:443
+tls:
+  cert: /run/credentials/hysteria.service/server.crt
+  key: /run/credentials/hysteria.service/server.key
+auth:
+  type: password
+  password: REPLACE_WITH_AUTH_PASSWORD
+obfs:
+  type: salamander
+  salamander:
+    password: REPLACE_WITH_OBFS_PASSWORD
+acl:
+  inline:
+    - direct(127.0.0.1, tcp/22)
+    - reject(all)

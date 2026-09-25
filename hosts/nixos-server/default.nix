@@ -8,6 +8,7 @@
     ../../common/modules/nixos-limine.nix
     ../../common/modules/nixos-networking.nix
     ./modules/system/services.nix
+    ./modules/system/hysteria.nix
   ];
 
   networking.hostName = "nixos-server";

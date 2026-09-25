@@ -219,6 +219,72 @@ and SSH before leaving that console; no network activation is automatic here.
 `nixos-server` has no Mihomo service, configuration renderer or SOPS import.
 It needs no `/etc/mihomo` inputs or VPN age identity.
 
+### Remote SSH over Hysteria2
+
+The opt-in `hosts/nixos-server/modules/system/hysteria.nix` service transports
+SSH over Hysteria2 with Salamander obfuscation. It is disabled until provisioned;
+UDP 443 opens only when `systemd.services.hysteria.enable` is true. Existing
+OpenSSH/YubiKey authentication and LAN access remain unchanged.
+
+Templates follow the official [server configuration](https://v2.hysteria.network/docs/advanced/Full-Server-Config/),
+[TCP forwarding](https://v2.hysteria.network/docs/advanced/Full-Client-Config/#tcp-forwarding),
+and [ACL](https://v2.hysteria.network/docs/advanced/ACL/) documentation:
+
+- Server: `hosts/nixos-server/dotfiles/hysteria/server.example.yaml`, installed
+  as `/etc/hysteria/server.example.yaml`.
+- Client: `common/dotfiles/hysteria/client.example.yaml`, installed on `ne` and
+  `nix` as `~/.config/hysteria/client.example.yaml`, alongside the `hysteria` CLI.
+
+Provision through the server console or an existing trusted connection:
+
+1. Copy the server template to `/etc/hysteria/server.yaml` without overwriting
+   an existing configuration. Keep `/etc/hysteria` root-owned mode `0700`, and
+   the private configuration and key root-owned mode `0600`. Edit only this
+   out-of-repository copy. Replace both password placeholders with independent
+   strong random values, for example two separate `openssl rand -hex 32` outputs.
+2. Provision `/etc/hysteria/server.crt` and `server.key`. For a deployment without
+   a domain, generate an ECDSA self-signed certificate with SAN `DNS:nixos-server`.
+   Run this only for initial provisioning, in a root shell outside the checkout,
+   after checking that neither output file already exists:
+
+   ```sh
+   umask 077
+   openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes \
+     -days 365 -subj /CN=nixos-server -addext subjectAltName=DNS:nixos-server \
+     -keyout /etc/hysteria/server.key -out /etc/hysteria/server.crt
+   ```
+
+   The unit passes these files through systemd credentials to an unprivileged
+   dynamic user; preserve the template's `/run/credentials/` paths. Renew before
+   expiry; replacing this certificate also requires updating each client's trust
+   file. Restart Hysteria after credential changes.
+3. On each client, copy its template to `~/.config/hysteria/client.yaml`, with
+   directory mode `0700` and private configuration mode `0600`. Replace
+   `PUBLIC_IP_OR_DNS`, set the same two passwords, and securely copy only the
+   server's public certificate to `~/.config/hysteria/server.crt`. Verify its
+   SHA-256 fingerprint through a trusted channel. Set `tls.ca` to that file's
+   absolute path; retain `sni: nixos-server` and `insecure: false`.
+4. Set `enable = true` in the server's Hysteria module, evaluate, and separately
+   approve server/client activation. If behind a router, forward UDP 443 to the
+   server's LAN address. Do not forward TCP 22 for this transport.
+
+Run the client in one terminal, then connect from another:
+
+```sh
+hysteria client --config "$HOME/.config/hysteria/client.yaml"
+ssh nixos-server-remote
+```
+
+The local forward binds only `127.0.0.1:2222`. The server ACL permits only its
+own `127.0.0.1:22` and rejects other destinations. The remote SSH alias shares
+the LAN alias's host-key identity; verify the server fingerprint on first use,
+never bypass a mismatch. Keep the YubiKey connected to the client.
+
+Salamander obscures QUIC rather than presenting a normal HTTP/3 website; it
+cannot bypass a blanket UDP block. No full-device VPN, client autostart,
+certificate provisioning, router changes, or activation is performed by this
+scaffold. Test from the actual remote network before relying on it for access.
+
 ## Shared shell and editor
 
 All three hosts import `common/modules/shell.nix` through Home Manager for their
