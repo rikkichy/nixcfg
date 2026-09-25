@@ -9,6 +9,12 @@
     enable = true;
     enableDefaultConfig = false;
     settings = {
+      "r1" = {
+        HostName = "r1.local";
+        User = "root";
+        IdentityFile = "~/.ssh/r1";
+        IdentitiesOnly = true;
+      };
       "nixos-server" = {
         HostName = "nixos-server.local";
         HostKeyAlias = "nixos-server.local";
@@ -31,8 +37,10 @@
     if [ -d "$HOME/.ssh" ]; then
       run chmod 700 "$HOME/.ssh"
     fi
-    if [ -f "$HOME/.ssh/nixos-server" ]; then
-      run chmod 600 "$HOME/.ssh/nixos-server"
-    fi
+    for key in "$HOME/.ssh/nixos-server" "$HOME/.ssh/r1"; do
+      if [ -f "$key" ]; then
+        run chmod 600 "$key"
+      fi
+    done
   '';
 }
