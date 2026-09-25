@@ -235,45 +235,73 @@ and [ACL](https://v2.hysteria.network/docs/advanced/ACL/) documentation:
 - Client: `common/dotfiles/hysteria/client.example.yaml`, installed on `ne` and
   `nix` as `~/.config/hysteria/client.example.yaml`, alongside the `hysteria` CLI.
 
-Provision through the server console or an existing trusted connection:
-
-1. Copy the server template to `/etc/hysteria/server.yaml` without overwriting
-   an existing configuration. Keep `/etc/hysteria` root-owned mode `0700`, and
-   the private configuration and key root-owned mode `0600`. Edit only this
-   out-of-repository copy. Replace both password placeholders with independent
-   strong random values, for example two separate `openssl rand -hex 32` outputs.
-2. Provision `/etc/hysteria/server.crt` and `server.key`. For a deployment without
-   a domain, generate an ECDSA self-signed certificate with SAN `DNS:nixos-server`.
-   Run this only for initial provisioning, in a root shell outside the checkout,
-   after checking that neither output file already exists:
-
-   ```sh
-   umask 077
-   openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes \
-     -days 365 -subj /CN=nixos-server -addext subjectAltName=DNS:nixos-server \
-     -keyout /etc/hysteria/server.key -out /etc/hysteria/server.crt
-   ```
-
-   The unit passes these files through systemd credentials to an unprivileged
-   dynamic user; preserve the template's `/run/credentials/` paths. Renew before
-   expiry; replacing this certificate also requires updating each client's trust
-   file. Restart Hysteria after credential changes.
-3. On each client, copy its template to `~/.config/hysteria/client.yaml`, with
-   directory mode `0700` and private configuration mode `0600`. Replace
-   `PUBLIC_IP_OR_DNS`, set the same two passwords, and securely copy only the
-   server's public certificate to `~/.config/hysteria/server.crt`. Verify its
-   SHA-256 fingerprint through a trusted channel. Set `tls.ca` to that file's
-   absolute path; retain `sni: nixos-server` and `insecure: false`.
-4. Set `enable = true` in the server's Hysteria module, evaluate, and separately
-   approve server/client activation. If behind a router, forward UDP 443 to the
-   server's LAN address. Do not forward TCP 22 for this transport.
-
-Run the client in one terminal, then connect from another:
+Guided provisioning uses `hysteria-setup.nix` and `scripts/hysteria-setup.sh`.
+On **nixos-server**, through its console or an existing trusted connection:
 
 ```sh
-hysteria client --config "$HOME/.config/hysteria/client.yaml"
-ssh nixos-server-remote
+cd /etc/nixos
+git pull --ff-only
+sudo nix run path:/etc/nixos#hysteria-setup -- server
 ```
+
+The command detects public IPv4 through `https://ifconfig.me/ip` with a
+10-second curl timeout. Press Enter to accept it or enter a different IP/domain;
+VPN/proxy egress may differ from the reachable inbound address. Failed detection
+falls back to manual entry. The command asks before generating independent
+passwords and a one-year ECDSA certificate, populates the private
+server configuration, and enables the checkout's Hysteria module. It asks
+separately before `nixos-rebuild switch`; declining leaves activation pending.
+It refuses existing credentials instead of overwriting or rotating them.
+Keep the local enablement edit when updating Git; commit it deliberately.
+
+The server's configuration and TLS key stay root-only under `/etc/hysteria`.
+The systemd unit loads them as credentials for an unprivileged dynamic user.
+`/var/lib/hysteria-bootstrap/client.json` is mode `0600`, owned by `ri`, and
+contains the public endpoint, certificate and tunnel passwords, **not** the
+TLS private key or SSH key. Treat it as a secret; retain it outside the repo
+for additional clients, or remove it after enrolling all clients.
+
+On **each client** (`ne` or `nix`), connect the YubiKey and provision its existing
+`~/.ssh/nixos-server` handle file first. Then:
+
+```sh
+cd /etc/nixos
+git pull --ff-only
+nix run path:/etc/nixos#hysteria-setup -- client
+```
+
+Enter the server's LAN address (`nixos-server.local` by default). The command
+fetches the bootstrap file over SSH as `ri`, retaining host-key verification
+and YubiKey authentication. It writes private client configuration and the
+trusted certificate under `~/.config/hysteria` with restrictive permissions.
+No client system activation is needed, and existing files are never replaced.
+Verify the SSH host fingerprint at first connection; never bypass a mismatch.
+
+If behind a router, manually forward UDP 443 to the server's reserved LAN
+address. Do not forward TCP 22 for this transport. Test from a phone hotspot:
+
+```sh
+# Leave running in one terminal:
+nix run path:/etc/nixos#hysteria-setup -- connect
+
+# In another terminal:
+ssh -o IdentitiesOnly=yes -o HostKeyAlias=nixos-server.local \
+  -i ~/.ssh/nixos-server -p 2222 ri@127.0.0.1
+```
+
+With the shared Home Manager configuration activated, the shorter equivalent
+is `ssh nixos-server-remote`; the installed `hysteria` CLI can also run the
+client directly. A running server service is not proof of remote reachability.
+
+Renew the certificate before its 365-day expiry; replacing it requires updating
+each client's trust file and the bootstrap certificate. Update the private
+client configuration and bootstrap endpoint if the public address changes.
+Restart the server after changing systemd-loaded credentials. Setup is initial
+provisioning, not renewal or recovery: after a partial failure, inspect retained
+files rather than deleting working credentials to make the command run again.
+If activation failed or was declined, retry only the displayed rebuild command.
+The non-destructive regression check is `bash scripts/hysteria-setup-test.sh`
+with the packaged command's GNU coreutils and jq available.
 
 The local forward binds only `127.0.0.1:2222`. The server ACL permits only its
 own `127.0.0.1:22` and rejects other destinations. The remote SSH alias shares
@@ -281,9 +309,9 @@ the LAN alias's host-key identity; verify the server fingerprint on first use,
 never bypass a mismatch. Keep the YubiKey connected to the client.
 
 Salamander obscures QUIC rather than presenting a normal HTTP/3 website; it
-cannot bypass a blanket UDP block. No full-device VPN, client autostart,
-certificate provisioning, router changes, or activation is performed by this
-scaffold. Test from the actual remote network before relying on it for access.
+cannot bypass a blanket UDP block. There is no full-device VPN or client
+autostart. Router changes remain manual; activation requires explicit approval.
+Test from the actual remote network before relying on it for access.
 
 ## Shared shell and editor
 

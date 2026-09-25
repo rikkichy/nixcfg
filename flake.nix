@@ -75,11 +75,14 @@
       packages.${system} = {
         rhythia = devPkgs.rhythia;
         install = nixpkgs.legacyPackages.${system}.callPackage ./install.nix { };
+        hysteria-setup = nixpkgs.legacyPackages.${system}.callPackage ./hysteria-setup.nix { };
       };
       apps.${system}.install = {
         type = "app";
         program = "${nixpkgs.legacyPackages.${system}.callPackage ./install.nix { }}/bin/nixcfg-install";
       };
+      packages.aarch64-darwin.hysteria-setup =
+        nixpkgs.legacyPackages.aarch64-darwin.callPackage ./hysteria-setup.nix { };
 
       nixosConfigurations.nixos-server = nixpkgs.lib.nixosSystem {
         inherit system;
