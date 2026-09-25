@@ -164,9 +164,9 @@ client() {
   require_absent "$client_dir/client.yaml" "$client_dir/server.crt"
   identity=$HOME/.ssh/nixos-server
   [[ -f $identity ]] || fail "Provision the existing YubiKey credential-handle file at $identity first."
-  printf 'Server LAN IP or DNS name [192.168.8.237]: '
+  printf 'Server LAN IP or DNS name [nixos-server.local]: '
   IFS= read -r host || fail 'Input closed; cancelled.'
-  host=${host:-192.168.8.237}
+  host=${host:-nixos-server.local}
   valid_hostname "$host" || fail 'Enter an IPv4 address or DNS name, without a port or URL.'
   printf 'Connect the SSH YubiKey. Verify the SSH host fingerprint on first connection.\n'
   approve 'Fetch private client credentials over SSH and configure this client' || return 0

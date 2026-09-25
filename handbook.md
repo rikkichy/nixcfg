@@ -64,8 +64,7 @@ until Limine has successfully booted and unlocked the installed system.
 Before installation, ensure this checkout contains your FIDO2 SSH public key
 in `hosts/nixos-server/default.nix`; local edits on another machine are not
 included by cloning GitHub. The shared SSH module on `ne` and `nix` connects
-as `ri` directly to `192.168.8.237`, without relying on mDNS or proxy DNS.
-Reserve this address for the server in the router's DHCP settings. The SSH
+as `ri` to `nixos-server.local`, advertised by the server through mDNS. The SSH
 host-key identity stays `nixos-server.local` for both LAN and tunneled access.
 After activating the client configuration, connect with:
 
@@ -272,7 +271,7 @@ git pull --ff-only
 nix run path:/etc/nixos#hysteria-setup -- client
 ```
 
-Enter the server's LAN address (`192.168.8.237` by default). The command
+Enter the server's LAN address (`nixos-server.local` by default). The command
 fetches the bootstrap file over SSH as `ri`, retaining host-key verification
 and YubiKey authentication. It writes private client configuration and the
 trusted certificate under `~/.config/hysteria` with restrictive permissions.

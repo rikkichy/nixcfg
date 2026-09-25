@@ -10,7 +10,7 @@
     enableDefaultConfig = false;
     settings = {
       "nixos-server" = {
-        HostName = "192.168.8.237";
+        HostName = "nixos-server.local";
         HostKeyAlias = "nixos-server.local";
         User = "ri";
         IdentityFile = "~/.ssh/nixos-server";
