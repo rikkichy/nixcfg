@@ -13,7 +13,8 @@ load only the relevant reference below.
 
 - `hosts/nix/modules/system/applications.nix`: package inventory and app services.
 - `hosts/nix/modules/home/applications.nix`: Widevine, MIME defaults, Thunar and
-  absent-only osu!/theme seeds plus declarative writable Equicord plugins.
+  absent-only osu! seeds. `common/modules/discord.nix` owns writable Equicord settings
+  and its static theme for Linux and Darwin.
 - `hosts/nix/modules/home/fuzzel.nix`: desktop entries; use
   [desktop-shell](../desktop-shell/SKILL.md) for launcher/keybind behavior.
 - `hosts/nix/modules/system/gaming.nix` and `hosts/nix/modules/system/flatpak.nix`:

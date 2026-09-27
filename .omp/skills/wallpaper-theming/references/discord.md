@@ -1,14 +1,16 @@
 # Discord and its theme
 
-`hosts/nix/modules/system/applications.nix` installs
-`discord.override { withEquicord = true; }`.
-`hosts/nix/modules/home/matugen.nix` owns the two CSS channels, and
-`hosts/nix/modules/home/applications.nix` seeds theme selection only when absent
-and applies declarative plugin preferences on activation.
+Both hosts install `discord.override { withEquicord = true; }`: Linux through
+`hosts/nix/modules/system/applications.nix`, Darwin through
+`hosts/ne/modules/home/discord.nix`. Darwin activation also stages Nixpkgs' pinned
+native modules and applies its update policy for Finder launches.
+`common/modules/discord.nix` owns the static theme, seeds theme selection and
+QuickCSS only when settings are absent, and merges plugin preferences on activation.
+Each host's `modules/home/matugen.nix` owns its writable palette output.
 
 ## Declarative plugins
 
-`hosts/nix/dotfiles/discord/plugins.nix` declares enabled plugins and their
+`common/dotfiles/discord/plugins.nix` declares enabled plugins and their
 preferences. Close Discord before rebuilding: its in-memory settings can
 overwrite external edits. Activation disables existing plugin entries, then
 recursively merges the declarations into the writable settings file. Plugins
@@ -22,8 +24,8 @@ destination and renames it only after successful JSON processing. Invalid input
 leaves the existing settings untouched. This settings file is not QuickCSS and
 does not use its inode-watcher contract.
 
-Run `bash hosts/nix/dotfiles/discord/test-sync-settings.sh` with jq available
-to check merge precedence, private-state preservation and failure safety.
+Run `bash common/dotfiles/discord/test-sync-settings.sh` with GNU coreutils and jq
+on PATH to check merge precedence, private-state preservation and failure safety.
 
 ## Color-only theme
 
@@ -32,12 +34,12 @@ native layout, icons, fonts, controls and animations. Other local theme files
 are not managed or deleted by this configuration.
 
 - `themes/wallpaper.theme.css` is a static Home Manager store symlink to
-  `hosts/nix/dotfiles/ricing/discord/theme.css`. It maps palette variables to
+  `common/dotfiles/discord/theme.css`. It maps palette variables to
   Discord's native color variables, without layout rules, custom elements,
   font overrides, animation overrides or remote imports.
 - `settings/quickCss.css` is the palette, rendered by Matugen from
-  `hosts/nix/dotfiles/ricing/matugen/templates/discord-palette.css` on every
-  wallpaper change. Keep Equicord's **QuickCSS** enabled.
+  `common/dotfiles/matugen/templates/discord-palette.css` when the host's wallpaper
+  command runs (`wpp` on Linux, `wallpaper-theme` on Darwin). Keep **QuickCSS** enabled.
 
 The palette is required by the static mappings. Disabling QuickCSS is not a
 supported fallback palette; disable Wallpaper too to use Discord's own colors.
@@ -47,7 +49,8 @@ fixed so low-chroma wallpapers do not collapse distinct status colors.
 
 ## File watching
 
-Equicord's default data directory is `~/.config/Equicord`, overridable with
+Equicord's data directory is `~/.config/Equicord` on Linux and
+`~/Library/Application Support/Equicord` on macOS, overridable with
 `EQUICORD_USER_DATA_DIR`. The theme watcher watches `themes/`; the QuickCSS
 watcher watches the file inode. Matugen must truncate and rewrite QuickCSS in
 place, not rename a staged file over it, or subsequent updates lose the watcher.
@@ -60,7 +63,7 @@ theme during each palette update. Theme symlinks into the Nix store are supporte
 ## Verification
 
 Render the palette with an isolated Matugen config and confirm the stylesheet
-contains only color custom properties. Evaluate the Linux configuration without
+contains only color custom properties. Evaluate both host configurations without
 activation. In Discord, enable only Wallpaper plus QuickCSS, then check chat,
 settings, menus and status indicators. Layout, home icon, window controls, fonts
 and animations should remain native. Change wallpaper and confirm colors update

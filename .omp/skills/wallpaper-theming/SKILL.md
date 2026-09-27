@@ -10,12 +10,14 @@ Own shared palette semantics and the Linux `nix` runtime. Start from
 
 ## Ownership and routing
 
-- `common/dotfiles/matugen/templates/`: shared terminal assignment format and
-  btop palette. Both hosts consume these; inspect both when changing the format.
+- `common/dotfiles/matugen/templates/`: shared terminal assignment format,
+  btop and Discord palettes. Both hosts consume these; inspect both when changing the format.
 - `hosts/nix/modules/home/matugen.nix`: Linux template destinations, private
   helpers, public `wpp`/`awpp`, awww readiness and wallpaper restoration.
-- `hosts/nix/dotfiles/ricing/`: Linux Matugen templates, Hyprland, Quickshell and
-  Discord styling. `hosts/nix/pkgs/ricing/` owns cursor/font packages.
+- `hosts/nix/dotfiles/ricing/`: Linux Matugen templates, Hyprland and Quickshell.
+  `hosts/nix/pkgs/ricing/` owns cursor/font packages.
+- `common/modules/discord.nix` and `common/dotfiles/discord/`: shared Equicord
+  settings, plugin declarations and static color-only theme.
 - `hosts/ne/modules/home/matugen.nix`: separate Darwin `wallpaper-theme` command,
   owned by [darwin-host](../darwin-host/SKILL.md), not the Linux pipeline.
 - [shared-home](../shared-home/SKILL.md): shared shell, font package and static Zed

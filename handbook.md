@@ -403,6 +403,7 @@ Secrets remain separate in `.secrets/`.
 | `hosts/nix/modules/home/applications.nix` | application settings, MIME defaults, GTK/Qt and Telegram proxy |
 | `common/modules/shell.nix` | portable Fish, direnv and CLI dotfiles |
 | `common/modules/zed.nix` | shared Zed settings, extensions, language servers and theme |
+| `common/modules/discord.nix`, `common/dotfiles/discord/` | shared Equicord plugin settings and static theme; each host's Matugen module writes QuickCSS |
 | `hosts/nix/modules/home/foot.nix` | Foot and terminal palette integration |
 | `hosts/nix/dotfiles/ricing/hypr/` | Hyprland Lua config, symlinked live into `~/.config/hypr` |
 | `common/dotfiles/`, `hosts/nix/dotfiles/`, `hosts/ne/dotfiles/` | shared and host-owned assets/templates |

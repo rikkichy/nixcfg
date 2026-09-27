@@ -6,28 +6,6 @@
     recursive = true;
   };
 
-  home.activation.equicordSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    settings="${config.home.homeDirectory}/.config/Equicord/settings/settings.json"
-    if [ ! -e "$settings" ]; then
-      run mkdir -p "$(dirname "$settings")"
-      run cp ${
-        pkgs.writeText "equicord-settings.json" (
-          builtins.toJSON { enabledThemes = [ "wallpaper.theme.css" ]; }
-        )
-      } "$settings"
-      run chmod u+w "$settings"
-    fi
-    run ${lib.getExe (pkgs.writeShellApplication {
-      name = "sync-equicord-settings";
-      runtimeInputs = [ pkgs.coreutils pkgs.jq ];
-      text = builtins.readFile ../../dotfiles/discord/sync-settings.sh;
-    })} ${
-      pkgs.writeText "equicord-plugins.json" (
-        builtins.toJSON (import ../../dotfiles/discord/plugins.nix)
-      )
-    } "$settings"
-  '';
-
   home.activation.osuSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     osudir="${config.home.homeDirectory}/.local/share/osu"
     run mkdir -p "$osudir"

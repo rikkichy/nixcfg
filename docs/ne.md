@@ -12,6 +12,7 @@ Source paths below are relative to the checkout; run repository commands there.
 - [Updates and shell migration](#updates-and-shell-migration)
 - [Keyboard](#keyboard)
 - [Ghostty and wallpaper themes](#ghostty-and-wallpaper-themes)
+- [Discord and Equicord](#discord-and-equicord)
 - [Marta](#marta)
 - [Zed file associations](#zed-file-associations)
 - [Project environments](#project-environments)
@@ -112,10 +113,32 @@ Ghostty uses the shared `common/dotfiles/matugen/templates/terminal-colors.conf`
 and the same `scheme-content` mode as NixOS, including Fastfetch's accent slots 16–18.
 Run `wallpaper-theme` (or `wallpaper-theme light`) after changing the macOS wallpaper,
 then use Ghostty's Reload Configuration action. The command reads the first desktop's
-wallpaper and writes the mutable Ghostty palette, btop `wallpaper.theme`, and Marta
-`Matugen.theme`. Restart an open btop after regenerating its theme.
+wallpaper and writes the mutable Ghostty palette, btop `wallpaper.theme`, Marta
+`Matugen.theme`, and Equicord QuickCSS. Restart an open btop after regenerating its theme.
 Wallpaper changes are not watched automatically.
 The captured Zed theme is static; `wallpaper-theme` does not regenerate it.
+
+## Discord and Equicord
+
+Home Manager installs Discord with Equicord injected at build time, using the
+pinned Nixpkgs packages. `hosts/ne/modules/home/discord.nix` stages native modules
+and applies Nixpkgs' update policy during activation, so Finder can launch the
+native executable without a custom wrapper or re-signing. Discord and Equicord
+updates follow the Nixpkgs pin and rebuild; there is no installer download or
+live app-bundle patch during activation.
+
+Close Discord before activation so it cannot overwrite merged plugin settings.
+Launch the Nix-managed Discord application, not an independently installed
+`/Applications/Discord.app`; activation does not remove that unmanaged copy.
+Existing Discord account data remains in its normal Application Support directory.
+
+Both hosts share plugin declarations, the Wallpaper color-only theme, and its
+Matugen palette. See the [Discord integration reference](../.omp/skills/wallpaper-theming/references/discord.md)
+for ownership, mutable settings and watcher requirements. Run `wallpaper-theme`
+after activation to generate the palette. Fresh Equicord settings enable Wallpaper
+and QuickCSS; existing theme choices are preserved. Colors update through QuickCSS
+without restarting Discord; macOS wallpaper changes are not watched automatically.
+Client modifications are against Discord's terms of service.
 
 ## Marta
 

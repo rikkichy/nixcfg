@@ -1,4 +1,4 @@
-{ config, pkgs, lib, desktopPicker, ... }:
+{ config, pkgs, lib, desktopPicker, equicordDataDir, ... }:
 
 let
   terminalColours = "${config.xdg.stateHome}/theme/terminal-colors.conf";
@@ -27,7 +27,7 @@ let
       nvtop = template ../../dotfiles/ricing/matugen/templates/nvtop.colors "${cfg}/nvtop/nvtop.colors";
       qt = template ../../dotfiles/ricing/matugen/templates/qt.colors "${cfg}/qtengine/scheme.colors";
       cursor = template ../../dotfiles/ricing/matugen/templates/cursor.conf cursorColours;
-      discord = template ../../dotfiles/ricing/matugen/templates/discord-palette.css "${cfg}/Equicord/settings/quickCss.css";
+      discord = template ../../../../common/dotfiles/matugen/templates/discord-palette.css "${equicordDataDir}/settings/quickCss.css";
     };
   };
 
@@ -365,9 +365,5 @@ in
 
   xdg.configFile = {
     "matugen/config.toml".source = matugenConfig;
-    "Equicord/themes/wallpaper.theme.css" = {
-      source = ../../dotfiles/ricing/discord/theme.css;
-      force = true;
-    };
   };
 }

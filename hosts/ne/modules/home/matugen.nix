@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, equicordDataDir, ... }:
 
 let
   matugenConfig = (pkgs.formats.toml { }).generate "matugen-config.toml" {
@@ -35,6 +35,10 @@ let
     templates.marta = {
       input_path = ../../dotfiles/marta/Matugen.theme;
       output_path = "${config.home.homeDirectory}/Library/Application Support/org.yanex.marta/Themes/Matugen.theme";
+    };
+    templates.discord = {
+      input_path = ../../../../common/dotfiles/matugen/templates/discord-palette.css;
+      output_path = "${equicordDataDir}/settings/quickCss.css";
     };
   };
   wallpaperTheme = pkgs.writeShellApplication {

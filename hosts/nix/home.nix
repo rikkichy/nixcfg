@@ -7,6 +7,7 @@
     ./modules/home/matugen.nix
     ./modules/home/network-reset.nix
     ./modules/home/applications.nix
+    ../../common/modules/discord.nix
     ../../common/modules/shell.nix
     ../../common/modules/ssh.nix
     ../../common/modules/zed.nix

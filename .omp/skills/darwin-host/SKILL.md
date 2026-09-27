@@ -24,6 +24,8 @@ operator commands. Paths below are repository-relative.
 | `hosts/ne/modules/home/matugen.nix` | Matugen configuration and wallpaper-theme |
 | `hosts/ne/modules/home/marta.nix` | official Marta launcher wrapper |
 | `hosts/ne/modules/home/keyboard.nix` | BetterGlobeKey configuration deployment |
+| `hosts/ne/modules/home/discord.nix` | Nix-packaged Discord with Equicord and native module staging for Finder |
+| `common/modules/discord.nix` | shared Equicord theme and writable settings merge |
 | `hosts/ne/modules/home/file-associations.nix` | explicit text/source extension list |
 | `hosts/ne/pkgs/zed-file-associations.nix` | native NSWorkspace association helper |
 | `hosts/ne/dotfiles/` | Ghostty shaders, Marta template and keyboard configuration |
@@ -89,6 +91,7 @@ Generated destinations must remain writable:
 - `~/.config/ghostty/themes/Matugen`
 - `~/.config/btop/themes/wallpaper.theme`
 - `~/Library/Application Support/org.yanex.marta/Themes/Matugen.theme`
+- `~/Library/Application Support/Equicord/settings/quickCss.css`
 
 Edit templates, not those outputs. Ghostty needs Reload Configuration; restart
 btop or Marta if they retain the previous palette. Select Matugen once in Marta.

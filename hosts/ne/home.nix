@@ -1,5 +1,7 @@
 {
   imports = [
+    ../../common/modules/discord.nix
+    ./modules/home/discord.nix
     ../../common/modules/shell.nix
     ../../common/modules/ssh.nix
     ../../common/modules/zed.nix
