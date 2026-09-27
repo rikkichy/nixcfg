@@ -1,4 +1,4 @@
-{ config, pkgs, lib, desktopPicker, equicordDataDir, ... }:
+{ config, pkgs, lib, desktopPicker, equicordDataDir, spotifyPaletteTemplate, ... }:
 
 let
   terminalColours = "${config.xdg.stateHome}/theme/terminal-colors.conf";
@@ -28,6 +28,7 @@ let
       qt = template ../../dotfiles/ricing/matugen/templates/qt.colors "${cfg}/qtengine/scheme.colors";
       cursor = template ../../dotfiles/ricing/matugen/templates/cursor.conf cursorColours;
       discord = template ../../../../common/dotfiles/matugen/templates/discord-palette.css "${equicordDataDir}/settings/quickCss.css";
+      spotify = spotifyPaletteTemplate;
     };
   };
 

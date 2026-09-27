@@ -26,6 +26,7 @@ operator commands. Paths below are repository-relative.
 | `hosts/ne/modules/home/keyboard.nix` | BetterGlobeKey configuration deployment |
 | `hosts/ne/modules/home/discord.nix` | Nix-packaged Discord with Equicord and native module staging for Finder |
 | `common/modules/discord.nix` | shared Equicord theme and writable settings merge |
+| `hosts/ne/modules/home/spotify.nix` | post-copy Spotify palette link and non-destructive native updater guard |
 | `hosts/ne/modules/home/file-associations.nix` | explicit text/source extension list |
 | `hosts/ne/pkgs/zed-file-associations.nix` | native NSWorkspace association helper |
 | `hosts/ne/dotfiles/` | Ghostty shaders, Marta template and keyboard configuration |
@@ -92,6 +93,7 @@ Generated destinations must remain writable:
 - `~/.config/btop/themes/wallpaper.theme`
 - `~/Library/Application Support/org.yanex.marta/Themes/Matugen.theme`
 - `~/Library/Application Support/Equicord/settings/quickCss.css`
+- `~/.config/spicetify/colors.css`
 
 Edit templates, not those outputs. Ghostty needs Reload Configuration; restart
 btop or Marta if they retain the previous palette. Select Matugen once in Marta.
@@ -99,6 +101,9 @@ Zed's captured theme is static and is not a wallpaper-theme output. Ghostty's
 continuous shader animation stays disabled; updates still render the shaders.
 Use the exact font family `DepartureMono Nerd Font`; font installation may
 require restarting the app before it is visible.
+Spotify uses the shared Spicetify module and needs a restart for palette changes.
+Keep its resource link after `copyApps`; see [update-cache recovery](../../../docs/ne.md#spotify-and-spicetify)
+before changing the user-immutable updater directory.
 
 ## Verification
 

@@ -1,4 +1,4 @@
-{ config, pkgs, equicordDataDir, ... }:
+{ config, pkgs, equicordDataDir, spotifyPaletteTemplate, ... }:
 
 let
   matugenConfig = (pkgs.formats.toml { }).generate "matugen-config.toml" {
@@ -40,6 +40,7 @@ let
       input_path = ../../../../common/dotfiles/matugen/templates/discord-palette.css;
       output_path = "${equicordDataDir}/settings/quickCss.css";
     };
+    templates.spotify = spotifyPaletteTemplate;
   };
   wallpaperTheme = pkgs.writeShellApplication {
     name = "wallpaper-theme";

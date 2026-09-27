@@ -2,10 +2,11 @@
 
 Helium, a Chromium build, from the `helium` flake input. It is the browser
 `hosts/nix/dotfiles/ricing/hypr/variables.lua` names, the `x-scheme-handler/*` and `text/html` default in
-`hosts/nix/modules/home/applications.nix`, and the runtime behind the Bitwarden and Spotify entries
-in `hosts/nix/modules/home/fuzzel.nix`, which are `--app=URL` windows.
+`hosts/nix/modules/home/applications.nix`, and the runtime behind the Bitwarden entry
+in `hosts/nix/modules/home/fuzzel.nix`, which is an `--app=URL` window. Spotify uses
+the native package from `common/modules/spotify.nix`.
 
-**Widevine is not in the package**, and Spotify playback requires it. Without it Spotify loads, searches and browses normally and then
+**Widevine is not in the browser package**, and Spotify's web player requires it. Without it Spotify loads, searches and browses normally and then
 refuses to play any track, with nothing in the UI or the logs naming a missing
 decryption module — it presents as broken audio, so the sink and the mute state
 get investigated first and are always fine.

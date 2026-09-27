@@ -13,6 +13,7 @@ Source paths below are relative to the checkout; run repository commands there.
 - [Keyboard](#keyboard)
 - [Ghostty and wallpaper themes](#ghostty-and-wallpaper-themes)
 - [Discord and Equicord](#discord-and-equicord)
+- [Spotify and Spicetify](#spotify-and-spicetify)
 - [Marta](#marta)
 - [Zed file associations](#zed-file-associations)
 - [Project environments](#project-environments)
@@ -114,7 +115,7 @@ and the same `scheme-content` mode as NixOS, including Fastfetch's accent slots 
 Run `wallpaper-theme` (or `wallpaper-theme light`) after changing the macOS wallpaper,
 then use Ghostty's Reload Configuration action. The command reads the first desktop's
 wallpaper and writes the mutable Ghostty palette, btop `wallpaper.theme`, Marta
-`Matugen.theme`, and Equicord QuickCSS. Restart an open btop after regenerating its theme.
+`Matugen.theme`, Equicord QuickCSS and Spotify colors. Restart btop or Spotify after regenerating their palettes.
 Wallpaper changes are not watched automatically.
 The captured Zed theme is static; `wallpaper-theme` does not regenerate it.
 
@@ -142,6 +143,28 @@ after activation to generate the palette. Fresh Equicord settings enable Wallpap
 and QuickCSS; existing theme choices are preserved. Colors update through QuickCSS
 without restarting Discord; macOS wallpaper changes are not watched automatically.
 Client modifications are against Discord's terms of service.
+
+## Spotify and Spicetify
+
+Launch `~/Applications/Home Manager Apps/Spotify.app`. The
+[shared Spotify configuration](../handbook.md#spotify-and-wallpaper-colors) owns
+build-time injection and the color-only theme; `hosts/ne/modules/home/spotify.nix`
+owns macOS deployment. Close Spotify before activation. The post-copy activation
+links only its generated color stylesheet; the native executable is not wrapped.
+
+Activation protects the empty `~/Library/Application Support/Spotify/PersistentCache/Update`
+directory with macOS's user-immutable flag, preventing Spotify from replacing the
+patched app. Existing staged updates or a non-directory/symlink at that path cause
+activation to fail without deleting data. Inspect and move staged updates aside
+with Spotify closed before retrying. To remove the protection for cleanup or after
+removing this configuration:
+
+```sh
+/usr/bin/chflags nouchg "$HOME/Library/Application Support/Spotify/PersistentCache/Update"
+```
+
+The next activation restores the protection. The native guard regression check is
+`bash hosts/ne/dotfiles/spotify/test-block-updates.sh`; it uses disposable directories.
 
 ## Marta
 

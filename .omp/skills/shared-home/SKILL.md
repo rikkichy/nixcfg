@@ -19,6 +19,10 @@ contract. Paths below are repository-relative.
   Nerd Font, Fish abbreviations/aliases/greeting, Starship, zoxide and direnv.
 - `common/modules/zed.nix`: Zed settings, extensions, captured theme, language
   servers, formatters and platform-specific editor package selection.
+- `common/modules/spotify.nix`: shared build-time Spicetify injection and writable
+  Matugen palette. The bootstrap patch in `common/pkgs/` keeps zero-add-on themes
+  loading the matching rewritten JavaScript and CSS. See
+  [Spotify](../../../handbook.md#spotify-and-wallpaper-colors) for reload semantics.
 - `common/dotfiles/`: Starship, fastfetch, btop, Zed theme, and shared terminal/btop
   Matugen templates. Micro settings are generated in the shell module.
 - `hosts/ne/modules/home/shell.nix`: Brew/rustup/Bun environment only.

@@ -1,0 +1,16 @@
+diff --git a/src/apply/apply.go b/src/apply/apply.go
+--- a/src/apply/apply.go
++++ b/src/apply/apply.go
+@@ -143,12 +143,5 @@
+ func htmlMod(htmlPath string, flags Flag) {
+-	if len(flags.Extension) == 0 &&
+-		!flags.HomeConfig &&
+-		!flags.SidebarConfig &&
+-		!flags.ExpFeatures {
+-		return
+-	}
+-
+ 	var extensionsHTML strings.Builder
+ 	var helperHTML strings.Builder
+ 	extensionsHTML.WriteByte('\n')
+ 	helperHTML.WriteByte('\n')

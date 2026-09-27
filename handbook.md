@@ -13,6 +13,7 @@ provides that runtime path to the desktop and Mac.
 | `nixos-server` | `x86_64-linux`, headless UEFI / LUKS | `ri` | [Interactive installer](#interactive-linux-installer) |
 
 - [Shared shell and editor](#shared-shell-and-editor)
+- [Spotify and wallpaper colors](#spotify-and-wallpaper-colors)
 - [Repository layout](#layout)
 - [Validation and safety](#validation-and-safety)
 - Linux recovery: [disk unlock](docs/nix.md#touch-only-disk-unlock),
@@ -349,6 +350,28 @@ build, update `hosts/nix/pkgs/kotlin-lsp.nix` from the upstream release and chec
 upgrade only the Darwin cask with `brew upgrade --cask kotlin-lsp`.
 Darwin activation deliberately does not upgrade Homebrew packages.
 
+## Spotify and wallpaper colors
+
+The desktop and Mac import `common/modules/spotify.nix`. The pinned
+`spicetify-nix` input patches Spotify at build time; do not install a second
+unmodified Spotify package. The Wallpaper theme replaces color variables only:
+no custom theme CSS or JavaScript, extensions, custom apps, assets, fonts or layout
+changes. Native RTL rules are retained. `common/pkgs/spicetify-bootstrap.patch`
+keeps the rewritten JavaScript modules loaded even with every add-on disabled;
+their class names must match Spicetify's rewritten stylesheets.
+
+Both hosts render `common/dotfiles/matugen/templates/spotify-palette.css` into
+writable `~/.config/spicetify/colors.css`. Spotify's normal XPUI stylesheet points
+to that file: the Linux package contains the link; Darwin links the deployed
+resource after Home Manager copies the app. An absent palette is seeded with
+Spotify's default colors, without overwriting existing wallpaper colors.
+
+Run `wpp`/`awpp` on Linux or `wallpaper-theme` on macOS, then fully restart Spotify
+to load the palette. There is no stylesheet watcher, local web server, or remote
+debugging endpoint. Spotify/Spicetify updates follow the Nix input pins; client
+compatibility still requires keeping those pins current. See the
+[Mac guide](docs/ne.md#spotify-and-spicetify) for update-cache protection and recovery.
+
 ## Layout
 
 Ownership comes first: `common/` contains configuration and packages shared by
@@ -404,6 +427,7 @@ Secrets remain separate in `.secrets/`.
 | `common/modules/shell.nix` | portable Fish, direnv and CLI dotfiles |
 | `common/modules/zed.nix` | shared Zed settings, extensions, language servers and theme |
 | `common/modules/discord.nix`, `common/dotfiles/discord/` | shared Equicord plugin settings and static theme; each host's Matugen module writes QuickCSS |
+| `common/modules/spotify.nix`, `common/dotfiles/matugen/templates/spotify-palette.css` | shared Spicetify packaging and writable color-only palette |
 | `hosts/nix/modules/home/foot.nix` | Foot and terminal palette integration |
 | `hosts/nix/dotfiles/ricing/hypr/` | Hyprland Lua config, symlinked live into `~/.config/hypr` |
 | `common/dotfiles/`, `hosts/nix/dotfiles/`, `hosts/ne/dotfiles/` | shared and host-owned assets/templates |

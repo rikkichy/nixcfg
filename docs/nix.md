@@ -249,18 +249,22 @@ Both pickers generate missing thumbnails with at most four workers and reuse
 fresh cache entries. Cursor rendering also reuses unchanged, complete outputs;
 changing the accent or renderer, or losing a cursor file, triggers regeneration.
 
+Spotify is the native Spicetify package, available from the launcher and music
+workspace keybinding. Its [shared color-only theme](../handbook.md#spotify-and-wallpaper-colors)
+follows Matugen; restart Spotify after generating a new palette.
+
 ## Two rules that are easy to break
 
 **The colour engine owns a set of files at runtime.** Every time the wallpaper
 changes, `matugen` rewrites `fuzzel/colors.ini`, `btop/themes/wallpaper.theme`,
 `nvtop/nvtop.colors`, `gtk-3.0/gtk.css`, `gtk-4.0/gtk.css`, both `thunar.css`,
-`qtengine/scheme.colors`, `quickshell/colors.json` and `hypr/scheme/current.lua`. Home-manager files are
+`qtengine/scheme.colors`, `quickshell/colors.json`, `spicetify/colors.css` and `hypr/scheme/current.lua`. Home-manager files are
 read-only store symlinks, so **do not** put any of those under
 `xdg.configFile` — every colour change would start failing. This is also why
 home-manager's `gtk` module is not used: it emits `gtk-4.0/gtk.css` too.
 
 **Change the colours by editing templates, not the generated files.** The
-terminal and btop templates are in `common/dotfiles/matugen/templates/`; the
+shared terminal, btop, Discord and Spotify templates are in `common/dotfiles/matugen/templates/`; the
 Linux-only templates are in `hosts/nix/dotfiles/ricing/matugen/templates/`. Anything you type
 into the generated files is gone at the next wallpaper. Run `wpp` to re-render
 after editing a template.

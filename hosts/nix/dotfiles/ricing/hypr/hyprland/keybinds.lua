@@ -137,7 +137,7 @@ end
 
 hl.bind(vars.kbSpecialWs, toggle_ws("special"))
 hl.bind(vars.kbSystemMonitorWs, toggle_ws("sysmon", "btop", vars.terminal .. " --app-id=btop btop"))
-hl.bind(vars.kbMusicWs, toggle_ws("music", "spotify", "helium --app=https://open.spotify.com"))
+hl.bind(vars.kbMusicWs, toggle_ws("music", "spotify", "spotify"))
 hl.bind(vars.kbCommunicationWs, toggle_ws("communication", "discord", "discord"))
 hl.bind(vars.kbTodoWs, toggle_ws("todo"))
 

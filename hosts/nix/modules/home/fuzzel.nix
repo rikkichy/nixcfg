@@ -100,8 +100,6 @@ in
   in {
     bitwarden = webApp "Bitwarden" "https://vault.bitwarden.com" "bitwarden"
       "chrome-vault.bitwarden.com__-Default";
-    spotify = webApp "Spotify" "https://open.spotify.com" "spotify"
-      "chrome-open.spotify.com__-Default";
 
     clipp = {
       name = "Clipboard";
