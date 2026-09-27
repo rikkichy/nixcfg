@@ -91,14 +91,12 @@ compatibility warnings, not evidence that restarting will fix it.
 
 ## Allocator and kernel hardening boundaries
 
-`hosts/nix/modules/system/security.nix` selects `graphene-hardened-light` via
-`/etc/ld-nix.so.preload`. The light template retains zero-on-free and slab
-canaries without quarantines, slot randomization, or per-allocation guard slabs.
-Allocator changes can expose latent memory bugs, including use-after-free that
-now reads zeroes; an abort need not implicate the most recent application edit.
-An approved `provider = "libc"` reproduction is a diagnostic bisect, not a
-permanent workaround. Programs using their own allocators, such as Chromium's
-PartitionAlloc or a JVM heap, are mostly outside the replaced malloc boundary.
+The host uses the default `libc` allocator. The `graphene-hardened-light`
+selection in `hosts/nix/modules/system/security.nix` is commented out because
+Spotify's CEF aborts during startup with the allocator preload. The same
+Spicetify package opens on native Wayland when `/etc/ld-nix.so.preload` is
+hidden in a process-local mount namespace, without changing its profile or theme.
+Re-enabling the hardened allocator requires a successful Spotify startup check.
 
 Only processes started after activation see the new allocator; a running
 session is mixed until restarted. Use a **verified** known-working generation
@@ -110,10 +108,10 @@ absent there. A host allocator-provider bisect therefore cannot diagnose those
 payloads; inspect the actual wrapper before attributing their crashes to it.
 See [desktop-applications](../../desktop-applications/SKILL.md) for package scope.
 
-`hosts/nix/lighting.nix` isolates OpenRGB because its libusb backend uses
-`RTLD_DEEPBIND`, conflicting with the global allocator preload. `openrgb-off`
-bind-mounts an empty file over the preload source in its private mount namespace.
-Do not disable hardened_malloc system-wide for lighting. The bounded root-only
+`hosts/nix/lighting.nix` conditionally isolates OpenRGB when a non-libc allocator
+is selected: its libusb backend uses `RTLD_DEEPBIND`, conflicting with the global
+allocator preload. `openrgb-off` then bind-mounts an empty file over the preload
+source in its private mount namespace. The bounded root-only
 oneshot turns ENE DRAM and the Gainward RTX 3090 Off; MSI's controller uses
 Direct/black because it has no Off mode. Elgato/Wooting detection is disabled
 and explicit selectors exclude them. No SDK server, GUI, polling, or global

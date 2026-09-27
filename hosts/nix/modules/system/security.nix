@@ -19,7 +19,8 @@
 
   imports = [ ../../../../common/modules/nixos-yubikey.nix ];
 
-  environment.memoryAllocator.provider = "graphene-hardened-light";
+  # Spotify's CEF crashes with this allocator preload.
+  # environment.memoryAllocator.provider = "graphene-hardened-light";
 
   services.pcscd.enable = true;
 }

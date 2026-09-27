@@ -407,7 +407,7 @@ Secrets remain separate in `.secrets/`.
 | `hosts/nix/storage.nix` | data mounts, permissions, XFS scrubbing and trim |
 | `hosts/nix/modules/system/locale.nix` | desktop locale and timezone |
 | `hosts/nix/modules/system/nix.nix` | Nix settings and garbage collection |
-| `hosts/nix/modules/system/security.nix` | polkit, shared authentication import, hardened allocator and smart cards |
+| `hosts/nix/modules/system/security.nix` | polkit, shared authentication import, allocator policy and smart cards |
 | `hosts/nix/modules/system/networking.nix` | shared network import and desktop-only interface-scoped LAN ports |
 | `hosts/nix/modules/system/audio.nix` | PipeWire and the Blessing 3 equalizer |
 | `hosts/nix/modules/system/session.nix` | Hyprland/UWSM, greetd, portals, keyring, session environment and fonts |

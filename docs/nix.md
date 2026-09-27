@@ -663,8 +663,8 @@ Other hardware status indicators are outside OpenRGB's supported controls.
 
 After a rebuild, reapply with `sudo systemctl start openrgb-off`.
 Inspect failures with `journalctl -u openrgb-off`. The root-only service does not
-require user-facing OpenRGB udev permissions. Its private mount namespace hides
-the allocator preload only for this service; system-wide hardening stays enabled.
+require user-facing OpenRGB udev permissions. If a non-libc allocator is enabled,
+its private mount namespace hides the allocator preload only for this service.
 
 ## Auto-updates
 
