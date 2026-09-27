@@ -444,6 +444,17 @@ are preserved exactly; legacy file inputs retain their existing whitespace
 normalization. Values are never Nix evaluation/build inputs. Mihomo's private
 provider/state files can also contain credentials; keep those outside Git.
 
+Desktop DNS uses the LAN router configured in that template for ordinary and
+proxy-node lookups. The router owns the ControlD DoQ connection and its private
+endpoint; Mihomo retains DNS hijacking and fake-IP handling. Router DNS must
+remain reachable even with the VPN enabled. If the desktop moves to another
+LAN, update the upstream addresses in the template.
+
+After an approved rebuild applies a DNS change, `network-reset system` refreshes
+DNS and closes Mihomo connections without stopping the tunnel. It does not reload
+Mihomo's configuration or restart applications; fully reopen Sober to discard
+its cached addresses.
+
 ### Private inputs and first provisioning
 
 `.secrets/nix/personal.yaml` contains the encrypted inputs, and the nested policy

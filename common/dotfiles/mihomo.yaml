@@ -26,14 +26,11 @@ dns:
     - "*.local"
     - "+.internal"
   default-nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
+    - 192.168.8.1
   nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
+    - 192.168.8.1
   proxy-server-nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
+    - 192.168.8.1
 
 proxy-providers:
   primary:
