@@ -121,11 +121,14 @@ The captured Zed theme is static; `wallpaper-theme` does not regenerate it.
 ## Discord and Equicord
 
 Home Manager installs Discord with Equicord injected at build time, using the
-pinned Nixpkgs packages. `hosts/ne/modules/home/discord.nix` stages native modules
-and applies Nixpkgs' update policy during activation, so Finder can launch the
-native executable without a custom wrapper or re-signing. Discord and Equicord
-updates follow the Nixpkgs pin and rebuild; there is no installer download or
-live app-bundle patch during activation.
+pinned Nixpkgs packages. `hosts/ne/modules/home/discord.nix` sets `disableUpdater`
+in the packaged `build_info.json` to select Discord's legacy updater: its native
+updater does not honor `SKIP_HOST_UPDATE` and can replace the injected bundle.
+Activation disables both host and module updates, then stages the matching pinned
+native modules for Finder launches. The executable is not renamed or re-signed.
+Discord and Equicord updates follow the Nixpkgs pin and rebuild; keep that pin
+current for Electron security updates and Discord compatibility. There is no
+installer download or live app-bundle patch during activation.
 
 Close Discord before activation so it cannot overwrite merged plugin settings.
 Launch the Nix-managed Discord application, not an independently installed

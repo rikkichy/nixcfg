@@ -2,8 +2,10 @@
 
 Both hosts install `discord.override { withEquicord = true; }`: Linux through
 `hosts/nix/modules/system/applications.nix`, Darwin through
-`hosts/ne/modules/home/discord.nix`. Darwin activation also stages Nixpkgs' pinned
-native modules and applies its update policy for Finder launches.
+`hosts/ne/modules/home/discord.nix`. Darwin packaging selects Discord's legacy
+updater; activation disables host/module updates and stages the pinned native
+modules for Finder launches. See [the Mac guide](../../../../docs/ne.md#discord-and-equicord)
+for the native-updater compatibility constraint.
 `common/modules/discord.nix` owns the static theme, seeds theme selection and
 QuickCSS only when settings are absent, and merges plugin preferences on activation.
 Each host's `modules/home/matugen.nix` owns its writable palette output.
