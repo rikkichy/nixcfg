@@ -213,41 +213,55 @@ in
       text = ''
         cur=$(vpn status)
         active=$(vpn subscription)
-        mapfile -t subscriptions < <(vpn subscriptions)
-        mapfile -t rows < <(vpn nodes)
+        menu=$(
+          printf '%s\x00icon\x1f%s\n' \
+            "Switch subscription" network-vpn \
+            "Choose server" network-server \
+            | desktop-picker --index --prompt "vpn [$active · $cur]> " \
+                --lines 2 --width 48
+        ) || exit 0
+
+        case "$menu" in
+          0)
+            action=subscription
+            mapfile -t rows < <(vpn subscriptions)
+            prompt="subscription [$active]> "
+            lines=2
+            ;;
+          1)
+            action=select
+            mapfile -t rows < <(vpn nodes)
+            prompt="server [$active · $cur]> "
+            lines=14
+            ;;
+          *) exit 0 ;;
+        esac
 
         idx=$(
-          {
-            for subscription in "''${subscriptions[@]}"; do
-              label=''${subscription#*$'\t'}
-              if [ "$label" = "$active" ]; then
-                printf '%-8s— active subscription\x00icon\x1fnetwork-vpn\n' "$label"
-              else
-                printf '%-8s— switch subscription\x00icon\x1fnetwork-server\n' "$label"
-              fi
-            done
-            for r in "''${rows[@]}"; do
+          for r in "''${rows[@]}"; do
+            n=''${r#*$'\t'}
+            if [ "$action" = subscription ]; then
+              printf '%s\x00icon\x1fnetwork-vpn\n' "$n"
+            else
               d=''${r%%$'\t'*}
-              n=''${r#*$'\t'}
               if [ "$d" = 0 ]; then
                 printf '  --    %s\x00icon\x1fnetwork-server\n' "$n"
               else
                 printf '%5dms %s\x00icon\x1fnetwork-server\n' "$d" "$n"
               fi
-            done
-          } | desktop-picker --index --prompt "vpn [$active · $cur]> " \
-                --lines 14 --width 48
+            fi
+          done | desktop-picker --index --prompt "$prompt" \
+                   --lines "$lines" --width 48
         ) || exit 0
 
-        subscription_end=''${#subscriptions[@]}
-        count=$((subscription_end + ''${#rows[@]}))
+        count=''${#rows[@]}
         [[ "$idx" =~ ^(0|[1-9][0-9]*)$ ]] || exit 0
         (( ''${#idx} <= ''${#count} )) || exit 0
         (( idx < count )) || exit 0
-        if (( idx < subscription_end )); then
-          vpn subscription "''${subscriptions[idx]%%$'\t'*}"
+        if [ "$action" = subscription ]; then
+          vpn subscription "''${rows[idx]%%$'\t'*}"
         else
-          vpn select "''${rows[idx - subscription_end]#*$'\t'}"
+          vpn select "''${rows[idx]#*$'\t'}"
         fi
       '';
     })

@@ -49,7 +49,7 @@ with tempfile.TemporaryDirectory(prefix="vpn-test-") as temporary:
     config.update({"mixed-port": 0, "external-controller": f"127.0.0.1:{port}",
                    "tun": {"enable": False}, "dns": {"enable": False},
                    "rules": ["MATCH,DIRECT"]})
-    names = {"primary": ["First", '-edge [.*] / "quoted" '], "quattro": ["Other"]}
+    names = {"primary": ["First", '-edge [.*] / "quoted" '], "quattro": ["Other", "Other 2"]}
     for provider, nodes in names.items():
         path = work / f"{provider}.json"
         path.write_text(json.dumps({"proxies": [
@@ -64,7 +64,16 @@ with tempfile.TemporaryDirectory(prefix="vpn-test-") as temporary:
         path.chmod(0o700)
     for name, text in {
         "notify-send": "exit 0\n",
-        "desktop-picker": 'cat > "$MENU"\nprintf "%s\\n" "$CHOICE"\nexit "${DISMISS:-0}"\n',
+        "desktop-picker": '''
+index=0
+if [ -f "$MENU.count" ]; then read -r index < "$MENU.count"; fi
+cat > "$MENU.$index"
+mapfile -t choices <<< "$CHOICES"
+printf '%s\\n' "$((index + 1))" > "$MENU.count"
+choice=${choices[index]:-CANCEL}
+[ "$choice" != CANCEL ] || exit 1
+printf '%s\\n' "$choice"
+''',
     }.items():
         path = work / name
         path.write_text(f"#!{bash}\nset -euo pipefail\n" + text)
@@ -72,9 +81,11 @@ with tempfile.TemporaryDirectory(prefix="vpn-test-") as temporary:
     env = {**os.environ, "PATH": f"{work}:{os.environ['PATH']}",
            "MENU": str(work / "menu"), "HOME": str(work)}
 
-    def run(command, *arguments, choice="", dismiss="0", check=True):
+    def run(command, *arguments, choices=(), check=True):
+        (work / "menu.count").unlink(missing_ok=True)
         return subprocess.run([str(work / command), *arguments],
-                              env={**env, "CHOICE": choice, "DISMISS": dismiss},
+                              env={**env, "CHOICES": "\n".join(
+                                  "CANCEL" if choice is None else choice for choice in choices)},
                               check=check, capture_output=True, text=True)
 
     with (work / "mihomo.log").open("w+") as log:
@@ -92,26 +103,26 @@ with tempfile.TemporaryDirectory(prefix="vpn-test-") as temporary:
                         raise AssertionError(log.read())
                     time.sleep(0.05)
 
-            run("vpnp", choice="3")
+            run("vpnp", choices=("1", "1"))
             assert get("PRIMARY")["now"] == names["primary"][1]
-            labels = [row.split(b"\0")[0] for row in (work / "menu").read_bytes().splitlines()]
-            assert len(labels) == 4 and not any(b"DIRECT" in row or b"AUTO" in row for row in labels)
 
-            # Provider rows retain each provider's exact manual selection.
-            run("vpnp", choice="1")
+            # Subscription changes retain each provider's manual server.
+            run("vpnp", choices=("0", "1"))
             assert get("PROXY")["now"] == "QUATTRO"
-            run("vpnp", choice="2")
-            assert get("QUATTRO")["now"] == "Other"
-            run("vpnp", choice="0")
+            run("vpnp", choices=("1", "1"))
+            assert get("QUATTRO")["now"] == "Other 2"
+            assert get("PRIMARY")["now"] == names["primary"][1]
+            run("vpnp", choices=("0", "0"))
             assert get("PROXY")["now"] == "PRIMARY"
             assert run("vpn").stdout.rstrip("\n") == names["primary"][1]
 
-            # Bad indexes and dismissal must never select a different server.
-            for choice in ("-1", "01", "4", "9" * 100, "2 + 1", ""):
-                run("vpnp", choice=choice)
-                assert get("PRIMARY")["now"] == names["primary"][1]
-            run("vpnp", choice="2", dismiss="1")
-            assert get("PRIMARY")["now"] == names["primary"][1]
+            # Invalid indexes and dismissal at either level cannot change selection.
+            for choice in ("-1", "01", "2", "9" * 100, "1 + 1", "", None):
+                for prefix in ((), ("0",), ("1",)):
+                    run("vpnp", choices=(*prefix, choice))
+                    assert get("PROXY")["now"] == "PRIMARY"
+                    assert get("PRIMARY")["now"] == names["primary"][1]
+                    assert get("QUATTRO")["now"] == "Other 2"
             for command in ("on", "off", "toggle", "auto"):
                 assert run("vpn", command, check=False).returncode == 2
             assert run("vpn", "select", "not a server", check=False).returncode != 0
@@ -121,4 +132,4 @@ with tempfile.TemporaryDirectory(prefix="vpn-test-") as temporary:
             process.terminate()
             process.wait(timeout=5)
 
-print("PASS: exact server selection, provider retention, picker boundaries and no mode controls.")
+print("PASS: nested subscription/server selection, exact names, dismissal and index boundaries.")

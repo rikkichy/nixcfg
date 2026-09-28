@@ -403,10 +403,12 @@ The service retains its process sandbox: it does not identify desktop apps by
 process. Discord can assign new IP-addressed media endpoints, which may need
 additional rules. Shared service domains can also include related products.
 
-**`SUPER + SHIFT + V`** opens the server picker over the active subscription's
-live nodes, fastest first. **Primary** and **Quattro** switch subscriptions;
-each retains its selected server. There are no DIRECT, AUTO or on/off controls.
-The picker is also available as `vpnp` and as **VPN server** in desktop tools:
+**`SUPER + SHIFT + V`** opens a two-action picker. **Switch subscription** opens
+**Primary** and **Quattro**, each retaining its selected server. **Choose server**
+opens only the active subscription's live nodes, fastest first. Dismissing
+either submenu leaves the selection unchanged. There are no DIRECT, AUTO or
+on/off controls. The picker is also available as `vpnp` and as **VPN server**
+in desktop tools:
 
 ```
 vpn                              # show the selected server

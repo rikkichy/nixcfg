@@ -40,7 +40,7 @@ proxy-providers:
   primary:
     type: http
     url: "@PRIMARY_SUBSCRIPTION_URL@"
-    interval: 3600
+    interval: 600
     path: ./providers/primary.yaml
     proxy: DIRECT
     header:
@@ -62,7 +62,7 @@ proxy-providers:
   quattro:
     type: http
     url: "@QUATTRO_SUBSCRIPTION_URL@"
-    interval: 3600
+    interval: 600
     path: ./providers/quattro.yaml
     proxy: DIRECT
     header:
