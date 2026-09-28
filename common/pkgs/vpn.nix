@@ -5,8 +5,6 @@ writeShellApplication {
   runtimeInputs = [ curl jq libnotify gnugrep gnused coreutils ];
   text = ''
     api=http://127.0.0.1:9090
-    state="''${XDG_STATE_HOME:-$HOME/.local/state}/vpn"
-    last_subscription="$state/last-subscription"
 
     api_get() {
       endpoint=$(jq -rn --arg group "$1" '$group | @uri')
@@ -44,41 +42,18 @@ writeShellApplication {
       esac
     }
 
-    remember_subscription() {
-      mkdir -p "$state"
-      printf '%s\n' "$1" > "$last_subscription"
-    }
-
     active_subscription() {
       case "$current_group" in
         PRIMARY|QUATTRO) printf '%s\n' "$current_group" ;;
-        *)
-          if [ -r "$last_subscription" ]; then
-            saved=$(cat "$last_subscription")
-            case "$saved" in
-              PRIMARY|QUATTRO) printf '%s\n' "$saved"; return ;;
-            esac
-          fi
-          printf '%s\n' PRIMARY
-          ;;
+        *) echo "unexpected PROXY selection: $current_group" >&2; return 1 ;;
       esac
     }
 
     group_selection() { api_get "$1" | jq -er '.now'; }
 
-    display_selection() {
-      selection=$(group_selection "$1")
-      if [ "$selection" = "$1-AUTO" ]; then
-        printf '%s\n' AUTO
-      else
-        printf '%s\n' "$selection"
-      fi
-    }
-
     nodes() {
       active=$(active_subscription)
       jq -rn \
-        --arg auto "$active-AUTO" \
         --slurpfile g <(api_get "$active") \
         --slurpfile p <(api_provider "''${active,,}") '
         (($p[0].proxies // [])
@@ -86,7 +61,7 @@ writeShellApplication {
           | from_entries) as $d
         | ($g[0].all // [])
         | map(select(. as $n
-            | [$auto,"DIRECT","GLOBAL","REJECT","REJECT-DROP","PROXY","COMPATIBLE","PASS","PASS-RULE"]
+            | ["DIRECT","GLOBAL","REJECT","REJECT-DROP","PROXY","COMPATIBLE","PASS","PASS-RULE"]
             | index($n) | not))
         | map({n: ., d: ($d[.] // 0)})
         | (map(select(.d > 0)) | sort_by(.d)) + map(select(.d == 0))
@@ -99,28 +74,12 @@ writeShellApplication {
       exit 1
     fi
 
-    turn_on() {
-      active=$(active_subscription)
-      api_put PROXY "$active"
-      remember_subscription "$active"
-      say network-vpn-symbolic "on -- $(subscription_label "$active") / $(display_selection "$active")"
-    }
-
-    turn_off() {
-      case "$current_group" in
-        PRIMARY|QUATTRO) remember_subscription "$current_group" ;;
-      esac
-      api_put PROXY DIRECT
-      say network-offline-symbolic "off -- direct connection"
-    }
-
     select_subscription() {
       if ! target=$(normalise_subscription "''${1:-}"); then
         echo "usage: vpn subscription <primary|quattro>" >&2
         exit 2
       fi
       api_put PROXY "$target"
-      remember_subscription "$target"
       say network-vpn-symbolic "subscription -- $(subscription_label "$target")"
     }
 
@@ -128,7 +87,6 @@ writeShellApplication {
       active=$(active_subscription)
       api_put "$active" "$1"
       api_put PROXY "$active"
-      remember_subscription "$active"
     }
 
     use_node() {
@@ -149,7 +107,7 @@ writeShellApplication {
         echo "usage: vpn select <name>" >&2; exit 2
       fi
       names=$(nodes | cut -f2-)
-      if ! grep -qxF "$1" <<< "$names"; then
+      if ! grep -qxF -- "$1" <<< "$names"; then
         say network-error-symbolic "no node named '$1'"
         exit 1
       fi
@@ -158,17 +116,10 @@ writeShellApplication {
     }
 
     status() {
-      if [ "$current_group" = DIRECT ]; then
-        printf '%s\n' DIRECT
-      else
-        display_selection "$(active_subscription)"
-      fi
+      group_selection "$(active_subscription)"
     }
 
-    case "''${1:-toggle}" in
-      on)     turn_on ;;
-      off)    turn_off ;;
-      toggle) if [ "$current_group" = DIRECT ]; then turn_on; else turn_off; fi ;;
+    case "''${1:-status}" in
       use)    use_node "''${2:-}" ;;
       select) select_node "''${2:-}" ;;
       subscriptions) printf 'PRIMARY\tPrimary\nQUATTRO\tQuattro\n' ;;
@@ -180,9 +131,6 @@ writeShellApplication {
         fi
         ;;
       nodes)  nodes ;;
-      auto)   active=$(active_subscription)
-              activate_selection "$active-AUTO"
-              say network-vpn-symbolic "$(subscription_label "$active") / AUTO" ;;
       status) status ;;
       list)   printf 'subscription: %s\ncurrent: %s\n\n' \
                 "$(subscription_label "$(active_subscription)")" "$(status)"
@@ -191,7 +139,7 @@ writeShellApplication {
               done ;;
       ip)     curl -fsS --max-time 15 https://cloudflare.com/cdn-cgi/trace \
                 | sed -n 's/^ip=//p;s/^loc=/ /p' | tr -d '\n'; echo ;;
-      *)      echo "usage: vpn [toggle|on|off|auto|subscription [primary|quattro]|subscriptions|use <pattern>|select <name>|nodes|status|list|ip]" >&2; exit 2 ;;
+      *)      echo "usage: vpn [subscription [primary|quattro]|subscriptions|use <pattern>|select <name>|nodes|status|list|ip]" >&2; exit 2 ;;
     esac
   '';
 }

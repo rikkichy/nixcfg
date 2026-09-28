@@ -63,12 +63,14 @@ hijacks port 53 through the TUN. The dashboard is not tunnel proof: inspect
 `ip -br addr show mihomo` for an actual IPv4 address; `UP` with only link-local
 IPv6 is not a working tunnel.
 
-Run **`vpn off` before network-heavy work** such as substituter fetches and
-Git pushes. Node routing can cause stuck downloads or TLS unexpected EOF that
-looks unrelated to the VPN. Off means selecting `DIRECT` in the top-level
-`PROXY` group, **not stopping Mihomo**, which also removes DNS hijacking.
-`profile.store-selected` persists the choice in `cache.db` under the service's
-state directory; without it, startup resets to the first group member.
+The tunnel uses service-selective rules with `MATCH,DIRECT`; ordinary Nix
+downloads and Git pushes do not need a VPN mode toggle. `PROXY` only selects
+a subscription, whose group selects a concrete server. Do not stop Mihomo to
+change routing: that also removes DNS handling. `profile.store-selected`
+persists server choices in `cache.db` under the service's state directory.
+The process sandbox remains intact; do not add process rules without accounting
+for its restricted `/proc` access. See the operator guide for service coverage
+and the IP-addressed Discord media limitation.
 
 ## Subscription and node failure modes
 
@@ -81,7 +83,7 @@ state directory; without it, startup resets to the first group member.
   subscription through the very tunnel it needs to repair: a bad update then
   cannot self-recover and may surface only as EOF.
 - Node latency needs membership **and** health history. Top-level `PROXY`
-  currently contains `PRIMARY`, `QUATTRO`, and `DIRECT`, not the provider nodes.
+  contains `PRIMARY` and `QUATTRO`, not the provider nodes.
   Query `/proxies/PRIMARY` or `/proxies/QUATTRO` for active-group membership and
   `/providers/proxies/primary` or `/providers/proxies/quattro` for delays. Reading
   either endpoint alone gives an incomplete but plausible list. `vpn nodes`
@@ -89,10 +91,12 @@ state directory; without it, startup resets to the first group member.
 
 `vpn` is a `writeShellApplication` installed in `environment.systemPackages`,
 not an alias: fish, Hyprland, and the Stream Deck use the same command.
-`vpn subscription` selects Primary/Quattro, each with its own selection and
-`*-AUTO` group; a per-user `last-subscription` file remembers which to restore
-when `PROXY` is `DIRECT`. `vpn use PATTERN` searches live active-subscription
-nodes by regex because provider names change. `vpn select NAME` validates an
-exact live name for pickers. Keep the distinction and the two-level group
-selection when changing callers; consult
-[desktop-shell](../../desktop-shell/SKILL.md) for the picker/keybind surface.
+`vpn subscription` selects Primary/Quattro, each retaining its manual server
+selection. There are no mode toggles, AUTO groups or separate selection-state
+files. Bare `vpn` reports the server. `vpn use PATTERN` searches live
+active-subscription nodes by regex because provider names change; it makes a
+one-time selection. `vpn select NAME` validates an exact live name for pickers.
+Keep the distinction and the two-level group selection when changing callers;
+consult [desktop-shell](../../desktop-shell/SKILL.md) for the picker/keybind
+surface. `scripts/vpn-test.py` exercises the commands and picker against an
+isolated Mihomo instance without real subscriptions or a TUN.

@@ -6,6 +6,10 @@ log-level: info
 ipv6: false
 external-controller: 127.0.0.1:9090
 
+geox-url:
+  geosite: https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat
+  asn: https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/GeoLite2-ASN.mmdb
+
 tun:
   enable: true
   device: mihomo
@@ -83,37 +87,16 @@ proxy-groups:
     proxies:
       - PRIMARY
       - QUATTRO
-      - DIRECT
 
   - name: PRIMARY
     type: select
-    proxies:
-      - PRIMARY-AUTO
     use:
       - primary
-
-  - name: PRIMARY-AUTO
-    type: url-test
-    use:
-      - primary
-    url: https://www.gstatic.com/generate_204
-    interval: 300
-    tolerance: 50
 
   - name: QUATTRO
     type: select
-    proxies:
-      - QUATTRO-AUTO
     use:
       - quattro
-
-  - name: QUATTRO-AUTO
-    type: url-test
-    use:
-      - quattro
-    url: https://www.gstatic.com/generate_204
-    interval: 300
-    tolerance: 50
 
 profile:
   store-selected: true
@@ -124,4 +107,26 @@ rules:
   - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
   - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
   - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
-  - MATCH,PROXY
+  - IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
+  - IP-CIDR6,::1/128,DIRECT,no-resolve
+  - IP-CIDR6,fc00::/7,DIRECT,no-resolve
+  - IP-CIDR6,fe80::/10,DIRECT,no-resolve
+
+  - GEOSITE,youtube,PROXY
+  - GEOSITE,discord,PROXY
+  - GEOSITE,roblox,PROXY
+  - GEOSITE,instagram,PROXY
+  - GEOSITE,protonmail,PROXY
+  - IP-ASN,22697,PROXY,no-resolve
+
+  # Discord media uses IP-addressed UDP. These are observed assignments,
+  # not an exhaustive list; keep process inspection sandboxed.
+  - IP-CIDR,104.29.159.128/32,PROXY,no-resolve
+  - IP-CIDR,104.29.148.61/32,PROXY,no-resolve
+  - IP-CIDR,104.29.136.193/32,PROXY,no-resolve
+  - IP-CIDR,104.29.146.68/32,PROXY,no-resolve
+  - IP-CIDR,104.29.153.100/32,PROXY,no-resolve
+  - IP-CIDR,104.29.153.203/32,PROXY,no-resolve
+  - IP-CIDR,35.217.31.203/32,PROXY,no-resolve
+
+  - MATCH,DIRECT

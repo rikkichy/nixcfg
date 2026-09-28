@@ -127,7 +127,7 @@ in
       settings.OnlyShowIn = "X-DesktopTools;";
     };
     vpnp = {
-      name = "VPN";
+      name = "VPN server";
       exec = "vpnp";
       icon = "${papirus}/32x32/devices/network-vpn.svg";
       terminal = false;
@@ -218,8 +218,6 @@ in
 
         idx=$(
           {
-            printf 'DIRECT  — off\x00icon\x1fnetwork-offline\n'
-            printf 'AUTO    — fastest in %s\x00icon\x1fnetwork-vpn\n' "$active"
             for subscription in "''${subscriptions[@]}"; do
               label=''${subscription#*$'\t'}
               if [ "$label" = "$active" ]; then
@@ -241,22 +239,16 @@ in
                 --lines 14 --width 48
         ) || exit 0
 
-        subscription_end=$((2 + ''${#subscriptions[@]}))
+        subscription_end=''${#subscriptions[@]}
         count=$((subscription_end + ''${#rows[@]}))
         [[ "$idx" =~ ^(0|[1-9][0-9]*)$ ]] || exit 0
         (( ''${#idx} <= ''${#count} )) || exit 0
         (( idx < count )) || exit 0
-        case "$idx" in
-          0) vpn off ;;
-          1) vpn auto ;;
-          *)
-            if (( idx < subscription_end )); then
-              vpn subscription "''${subscriptions[idx - 2]%%$'\t'*}"
-            else
-              vpn select "''${rows[idx - subscription_end]#*$'\t'}"
-            fi
-            ;;
-        esac
+        if (( idx < subscription_end )); then
+          vpn subscription "''${subscriptions[idx]%%$'\t'*}"
+        else
+          vpn select "''${rows[idx - subscription_end]#*$'\t'}"
+        fi
       '';
     })
 

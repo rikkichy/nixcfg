@@ -392,50 +392,57 @@ socket-lifetime correction required with the pinned Qt.
 **<http://127.0.0.1:9090/ui/>** — that is where you pick a node. It starts at
 boot; there is no app to launch.
 
-### Turning it off
+### Split routing and server selection
 
-**`SUPER + SHIFT + V`** opens a picker over the active subscription's live node
-list, fastest first. `DIRECT`, `AUTO`, **Primary**, and **Quattro** stay pinned
-at the top, so the same picker switches subscriptions and nodes. It is also
-available as `vpnp`, or through the CLI beneath it:
+YouTube, Discord, Roblox/Sober, Instagram and Proton Mail use the selected proxy
+server; other destinations use `DIRECT`. Domain rules use Mihomo's geosite data,
+Roblox's production network uses ASN data, and the template includes observed
+Discord voice IPs. Mihomo downloads geosite and ASN data from the publisher's
+jsDelivr mirror; first startup needs access to it. Keep these databases current.
+The service retains its process sandbox: it does not identify desktop apps by
+process. Discord can assign new IP-addressed media endpoints, which may need
+additional rules. Shared service domains can also include related products.
+
+**`SUPER + SHIFT + V`** opens the server picker over the active subscription's
+live nodes, fastest first. **Primary** and **Quattro** switch subscriptions;
+each retains its selected server. There are no DIRECT, AUTO or on/off controls.
+The picker is also available as `vpnp` and as **VPN server** in desktop tools:
 
 ```
-vpn                              # toggle
-vpn on                           # restore the active subscription
-vpn off                          # direct connection
-vpn status                       # current node, AUTO, or DIRECT
+vpn                              # show the selected server
+vpn status                       # show the selected server
 vpn subscription                 # active subscription name
-vpn subscription primary         # switch to Primary
-vpn subscription quattro         # switch to Quattro
+vpn subscription primary         # select Primary's remembered server
+vpn subscription quattro         # select Quattro's remembered server
 vpn list                         # active subscription's nodes and latency
 vpn use <pattern>                # fastest matching node in that subscription
 vpn select <name>                # exact node in that subscription
-vpn ip                           # exit IP and country
+vpn ip                           # default DIRECT public IP and country
 ```
 
-Each subscription keeps its own AUTO/manual node selection in mihomo's cache.
-Off records the active subscription in
-`~/.local/state/vpn/last-subscription`, so `vpn on` restores the same provider
-and that provider restores its own node.
+Selection persists in Mihomo's cache. `vpn use` is a one-time manual choice,
+not continuous automatic selection.
 
 `vpn use` takes a case-insensitive regex, not a node name — `vpn use швец`
 picks the fastest Swedish node. **Match on the flag emoji** (`vpn use 🇸🇪`) when
 you want something durable: node names carry numbering, `WlFl`/`LTE` suffixes
 and trailing spaces that providers change without notice.
 
-The dashboard exposes the same hierarchy: **PROXY** chooses **PRIMARY**,
-**QUATTRO**, or **DIRECT**; each subscription group chooses its own AUTO group
-or a node. DIRECT still sends traffic through the TUN and DNS hijack, but mihomo
-dials out the physical interface, so nothing has to be stopped.
+The dashboard exposes the same hierarchy: **PROXY** chooses **PRIMARY** or
+**QUATTRO**, and each subscription group contains only provider nodes.
+`profile.store-selected` persists selections in
+`/var/lib/private/mihomo/cache.db`. With no valid cached choice, Mihomo uses
+the first available member. Runtime state does not need to be deleted.
 
-**All choices stick across reboots** (`profile.store-selected`, cached in
-`/var/lib/private/mihomo/cache.db`). DIRECT remains DIRECT until explicitly
-changed, and both subscription groups retain their independent node choices.
-Deleting `cache.db` selects Primary and its AUTO group.
+Changing servers does not change routing policy. Direct destinations still
+pass through the TUN, but Mihomo connects through the physical interface.
+Stopping Mihomo also removes its DNS handling; it is not a routing toggle.
+External shortcuts should invoke `vpnp` or `vpn select <name>`, not mode commands.
 
-To stop the service outright — `systemctl stop mihomo` — you do not need it for
-this, and it also takes the DNS hijack down with it. DIRECT is the toggle you
-want.
+For a zapret cutover, pause it rather than uninstalling it, then verify video
+playback, Discord voice/screenshare and a Sober game join. Confirm their
+connections select `PROXY` while an unrelated destination selects `DIRECT`.
+Configuration evaluation does not prove these live application paths.
 
 The public template is `common/dotfiles/mihomo.yaml`. `mihomo-config` serializes the
 three private strings into a root-only `/run/mihomo/config.yaml`; Mihomo receives
