@@ -403,12 +403,15 @@ The service retains its process sandbox: it does not identify desktop apps by
 process. Discord can assign new IP-addressed media endpoints, which may need
 additional rules. Shared service domains can also include related products.
 
-**`SUPER + SHIFT + V`** opens a two-action picker. **Switch subscription** opens
+**`SUPER + SHIFT + V`** opens the VPN picker. **Switch subscription** opens
 **Primary** and **Quattro**, each retaining its selected server. **Choose server**
 opens only the active subscription's live nodes, fastest first. Dismissing
-either submenu leaves the selection unchanged. There are no DIRECT, AUTO or
-on/off controls. The picker is also available as `vpnp` and as **VPN server**
-in desktop tools:
+either submenu leaves the selection unchanged. **Edit config** opens the public
+`common/dotfiles/mihomo.yaml` template in Zed (`zeditor`), including when Mihomo
+is unavailable; it never opens the private rendered configuration. Saving edits
+does not activate them: apply them with an approved NixOS rebuild.
+There are no DIRECT, AUTO or on/off controls. The picker is also available as
+`vpnp` and as **VPN server** in desktop tools:
 
 ```
 vpn                              # show the selected server

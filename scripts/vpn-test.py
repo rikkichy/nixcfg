@@ -21,7 +21,8 @@ expression = f"""let
     curl = null; jq = null; libnotify = null; gnugrep = null; gnused = null; coreutils = null;
   }};
   menu = import {repo}/hosts/nix/modules/home/fuzzel.nix {{
-    config = {{}}; pkgs.writeShellApplication = x: x; lib.mkAfter = x: x;
+    config = {{}}; pkgs.writeShellApplication = x: x;
+    lib = (builtins.getFlake "path:{repo}").inputs.nixpkgs.lib // {{ mkAfter = x: x; }};
     inputs = {{}}; nixcfgPath = "{repo}";
   }};
 in {{ vpn = vpn.text;
@@ -117,12 +118,14 @@ printf '%s\\n' "$choice"
             assert run("vpn").stdout.rstrip("\n") == names["primary"][1]
 
             # Invalid indexes and dismissal at either level cannot change selection.
-            for choice in ("-1", "01", "2", "9" * 100, "1 + 1", "", None):
+            for choice in ("-1", "01", "3", "9" * 100, "1 + 1", "", None):
                 for prefix in ((), ("0",), ("1",)):
                     run("vpnp", choices=(*prefix, choice))
                     assert get("PROXY")["now"] == "PRIMARY"
                     assert get("PRIMARY")["now"] == names["primary"][1]
                     assert get("QUATTRO")["now"] == "Other 2"
+            run("vpnp", choices=("1", "2"))
+            assert get("PRIMARY")["now"] == names["primary"][1]
             for command in ("on", "off", "toggle", "auto"):
                 assert run("vpn", command, check=False).returncode == 2
             assert run("vpn", "select", "not a server", check=False).returncode != 0

@@ -209,31 +209,34 @@ in
 
     (writeShellApplication {
       name = "vpnp";
-      runtimeInputs = [ desktopPicker ];
+      runtimeInputs = [ desktopPicker pkgs.zed-editor ];
       text = ''
-        cur=$(vpn status)
-        active=$(vpn subscription)
         menu=$(
           printf '%s\x00icon\x1f%s\n' \
             "Switch subscription" network-vpn \
             "Choose server" network-server \
-            | desktop-picker --index --prompt "vpn [$active · $cur]> " \
-                --lines 2 --width 48
+            "Edit config" document-edit \
+            | desktop-picker --index --prompt "vpn> " \
+                --lines 3 --width 48
         ) || exit 0
 
         case "$menu" in
           0)
+            active=$(vpn subscription)
             action=subscription
             mapfile -t rows < <(vpn subscriptions)
             prompt="subscription [$active]> "
             lines=2
             ;;
           1)
+            active=$(vpn subscription)
+            cur=$(vpn status)
             action=select
             mapfile -t rows < <(vpn nodes)
             prompt="server [$active · $cur]> "
             lines=14
             ;;
+          2) exec zeditor ${lib.escapeShellArg "${nixcfgPath}/common/dotfiles/mihomo.yaml"} ;;
           *) exit 0 ;;
         esac
 
