@@ -221,6 +221,152 @@ and SSH before leaving that console; no network activation is automatic here.
 `nixos-server` has no Mihomo service, configuration renderer or SOPS import.
 It needs no `/etc/mihomo` inputs or VPN age identity.
 
+#### Minecraft deployment and access
+
+The server module pins Leaf **1.21.11 build 179**, Java 21, a **20-player ceiling**
+and `-Xms2G -Xmx8G`. The service's total memory cap is 12 GiB; heap size is not
+total process memory, and neither setting guarantees 20-player performance.
+Online authentication, secure profiles and the whitelist are required.
+The whitelist is deliberately empty: ordinary players cannot join until admitted.
+No plugins, OP grants, RCON, query, JMX or management listener are provisioned.
+Plugins execute as the game user and must be treated as code.
+
+Deployment, DNS and router changes require separate operator authorization:
+
+1. On the server, inspect `free -h`, `df -h /var/lib /var/backup` and
+   `ip -br -4 address`. If a directory is absent, inspect its nearest existing
+   parent instead. Allow room for the 12 GiB service cap plus the OS and other
+   workloads, and approximately eight compressed full backups plus the live
+   world. A 16 GiB host is only a starting estimate, not verified capacity.
+   Leave deployment pending on undersized hardware; do not silently reduce the
+   selected capacity.
+2. Add approved account names mapped to their real canonical UUIDs in
+   `services.minecraft-server.whitelist` in the module. Obtain verified
+   identities from the account owners and the official Minecraft profile
+   service; do not invent UUIDs or grant OP. Names and UUIDs become public
+   repository and Nix store data: get the owners' approval first.
+   `whitelist.json` is a declarative store symlink; console `whitelist add`
+   and edits to the generated file are not durable configuration.
+3. Back up any existing `/var/lib/minecraft` before starting this pinned version.
+   Never open a newer-version world with an older server. Evaluate/build the
+   intended configuration through the approved deployment workflow, then obtain
+   separate authorization to activate. From `/etc/nixos` on the server:
+
+   ```sh
+   sudo nixos-rebuild switch --flake path:/etc/nixos#nixos-server
+   ```
+
+   For whitelist changes, use that same workflow and restart
+   `minecraft-server.service` after activation to load the managed list.
+   Do not deploy or restart while a backup or restore is running.
+4. Confirm local startup before publishing the endpoint. Initial Leaf bootstrap
+   may download vanilla/runtime artifacts into the data directory; the pinned
+   launcher is not an offline closure of first-start state. Preserve outbound
+   DNS/HTTPS for bootstrap and online account authentication. Observe actual
+   downloads rather than guessing a hostname allowlist.
+5. Reserve the server's LAN IPv4 in router DHCP. Compare router WAN IPv4 with
+   the public IPv4 reported by the ISP/router's external-address check. With
+   public IPv4, forward WAN **TCP 25565** to server **TCP 25565**. For controllable
+   double NAT, forward at both routers. A directly public server instead needs
+   the equivalent provider firewall allowance. Do not enable DMZ/UPnP or forward
+   SSH/RCON for Minecraft. Existing SSH, Hysteria and Avahi policy stays separate.
+6. Create an **A** record named `mc` with the real public IPv4 and TTL 300 where
+   supported. Leave the `rii.cat` apex and unrelated records unchanged; existing
+   conflicting `mc` records require operator review. With Cloudflare, select
+   DNS-only/grey cloud: ordinary HTTP proxying does not carry Minecraft.
+   No SRV record is needed on the default port. Do not create AAAA: shared
+   networking disables IPv6. No reverse HTTP proxy or extra TLS certificate
+   is needed.
+7. With private/CGNAT WAN IPv4 and no controllable upstream router, leave public
+   deployment pending until the ISP supplies inbound-reachable IPv4. No VPN,
+   tunnel or paid proxy is substituted. Update the A record when the address
+   changes; automated DDNS is not provisioned.
+8. Friends use **Minecraft Java 1.21.11 → Multiplayer → Add Server →
+   `mc.rii.cat`**, with genuine authenticated whitelisted accounts. Check access
+   from outside the LAN; NAT hairpin behavior is not Internet reachability
+   evidence. Public DNS reveals the server IP. Whitelisting, firewall rules and
+   service isolation are not DDoS protection.
+
+Administration over the existing SSH connection:
+
+```sh
+sudo journalctl -u minecraft-server -f
+sudo systemctl status minecraft-server minecraft-backup.timer
+sudo systemctl start minecraft-backup.service
+sudo timeout 5s sh -c 'printf "list\n" > /run/minecraft-server.stdin'
+```
+
+Use FIFO console commands only while the service is running. No RCON password
+or new SSH credential is needed. Pin updates deliberately, back up first and
+test the chosen build before inviting players; do not auto-fetch latest JARs.
+After authorized deployment, operator acceptance includes external A resolution,
+an empty AAAA answer, TCP 25565 reachability, no exposed RCON/query service,
+a whitelisted client's join and persisted world edit across graceful restart,
+and rejection of nonwhitelisted and unauthenticated clients. Port scans do not
+prove authentication. Inspect the timer schedule and a manual archive privately.
+Report observed capacity only, not the configured player ceiling as a load result.
+
+#### Minecraft backups and recovery
+
+`hosts/nixos-server/modules/system/minecraft.nix` runs Leaf 1.21.11 build 179
+with Java 21. The Minecraft EULA is accepted. State lives in
+`/var/lib/minecraft`; root-only completed archives live in `/var/backup/minecraft`.
+At **05:00 Europe/Moscow** the persistent timer stops the game, requires a clean
+stop, archives the entire tree without dereferencing links, publishes by rename,
+and retains seven completed archives. Cleanup attempts restart even after a
+failed archive or forced stop. A missed timer can cause maintenance downtime
+after boot. A successful systemd start job is not proof that Leaf finished loading.
+
+Invoke backups only through `sudo systemctl start minecraft-backup.service`.
+Systemd serializes this unit; do not concurrently rebuild, restart the game or
+restore. A stopped game is skipped without starting it or pruning archives.
+Failed copies do not publish recovery points or prune completed archives.
+Local root-only archives resist deletion by the game account, not root compromise,
+disk failure or host loss. Keep an operator-controlled external copy.
+
+Restoration requires separate operator approval and a trusted completed archive:
+
+1. Stop scheduling with `sudo systemctl stop minecraft-backup.timer`. Wait for
+   any in-flight backup (including its cleanup) to finish; inspect
+   `sudo systemctl status minecraft-backup.service` until inactive or failed.
+   Do not stop an in-flight backup merely to bypass this wait.
+2. Run `sudo systemctl stop minecraft-server.service`. Require
+   `sudo systemctl show minecraft-server -p ActiveState -p Result -p MainPID`
+   to report `inactive`, `success`, and `0`. Investigate a forced/failed stop.
+3. In a root shell, assign `archive` to the trusted absolute archive path.
+   Run `gzip -t "$archive"` and `tar -tvzf "$archive"` and review all members:
+   require only `minecraft/` and its descendants, no absolute names, no `..`
+   path components, no escaping hard-link targets, and no device/FIFO entries.
+   Preserve symbolic links as links (managed files may link into `/nix/store`);
+   never use tar's dereference option. Do not extract an untrusted archive.
+4. Extract into a fresh root-only staging directory, never onto the live tree:
+
+   ```sh
+   stage=$(mktemp -d /var/lib/minecraft-restore.XXXXXXXX)
+   chmod 0700 "$stage"
+   tar --extract --gzip --file "$archive" --directory "$stage" --no-same-owner
+   test -d "$stage/minecraft" && test ! -L "$stage/minecraft"
+   displaced=$(mktemp -d /var/lib/minecraft-displaced.XXXXXXXX)
+   mv /var/lib/minecraft "$displaced/minecraft"
+   mv "$stage/minecraft" /var/lib/minecraft
+   chown -hR minecraft:minecraft /var/lib/minecraft
+   chmod 0700 /var/lib/minecraft
+   rmdir "$stage"
+   ```
+
+   Execute checked commands one at a time, or use a shell with `set -e`; stop
+   on any error. Keep the printed/recorded `displaced` path for rollback.
+   `chown -hR` does not traverse symlinks.
+5. Start with the matching server/config version, then inspect
+   `sudo journalctl -u minecraft-server -f` and verify the actual world and
+   player state. Startup regenerates managed EULA, whitelist and properties.
+   A Nix generation rollback alone does not roll back world data; never open
+   a newer-version world with an older server.
+6. Preserve the displaced tree until acceptance. If recovery fails, stop the
+   game, move the attempted tree to another unique recovery directory, and move
+   `"$displaced/minecraft"` back to `/var/lib/minecraft`. Start the matching
+   version and verify it. Restart `minecraft-backup.timer` only after acceptance.
+
 ### Remote SSH over Hysteria2
 
 The opt-in `hosts/nixos-server/modules/system/hysteria.nix` service transports
