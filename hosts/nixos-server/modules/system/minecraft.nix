@@ -2,9 +2,10 @@
 
 let
   dataDir = "/var/lib/minecraft";
+  defaultLives = 3;
   # Offline UUIDs use UUID.nameUUIDFromBytes(("OfflinePlayer:" + exactName).getBytes(UTF_8)).
   # These approved names/UUIDs are public; AuthMe credentials stay in /var/lib/minecraft.
-  whitelist = {
+  whitelistSeed = {
     Rikkichy = "0af73b47-8167-37f3-9cdf-603b71c44efe";
     ekhosmerti = "c17f9db3-2f54-309f-97e7-abc962386de4";
     Denay39 = "c8370c8e-da88-3adb-bc8d-da394e793703";
@@ -31,13 +32,13 @@ let
       (name: value: "${name}=${if builtins.isBool value then lib.boolToString value else toString value}")
       serverProperties) + "\n"
   );
-  whitelistFile = pkgs.writeText "whitelist.json" (builtins.toJSON (
-    lib.mapAttrsToList (name: uuid: { inherit name uuid; }) whitelist
+  whitelistSeedFile = pkgs.writeText "whitelist-seed.json" (builtins.toJSON (
+    lib.mapAttrsToList (name: uuid: { inherit name uuid; }) whitelistSeed
   ));
   operatorsFile = pkgs.writeText "ops.json" (builtins.toJSON [
     {
       name = "Rikkichy";
-      uuid = whitelist.Rikkichy;
+      uuid = whitelistSeed.Rikkichy;
       level = 4;
       bypassesPlayerLimit = false;
     }
@@ -85,10 +86,12 @@ let
           - /login
           - /log
           - /l
+          - /register
+          - /reg
           - /2fa
           - /totp
         ForceSingleSession: true
-        kickNonRegistered: true
+        kickNonRegistered: false
         kickOnWrongPassword: true
         allowMovement: false
         loginTimeout: 60
@@ -103,8 +106,8 @@ let
         passwordHash: ARGON2ID
         legacyHashes: []
       registration:
-        # Reserve names through the operator; never allow public first-claim registration.
-        enabled: false
+        # Whitelisted newcomers register before entering the world.
+        enabled: true
         force: true
         type: PASSWORD
         secondArg: CONFIRMATION
@@ -143,6 +146,47 @@ let
     commands:
       forceDefaultPermissions: true
   '';
+  limitedLives = pkgs.fetchurl {
+    url = "https://cdn.modrinth.com/data/LvTKDASD/versions/g6fmkYed/LimitedLives-4.2.2.jar";
+    sha512 = "6c7490caa5dcb6f87def429ac7d896d34e99823fa83100461f259bdee92eb4178badf8b61c123d0aefe653cbee285ecffb0f08ae2dff45b40cd96d459a2f16df";
+  };
+  limitedLivesConfig = pkgs.writeText "limitedlives-config.yml" ''
+    lives:
+      default: ${toString defaultLives}
+      max: 4
+      min: 0
+    death-causes: []
+    worlds-blacklist:
+      list: []
+      act-as-whitelist: false
+    keep-inventory:
+      enabled: false
+    grace-period:
+      enabled: false
+      duration: 60
+      triggers: [FIRST_JOIN, REVIVE]
+      bypass-causes: []
+      disabled-damage-causes: []
+    commands:
+      punishment:
+        death:
+          - "minecraft:ban %player% Out of lives! Ask a friend to donate a life."
+        respawn: []
+      revive:
+        - "minecraft:pardon %player%"
+    obtaining:
+      stealing: true
+      crafting:
+        enabled: false
+  '';
+  playerPermissionsFile = pkgs.writeText "permissions.yml" ''
+    miku.lives.player:
+      description: View and donate your own LimitedLives lives
+      default: true
+      children:
+        limitedlives.get.self: true
+        limitedlives.give: true
+  '';
   leaf = pkgs.stdenvNoCC.mkDerivation {
     pname = "leaf-minecraft-server";
     version = "1.21.11-179";
@@ -167,22 +211,36 @@ let
     export PATH=${lib.makeBinPath [ pkgs.coreutils ]}
     umask 0077
     if [[ ! -e .declarative ]]; then
-      for file in eula.txt whitelist.json server.properties ops.json; do
+      for file in eula.txt whitelist.json server.properties ops.json permissions.yml; do
         if [[ -e "$file" || -L "$file" ]]; then
           cp -P --backup=numbered -- "$file" "$file.stateful"
         fi
       done
     fi
     ln -sfn ${eulaFile} eula.txt
-    ln -sfn ${whitelistFile} whitelist.json
+    # Preserve the current list when converting a store symlink to runtime state.
+    if [[ -L whitelist.json || ! -e whitelist.json ]]; then
+      whitelistSource=${whitelistSeedFile}
+      if [[ -L whitelist.json ]]; then
+        whitelistSource=whitelist.json
+      fi
+      whitelistTmp=$(mktemp .whitelist.XXXXXXXX)
+      trap 'rm -f -- "$whitelistTmp"' EXIT
+      install -m 0600 -- "$whitelistSource" "$whitelistTmp"
+      mv -T -- "$whitelistTmp" whitelist.json
+      trap - EXIT
+    fi
+    chmod 0600 whitelist.json
     rm -f ops.json
     install -m 0600 ${operatorsFile} ops.json
+    rm -f permissions.yml
+    install -m 0600 ${playerPermissionsFile} permissions.yml
     # Properties must be writable: Minecraft regenerates them during startup.
     rm -f server.properties
     cp ${propertiesFile} server.properties
     chmod 0600 server.properties
     install -m 0644 ${../../dotfiles/minecraft/server-icon.png} server-icon.png
-    mkdir -p plugins/MiniMOTD plugins/AuthMe plugins/SkinsRestorer
+    mkdir -p plugins/MiniMOTD plugins/AuthMe plugins/SkinsRestorer plugins/LimitedLives
     install -m 0644 ${miniMOTD} plugins/MiniMOTD.jar
     # MiniMOTD saves normalized config on load, so this must be a writable copy.
     rm -f plugins/MiniMOTD/main.conf
@@ -193,6 +251,10 @@ let
     rm -f plugins/AuthMe/config.yml plugins/SkinsRestorer/config.yml
     install -m 0600 ${authMeConfig} plugins/AuthMe/config.yml
     install -m 0600 ${skinsRestorerConfig} plugins/SkinsRestorer/config.yml
+    install -m 0644 ${limitedLives} plugins/LimitedLives.jar
+    # Life counts and storage settings are runtime state; replace only gameplay policy.
+    rm -f plugins/LimitedLives/config.yml
+    install -m 0600 ${limitedLivesConfig} plugins/LimitedLives/config.yml
     touch .declarative
     mkfifo -m 0600 /tmp/minecraft.stdin
     exec 3<> /tmp/minecraft.stdin
@@ -261,6 +323,49 @@ in
       Restart = lib.mkForce "always";
       RestartSec = "10s";
     };
+  };
+
+  systemd.timers.minecraft-lives-reset = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "Mon *-*-* 06:00:00 Europe/Moscow";
+      Persistent = true;
+    };
+  };
+  systemd.services.minecraft-lives-reset = {
+    description = "Weekly Minecraft life reset for online and offline players";
+    requires = [ "minecraft-server.service" ];
+    after = [ "minecraft-server.service" "minecraft-backup.service" ];
+    path = [ pkgs.docker pkgs.coreutils pkgs.gnugrep ];
+    serviceConfig = {
+      Type = "oneshot";
+      TimeoutStartSec = "6min";
+      UMask = "0077";
+    };
+    script = ''
+      set -euo pipefail
+      # systemd readiness only means Docker started, not that plugins are loaded.
+      started=$(docker inspect --format '{{.State.StartedAt}}' minecraft)
+      ready=false
+      for ((attempt=0; attempt<60; attempt++)); do
+        [[ "$(docker inspect --format '{{.State.Running}}' minecraft)" = true ]]
+        logs=$(docker logs --since "$started" minecraft 2>&1)
+        if grep -F 'Done (' <<< "$logs" > /dev/null; then
+          ready=true
+          break
+        fi
+        sleep 5
+      done
+      if [[ "$ready" != true ]]; then
+        echo "Minecraft did not finish startup; life reset not sent" >&2
+        exit 1
+      fi
+      # AnnoyingAPI's !all_players includes offline players, unlike vanilla @a.
+      # LimitedLives runs its revive/pardon hook for each zero-to-positive change.
+      timeout 5s docker exec minecraft ${pkgs.bash}/bin/bash -c \
+        'printf "%s\n" "limitedlives:lives set ${toString defaultLives} !all_players" > /tmp/minecraft.stdin'
+      echo "Submitted weekly reset to ${toString defaultLives} lives for all known players"
+    '';
   };
 
   systemd.tmpfiles.rules = [

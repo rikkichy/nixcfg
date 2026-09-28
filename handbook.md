@@ -231,12 +231,14 @@ memory limit with no additional swap allowance. Heap size is not total process
 memory, and neither setting guarantees 20-player performance.
 The server uses **offline mode** (`online-mode=false`, secure profiles disabled).
 Pinned [AuthMeReloaded 6.0.1](https://github.com/AuthMe/AuthMeReloaded/releases/tag/6.0.1)
-requires password authentication before joining; Mojang account ownership is not
-verified. Sessions, premium auto-login, proxy login and public self-registration
-are disabled. Unregistered names are rejected. Passwords use Argon2id; five failed
-attempts trigger a 15-minute IP ban. SQLite failure is configured to stop the server.
-The whitelist contains **Rikkichy**, **ekhosmerti** and **Denay39** with exact-case
-offline UUIDs. **Rikkichy is the sole level-4 operator**, without a player-limit
+requires password authentication before entering the world; Mojang account
+ownership is not verified. Sessions, premium auto-login and proxy login are
+disabled. Whitelisted newcomers can register through the pre-join dialog;
+existing accounts must log in. Passwords use Argon2id; five failed attempts trigger
+a 15-minute IP ban. SQLite failure is configured to stop the server.
+The whitelist seed contains **Rikkichy**, **ekhosmerti** and **Denay39** with exact-case
+offline UUIDs. The live whitelist is writable persistent server state.
+**Rikkichy is the sole level-4 operator**, without a player-limit
 bypass or AuthMe exemption. The module regenerates `ops.json` at startup:
 runtime `/op` or `/deop` commands are not durable policy.
 The server-list title is **WhatsApp Miku SMP**, rendered in a green-to-aqua
@@ -254,9 +256,10 @@ restores skins by name; authenticated players can use `/skin set <skinName>` and
 `/skin clear`. Skin lookups are not account verification. Cancelled logins do not
 trigger skin updates, and AuthMe's pre-login command list does not permit skin
 commands. No RCON, query, JMX or management listener is provisioned.
-MiniMOTD, AuthMe and SkinsRestorer are the provisioned plugins. All run as the
-game user and must be treated as code. Their public config templates are owned
-by the module and copied at startup; account databases and skin caches persist.
+MiniMOTD, AuthMe, SkinsRestorer and LimitedLives are the provisioned plugins.
+All run as the game user and must be treated as code. Their public config
+templates are owned by the module and copied at startup; account databases,
+skin caches and saved life counts persist.
 It runs as UID/GID **25565**, matching the host `minecraft` account, with all
 capabilities dropped, no new privileges, a read-only image and a private `/tmp`
 tmpfs with `exec,nosuid,nodev`: Java loads SQLite JDBC, JNA and Netty native
@@ -276,13 +279,18 @@ Deployment, DNS and router changes require separate operator authorization:
    world. A 16 GiB host is only a starting estimate, not verified capacity.
    Leave deployment pending on undersized hardware; do not silently reduce the
    selected capacity.
-2. Add approved exact-case names and **offline UUIDs** to the module's `whitelist`
-   binding, and provision AuthMe accounts as described below. The UUID is Java
-   `UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(UTF_8))`, not a Mojang
-   profile UUID. Changing case changes the offline UUID. Names and UUIDs become
-   public repository and Nix store data; passwords must never enter either.
-   `whitelist.json` is a declarative store symlink; console `whitelist add`
-   and edits to the generated file are not durable configuration.
+2. The module's `whitelistSeed` initializes a missing `whitelist.json`. An existing
+   file is retained; a store symlink is atomically converted to a writable copy
+   of its current contents. Seed changes do not overwrite an existing list.
+   After logging in as Rikkichy, manage membership with `/whitelist list`,
+   `/whitelist add PlayerName` and `/whitelist remove PlayerName`. These commands
+   persist under `/var/lib/minecraft/whitelist.json`, survive restarts/rebuilds
+   and are included in backups; no deployment is needed for membership changes.
+   Use exact-case names and coordinate AuthMe registration as described below.
+   Offline UUIDs use Java
+   `UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(UTF_8))`, not Mojang
+   profile UUIDs; changing case changes identity. Seed names/UUIDs are public
+   repository data, but passwords must never enter the repository or Nix store.
 3. Back up any existing `/var/lib/minecraft` before starting this pinned version.
    Never open a newer-version world with an older server.
    Switching online/offline identity changes player UUIDs: inventory, ender chest,
@@ -302,8 +310,8 @@ Deployment, DNS and router changes require separate operator authorization:
    sudo nixos-rebuild switch --flake path:/etc/nixos#nixos-server
    ```
 
-   For whitelist changes, use that same workflow and restart
-   `minecraft-server.service` after activation to load the managed list.
+   This deployment is required for startup-policy changes, not ordinary
+   `/whitelist add` or `/whitelist remove` commands.
    Do not deploy or restart while a backup or restore is running.
 4. Confirm local startup and working AuthMe login enforcement before publishing
    the endpoint. A running Leaf process does not prove that an authentication
@@ -357,21 +365,28 @@ back up first and test the chosen build before inviting players; do not
 auto-fetch latest JARs.
 After authorized deployment, operator acceptance includes external A resolution,
 an empty AAAA answer, TCP 25565 reachability, no exposed RCON/query service,
-a whitelisted client's authenticated join and persisted world edit across graceful
-restart, and rejection of nonwhitelisted names, unregistered names and wrong
-passwords. Test a second client impersonating Rikkichy: without the password it
-must not enter the world or execute operator commands. Cancelling or timing out
+a whitelisted newcomer completing registration and an existing account logging
+in, with persisted world edits across graceful restart. Nonwhitelisted names and
+wrong passwords must be rejected. After Rikkichy is registered, test a second
+client impersonating that name: without the password it must not enter the world
+or execute operator commands. Cancelling or timing out
 the login dialog must disconnect. Check skins after login. Port scans do not
 prove authentication. Inspect the timer schedule and a manual archive privately.
 Report observed capacity only, not the configured player ceiling as a load result.
 
 #### Minecraft account provisioning
 
-Account creation requires separate operator approval; whitelist and OP policy
-do not create passwords. Keep public forwarding closed until accounts are
-reserved and authentication is checked, especially for **Rikkichy**. The
+Whitelisted players can connect using their exact name and create a unique
+12–64-character password in the registration dialog, confirming it twice.
+On subsequent connections they receive a login dialog. Where command-based
+authentication is available, use `/register <password> <password>` and
+`/login <password>`. Registration/login must finish before gameplay.
+
+Offline whitelisting is not proof of identity: the first person using an
+unregistered whitelisted name can claim it. Reserve **Rikkichy** before exposing
+the server, and coordinate first registration with each friend. The
 `authMeConfig` and `skinsRestorerConfig` module bindings own public policy, not
-credentials. Do not enable public `/register`: anyone could claim a listed name.
+credentials. Whitelist and OP entries do not themselves create passwords.
 
 After approved deployment, with the container running and AuthMe successfully
 enabled, an operator can reserve each of the three names over existing SSH using
@@ -414,6 +429,106 @@ AuthMe account hashes, IP history and any TOTP secrets live under
 `plugins/SkinsRestorer`. These are private runtime data, not Git/Nix inputs.
 Full-world backups include them. Protect external copies accordingly, and remember
 that restoring an old archive also rolls back passwords and authentication state.
+
+#### LimitedLives gameplay
+
+[LimitedLives 4.2.2](https://modrinth.com/plugin/limitedlives/version/g6fmkYed)
+is the pinned stable release for Paper-compatible Minecraft 1.21.11. Its required
+AnnoyingAPI dependency is embedded; PlaceholderAPI and WorldGuard are optional
+and are not provisioned.
+
+Edit `limitedLivesConfig` in `hosts/nixos-server/modules/system/minecraft.nix`.
+Startup installs it as `/var/lib/minecraft/plugins/LimitedLives/config.yml`.
+Use the approved rebuild/restart workflow for durable changes; direct edits to
+that generated config are overwritten on the next container start.
+
+| Setting | Configured behavior | Alternatives |
+| --- | --- | --- |
+| `lives.default`, `max`, `min` | 3 starting, 4 maximum, punishment at 0 | Change starting/cap/threshold values |
+| `death-causes` | Empty list: all death causes cost a life | Restrict to causes such as `PLAYER_ATTACK` or `FALL` |
+| `commands.punishment.death` | Vanilla name ban immediately at zero lives; no expiry | Console commands with `%player%` and `%killer%` placeholders |
+| `commands.revive` | Vanilla pardon when lives increase above zero | Custom console commands |
+| `obtaining.stealing` | A PvP killer gains a life, up to their maximum | Set `false` to disable |
+| `obtaining.crafting.enabled` | Disabled: no craftable life item | Enable with a configured recipe, item, amount and trigger |
+| `grace-period` | Disabled; template supplies 60 seconds for `FIRST_JOIN`/`REVIVE` if enabled | Duration, triggers and cause exceptions |
+| `worlds-blacklist` | Empty: all worlds | Exclude worlds, or set `act-as-whitelist=true` to allow only listed worlds |
+| `keep-inventory.enabled` | Disabled: vanilla gamerule behavior is retained | Plugin-specific keep/drop/destroy rules; requires `keepInventory=false` |
+
+Do not enable the plugin's inventory rules casually: upstream warns of inventory
+loss if combined with the vanilla keepInventory gamerule. Its rule index is
+`max lives - current lives`, not a historical death counter.
+
+Operator commands (amount precedes the target name):
+
+```text
+/lives get Rikkichy
+/lives set 3 Rikkichy
+/lives add 1 ekhosmerti
+/lives remove 1 Denay39
+/lifereload
+```
+
+A surviving player rescues a banned friend with:
+
+```text
+/lives give 1 Rikkichy
+```
+
+This transfers a life, rather than creating one. The donor needs at least two
+lives and retains at least one; the recipient may be offline. Moving from zero
+to one life triggers `minecraft:pardon`, allowing the rescued player to reconnect
+and authenticate with one life. No timed-ban plugin is used.
+If everyone is at zero before the weekly reset, the operator can run `lives add 1 <name>` through the
+existing FIFO console to rescue someone. A bare pardon does not restore lives.
+Revival intentionally pardons any name ban for that player, including a manual
+moderation ban; this friends-server policy does not distinguish ban reasons.
+
+**Weekly reset:** `minecraft-lives-reset.timer` runs on **Monday at 06:00
+Europe/Moscow**, after the daily 05:00 backup slot. It sets every known player's
+lives to the configured default (3), including offline players and players with
+4 lives. Zero-to-positive changes invoke the same pardon hook as donations.
+The world and inventories are not reset. Players can donate to rescue friends
+before Monday; this is a shared calendar schedule, not seven days per death.
+
+The persistent timer catches a missed run after host downtime. Its service
+starts Minecraft if stopped, orders itself after any queued backup, and waits
+up to five minutes for Leaf's startup-complete log before writing
+`limitedlives:lives set 3 !all_players` through the private console FIFO.
+The pinned plugin's `!all_players` selector includes offline players; vanilla
+`@a` does not. `defaultLives` in the module supplies both new-player lives and
+the reset amount. No database edits or additional plugin are needed.
+
+Inspect `systemctl list-timers minecraft-lives-reset.timer` and
+`journalctl -u minecraft-lives-reset.service` on the server. A successful service
+means the command was submitted, not that the plugin acknowledged every change;
+check the Minecraft console's per-player responses and `/lives get <name>` for
+acceptance. Startup or console transport failures fail the service without a
+reset retry. Manual runs of the service also reset lives immediately.
+
+The module's `playerPermissionsFile` installs managed `/data/permissions.yml`.
+Its default parent permission grants `limitedlives.get.self` and
+`limitedlives.give`, so ordinary authenticated players can check their own lives
+and donate. No admin add/set/remove, ban/pardon, bypass or wildcard permissions
+are granted. AuthMe still blocks `/lives` before login. Operator commands retain
+their upstream permissions; `limitedlives.bypass` defaults to false even for
+operators, so Rikkichy is not automatically exempt from life loss.
+`limitedlives.max.<number>` can override a player's cap; no permission-manager
+plugin is required for the two default player grants.
+
+`/lifereload` rereads the runtime gameplay config. Use the approved restart
+workflow for managed changes, especially permissions or crafting recipes.
+
+Life counts are UUID-keyed persistent plugin state under
+`/var/lib/minecraft/plugins/LimitedLives`, included in full-world backups.
+Startup replaces only the JAR and `config.yml`, not storage settings or data.
+Changing `lives.default` affects players without a stored life count; it does not
+reset saved counts. Lowering the maximum does not automatically clamp existing
+counts either. Use `/lives set 3 <name>` for a deliberate reset, rather than
+deleting storage. Existing spectators need an operator to restore their survival
+mode; this policy does not switch gamemodes. Restoring a backup also restores
+its saved life counts and vanilla ban list.
+See the [pinned upstream configuration](https://github.com/srnyx/limited-lives/blob/4.2.2/src/main/resources/config.yml)
+for feature filters, grace-period exceptions and complete recipe options.
 
 #### Minecraft backups and recovery
 
@@ -469,8 +584,9 @@ Restoration requires separate operator approval and a trusted completed archive:
    `chown -hR` does not traverse symlinks.
 5. Start with the matching server/config version, then inspect
    `sudo docker logs -f minecraft` and verify the actual world and
-   player state. Startup regenerates managed EULA, whitelist, OP list, server
-   properties and plugin policy; authentication databases remain part of the archive.
+   player state. Startup regenerates managed EULA, OP list, server properties
+   and plugin policy; the writable whitelist and authentication databases are
+   restored from the archive.
    A Nix generation rollback alone does not roll back world data; never open
    a newer-version world with an older server.
 6. Preserve the displaced tree until acceptance. If recovery fails, stop the
