@@ -236,6 +236,8 @@ ownership is not verified. Sessions, premium auto-login and proxy login are
 disabled. Whitelisted newcomers can register through the pre-join dialog;
 existing accounts must log in. Passwords use Argon2id; five failed attempts trigger
 a 15-minute IP ban. SQLite failure is configured to stop the server.
+AuthMe's `welcome.txt` banner is disabled with `settings.useWelcomeMessage=false`;
+authentication dialogs, prompts and error messages remain enabled.
 The whitelist seed contains **Rikkichy**, **ekhosmerti** and **Denay39** with exact-case
 offline UUIDs. The live whitelist is writable persistent server state.
 **Rikkichy is the sole level-4 operator**, without a player-limit
@@ -257,10 +259,10 @@ restores skins by name; authenticated players can use `/skin set <skinName>` and
 `/skin clear`. Skin lookups are not account verification. Cancelled logins do not
 trigger skin updates, and AuthMe's pre-login command list does not permit skin
 commands. No RCON, query, JMX or management listener is provisioned.
-MiniMOTD, AuthMe, SkinsRestorer and LimitedLives are the provisioned plugins.
-All run as the game user and must be treated as code. Their public config
-templates are owned by the module and copied at startup; account databases,
-skin caches and saved life counts persist.
+MiniMOTD, AuthMe, SkinsRestorer, LimitedLives and social are the provisioned plugins.
+All run as the game user and must be treated as code. Managed public config
+templates are copied at startup; account databases, skin caches, saved life
+counts and social user data persist.
 It runs as UID/GID **25565**, matching the host `minecraft` account, with all
 capabilities dropped, no new privileges, a read-only image and a private `/tmp`
 tmpfs with `exec,nosuid,nodev`: Java loads SQLite JDBC, JNA and Netty native
@@ -433,6 +435,40 @@ AuthMe account hashes, IP history and any TOTP secrets live under
 `plugins/SkinsRestorer`. These are private runtime data, not Git/Nix inputs.
 Full-world backups include them. Protect external copies accordingly, and remember
 that restoring an old archive also rolls back passwords and authentication state.
+
+#### Social chat
+
+[social 0.7.2 for Paper](https://modrinth.com/plugin/social-communication/version/PacU9kWI)
+is hash-pinned for Minecraft 1.21.11. Players do not need a client mod, and its
+PlaceholderAPI, DiscordSRV and gestalt plugin integrations are optional.
+
+`socialChatConfig` in `hosts/nixos-server/modules/system/minecraft.nix` owns
+`plugins/social/settings/chat.yml`. There is one shared `global` channel, no
+staff channel, no channel-command aliases, and no channel icon or hover prompt.
+The groups module is disabled, so `/group` is not registered. The generic
+`/social channel` subcommand remains upstream-provided, but there are no alternate
+configured public channels to switch to. Private messages are separate from
+player-created group channels and remain enabled, along with replies, mentions
+and reactions. `socialMotdConfig` supplies a personalized Russian welcome in
+`settings/motd.yml`: the gradient server title, `здарова, $(nickname)`, life
+commands and the Monday 06:00 Moscow reset reminder. AuthMe's separate welcome
+banner stays disabled. Other social settings retain upstream defaults, including
+disabled periodic announcements. Normal join/leave and death messages remain enabled.
+
+Startup installs the JAR and writable chat/welcome policy copies; it does not overwrite
+social's database, messages or other settings. A legacy `plugins/social/settings.yml`
+would override the managed split configuration, so startup refuses it: migrate
+and remove that legacy file before using this layout. Runtime edits to
+`settings/chat.yml` and `settings/motd.yml` are overwritten at the next container start.
+Social state is included in full-world backups and must stay out of Git.
+
+After approved deployment, confirm social loads without errors and test normal
+chat, replies, `/pm` and reactions between authenticated players. Confirm
+`/group`, `/staff`, `/s`, `/global` and `/g` are not provided by social.
+AuthMe's pre-login command allowlist is unchanged: do not add social commands.
+Explicitly test that a client without successful authentication cannot send
+chat, private messages or trigger reactions. Configuration evaluation and
+source inspection are not proof of this integration.
 
 #### LimitedLives gameplay
 

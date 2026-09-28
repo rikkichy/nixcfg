@@ -94,6 +94,7 @@ let
       serverName: WhatsApp Miku SMP
       logLevel: INFO
       useAsyncTasks: true
+      useWelcomeMessage: false
       sessions:
         enabled: false
       restrictions:
@@ -162,6 +163,40 @@ let
       alwaysApplyPremium: false
     commands:
       forceDefaultPermissions: true
+  '';
+  social = pkgs.fetchurl {
+    url = "https://cdn.modrinth.com/data/SHhNKiri/versions/PacU9kWI/social-paper-0.7.2.jar";
+    sha512 = "55716cc9bed4c6e245921194505492588f4adda6a7dd9ac507825c2de37870779a04c2aaaafbbcc0b3836df3977f9b2b9d8ea68372339004fe7bb13dc6422665";
+  };
+  socialChatConfig = pkgs.writeText "social-chat.yml" ''
+    enabled: true
+    default-channel: global
+    groups:
+      enabled: false
+    channels:
+      - name: global
+        alias: null
+        inherit: null
+        color: "#FFFF55"
+        permission: null
+        commands: []
+        icon: ""
+        show-hover-text: false
+        hover-text: []
+        nickname-color: "#D3D3D3"
+        text-divider: "<gray>:raw_divider:</gray>"
+        text-color: "#FFFFFF"
+        join-by-default: true
+  '';
+  socialMotdConfig = pkgs.writeText "social-motd.yml" ''
+    enabled: true
+    message:
+      - '<bold><gradient:#25D366:#39FF14:#00D4C4>WhatsApp Miku SMP</gradient></bold>'
+      - '<gray>здарова, <green>$(nickname)</green></gray>'
+      - ""
+      - '<green>/lives</green><gray> — сколько осталось</gray>'
+      - '<green>/lives give 1 \<ник></green><gray> — спасти друга</gray>'
+      - '<gray>по понедельникам в <green>06:00 МСК</green> всем снова по <green>${toString defaultLives}</green> жизни</gray>'
   '';
   limitedLives = pkgs.fetchurl {
     url = "https://cdn.modrinth.com/data/LvTKDASD/versions/g6fmkYed/LimitedLives-4.2.2.jar";
@@ -264,7 +299,7 @@ let
     cp ${propertiesFile} server.properties
     chmod 0600 server.properties
     install -m 0644 ${../../dotfiles/minecraft/server-icon.png} server-icon.png
-    mkdir -p plugins/MiniMOTD plugins/AuthMe plugins/SkinsRestorer plugins/LimitedLives
+    mkdir -p plugins/MiniMOTD plugins/AuthMe plugins/SkinsRestorer plugins/LimitedLives plugins/social/settings
     install -m 0644 ${miniMOTD} plugins/MiniMOTD.jar
     # MiniMOTD saves normalized config on load, so this must be a writable copy.
     rm -f plugins/MiniMOTD/main.conf
@@ -279,6 +314,16 @@ let
     # Life counts and storage settings are runtime state; replace only gameplay policy.
     rm -f plugins/LimitedLives/config.yml
     install -m 0600 ${limitedLivesConfig} plugins/LimitedLives/config.yml
+    install -m 0644 ${social} plugins/social.jar
+    # Legacy settings.yml takes precedence over settings/chat.yml; fail closed.
+    if [[ -e plugins/social/settings.yml || -L plugins/social/settings.yml ]]; then
+      echo "Remove social's legacy settings.yml after migrating it to settings/ before startup" >&2
+      exit 1
+    fi
+    # Only chat and welcome policy are managed; social's database and other settings persist.
+    rm -f plugins/social/settings/chat.yml plugins/social/settings/motd.yml
+    install -m 0600 ${socialChatConfig} plugins/social/settings/chat.yml
+    install -m 0600 ${socialMotdConfig} plugins/social/settings/motd.yml
     touch .declarative
     mkfifo -m 0600 /tmp/minecraft.stdin
     exec 3<> /tmp/minecraft.stdin
