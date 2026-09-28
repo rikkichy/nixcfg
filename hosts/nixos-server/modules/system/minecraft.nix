@@ -164,10 +164,34 @@ let
     commands:
       forceDefaultPermissions: true
   '';
-  social = pkgs.fetchurl {
+  socialUpstream = pkgs.fetchurl {
     url = "https://cdn.modrinth.com/data/SHhNKiri/versions/PacU9kWI/social-paper-0.7.2.jar";
     sha512 = "55716cc9bed4c6e245921194505492588f4adda6a7dd9ac507825c2de37870779a04c2aaaafbbcc0b3836df3977f9b2b9d8ea68372339004fe7bb13dc6422665";
   };
+  gestalt = pkgs.fetchurl {
+    url = "https://raw.githubusercontent.com/myth-MC/gestalt/cbfc61912897d0661f1f392db50fb05ce6fa1c10/gestalt-bukkit.jar";
+    hash = "sha256-pNE5sLB9la/+p5ie0BH6vhN/7U5An4jK7xryCM6k8pg=";
+  };
+  # MD5 is the upstream loader's comparison format; fetchurl verifies SHA-256.
+  gestaltChecksum = pkgs.runCommand "gestalt-0.3.2.md5" { } ''
+    md5sum ${gestalt} | cut -d ' ' -f 1 > "$out"
+  '';
+  socialGestaltProperties = pkgs.writeText "social-gestalt.properties" ''
+    checksum.1=file://${gestaltChecksum}
+    server.1=file://${gestalt}
+  '';
+  social = pkgs.runCommand "social-paper-0.7.2.jar" {
+    nativeBuildInputs = [ pkgs.zip ];
+  } ''
+    cp ${socialUpstream} "$out"
+    chmod u+w "$out"
+    zip -q -d "$out" gestalt.properties
+    cp ${socialGestaltProperties} gestalt.properties
+    touch -t 198001010000 gestalt.properties
+    # Store this resource uncompressed so Nix retains both referenced files in
+    # the image closure. The loader performs no network requests for Gestalt.
+    zip -q -0 -X "$out" gestalt.properties
+  '';
   socialChatConfig = pkgs.writeText "social-chat.yml" ''
     enabled: true
     default-channel: global

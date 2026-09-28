@@ -439,8 +439,18 @@ that restoring an old archive also rolls back passwords and authentication state
 #### Social chat
 
 [social 0.7.2 for Paper](https://modrinth.com/plugin/social-communication/version/PacU9kWI)
-is hash-pinned for Minecraft 1.21.11. Players do not need a client mod, and its
-PlaceholderAPI, DiscordSRV and gestalt plugin integrations are optional.
+is hash-pinned for Minecraft 1.21.11. Players do not need a client mod.
+PlaceholderAPI and DiscordSRV integrations are optional.
+The required Gestalt 0.3.2 runtime JAR is fetched from an immutable upstream
+commit and verified by SHA-256 during the Nix build. Social's embedded
+`gestalt.properties` points both its checksum and download URLs at local
+Nix-store files, so Gestalt bootstrap needs no network access. The resource
+is stored uncompressed in the patched social JAR to preserve Nix closure
+references inside the Docker image. MD5 is used only for the upstream loader's
+local cache comparison, not artifact trust.
+The loader repairs a mismatched or partial `plugins/social/libs/gestalt.jar`
+from that local artifact. Other plugins and social's Maven libraries may still
+need network access during their first startup.
 
 `socialChatConfig` in `hosts/nixos-server/modules/system/minecraft.nix` owns
 `plugins/social/settings/chat.yml`. There is one shared `global` channel, no
