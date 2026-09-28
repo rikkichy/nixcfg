@@ -53,10 +53,27 @@ let
     # Use Minecraft's server-icon.png, not MiniMOTD's random icon pool.
     icon-enabled=false
     motds=[
-      {
-        line1="<bold><gradient:#25D366:#39FF14:#00D4C4>WhatsApp Miku SMP</gradient></bold>"
-        line2="<gray>friends, blocks <dark_gray>& <green>very silly vibes"
-      }
+      ${lib.concatMapStringsSep "\n" (subtitle: ''
+        {
+          line1="<bold><gradient:#25D366:#39FF14:#00D4C4>WhatsApp Miku SMP</gradient></bold>"
+          line2=${builtins.toJSON "<gray>${subtitle}"}
+        }
+      '') [
+        "хочу пельменей"
+        "здарова чувырло"
+        "алмазов нет, но вы держитесь"
+        "заходи, суп остывает"
+        "связь."
+        "а можно сбер спасибо"
+        "это ашибация"
+        "руслан ебень"
+        "лит энержи"
+        "алексей сковородка"
+        "колобок: новые сусеки 2027"
+        "сквазимабзабза"
+        "читать | продолжение.."
+        "большая токмачка"
+      ]}
     ]
     player-count-settings {
       max-players-enabled=false
@@ -221,8 +238,15 @@ let
     # Preserve the current list when converting a store symlink to runtime state.
     if [[ -L whitelist.json || ! -e whitelist.json ]]; then
       whitelistSource=${whitelistSeedFile}
-      if [[ -L whitelist.json ]]; then
+      if [[ -L whitelist.json && -e whitelist.json ]]; then
         whitelistSource=whitelist.json
+      elif [[ -L whitelist.json ]]; then
+        # Old image closures are not mounted in the new container. The legacy
+        # declarative list is immutable; seed it when its store target is absent.
+        [[ "$(readlink -- whitelist.json)" = /nix/store/*-whitelist.json ]] || {
+          echo "Refusing to replace an unknown dangling whitelist symlink" >&2
+          exit 1
+        }
       fi
       whitelistTmp=$(mktemp .whitelist.XXXXXXXX)
       trap 'rm -f -- "$whitelistTmp"' EXIT

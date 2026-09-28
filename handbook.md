@@ -243,7 +243,8 @@ bypass or AuthMe exemption. The module regenerates `ops.json` at startup:
 runtime `/op` or `/deop` commands are not durable policy.
 The server-list title is **WhatsApp Miku SMP**, rendered in a green-to-aqua
 gradient by pinned [MiniMOTD 2.2.5](https://modrinth.com/plugin/minimotd/version/Ch5nDFAs)
-for Paper. The second line reads “friends, blocks & very silly vibes”.
+for Paper. The second line is randomly selected from fourteen Russian subtitles
+in `miniMOTDConfig` on each server-list ping; consecutive picks can repeat.
 The 64×64 PNG at `hosts/nixos-server/dotfiles/minecraft/server-icon.png` supplies
 the Miku icon. The container startup copies it to `/data/server-icon.png` and
 installs the hash-pinned plugin as `plugins/MiniMOTD.jar`. The module owns the
@@ -280,8 +281,11 @@ Deployment, DNS and router changes require separate operator authorization:
    Leave deployment pending on undersized hardware; do not silently reduce the
    selected capacity.
 2. The module's `whitelistSeed` initializes a missing `whitelist.json`. An existing
-   file is retained; a store symlink is atomically converted to a writable copy
-   of its current contents. Seed changes do not overwrite an existing list.
+   regular file is retained; a readable symlink is atomically converted to a
+   writable copy of its contents. A legacy `/nix/store/*-whitelist.json` symlink
+   whose target is absent from the container image is converted using the seed;
+   other dangling symlinks stop startup rather than silently resetting membership.
+   Seed changes never overwrite an existing writable list.
    After logging in as Rikkichy, manage membership with `/whitelist list`,
    `/whitelist add PlayerName` and `/whitelist remove PlayerName`. These commands
    persist under `/var/lib/minecraft/whitelist.json`, survive restarts/rebuilds
