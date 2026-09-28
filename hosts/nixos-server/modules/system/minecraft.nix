@@ -2,16 +2,21 @@
 
 let
   dataDir = "/var/lib/minecraft";
-  # Verified account names and canonical UUIDs are public repository/store data.
-  whitelist = { };
+  # Offline UUIDs use UUID.nameUUIDFromBytes(("OfflinePlayer:" + exactName).getBytes(UTF_8)).
+  # These approved names/UUIDs are public; AuthMe credentials stay in /var/lib/minecraft.
+  whitelist = {
+    Rikkichy = "0af73b47-8167-37f3-9cdf-603b71c44efe";
+    ekhosmerti = "c17f9db3-2f54-309f-97e7-abc962386de4";
+    Denay39 = "c8370c8e-da88-3adb-bc8d-da394e793703";
+  };
   serverProperties = {
     server-ip = "";
     server-port = 25565;
     max-players = 20;
-    online-mode = true;
+    online-mode = false;
     white-list = true;
     enforce-whitelist = true;
-    enforce-secure-profile = true;
+    enforce-secure-profile = false;
     enable-rcon = false;
     enable-query = false;
     enable-jmx-monitoring = false;
@@ -19,7 +24,7 @@ let
     hide-online-players = true;
     view-distance = 8;
     simulation-distance = 6;
-    motd = "rii.cat — friends server";
+    motd = "WhatsApp Miku SMP";
   };
   propertiesFile = pkgs.writeText "server.properties" (
     lib.concatStringsSep "\n" (lib.mapAttrsToList
@@ -29,7 +34,115 @@ let
   whitelistFile = pkgs.writeText "whitelist.json" (builtins.toJSON (
     lib.mapAttrsToList (name: uuid: { inherit name uuid; }) whitelist
   ));
+  operatorsFile = pkgs.writeText "ops.json" (builtins.toJSON [
+    {
+      name = "Rikkichy";
+      uuid = whitelist.Rikkichy;
+      level = 4;
+      bypassesPlayerLimit = false;
+    }
+  ]);
   eulaFile = pkgs.writeText "eula.txt" "eula=true\n";
+  miniMOTD = pkgs.fetchurl {
+    url = "https://cdn.modrinth.com/data/16vhQOQN/versions/Ch5nDFAs/minimotd-paper-2.2.5.jar";
+    sha512 = "8516f9c92cb549984110d68270ebafee389fc25598a88431fb483677b675bf382f71f17bbef45f601f741a2333861472c96a3e8801a9c6c1dcb4e27af5923c19";
+  };
+  miniMOTDConfig = pkgs.writeText "minimotd-main.conf" ''
+    motd-enabled=true
+    # Use Minecraft's server-icon.png, not MiniMOTD's random icon pool.
+    icon-enabled=false
+    motds=[
+      {
+        line1="<bold><gradient:#25D366:#39FF14:#00D4C4>WhatsApp Miku SMP</gradient></bold>"
+        line2="<gray>friends, blocks <dark_gray>& <green>very silly vibes"
+      }
+    ]
+    player-count-settings {
+      max-players-enabled=false
+      disable-player-list-hover=true
+      hide-player-count=false
+      fake-players { fake-players-enabled=false }
+      just-x-more-settings { just-x-more-enabled=false }
+    }
+  '';
+  authMe = pkgs.fetchurl {
+    url = "https://github.com/AuthMe/AuthMeReloaded/releases/download/6.0.1/AuthMe-6.0.1-Paper.jar";
+    sha256 = "7704335e9e73a634d9d926344f77897f4c74f78f82453a59f5aa0f8d2722450a";
+  };
+  authMeConfig = pkgs.writeText "authme-config.yml" ''
+    DataSource:
+      backend: SQLITE
+    settings:
+      serverName: WhatsApp Miku SMP
+      logLevel: INFO
+      useAsyncTasks: true
+      sessions:
+        enabled: false
+      restrictions:
+        allowChat: false
+        hideChat: true
+        allowCommands:
+          - /login
+          - /log
+          - /l
+          - /2fa
+          - /totp
+        ForceSingleSession: true
+        kickNonRegistered: true
+        kickOnWrongPassword: true
+        allowMovement: false
+        loginTimeout: 60
+        registerTimeout: 60
+        allowedNicknameCharacters: '[a-zA-Z0-9_]*'
+      unrestrictions:
+        UnrestrictedName: []
+        UnrestrictedInventories: []
+      security:
+        minPasswordLength: 12
+        passwordMaxLength: 64
+        passwordHash: ARGON2ID
+        legacyHashes: []
+      registration:
+        # Reserve names through the operator; never allow public first-claim registration.
+        enabled: false
+        force: true
+        type: PASSWORD
+        secondArg: CONFIRMATION
+        dialog:
+          showForgotPasswordButton: false
+          preJoin:
+            enable: true
+            registerCancelKicks: true
+            loginCancelKicks: true
+          postJoin:
+            enable: false
+      preventOtherCase: true
+      enablePremium: false
+    Hooks:
+      bungeecord: false
+      proxySharedSecret: ""
+    Security:
+      SQLProblem:
+        stopServer: true
+      tempban:
+        enableTempban: true
+        maxLoginTries: 5
+        tempbanLength: 15
+        minutesBeforeCounterReset: 15
+    BackupSystem:
+      ActivateBackup: false
+  '';
+  skinsRestorer = pkgs.fetchurl {
+    url = "https://github.com/SkinsRestorer/SkinsRestorer/releases/download/15.12.6/SkinsRestorer.jar";
+    sha256 = "a85b4a370f988741c9a38f4d0498262edacbf3220314790ac1c127461996359c";
+  };
+  skinsRestorerConfig = pkgs.writeText "skinsrestorer-config.yml" ''
+    login:
+      noSkinIfLoginCanceled: true
+      alwaysApplyPremium: false
+    commands:
+      forceDefaultPermissions: true
+  '';
   leaf = pkgs.stdenvNoCC.mkDerivation {
     pname = "leaf-minecraft-server";
     version = "1.21.11-179";
@@ -54,7 +167,7 @@ let
     export PATH=${lib.makeBinPath [ pkgs.coreutils ]}
     umask 0077
     if [[ ! -e .declarative ]]; then
-      for file in eula.txt whitelist.json server.properties; do
+      for file in eula.txt whitelist.json server.properties ops.json; do
         if [[ -e "$file" || -L "$file" ]]; then
           cp -P --backup=numbered -- "$file" "$file.stateful"
         fi
@@ -62,10 +175,24 @@ let
     fi
     ln -sfn ${eulaFile} eula.txt
     ln -sfn ${whitelistFile} whitelist.json
+    rm -f ops.json
+    install -m 0600 ${operatorsFile} ops.json
     # Properties must be writable: Minecraft regenerates them during startup.
     rm -f server.properties
     cp ${propertiesFile} server.properties
     chmod 0600 server.properties
+    install -m 0644 ${../../dotfiles/minecraft/server-icon.png} server-icon.png
+    mkdir -p plugins/MiniMOTD plugins/AuthMe plugins/SkinsRestorer
+    install -m 0644 ${miniMOTD} plugins/MiniMOTD.jar
+    # MiniMOTD saves normalized config on load, so this must be a writable copy.
+    rm -f plugins/MiniMOTD/main.conf
+    install -m 0600 ${miniMOTDConfig} plugins/MiniMOTD/main.conf
+    install -m 0644 ${authMe} plugins/AuthMe.jar
+    install -m 0644 ${skinsRestorer} plugins/SkinsRestorer.jar
+    # Only public policy is replaced. Account databases and skin caches persist.
+    rm -f plugins/AuthMe/config.yml plugins/SkinsRestorer/config.yml
+    install -m 0600 ${authMeConfig} plugins/AuthMe/config.yml
+    install -m 0600 ${skinsRestorerConfig} plugins/SkinsRestorer/config.yml
     touch .declarative
     mkfifo -m 0600 /tmp/minecraft.stdin
     exec 3<> /tmp/minecraft.stdin

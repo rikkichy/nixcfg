@@ -229,10 +229,34 @@ The server module builds a pinned Docker image containing Leaf **1.21.11 build
 The container has a **20-player ceiling**, `-Xms2G -Xmx8G`, and a 12 GiB Docker
 memory limit with no additional swap allowance. Heap size is not total process
 memory, and neither setting guarantees 20-player performance.
-Online authentication, secure profiles and the whitelist are required.
-The whitelist is deliberately empty: ordinary players cannot join until admitted.
-No plugins, OP grants, RCON, query, JMX or management listener are provisioned.
-Plugins execute as the game user and must be treated as code.
+The server uses **offline mode** (`online-mode=false`, secure profiles disabled).
+Pinned [AuthMeReloaded 6.0.1](https://github.com/AuthMe/AuthMeReloaded/releases/tag/6.0.1)
+requires password authentication before joining; Mojang account ownership is not
+verified. Sessions, premium auto-login, proxy login and public self-registration
+are disabled. Unregistered names are rejected. Passwords use Argon2id; five failed
+attempts trigger a 15-minute IP ban. SQLite failure is configured to stop the server.
+The whitelist contains **Rikkichy**, **ekhosmerti** and **Denay39** with exact-case
+offline UUIDs. **Rikkichy is the sole level-4 operator**, without a player-limit
+bypass or AuthMe exemption. The module regenerates `ops.json` at startup:
+runtime `/op` or `/deop` commands are not durable policy.
+The server-list title is **WhatsApp Miku SMP**, rendered in a green-to-aqua
+gradient by pinned [MiniMOTD 2.2.5](https://modrinth.com/plugin/minimotd/version/Ch5nDFAs)
+for Paper. The second line reads “friends, blocks & very silly vibes”.
+The 64×64 PNG at `hosts/nixos-server/dotfiles/minecraft/server-icon.png` supplies
+the Miku icon. The container startup copies it to `/data/server-icon.png` and
+installs the hash-pinned plugin as `plugins/MiniMOTD.jar`. The module owns the
+`miniMOTDConfig` template, copied to writable `plugins/MiniMOTD/main.conf` on each
+start; edit the template rather than the generated file. MiniMOTD icon overrides,
+fake player counts and max-player overrides are disabled; player names remain
+hidden. Changes require the approved image rebuild and service restart workflow.
+Pinned [SkinsRestorer 15.12.6](https://github.com/SkinsRestorer/SkinsRestorer/releases/tag/15.12.6)
+restores skins by name; authenticated players can use `/skin set <skinName>` and
+`/skin clear`. Skin lookups are not account verification. Cancelled logins do not
+trigger skin updates, and AuthMe's pre-login command list does not permit skin
+commands. No RCON, query, JMX or management listener is provisioned.
+MiniMOTD, AuthMe and SkinsRestorer are the provisioned plugins. All run as the
+game user and must be treated as code. Their public config templates are owned
+by the module and copied at startup; account databases and skin caches persist.
 It runs as UID/GID **25565**, matching the host `minecraft` account, with all
 capabilities dropped, no new privileges, a read-only image and a private `/tmp`
 tmpfs. `/var/lib/minecraft` is bind-mounted at `/data`; deleting/recreating the
@@ -251,16 +275,21 @@ Deployment, DNS and router changes require separate operator authorization:
    world. A 16 GiB host is only a starting estimate, not verified capacity.
    Leave deployment pending on undersized hardware; do not silently reduce the
    selected capacity.
-2. Add approved account names mapped to their real canonical UUIDs in the
-   module's `whitelist` binding. Obtain verified
-   identities from the account owners and the official Minecraft profile
-   service; do not invent UUIDs or grant OP. Names and UUIDs become public
-   repository and Nix store data: get the owners' approval first.
+2. Add approved exact-case names and **offline UUIDs** to the module's `whitelist`
+   binding, and provision AuthMe accounts as described below. The UUID is Java
+   `UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(UTF_8))`, not a Mojang
+   profile UUID. Changing case changes the offline UUID. Names and UUIDs become
+   public repository and Nix store data; passwords must never enter either.
    `whitelist.json` is a declarative store symlink; console `whitelist add`
    and edits to the generated file are not durable configuration.
 3. Back up any existing `/var/lib/minecraft` before starting this pinned version.
-   Never open a newer-version world with an older server. For an existing data
-   tree, stop all writers and, after taking the backup, prepare ownership with
+   Never open a newer-version world with an older server.
+   Switching online/offline identity changes player UUIDs: inventory, ender chest,
+   advancements, statistics and plugin ownership do not migrate automatically.
+   If a world has online-mode players, leave deployment pending until a separately
+   approved, backed-up migration maps each verified old UUID to the offline UUID.
+   Do not blindly rename player files or assume Nix rollback restores identity.
+   For an existing data tree, stop all writers and, after taking the backup, prepare ownership with
    `sudo chown -hR 25565:25565 /var/lib/minecraft` and
    `sudo chmod 0700 /var/lib/minecraft`. Ensure UID/GID 25565 are not assigned to
    an unrelated account; the module reserves them for `minecraft`. A fresh
@@ -275,10 +304,13 @@ Deployment, DNS and router changes require separate operator authorization:
    For whitelist changes, use that same workflow and restart
    `minecraft-server.service` after activation to load the managed list.
    Do not deploy or restart while a backup or restore is running.
-4. Confirm local startup before publishing the endpoint. Initial Leaf bootstrap
-   may download vanilla/runtime artifacts into the data directory; the pinned
-   launcher is not an offline closure of first-start state. Preserve outbound
-   DNS/HTTPS for bootstrap and online account authentication. Observe actual
+4. Confirm local startup and working AuthMe login enforcement before publishing
+   the endpoint. A running Leaf process does not prove that an authentication
+   plugin loaded. If AuthMe fails to load or becomes disabled, stop the server;
+   offline whitelist/OP identities alone provide no impersonation protection.
+   Initial Leaf/plugin bootstrap may download runtime dependencies into the data
+   directory; the pinned image is not an offline closure of first-start state.
+   Preserve outbound DNS/HTTPS for bootstrap and skin services. Observe actual
    downloads rather than guessing a hostname allowlist.
 5. Reserve the server's LAN IPv4 in router DHCP. Compare router WAN IPv4 with
    the public IPv4 reported by the ISP/router's external-address check. With
@@ -298,8 +330,8 @@ Deployment, DNS and router changes require separate operator authorization:
    tunnel or paid proxy is substituted. Update the A record when the address
    changes; automated DDNS is not provisioned.
 8. Friends use **Minecraft Java 1.21.11 → Multiplayer → Add Server →
-   `mc.rii.cat`**, with genuine authenticated whitelisted accounts. Check access
-   from outside the LAN; NAT hairpin behavior is not Internet reachability
+   `mc.rii.cat`**, using their exact whitelisted name and separate AuthMe password.
+   Check access from outside the LAN; NAT hairpin behavior is not Internet reachability
    evidence. Public DNS reveals the server IP. Whitelisting, firewall rules and
    service isolation are not DDoS protection.
 
@@ -324,10 +356,63 @@ back up first and test the chosen build before inviting players; do not
 auto-fetch latest JARs.
 After authorized deployment, operator acceptance includes external A resolution,
 an empty AAAA answer, TCP 25565 reachability, no exposed RCON/query service,
-a whitelisted client's join and persisted world edit across graceful restart,
-and rejection of nonwhitelisted and unauthenticated clients. Port scans do not
+a whitelisted client's authenticated join and persisted world edit across graceful
+restart, and rejection of nonwhitelisted names, unregistered names and wrong
+passwords. Test a second client impersonating Rikkichy: without the password it
+must not enter the world or execute operator commands. Cancelling or timing out
+the login dialog must disconnect. Check skins after login. Port scans do not
 prove authentication. Inspect the timer schedule and a manual archive privately.
 Report observed capacity only, not the configured player ceiling as a load result.
+
+#### Minecraft account provisioning
+
+Account creation requires separate operator approval; whitelist and OP policy
+do not create passwords. Keep public forwarding closed until accounts are
+reserved and authentication is checked, especially for **Rikkichy**. The
+`authMeConfig` and `skinsRestorerConfig` module bindings own public policy, not
+credentials. Do not enable public `/register`: anyone could claim a listed name.
+
+After approved deployment, with the container running and AuthMe successfully
+enabled, an operator can reserve each of the three names over existing SSH using
+AuthMe's console `authme register` command. This prompt keeps the password out of
+shell history, process arguments and terminal echo; do not use shell tracing,
+terminal recording or command-audit plugins that record console input:
+
+```sh
+sudo docker exec -it minecraft /bin/bash -c '
+  set -eu
+  export LC_ALL=C
+  read -rp "Exact player name: " name
+  case "$name" in Rikkichy|ekhosmerti|Denay39) ;; *) exit 1 ;; esac
+  read -rsp "Unique server password (12-64 visible ASCII characters): " password
+  printf "\n"
+  read -rsp "Repeat password: " confirmation
+  printf "\n"
+  [[ "$password" = "$confirmation" && "$password" =~ ^[!-~]{12,64}$ ]]
+  printf "authme register %s %s\n" "$name" "$password" > /tmp/minecraft.stdin
+  unset password confirmation
+'
+```
+
+The command is asynchronous: privately inspect the registration success/error
+message; writing the FIFO is not proof of account creation. AuthMe refuses to
+overwrite an existing account. Transfer the unique password privately to its
+owner; never use a Microsoft/Mojang, email or system password. After login, the
+owner can change it with `/changepassword` and add TOTP with `/totp add`.
+Password resets require identity verification by the operator, not merely a
+claimed nickname. No email recovery provider is configured.
+
+Offline Minecraft connections normally lack the online-mode encrypted transport.
+AuthMe and its login dialog do not add network encryption: unique passwords
+limit reuse damage but do not protect against network interception. Use a trusted
+encrypted path when needed; none is provisioned here. Do not treat a restored
+skin as proof of identity or grant permissions based on appearance.
+
+AuthMe account hashes, IP history and any TOTP secrets live under
+`/var/lib/minecraft/plugins/AuthMe`; SkinsRestorer state lives beside it under
+`plugins/SkinsRestorer`. These are private runtime data, not Git/Nix inputs.
+Full-world backups include them. Protect external copies accordingly, and remember
+that restoring an old archive also rolls back passwords and authentication state.
 
 #### Minecraft backups and recovery
 
@@ -383,7 +468,8 @@ Restoration requires separate operator approval and a trusted completed archive:
    `chown -hR` does not traverse symlinks.
 5. Start with the matching server/config version, then inspect
    `sudo docker logs -f minecraft` and verify the actual world and
-   player state. Startup regenerates managed EULA, whitelist and properties.
+   player state. Startup regenerates managed EULA, whitelist, OP list, server
+   properties and plugin policy; authentication databases remain part of the archive.
    A Nix generation rollback alone does not roll back world data; never open
    a newer-version world with an older server.
 6. Preserve the displaced tree until acceptance. If recovery fails, stop the
