@@ -8,17 +8,17 @@ writeShellApplication {
 
     api_get() {
       endpoint=$(jq -rn --arg group "$1" '$group | @uri')
-      curl -fsS --noproxy '*' --max-time 3 "$api/proxies/$endpoint"
+      curl -fsS --noproxy '*' --header @/run/mihomo-api.header --max-time 3 "$api/proxies/$endpoint"
     }
     api_put() {
       endpoint=$(jq -rn --arg group "$1" '$group | @uri')
-      curl -fsS --noproxy '*' --max-time 3 -X PUT "$api/proxies/$endpoint" \
+      curl -fsS --noproxy '*' --header @/run/mihomo-api.header --max-time 3 -X PUT "$api/proxies/$endpoint" \
         --data "$(jq -nc --arg n "$2" '{name:$n}')"
     }
 
     api_provider() {
       endpoint=$(jq -rn --arg provider "$1" '$provider | @uri')
-      curl -fsS --noproxy '*' --max-time 5 "$api/providers/proxies/$endpoint"
+      curl -fsS --noproxy '*' --header @/run/mihomo-api.header --max-time 5 "$api/providers/proxies/$endpoint"
     }
 
     say() {
@@ -56,8 +56,10 @@ writeShellApplication {
       jq -rn \
         --slurpfile g <(api_get "$active") \
         --slurpfile p <(api_provider "''${active,,}") '
-        (($p[0].proxies // [])
-          | map({key: .name, value: ((.history | last | .delay) // 0)})
+        ($p[0].testUrl // "") as $url
+        | (($p[0].proxies // [])
+          | map({key: .name, value: (.extra[$url]
+              | if .alive then ((.history | last | .delay) // 0) else 0 end)})
           | from_entries) as $d
         | ($g[0].all // [])
         | map(select(. as $n

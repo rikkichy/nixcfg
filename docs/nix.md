@@ -390,7 +390,8 @@ socket-lifetime correction required with the pinned Qt.
 
 `services.mihomo` runs the tunnel as a system service and starts at boot; there
 is no app to launch. The web dashboard is disabled. The localhost controller at
-`127.0.0.1:9090` remains available to the VPN picker and CLI.
+`127.0.0.1:9090` remains available to the VPN picker and CLI with bearer-token
+authentication. Browser origins are restricted to that localhost origin.
 
 ### Split routing and server selection
 
@@ -398,10 +399,23 @@ YouTube, Discord, Roblox/Sober, Instagram and Proton Mail use the selected proxy
 server; other destinations use `DIRECT`. Domain rules use Mihomo's geosite data,
 Roblox's production network uses ASN data, and the template includes observed
 Discord voice IPs. Mihomo downloads geosite and ASN data from the publisher's
-jsDelivr mirror; first startup needs access to it. Keep these databases current.
+jsDelivr mirror and checks for updates daily; first startup needs access to it.
+In Mihomo 1.19.31, a failed overdue GEO update during startup can stop its updater
+until a reload/restart. Check the GEO logs after a connectivity failure.
 The service retains its process sandbox: it does not identify desktop apps by
 process. Discord can assign new IP-addressed media endpoints, which may need
 additional rules. Shared service domains can also include related products.
+
+Empty subscriptions reject traffic instead of falling back to a direct connection.
+Each service's proxy rule has a matching rejection rule: if the selected server
+cannot relay UDP, that service fails closed while unrelated traffic stays direct.
+Keep these pairs together when editing the target list. Use a UDP-capable server
+for voice and games; a successful HTTP health check does not prove UDP support.
+Health checks require the endpoint's HTTP 204 response. Checks remain lazy, so
+an inactive subscription can show stale measurements.
+
+TCP concurrency races multiple resolved addresses for faster connection setup;
+it does not increase bandwidth. The TUN retains its gVisor stack.
 
 **`SUPER + SHIFT + V`** opens the VPN picker. **Switch subscription** opens
 **Primary** and **Quattro**, each retaining its selected server. **Choose server**
@@ -455,6 +469,19 @@ it through systemd `LoadCredential`, retaining `DynamicUser`. SOPS scalar values
 are preserved exactly; legacy file inputs retain their existing whitespace
 normalization. Values are never Nix evaluation/build inputs. Mihomo's private
 provider/state files can also contain credentials; keep those outside Git.
+
+The renderer also generates a fresh controller token on each service start.
+It publishes `/run/mihomo-api.header` atomically, owned by desktop user `ri`
+with mode `0400`, under the root-owned `/run` directory. The file contains only
+the controller authorization header, never subscription URLs or HWID. CLI and
+recovery requests use `curl --header @/run/mihomo-api.header` so the token is not
+placed in process arguments. Do not copy it into Git, logs, shell history or
+application profiles. No new age key or SOPS input is required.
+
+Other controller clients must read that header at request time and authenticate.
+OpenDeck should invoke the host `vpn` command rather than access the controller
+directly from its sandbox. The template is not a standalone runnable config:
+the runtime renderer supplies authentication and subscription credentials.
 
 Mihomo's DNS server and TUN DNS hijacking are disabled. Applications and
 proxy-node lookups use the system resolver; configure upstream DNS through

@@ -124,8 +124,8 @@ let
       fi
       if [[ "$scope" = all || "$scope" = system || "$scope" = reconnect ]]; then
         nmcli general reload dns-rc
-        curl -fsS --noproxy '*' --max-time 5 -X POST http://127.0.0.1:9090/cache/dns/flush
-        curl -fsS --noproxy '*' --max-time 5 -X DELETE http://127.0.0.1:9090/connections
+        curl -fsS --noproxy '*' --header @/run/mihomo-api.header --max-time 5 -X POST http://127.0.0.1:9090/cache/dns/flush
+        curl -fsS --noproxy '*' --header @/run/mihomo-api.header --max-time 5 -X DELETE http://127.0.0.1:9090/connections
       fi
 
       if [ -n "$quarantine" ]; then

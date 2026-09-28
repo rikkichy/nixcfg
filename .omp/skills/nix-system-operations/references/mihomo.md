@@ -17,6 +17,10 @@ The NixOS Mihomo module runs a `DynamicUser` service, with `CAP_NET_ADMIN` from
 The repository template is public. `mihomo-config.py` takes a public hostname
 for `x-device-model`, inserts the three private values, and serializes JSON
 (valid YAML) at runtime; this safely preserves quotes, backslashes, and newlines.
+It also generates the controller's random bearer token on each render and
+atomically writes a mode-`0400` authorization-header file owned by the desktop
+user. The header lives directly under root-owned `/run`, not in a user-writable
+directory; all temporary files are created privately before publication.
 Never replace serialization with
 textual placeholder splicing or put secret strings into Nix, `writeText`,
 derivation inputs, command arguments, logs, or documentation.
@@ -41,6 +45,8 @@ Mihomo start: it intentionally has no `RemainAfterExit`. Root-owned decrypted
 inputs are mode `0400`; the runtime directory is `0700` and rendered output
 `0600`, written through a temporary file and atomic replacement. SOPS updates
 request a Mihomo restart so a new `LoadCredential` receives the new rendering.
+The API header is published before the rendered config; failure prevents service
+startup. A restart rotates it, so callers must read the file for each request.
 Updating a source file does not change a running credential. Prove the
 controlled changed-secret restart path after approved activation, without
 printing configuration or provider URLs. After repairing missing inputs, a
@@ -65,6 +71,10 @@ API serves the picker and CLI. Controller status is not tunnel proof: inspect
 `ip -br addr show mihomo` for an actual IPv4 address; `UP` with only link-local
 IPv6 is not a working tunnel.
 
+All controller requests must use `--header @/run/mihomo-api.header`; never expand
+the token into command arguments or log it. Browser CORS permits only the
+localhost controller origin. See the operator guide for ownership and lifecycle.
+
 The tunnel uses service-selective rules with `MATCH,DIRECT`; ordinary Nix
 downloads and Git pushes do not need a VPN mode toggle. `PROXY` only selects
 a subscription, whose group selects a concrete server. Do not stop Mihomo to
@@ -84,12 +94,19 @@ and the IP-addressed Discord media limitation.
 - Keep `proxy: DIRECT` on **both** providers. Otherwise Mihomo can fetch its
   subscription through the very tunnel it needs to repair: a bad update then
   cannot self-recover and may surface only as EOF.
+- Child selectors use `empty-fallback: REJECT`. Service proxy rules are paired
+  with rejection rules so a node without UDP support cannot fall through to
+  unrelated traffic's `MATCH,DIRECT`. Keep the target and rejection pairs aligned.
+- HTTP health checks require 204 but do not test UDP relay; lazy checks can leave
+  inactive-provider latency stale. Preserve manual node selection.
 - Node latency needs membership **and** health history. Top-level `PROXY`
   contains `PRIMARY` and `QUATTRO`, not the provider nodes.
   Query `/proxies/PRIMARY` or `/proxies/QUATTRO` for active-group membership and
   `/providers/proxies/primary` or `/providers/proxies/quattro` for delays. Reading
   either endpoint alone gives an incomplete but plausible list. `vpn nodes`
-  merges them, filters built-ins, sorts measured delays, and puts unknowns last.
+  merges them using `extra[testUrl]`, filters built-ins, sorts measured delays,
+  and puts failed/unmeasured results last. Generic `history`/`alive` fields do
+  not enforce the provider's expected HTTP status.
 
 `vpn` is a `writeShellApplication` installed in `environment.systemPackages`,
 not an alias: fish, Hyprland, and the Stream Deck use the same command.

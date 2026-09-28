@@ -3,15 +3,40 @@
 import json
 import os
 from pathlib import Path
+import secrets
 import shutil
 import socket
+import socketserver
 import subprocess
 import tempfile
+import threading
 import time
 import urllib.error
 import urllib.request
 
 import yaml
+
+
+class HealthProxy(socketserver.BaseRequestHandler):
+    def handle(self):
+        self.request.settimeout(3)
+        with self.request.makefile("rb") as stream:
+            version, count = stream.read(2)
+            assert version == 5
+            stream.read(count)
+            self.request.sendall(b"\x05\x00")
+            version, command, _, kind = stream.read(4)
+            assert version == 5 and command == 1
+            stream.read(stream.read(1)[0] if kind == 3 else {1: 4, 4: 16}[kind])
+            stream.read(2)
+            self.request.sendall(b"\x05\x00\x00\x01\x7f\x00\x00\x01\x00\x00")
+            while line := stream.readline():
+                if line == b"\r\n":
+                    break
+            time.sleep(.02)  # Keep a successful loopback measurement above zero ms.
+            self.request.sendall(
+                f"HTTP/1.1 {self.server.status} Result\r\n"
+                "Content-Length: 0\r\nConnection: close\r\n\r\n".encode())
 
 
 repo = Path(__file__).resolve().parent.parent
@@ -40,28 +65,46 @@ with tempfile.TemporaryDirectory(prefix="vpn-test-") as temporary:
         sock.bind(("127.0.0.1", 0))
         port = sock.getsockname()[1]
     api = f"http://127.0.0.1:{port}"
+    token = secrets.token_urlsafe(32)
+    api_header = work / "api.header"
+    api_header.write_text(f"Authorization: Bearer {token}\n")
+    api_header.chmod(0o400)
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
     def get(group):
-        with opener.open(f"{api}/proxies/{group}", timeout=1) as response:
+        request = urllib.request.Request(f"{api}/proxies/{group}",
+                                         headers={"Authorization": f"Bearer {token}"})
+        with opener.open(request, timeout=1) as response:
             return json.load(response)
 
     config = yaml.safe_load((repo / "common/dotfiles/mihomo.yaml").read_text())
-    config.update({"mixed-port": 0, "external-controller": f"127.0.0.1:{port}",
+    config.update({"mixed-port": 0, "external-controller": f"127.0.0.1:{port}", "secret": token,
                    "tun": {"enable": False}, "dns": {"enable": False},
                    "rules": ["MATCH,DIRECT"]})
     names = {"primary": ["First", '-edge [.*] / "quoted" '], "quattro": ["Other", "Other 2"]}
+    servers = []
+    for status in (204, 503):
+        server = socketserver.ThreadingTCPServer(("127.0.0.1", 0), HealthProxy)
+        server.status = status
+        server.daemon_threads = True
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        servers.append(server)
+    test_url = "http://health.invalid/generate_204"
     for provider, nodes in names.items():
         path = work / f"{provider}.json"
         path.write_text(json.dumps({"proxies": [
-            {"name": name, "type": "socks5", "server": "127.0.0.1", "port": 9}
-            for name in nodes]}))
-        config["proxy-providers"][provider] = {"type": "file", "path": str(path)}
+            {"name": name, "type": "socks5", "server": "127.0.0.1",
+             "port": servers[index].server_address[1]}
+            for index, name in enumerate(nodes)]}))
+        health = config["proxy-providers"][provider]["health-check"]
+        config["proxy-providers"][provider] = {"type": "file", "path": str(path),
+            "health-check": {**health, "url": test_url}}
     (work / "config.json").write_text(json.dumps(config))
     for name, text in scripts.items():
         path = work / name
         path.write_text(f"#!{bash}\nset -euo pipefail\n" + text.replace(
-            "api=http://127.0.0.1:9090", f"api={api}"))
+            "api=http://127.0.0.1:9090", f"api={api}").replace(
+                "/run/mihomo-api.header", str(api_header)))
         path.chmod(0o700)
     for name, text in {
         "notify-send": "exit 0\n",
@@ -103,6 +146,33 @@ printf '%s\\n' "$choice"
                         log.seek(0)
                         raise AssertionError(log.read())
                     time.sleep(0.05)
+            try:
+                opener.open(f"{api}/proxies/PROXY", timeout=1)
+                raise AssertionError("Controller accepted an unauthenticated request")
+            except urllib.error.HTTPError as error:
+                assert error.code == 401
+            request = urllib.request.Request(
+                f"{api}/configs", method="OPTIONS",
+                headers={"Origin": "https://untrusted.invalid",
+                         "Access-Control-Request-Method": "PATCH",
+                         "Access-Control-Request-Private-Network": "true"})
+            with opener.open(request, timeout=1) as response:
+                assert response.headers.get("Access-Control-Allow-Origin") is None
+                assert response.headers.get("Access-Control-Allow-Private-Network") != "true"
+            request = urllib.request.Request(f"{api}/providers/proxies/primary",
+                headers={"Authorization": f"Bearer {token}"})
+            deadline = time.monotonic() + 5
+            while True:
+                with opener.open(request, timeout=1) as response:
+                    nodes = json.load(response)["proxies"]
+                if all(node["extra"].get(test_url, {}).get("history") for node in nodes):
+                    break
+                assert time.monotonic() < deadline, "Health checks did not complete"
+                time.sleep(.02)
+            rows = run("vpn", "nodes").stdout.splitlines()
+            delay, name = rows[0].split("\t", 1)
+            assert name == "First" and int(delay) > 0
+            assert rows[1] == f"0\t{names['primary'][1]}"
 
             run("vpnp", choices=("1", "1"))
             assert get("PRIMARY")["now"] == names["primary"][1]
@@ -134,5 +204,7 @@ printf '%s\\n' "$choice"
         finally:
             process.terminate()
             process.wait(timeout=5)
+            for server in servers:
+                server.shutdown()
 
-print("PASS: nested subscription/server selection, exact names, dismissal and index boundaries.")
+print("PASS: authenticated picker, HTTP-status-aware ranking, exact selection and dismissal boundaries.")
