@@ -364,6 +364,27 @@ let
       Env = [ "SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt" ];
     };
   };
+  minecraftReady = pkgs.writeShellScript "minecraft-ready" ''
+    set -euo pipefail
+    export PATH=${lib.makeBinPath [ pkgs.docker pkgs.coreutils pkgs.gnugrep ]}
+    attempts=''${1:-60}
+    started=$(timeout 5s docker inspect --format '{{.State.StartedAt}}' minecraft)
+    for ((attempt=0; attempt<attempts; attempt++)); do
+      [[ "$(timeout 5s docker inspect --format '{{.State.Running}}' minecraft)" = true ]]
+      logs=$(timeout 5s docker logs --since "$started" minecraft 2>&1)
+      if grep -F ' INFO]: Done (' <<< "$logs" > /dev/null &&
+         grep -E '\[AuthMe\] AuthMe .* successfully enabled!' <<< "$logs" > /dev/null &&
+         ! grep -F '[AuthMe] Disabling AuthMe' <<< "$logs" > /dev/null; then
+        echo "Minecraft startup complete; AuthMe enabled"
+        exit 0
+      fi
+      if ((attempt + 1 < attempts)); then
+        sleep 5
+      fi
+    done
+    echo "Minecraft is not ready: require completed Leaf startup and enabled AuthMe" >&2
+    exit 1
+  '';
 in
 {
   users.groups.minecraft.gid = 25565;
@@ -400,10 +421,20 @@ in
 
   systemd.services.minecraft-server = {
     requires = [ "docker.service" ];
+    # Nix builds the image closure before activation. Docker import still occurs
+    # in ExecStartPre; only completed game/plugin startup counts as ready.
+    postStart = "${minecraftReady}";
     # A successful docker stop alone does not prove a clean save (SIGKILL may
     # have been needed). Send the console stop and require a clean Java exit.
     preStop = lib.mkForce ''
       set -euo pipefail
+      # Skip the warning delay if startup never completed.
+      if ${minecraftReady} 1 > /dev/null 2>&1; then
+        ${pkgs.coreutils}/bin/timeout 5s docker exec minecraft \
+          ${pkgs.bash}/bin/bash -c \
+          'printf "%s\n" "minecraft:say Сервер остановится через 30 секунд. Сохраняем мир; подключитесь позже." > /tmp/minecraft.stdin'
+        ${pkgs.coreutils}/bin/sleep 30
+      fi
       ${pkgs.coreutils}/bin/timeout 5s docker exec minecraft \
         ${pkgs.bash}/bin/bash -c 'printf "stop\n" > /tmp/minecraft.stdin'
       code=$(docker wait minecraft)
@@ -412,6 +443,7 @@ in
     '';
     postStop = lib.mkForce "docker rm -f minecraft";
     serviceConfig = {
+      TimeoutStartSec = lib.mkForce "6min";
       TimeoutStopSec = lib.mkForce "5min";
       Restart = lib.mkForce "always";
       RestartSec = "10s";
@@ -429,7 +461,7 @@ in
     description = "Weekly Minecraft life reset for online and offline players";
     requires = [ "minecraft-server.service" ];
     after = [ "minecraft-server.service" "minecraft-backup.service" ];
-    path = [ pkgs.docker pkgs.coreutils pkgs.gnugrep ];
+    path = [ pkgs.docker pkgs.coreutils ];
     serviceConfig = {
       Type = "oneshot";
       TimeoutStartSec = "6min";
@@ -437,22 +469,9 @@ in
     };
     script = ''
       set -euo pipefail
-      # systemd readiness only means Docker started, not that plugins are loaded.
-      started=$(docker inspect --format '{{.State.StartedAt}}' minecraft)
-      ready=false
-      for ((attempt=0; attempt<60; attempt++)); do
-        [[ "$(docker inspect --format '{{.State.Running}}' minecraft)" = true ]]
-        logs=$(docker logs --since "$started" minecraft 2>&1)
-        if grep -F 'Done (' <<< "$logs" > /dev/null; then
-          ready=true
-          break
-        fi
-        sleep 5
-      done
-      if [[ "$ready" != true ]]; then
-        echo "Minecraft did not finish startup; life reset not sent" >&2
-        exit 1
-      fi
+      # Requires/After waits for the server's postStart readiness gate.
+      # Recheck once so a stopped or disabled AuthMe cannot receive reset commands.
+      ${minecraftReady} 1
       # AnnoyingAPI's !all_players includes offline players, unlike vanilla @a.
       # LimitedLives runs its revive/pardon hook for each zero-to-positive change.
       timeout 5s docker exec minecraft ${pkgs.bash}/bin/bash -c \
@@ -482,7 +501,8 @@ in
       RuntimeDirectory = "minecraft-backup";
       RuntimeDirectoryMode = "0700";
       TimeoutStartSec = "30min";
-      TimeoutStopSec = "6min";
+      # Cleanup waits for the server's six-minute start/readiness budget.
+      TimeoutStopSec = "7min";
       NoNewPrivileges = true;
       PrivateTmp = true;
       ProtectHome = true;

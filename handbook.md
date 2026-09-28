@@ -319,6 +319,11 @@ Deployment, DNS and router changes require separate operator authorization:
    This deployment is required for startup-policy changes, not ordinary
    `/whitelist add` or `/whitelist remove` commands.
    Do not deploy or restart while a backup or restore is running.
+   `nixos-rebuild switch` builds and fetches the system/image closure before
+   activation stops the running service. Gestalt's bootstrap is local and pinned;
+   first-start Maven downloads by other plugin loaders are not an offline closure.
+   Docker image import still happens during startup. This is a single-world
+   stop/start deployment, not a rolling replacement with concurrent writers.
 4. Confirm local startup and working AuthMe login enforcement before publishing
    the endpoint. A running Leaf process does not prove that an authentication
    plugin loaded. If AuthMe fails to load or becomes disabled, stop the server;
@@ -363,9 +368,20 @@ sudo timeout 5s docker exec minecraft /bin/bash -c 'printf "list\n" > /tmp/minec
 Use FIFO console commands only while the container is running. Manage lifecycle
 with `systemctl start|stop|restart minecraft-server`, not direct `docker stop`,
 `docker restart` or `docker rm`: systemd owns restarts and backup coordination.
-The stop hook sends the console `stop` command, waits for exit code zero and
-rejects an OOM-killed container before allowing backups. A hung stop times out
-after five minutes, fails the unit and prevents archive publication.
+For a server that completed startup, the stop hook announces a stop in Russian
+and waits 30 seconds before sending console `stop`. The warning also applies to
+backups and host shutdown; an incomplete startup skips that delay.
+It then requires exit code zero and rejects an OOM-killed container before
+allowing backups. The five-minute stop-command budget includes the warning.
+A hung stop fails the unit and prevents archive publication; subsequent systemd
+termination and container cleanup can extend the total shutdown time.
+
+The service's post-start gate requires both Leaf's `Done (...)` message and
+AuthMe's successful-enable message from the current container start, with no
+subsequent AuthMe disable message. Systemd keeps the unit activating until this
+check passes; the entire start job has a six-minute timeout. This is a startup
+check, not continuous health monitoring or proof of a successful client login.
+Failed starts remain subject to the configured restart policy.
 No RCON password or new SSH credential is needed. Pin updates deliberately,
 back up first and test the chosen build before inviting players; do not
 auto-fetch latest JARs.
@@ -542,8 +558,8 @@ before Monday; this is a shared calendar schedule, not seven days per death.
 
 The persistent timer catches a missed run after host downtime. Its service
 starts Minecraft if stopped, orders itself after any queued backup, and waits
-up to five minutes for Leaf's startup-complete log before writing
-`limitedlives:lives set 3 !all_players` through the private console FIFO.
+for the server's Leaf/AuthMe readiness gate. It rechecks readiness once before
+writing `limitedlives:lives set 3 !all_players` through the private console FIFO.
 The pinned plugin's `!all_players` selector includes offline players; vanilla
 `@a` does not. `defaultLives` in the module supplies both new-player lives and
 the reset amount. No database edits or additional plugin are needed.
@@ -590,7 +606,8 @@ At **05:00 Europe/Moscow** the persistent timer stops the game, requires a clean
 stop, archives the entire tree without dereferencing links, publishes by rename,
 and retains seven completed archives. Cleanup attempts restart even after a
 failed archive or forced stop. A missed timer can cause maintenance downtime
-after boot. A successful systemd start job is not proof that Leaf finished loading.
+after boot. A successful systemd start requires the Leaf/AuthMe startup markers;
+it does not prove a client can authenticate, join or persist world changes.
 
 Invoke backups only through `sudo systemctl start minecraft-backup.service`.
 Systemd serializes this unit; do not concurrently rebuild, restart the game or
