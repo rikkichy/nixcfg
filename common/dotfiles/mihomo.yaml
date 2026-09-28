@@ -16,25 +16,22 @@ tun:
   stack: gvisor
   auto-route: true
   auto-detect-interface: true
-  dns-hijack:
-    - any:53
+  dns-hijack: []
 
 dns:
+  enable: false
+
+sniffer:
   enable: true
-  listen: 0.0.0.0:1053
-  ipv6: false
-  enhanced-mode: fake-ip
-  fake-ip-range: 198.18.0.1/16
-  fake-ip-filter:
-    - "*.lan"
-    - "*.local"
-    - "+.internal"
-  default-nameserver:
-    - 192.168.8.1
-  nameserver:
-    - 192.168.8.1
-  proxy-server-nameserver:
-    - 192.168.8.1
+  parse-pure-ip: true
+  override-destination: false
+  sniff:
+    HTTP:
+      ports: [80, 8080]
+    TLS:
+      ports: [443, 2053, 2083, 2087, 2096, 8443]
+    QUIC:
+      ports: [443, 8443]
 
 proxy-providers:
   primary:

@@ -37,7 +37,7 @@ Preserve these boundaries when editing the reset:
 - App resets stage valid Chromium network-state JSON and back it up before replacement. Remove only `.net.http_server_properties.broken_alternative_services`; do not wipe entire networking or application profiles. Reject malformed input rather than replacing it with empty state.
 - Discord cache cleaning allows only `Cache`, `Code Cache`, `GPUCache`, `DawnGraphiteCache` and `DawnWebGPUCache`. Quarantine before removal; failures retain quarantine and report its path. Ownership, symlink, directory and file checks protect the selected paths.
 - Cookies, sessions, persistent web storage, service workers, modules and Equicord data remain untouched.
-- System reset republishes NetworkManager DNS, flushes Mihomo DNS answers and closes its tracked connections. It preserves VPN selection and fake-IP mappings, does not restart services, and interrupts connections from other applications. The controller requests stay localhost-only with proxy bypass and bounded timeouts.
+- System reset republishes NetworkManager DNS, clears Mihomo's resolver cache and closes its tracked connections. It preserves VPN selection, does not restart services, and interrupts connections from other applications. The controller requests stay localhost-only with proxy bypass and bounded timeouts.
 - `reconnect` first records the active profile UUID on Ethernet `enp11s0`, disconnects it, brings up that exact UUID on that interface, then performs system reset. Ordinary system reset does not reconnect the link. No new privilege policy is required.
 
 Validate recovery only with temporary profiles and stubbed external effects. Never run a live reset on the user's session for verification.

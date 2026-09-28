@@ -214,9 +214,9 @@ closed; nothing restores their sessions. Cookies, settings and persistent
 application data are preserved, but unsaved work can be lost.
 Use its native actions for individual scopes, or
 `network-reset [all|system|helium|discord|reconnect]` in a terminal.
-`reconnect` briefly disconnects Ethernet; ordinary system reset keeps the link,
-VPN choice and fake-IP mappings intact. `troubleshootp` runs the same command
-in a held terminal. No post-reset connectivity checks run.
+`reconnect` briefly disconnects Ethernet; ordinary system reset keeps the link
+and VPN choice intact. `troubleshootp` runs the same command in a held terminal.
+No post-reset connectivity checks run.
 
 ## Wallpapers and colours
 
@@ -388,9 +388,9 @@ socket-lifetime correction required with the pinned Qt.
 
 ## VPN (mihomo)
 
-`services.mihomo` runs the tunnel as a system service, with the dashboard at
-**<http://127.0.0.1:9090/ui/>** — that is where you pick a node. It starts at
-boot; there is no app to launch.
+`services.mihomo` runs the tunnel as a system service and starts at boot; there
+is no app to launch. The web dashboard is disabled. The localhost controller at
+`127.0.0.1:9090` remains available to the VPN picker and CLI.
 
 ### Split routing and server selection
 
@@ -433,7 +433,7 @@ picks the fastest Swedish node. **Match on the flag emoji** (`vpn use 🇸🇪`)
 you want something durable: node names carry numbering, `WlFl`/`LTE` suffixes
 and trailing spaces that providers change without notice.
 
-The dashboard exposes the same hierarchy: **PROXY** chooses **PRIMARY** or
+The proxy-group hierarchy is **PROXY** choosing **PRIMARY** or
 **QUATTRO**, and each subscription group contains only provider nodes.
 `profile.store-selected` persists selections in
 `/var/lib/private/mihomo/cache.db`. With no valid cached choice, Mihomo uses
@@ -441,7 +441,7 @@ the first available member. Runtime state does not need to be deleted.
 
 Changing servers does not change routing policy. Direct destinations still
 pass through the TUN, but Mihomo connects through the physical interface.
-Stopping Mihomo also removes its DNS handling; it is not a routing toggle.
+Stopping Mihomo removes the tunnel; it is not a routing toggle.
 External shortcuts should invoke `vpnp` or `vpn select <name>`, not mode commands.
 
 For a zapret cutover, pause it rather than uninstalling it, then verify video
@@ -456,16 +456,20 @@ are preserved exactly; legacy file inputs retain their existing whitespace
 normalization. Values are never Nix evaluation/build inputs. Mihomo's private
 provider/state files can also contain credentials; keep those outside Git.
 
-Desktop DNS uses the LAN router configured in that template for ordinary and
-proxy-node lookups. The router owns the ControlD DoQ connection and its private
-endpoint; Mihomo retains DNS hijacking and fake-IP handling. Router DNS must
-remain reachable even with the VPN enabled. If the desktop moves to another
-LAN, update the upstream addresses in the template.
+Mihomo's DNS server and TUN DNS hijacking are disabled. Applications and
+proxy-node lookups use the system resolver; configure upstream DNS through
+NetworkManager, not the Mihomo template. When the system uses the LAN router,
+the router retains its ControlD DoQ connection and private endpoint.
 
-After an approved rebuild applies a DNS change, `network-reset system` refreshes
-DNS and closes Mihomo connections without stopping the tunnel. It does not reload
-Mihomo's configuration or restart applications; fully reopen Sober to discard
-its cached addresses.
+Domain rules rely on HTTP/TLS/QUIC sniffing without DNS mappings. ECH and
+unsupported traffic can prevent domain classification; those connections
+follow IP rules or the final `DIRECT` rule. Sniffing does not replace the
+destination address selected by the system resolver.
+
+After an approved rebuild disables fake-IP handling, fully restart applications
+to discard cached synthetic addresses. `network-reset system` refreshes system
+DNS and closes Mihomo connections without stopping the tunnel, but does not
+reload Mihomo's configuration or restart applications.
 
 ### Private inputs and first provisioning
 
@@ -640,7 +644,7 @@ file — `networking.firewall.trustedInterfaces` and
 three need to change together.
 
 If the VPN looks connected but traffic is not tunnelled, do not trust the
-dashboard — check that the interface actually has its IPv4 address:
+controller status — check that the interface actually has its IPv4 address:
 
 ```
 ip -br addr show mihomo

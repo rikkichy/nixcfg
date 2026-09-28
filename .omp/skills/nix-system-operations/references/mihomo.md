@@ -57,17 +57,19 @@ Keep these three names synchronized when renaming the TUN device:
 
 The current device is `mihomo`; IPv6 is disabled, reverse-path filtering is
 loose, and LAN application ports are scoped to the physical interfaces. Do not
-turn those into unrestricted firewall openings to fix tunnel routing. The
-controller binds `127.0.0.1:9090`, mixed proxy has `allow-lan: false`, and DNS
-hijacks port 53 through the TUN. The dashboard is not tunnel proof: inspect
+turn those into unrestricted firewall openings to fix tunnel routing.
+The controller binds `127.0.0.1:9090`, mixed proxy has `allow-lan: false`, and
+Mihomo DNS and TUN DNS hijacking are disabled. Resolution uses the system DNS;
+domain routing relies on sniffing. The web dashboard is disabled; the controller
+API serves the picker and CLI. Controller status is not tunnel proof: inspect
 `ip -br addr show mihomo` for an actual IPv4 address; `UP` with only link-local
 IPv6 is not a working tunnel.
 
 The tunnel uses service-selective rules with `MATCH,DIRECT`; ordinary Nix
 downloads and Git pushes do not need a VPN mode toggle. `PROXY` only selects
 a subscription, whose group selects a concrete server. Do not stop Mihomo to
-change routing: that also removes DNS handling. `profile.store-selected`
-persists server choices in `cache.db` under the service's state directory.
+change routing: that removes the tunnel. `profile.store-selected` persists
+server choices in `cache.db` under the service's state directory.
 The process sandbox remains intact; do not add process rules without accounting
 for its restricted `/proc` access. See the operator guide for service coverage
 and the IP-addressed Discord media limitation.

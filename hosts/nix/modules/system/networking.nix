@@ -8,7 +8,6 @@
   services.mihomo = {
     enable = true;
     tunMode = true;
-    webui = pkgs.metacubexd;
   };
 
   systemd.services.mihomo.serviceConfig = {
