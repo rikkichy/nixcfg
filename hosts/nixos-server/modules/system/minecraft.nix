@@ -1,6 +1,35 @@
-{ config, lib, pkgs, ... }:
+{ lib, pkgs, ... }:
 
 let
+  dataDir = "/var/lib/minecraft";
+  # Verified account names and canonical UUIDs are public repository/store data.
+  whitelist = { };
+  serverProperties = {
+    server-ip = "";
+    server-port = 25565;
+    max-players = 20;
+    online-mode = true;
+    white-list = true;
+    enforce-whitelist = true;
+    enforce-secure-profile = true;
+    enable-rcon = false;
+    enable-query = false;
+    enable-jmx-monitoring = false;
+    management-server-enabled = false;
+    hide-online-players = true;
+    view-distance = 8;
+    simulation-distance = 6;
+    motd = "rii.cat — friends server";
+  };
+  propertiesFile = pkgs.writeText "server.properties" (
+    lib.concatStringsSep "\n" (lib.mapAttrsToList
+      (name: value: "${name}=${if builtins.isBool value then lib.boolToString value else toString value}")
+      serverProperties) + "\n"
+  );
+  whitelistFile = pkgs.writeText "whitelist.json" (builtins.toJSON (
+    lib.mapAttrsToList (name: uuid: { inherit name uuid; }) whitelist
+  ));
+  eulaFile = pkgs.writeText "eula.txt" "eula=true\n";
   leaf = pkgs.stdenvNoCC.mkDerivation {
     pname = "leaf-minecraft-server";
     version = "1.21.11-179";
@@ -20,48 +49,96 @@ let
     '';
     meta.mainProgram = "minecraft-server";
   };
+  entrypoint = pkgs.writeShellScript "minecraft-container-start" ''
+    set -euo pipefail
+    export PATH=${lib.makeBinPath [ pkgs.coreutils ]}
+    umask 0077
+    if [[ ! -e .declarative ]]; then
+      for file in eula.txt whitelist.json server.properties; do
+        if [[ -e "$file" || -L "$file" ]]; then
+          cp -P --backup=numbered -- "$file" "$file.stateful"
+        fi
+      done
+    fi
+    ln -sfn ${eulaFile} eula.txt
+    ln -sfn ${whitelistFile} whitelist.json
+    # Properties must be writable: Minecraft regenerates them during startup.
+    rm -f server.properties
+    cp ${propertiesFile} server.properties
+    chmod 0600 server.properties
+    touch .declarative
+    mkfifo -m 0600 /tmp/minecraft.stdin
+    exec 3<> /tmp/minecraft.stdin
+    exec ${leaf}/bin/minecraft-server -Xms2G -Xmx8G <&3
+  '';
+  image = pkgs.dockerTools.buildLayeredImage {
+    name = "leaf-minecraft-server";
+    tag = leaf.version;
+    contents = [ pkgs.bash pkgs.coreutils pkgs.dockerTools.caCertificates ];
+    config = {
+      Entrypoint = [ entrypoint ];
+      WorkingDir = "/data";
+      User = "25565:25565";
+      Env = [ "SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt" ];
+    };
+  };
 in
 {
-  services.minecraft-server = {
-    enable = true;
-    eula = true;
-    package = leaf;
-    declarative = true;
-    dataDir = "/var/lib/minecraft";
-    openFirewall = false;
-    jvmOpts = "-Xms2G -Xmx8G";
-    # Verified account names and UUIDs are public repository/store data.
-    whitelist = { };
-    serverProperties = {
-      server-ip = "";
-      server-port = 25565;
-      max-players = 20;
-      online-mode = true;
-      white-list = true;
-      enforce-whitelist = true;
-      enforce-secure-profile = true;
-      enable-rcon = false;
-      enable-query = false;
-      enable-jmx-monitoring = false;
-      management-server-enabled = false;
-      hide-online-players = true;
-      view-distance = 8;
-      simulation-distance = 6;
-      motd = "rii.cat — friends server";
+  users.groups.minecraft.gid = 25565;
+  users.users.minecraft = {
+    uid = 25565;
+    group = "minecraft";
+    isSystemUser = true;
+    home = dataDir;
+  };
+
+  virtualisation.oci-containers = {
+    backend = "docker";
+    containers.minecraft = {
+      serviceName = "minecraft-server";
+      image = "leaf-minecraft-server:${leaf.version}";
+      imageFile = image;
+      pull = "never";
+      autoRemoveOnStop = false;
+      volumes = [ "${dataDir}:/data" ];
+      ports = [ "0.0.0.0:25565:25565/tcp" ];
+      extraOptions = [
+        "--read-only"
+        "--cap-drop=ALL"
+        "--security-opt=no-new-privileges:true"
+        "--memory=12g"
+        "--memory-swap=12g"
+        "--stop-timeout=300"
+        "--tmpfs=/tmp:rw,nosuid,nodev,size=1g,mode=1777"
+      ];
     };
   };
   networking.firewall.allowedTCPPorts = [ 25565 ];
 
-  systemd.services.minecraft-server.serviceConfig = {
-    NoNewPrivileges = true;
-    ProtectSystem = "strict";
-    ReadWritePaths = [ config.services.minecraft-server.dataDir ];
-    MemoryMax = "12G";
-    TimeoutStopSec = "5min";
-    RestartSec = "10s";
+  systemd.services.minecraft-server = {
+    requires = [ "docker.service" ];
+    # A successful docker stop alone does not prove a clean save (SIGKILL may
+    # have been needed). Send the console stop and require a clean Java exit.
+    preStop = lib.mkForce ''
+      set -euo pipefail
+      ${pkgs.coreutils}/bin/timeout 5s docker exec minecraft \
+        ${pkgs.bash}/bin/bash -c 'printf "stop\n" > /tmp/minecraft.stdin'
+      code=$(docker wait minecraft)
+      [[ "$code" = 0 ]]
+      [[ "$(docker inspect --format '{{.State.OOMKilled}}' minecraft)" = false ]]
+    '';
+    postStop = lib.mkForce "docker rm -f minecraft";
+    serviceConfig = {
+      TimeoutStopSec = lib.mkForce "5min";
+      Restart = lib.mkForce "always";
+      RestartSec = "10s";
+    };
   };
 
-  systemd.tmpfiles.rules = [ "d /var/backup/minecraft 0700 root root -" ];
+  systemd.tmpfiles.rules = [
+    "d ${dataDir} 0700 minecraft minecraft -"
+    "d /var/backup/minecraft 0700 root root -"
+  ];
   systemd.timers.minecraft-backup = {
     wantedBy = [ "timers.target" ];
     timerConfig = {
@@ -89,7 +166,7 @@ in
     script = ''
       set -euo pipefail
       export LC_ALL=C
-      data=${lib.escapeShellArg config.services.minecraft-server.dataDir}
+      data=${lib.escapeShellArg dataDir}
       backup=/var/backup/minecraft
       runtime=/run/minecraft-backup
       unit=minecraft-server.service

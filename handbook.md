@@ -223,13 +223,24 @@ It needs no `/etc/mihomo` inputs or VPN age identity.
 
 #### Minecraft deployment and access
 
-The server module pins Leaf **1.21.11 build 179**, Java 21, a **20-player ceiling**
-and `-Xms2G -Xmx8G`. The service's total memory cap is 12 GiB; heap size is not
-total process memory, and neither setting guarantees 20-player performance.
+The server module builds a pinned Docker image containing Leaf **1.21.11 build
+179** and Java 21. NixOS manages container `minecraft` through
+`minecraft-server.service`; no Compose file or registry image is required.
+The container has a **20-player ceiling**, `-Xms2G -Xmx8G`, and a 12 GiB Docker
+memory limit with no additional swap allowance. Heap size is not total process
+memory, and neither setting guarantees 20-player performance.
 Online authentication, secure profiles and the whitelist are required.
 The whitelist is deliberately empty: ordinary players cannot join until admitted.
 No plugins, OP grants, RCON, query, JMX or management listener are provisioned.
 Plugins execute as the game user and must be treated as code.
+It runs as UID/GID **25565**, matching the host `minecraft` account, with all
+capabilities dropped, no new privileges, a read-only image and a private `/tmp`
+tmpfs. `/var/lib/minecraft` is bind-mounted at `/data`; deleting/recreating the
+container does not delete the world. Backups and the Docker socket are not
+mounted into the container. TCP 25565 is explicitly published on IPv4 only.
+Docker-published ports bypass the ordinary NixOS input firewall, so removing an
+`allowedTCPPorts` entry alone does not close this port; remove the publication
+or stop the managed service instead.
 
 Deployment, DNS and router changes require separate operator authorization:
 
@@ -240,17 +251,22 @@ Deployment, DNS and router changes require separate operator authorization:
    world. A 16 GiB host is only a starting estimate, not verified capacity.
    Leave deployment pending on undersized hardware; do not silently reduce the
    selected capacity.
-2. Add approved account names mapped to their real canonical UUIDs in
-   `services.minecraft-server.whitelist` in the module. Obtain verified
+2. Add approved account names mapped to their real canonical UUIDs in the
+   module's `whitelist` binding. Obtain verified
    identities from the account owners and the official Minecraft profile
    service; do not invent UUIDs or grant OP. Names and UUIDs become public
    repository and Nix store data: get the owners' approval first.
    `whitelist.json` is a declarative store symlink; console `whitelist add`
    and edits to the generated file are not durable configuration.
 3. Back up any existing `/var/lib/minecraft` before starting this pinned version.
-   Never open a newer-version world with an older server. Evaluate/build the
-   intended configuration through the approved deployment workflow, then obtain
-   separate authorization to activate. From `/etc/nixos` on the server:
+   Never open a newer-version world with an older server. For an existing data
+   tree, stop all writers and, after taking the backup, prepare ownership with
+   `sudo chown -hR 25565:25565 /var/lib/minecraft` and
+   `sudo chmod 0700 /var/lib/minecraft`. Ensure UID/GID 25565 are not assigned to
+   an unrelated account; the module reserves them for `minecraft`. A fresh
+   directory is created by NixOS. Evaluate/build the intended configuration
+   through the approved deployment workflow, then obtain separate authorization
+   to activate. From `/etc/nixos` on the server:
 
    ```sh
    sudo nixos-rebuild switch --flake path:/etc/nixos#nixos-server
@@ -290,15 +306,22 @@ Deployment, DNS and router changes require separate operator authorization:
 Administration over the existing SSH connection:
 
 ```sh
+sudo docker logs -f minecraft
 sudo journalctl -u minecraft-server -f
 sudo systemctl status minecraft-server minecraft-backup.timer
 sudo systemctl start minecraft-backup.service
-sudo timeout 5s sh -c 'printf "list\n" > /run/minecraft-server.stdin'
+sudo timeout 5s docker exec minecraft /bin/bash -c 'printf "list\n" > /tmp/minecraft.stdin'
 ```
 
-Use FIFO console commands only while the service is running. No RCON password
-or new SSH credential is needed. Pin updates deliberately, back up first and
-test the chosen build before inviting players; do not auto-fetch latest JARs.
+Use FIFO console commands only while the container is running. Manage lifecycle
+with `systemctl start|stop|restart minecraft-server`, not direct `docker stop`,
+`docker restart` or `docker rm`: systemd owns restarts and backup coordination.
+The stop hook sends the console `stop` command, waits for exit code zero and
+rejects an OOM-killed container before allowing backups. A hung stop times out
+after five minutes, fails the unit and prevents archive publication.
+No RCON password or new SSH credential is needed. Pin updates deliberately,
+back up first and test the chosen build before inviting players; do not
+auto-fetch latest JARs.
 After authorized deployment, operator acceptance includes external A resolution,
 an empty AAAA answer, TCP 25565 reachability, no exposed RCON/query service,
 a whitelisted client's join and persisted world edit across graceful restart,
@@ -309,8 +332,9 @@ Report observed capacity only, not the configured player ceiling as a load resul
 #### Minecraft backups and recovery
 
 `hosts/nixos-server/modules/system/minecraft.nix` runs Leaf 1.21.11 build 179
-with Java 21. The Minecraft EULA is accepted. State lives in
-`/var/lib/minecraft`; root-only completed archives live in `/var/backup/minecraft`.
+with Java 21 in Docker. The Minecraft EULA is accepted. Host state lives in
+`/var/lib/minecraft` (container `/data`); root-only completed archives live in
+`/var/backup/minecraft` outside the container.
 At **05:00 Europe/Moscow** the persistent timer stops the game, requires a clean
 stop, archives the entire tree without dereferencing links, publishes by rename,
 and retains seven completed archives. Cleanup attempts restart even after a
@@ -358,7 +382,7 @@ Restoration requires separate operator approval and a trusted completed archive:
    on any error. Keep the printed/recorded `displaced` path for rollback.
    `chown -hR` does not traverse symlinks.
 5. Start with the matching server/config version, then inspect
-   `sudo journalctl -u minecraft-server -f` and verify the actual world and
+   `sudo docker logs -f minecraft` and verify the actual world and
    player state. Startup regenerates managed EULA, whitelist and properties.
    A Nix generation rollback alone does not roll back world data; never open
    a newer-version world with an older server.
