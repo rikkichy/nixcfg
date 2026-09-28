@@ -236,7 +236,8 @@ in
         "--memory=12g"
         "--memory-swap=12g"
         "--stop-timeout=300"
-        "--tmpfs=/tmp:rw,nosuid,nodev,size=1g,mode=1777"
+        # SQLite JDBC, JNA and Netty load extracted native libraries from /tmp.
+        "--tmpfs=/tmp:rw,exec,nosuid,nodev,size=1g,mode=1777"
       ];
     };
   };

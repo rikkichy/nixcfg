@@ -259,7 +259,8 @@ game user and must be treated as code. Their public config templates are owned
 by the module and copied at startup; account databases and skin caches persist.
 It runs as UID/GID **25565**, matching the host `minecraft` account, with all
 capabilities dropped, no new privileges, a read-only image and a private `/tmp`
-tmpfs. `/var/lib/minecraft` is bind-mounted at `/data`; deleting/recreating the
+tmpfs with `exec,nosuid,nodev`: Java loads SQLite JDBC, JNA and Netty native
+libraries extracted there. `/var/lib/minecraft` is bind-mounted at `/data`; deleting/recreating the
 container does not delete the world. Backups and the Docker socket are not
 mounted into the container. TCP 25565 is explicitly published on IPv4 only.
 Docker-published ports bypass the ordinary NixOS input firewall, so removing an
