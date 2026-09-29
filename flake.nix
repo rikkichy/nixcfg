@@ -39,7 +39,7 @@
     };
 
     omp = {
-      url = "github:apphousero/oh-my-pi-flake";
+      url = "github:rikkichy/oh-my-pi-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

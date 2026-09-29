@@ -791,6 +791,12 @@ Starship/fastfetch/btop/micro configuration. Optional local Fish additions belon
 in `~/.config/fish/user-config.fish`. Host modules own platform-specific shell
 initialization and terminal integration.
 
+Linux OMP comes from `github:rikkichy/oh-my-pi-flake`. Its hourly GitHub workflow
+commits the latest stable release after builds and smoke checks on both Linux
+architectures. `flake.lock` selects the installed release; `nix flake update omp`
+refreshes that pin. The desktop's daily upgrade includes OMP and takes effect
+after reboot. macOS uses the `can1357/tap/omp` Homebrew formula.
+
 The server's `hosts/nixos-server/home.nix` imports only the shared shell module.
 Fish is `ri`'s system login shell; reconnect SSH after activation to start it.
 Conflicting managed files are preserved with `.before-home-manager`; existing

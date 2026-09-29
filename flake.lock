@@ -100,15 +100,15 @@
         ]
       },
       "locked": {
-        "lastModified": 1790262424,
-        "narHash": "sha256-PVIZlkiZnDsbRq5qjRBdPZtwsem6SRdBupvyaGOBbv0=",
-        "owner": "apphousero",
+        "lastModified": 1790671427,
+        "narHash": "sha256-7lyG9V/Q64fOHs+nLtSB9Bo/B+0dm4ZM4xyDUECSfsA=",
+        "owner": "rikkichy",
         "repo": "oh-my-pi-flake",
-        "rev": "8ebd9958dc1214d2bfcd0ee0bddec4ffd07ca573",
+        "rev": "9b0c64cab5a608c425b6f03a73e5dbf29d4a91f9",
         "type": "github"
       },
       "original": {
-        "owner": "apphousero",
+        "owner": "rikkichy",
         "repo": "oh-my-pi-flake",
         "type": "github"
       }
