@@ -133,6 +133,10 @@ rules:
   - GEOSITE,instagram,REJECT
   - GEOSITE,protonmail,PROXY
   - GEOSITE,protonmail,REJECT
+  - GEOSITE,bitwarden,PROXY
+  - GEOSITE,bitwarden,REJECT
+  - DOMAIN-SUFFIX,noko.chat,PROXY
+  - DOMAIN-SUFFIX,noko.chat,REJECT
   - IP-ASN,22697,PROXY,no-resolve
   - IP-ASN,22697,REJECT,no-resolve
 

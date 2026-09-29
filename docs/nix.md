@@ -395,11 +395,13 @@ authentication. Browser origins are restricted to that localhost origin.
 
 ### Split routing and server selection
 
-YouTube, Discord, Roblox/Sober, Instagram and Proton Mail use the selected proxy
-server; other destinations use `DIRECT`. Domain rules use Mihomo's geosite data,
-Roblox's production network uses ASN data, and the template includes observed
-Discord voice IPs. Mihomo downloads geosite and ASN data from the publisher's
-jsDelivr mirror and checks for updates daily; first startup needs access to it.
+YouTube, Discord, Roblox/Sober, Instagram, Proton Mail, Bitwarden and noko.chat
+use the selected proxy server; other destinations use `DIRECT`. Domain rules use
+Mihomo's geosite data except noko.chat, whose domain-suffix rule includes all
+subdomains (including api.noko.chat and dl.noko.chat). Roblox's production network
+uses ASN data, and the template includes observed Discord voice IPs. Mihomo
+downloads geosite and ASN data from the publisher's jsDelivr mirror and checks
+for updates daily; first startup needs access to it.
 In Mihomo 1.19.31, a failed overdue GEO update during startup can stop its updater
 until a reload/restart. Check the GEO logs after a connectivity failure.
 The service retains its process sandbox: it does not identify desktop apps by
