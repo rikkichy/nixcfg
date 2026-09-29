@@ -1,10 +1,11 @@
-# The browser and its web apps
+# The browser
 
 Helium, a Chromium build, from the `helium` flake input. It is the browser
 `hosts/nix/dotfiles/ricing/hypr/variables.lua` names, the `x-scheme-handler/*` and `text/html` default in
-`hosts/nix/modules/home/applications.nix`, and the runtime behind the Bitwarden entry
-in `hosts/nix/modules/home/fuzzel.nix`, which is an `--app=URL` window. Spotify uses
-the native package from `common/modules/spotify.nix`.
+`hosts/nix/modules/home/applications.nix`. Bitwarden is the native
+`bitwarden-desktop` package in `hosts/nix/modules/system/applications.nix`;
+its launcher comes from that package. Spotify uses the native package from
+`common/modules/spotify.nix`.
 
 **Widevine is not in the browser package**, and Spotify's web player requires it. Without it Spotify loads, searches and browses normally and then
 refuses to play any track, with nothing in the UI or the logs naming a missing
@@ -50,21 +51,14 @@ Two things make this awkward to verify:
   feature being compiled out. `http://localhost` is trustworthy enough for it,
   so the smallest real test is a page served by socat.
 
-The web apps need `settings.StartupWMClass`. An `--app=URL` window carries its
-own WM_CLASS — `chrome-<host>__<path>-Default`, the `chrome-` prefix intact
-here — which never matches the desktop file id, so without it a running app
-falls back to the generic browser icon even though `Icon=` is correct. Read the
-real value off `hyprctl clients` with the app running — a wrong string fails
-silently.
-
 `StartupWMClass` only affects the icon of a **running window** (bar, alt-tab).
 It does nothing for the launcher entry, whose icon comes from `Icon=` resolved
 against the icon theme — a separate problem with a separate fix. Establish which
 one is actually wrong before changing anything.
 
-The browser is single-instance: `helium --app=URL` hands off to the running
-process and the launcher exits immediately. There is no process to `pkill` —
-close such a window through the compositor.
+The browser is single-instance: subsequent invocations hand off to the running
+process and the launcher exits immediately. Close the intended window through
+the compositor rather than killing the browser process.
 
 GTK apps built on `GApplication` are single-instance too, which makes a
 launcher keybind look broken rather than misconfigured: a bare second

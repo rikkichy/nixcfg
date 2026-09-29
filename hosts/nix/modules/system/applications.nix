@@ -31,7 +31,8 @@
     swayimg
     mpv
     qbittorrent
-    anytype
+    obsidian
+    bitwarden-desktop
     onlyoffice-desktopeditors
 
     (discord.override { withEquicord = true; })

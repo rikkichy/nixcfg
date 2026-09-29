@@ -218,6 +218,42 @@ Use its native actions for individual scopes, or
 and VPN choice intact. `troubleshootp` runs the same command in a held terminal.
 No post-reset connectivity checks run.
 
+## Notes and passwords
+
+Obsidian and Bitwarden are native desktop packages in
+`hosts/nix/modules/system/applications.nix`, with their packaged launcher entries.
+Bitwarden uses normal window placement; Hyprland does not force its size or floating state.
+Application data and vault settings remain user-owned. No Obsidian vault is created
+by the configuration, and existing Anytype data is left untouched.
+
+### Obsidian wallpaper colours
+
+Matugen renders `~/.config/obsidian/matugen.css` from
+`hosts/nix/dotfiles/ricing/matugen/templates/obsidian.css` through `wpp`, `awpp`,
+and wallpaper restoration. The snippet changes colours only, preserves Obsidian's
+semantic status colours, and targets its default theme.
+
+After activation, run `wpp` to generate the palette. Once you choose a vault,
+link the palette into that vault's default configuration folder:
+
+```sh
+vault="/path/to/your/vault"
+mkdir -p "$vault/.obsidian/snippets"
+ln -s "${XDG_CONFIG_HOME:-$HOME/.config}/obsidian/matugen.css" \
+  "$vault/.obsidian/snippets/matugen.css"
+```
+
+In **Settings → Appearance → CSS snippets**, refresh the list and enable
+**matugen**. Repeat for each vault; use its actual configuration-folder name if
+it differs from `.obsidian`. The link command deliberately does not overwrite an
+existing snippet.
+
+Obsidian loads the symlink but does not detect changes written to its external
+target. Reload Obsidian after wallpaper changes to pick up the new palette.
+The generated target must remain writable, not a Home Manager store symlink.
+See [Obsidian's CSS snippet guide](https://help.obsidian.md/snippets) for native
+snippet controls.
+
 ## Wallpapers and colours
 
 Runtime palettes are generated from a wallpaper: `fuzzel/colors.ini`, both
@@ -258,7 +294,8 @@ follows Matugen; restart Spotify after generating a new palette.
 **The colour engine owns a set of files at runtime.** Every time the wallpaper
 changes, `matugen` rewrites `fuzzel/colors.ini`, `btop/themes/wallpaper.theme`,
 `nvtop/nvtop.colors`, `gtk-3.0/gtk.css`, `gtk-4.0/gtk.css`, both `thunar.css`,
-`qtengine/scheme.colors`, `quickshell/colors.json`, `spicetify/colors.css` and `hypr/scheme/current.lua`. Home-manager files are
+`qtengine/scheme.colors`, `quickshell/colors.json`, `spicetify/colors.css`,
+`obsidian/matugen.css` and `hypr/scheme/current.lua`. Home-manager files are
 read-only store symlinks, so **do not** put any of those under
 `xdg.configFile` — every colour change would start failing. This is also why
 home-manager's `gtk` module is not used: it emits `gtk-4.0/gtk.css` too.

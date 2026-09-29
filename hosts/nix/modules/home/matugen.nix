@@ -29,6 +29,7 @@ let
       cursor = template ../../dotfiles/ricing/matugen/templates/cursor.conf cursorColours;
       discord = template ../../../../common/dotfiles/matugen/templates/discord-palette.css "${equicordDataDir}/settings/quickCss.css";
       spotify = spotifyPaletteTemplate;
+      obsidian = template ../../dotfiles/ricing/matugen/templates/obsidian.css "${cfg}/obsidian/matugen.css";
     };
   };
 

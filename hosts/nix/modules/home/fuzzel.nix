@@ -1,8 +1,6 @@
-{ config, pkgs, lib, inputs, nixcfgPath, ... }:
+{ config, pkgs, lib, nixcfgPath, ... }:
 
 let
-  helium = inputs.helium.packages.${pkgs.stdenv.hostPlatform.system}.default;
-
   desktopPicker = pkgs.writeShellApplication {
     name = "desktop-picker";
     runtimeInputs = [ pkgs.fuzzel ];
@@ -60,13 +58,6 @@ in
   xdg.dataFile."desktop-tools".source = "${desktopTools}/share";
 
   xdg.desktopEntries = let
-    webApp = name: url: icon: wmClass: {
-      inherit name icon;
-      exec = "${helium}/bin/helium --app=${url}";
-      terminal = false;
-      categories = [ "Network" ];
-      settings.StartupWMClass = wmClass;
-    };
     papirus = "${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark";
     terminalAction = name: command: {
       inherit name;
@@ -98,9 +89,6 @@ in
         // { icon = "${papirus}/32x32/devices/drive-harddisk.svg"; };
     };
   in {
-    bitwarden = webApp "Bitwarden" "https://vault.bitwarden.com" "bitwarden"
-      "chrome-vault.bitwarden.com__-Default";
-
     clipp = {
       name = "Clipboard";
       exec = "clipp";
