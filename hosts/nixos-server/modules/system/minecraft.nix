@@ -194,7 +194,7 @@ let
   '';
   socialChatConfig = pkgs.writeText "social-chat.yml" ''
     enabled: true
-    default-channel: global
+    defaultChannel: global
     groups:
       enabled: false
     channels:
@@ -205,12 +205,12 @@ let
         permission: null
         commands: []
         icon: ""
-        show-hover-text: false
-        hover-text: []
-        nickname-color: "#D3D3D3"
-        text-divider: "<gray>:raw_divider:</gray>"
-        text-color: "#FFFFFF"
-        join-by-default: true
+        showHoverText: false
+        hoverText: []
+        nicknameColor: "#D3D3D3"
+        textDivider: "<gray>:raw_divider:</gray>"
+        textColor: "#FFFFFF"
+        joinByDefault: true
   '';
   socialMotdConfig = pkgs.writeText "social-motd.yml" ''
     enabled: true
@@ -282,10 +282,31 @@ let
     '';
     meta.mainProgram = "minecraft-server";
   };
+  # Real files, not store symlinks: only this directory is mounted into the image.
+  managedConfig = pkgs.runCommand "minecraft-config" { } ''
+    mkdir -p "$out"
+    install -m 0444 ${eulaFile} "$out/eula.txt"
+    install -m 0444 ${whitelistSeedFile} "$out/whitelist-seed.json"
+    install -m 0444 ${operatorsFile} "$out/ops.json"
+    install -m 0444 ${playerPermissionsFile} "$out/permissions.yml"
+    install -m 0444 ${propertiesFile} "$out/server.properties"
+    install -m 0444 ${../../dotfiles/minecraft/server-icon.png} "$out/server-icon.png"
+    install -m 0444 ${miniMOTDConfig} "$out/minimotd.conf"
+    install -m 0444 ${authMeConfig} "$out/authme.yml"
+    install -m 0444 ${skinsRestorerConfig} "$out/skinsrestorer.yml"
+    install -m 0444 ${limitedLivesConfig} "$out/limitedlives.yml"
+    install -m 0444 ${socialChatConfig} "$out/social-chat.yml"
+    install -m 0444 ${socialMotdConfig} "$out/social-motd.yml"
+  '';
   entrypoint = pkgs.writeShellScript "minecraft-container-start" ''
     set -euo pipefail
-    export PATH=${lib.makeBinPath [ pkgs.coreutils ]}
+    export PATH=${lib.makeBinPath [ pkgs.coreutils pkgs.diffutils ]}
     umask 0077
+    installPlugin() {
+      if ! cmp -s -- "$1" "$2"; then
+        install -m 0644 -- "$1" "$2"
+      fi
+    }
     if [[ ! -e .declarative ]]; then
       for file in eula.txt whitelist.json server.properties ops.json permissions.yml; do
         if [[ -e "$file" || -L "$file" ]]; then
@@ -293,10 +314,10 @@ let
         fi
       done
     fi
-    ln -sfn ${eulaFile} eula.txt
+    ln -sfn /etc/minecraft/eula.txt eula.txt
     # Preserve the current list when converting a store symlink to runtime state.
     if [[ -L whitelist.json || ! -e whitelist.json ]]; then
-      whitelistSource=${whitelistSeedFile}
+      whitelistSource=/etc/minecraft/whitelist-seed.json
       if [[ -L whitelist.json && -e whitelist.json ]]; then
         whitelistSource=whitelist.json
       elif [[ -L whitelist.json ]]; then
@@ -315,30 +336,30 @@ let
     fi
     chmod 0600 whitelist.json
     rm -f ops.json
-    install -m 0600 ${operatorsFile} ops.json
+    install -m 0600 /etc/minecraft/ops.json ops.json
     rm -f permissions.yml
-    install -m 0600 ${playerPermissionsFile} permissions.yml
+    install -m 0600 /etc/minecraft/permissions.yml permissions.yml
     # Properties must be writable: Minecraft regenerates them during startup.
     rm -f server.properties
-    cp ${propertiesFile} server.properties
+    cp /etc/minecraft/server.properties server.properties
     chmod 0600 server.properties
-    install -m 0644 ${../../dotfiles/minecraft/server-icon.png} server-icon.png
+    install -m 0644 /etc/minecraft/server-icon.png server-icon.png
     mkdir -p plugins/MiniMOTD plugins/AuthMe plugins/SkinsRestorer plugins/LimitedLives plugins/social/settings
-    install -m 0644 ${miniMOTD} plugins/MiniMOTD.jar
+    installPlugin ${miniMOTD} plugins/MiniMOTD.jar
     # MiniMOTD saves normalized config on load, so this must be a writable copy.
     rm -f plugins/MiniMOTD/main.conf
-    install -m 0600 ${miniMOTDConfig} plugins/MiniMOTD/main.conf
-    install -m 0644 ${authMe} plugins/AuthMe.jar
-    install -m 0644 ${skinsRestorer} plugins/SkinsRestorer.jar
+    install -m 0600 /etc/minecraft/minimotd.conf plugins/MiniMOTD/main.conf
+    installPlugin ${authMe} plugins/AuthMe.jar
+    installPlugin ${skinsRestorer} plugins/SkinsRestorer.jar
     # Only public policy is replaced. Account databases and skin caches persist.
     rm -f plugins/AuthMe/config.yml plugins/SkinsRestorer/config.yml
-    install -m 0600 ${authMeConfig} plugins/AuthMe/config.yml
-    install -m 0600 ${skinsRestorerConfig} plugins/SkinsRestorer/config.yml
-    install -m 0644 ${limitedLives} plugins/LimitedLives.jar
+    install -m 0600 /etc/minecraft/authme.yml plugins/AuthMe/config.yml
+    install -m 0600 /etc/minecraft/skinsrestorer.yml plugins/SkinsRestorer/config.yml
+    installPlugin ${limitedLives} plugins/LimitedLives.jar
     # Life counts and storage settings are runtime state; replace only gameplay policy.
     rm -f plugins/LimitedLives/config.yml
-    install -m 0600 ${limitedLivesConfig} plugins/LimitedLives/config.yml
-    install -m 0644 ${social} plugins/social.jar
+    install -m 0600 /etc/minecraft/limitedlives.yml plugins/LimitedLives/config.yml
+    installPlugin ${social} plugins/social.jar
     # Legacy settings.yml takes precedence over settings/chat.yml; fail closed.
     if [[ -e plugins/social/settings.yml || -L plugins/social/settings.yml ]]; then
       echo "Remove social's legacy settings.yml after migrating it to settings/ before startup" >&2
@@ -346,8 +367,8 @@ let
     fi
     # Only chat and welcome policy are managed; social's database and other settings persist.
     rm -f plugins/social/settings/chat.yml plugins/social/settings/motd.yml
-    install -m 0600 ${socialChatConfig} plugins/social/settings/chat.yml
-    install -m 0600 ${socialMotdConfig} plugins/social/settings/motd.yml
+    install -m 0600 /etc/minecraft/social-chat.yml plugins/social/settings/chat.yml
+    install -m 0600 /etc/minecraft/social-motd.yml plugins/social/settings/motd.yml
     touch .declarative
     mkfifo -m 0600 /tmp/minecraft.stdin
     exec 3<> /tmp/minecraft.stdin
@@ -355,7 +376,6 @@ let
   '';
   image = pkgs.dockerTools.buildLayeredImage {
     name = "leaf-minecraft-server";
-    tag = leaf.version;
     contents = [ pkgs.bash pkgs.coreutils pkgs.dockerTools.caCertificates ];
     config = {
       Entrypoint = [ entrypoint ];
@@ -364,22 +384,64 @@ let
       Env = [ "SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt" ];
     };
   };
+  imageRef = "${image.imageName}:${image.imageTag}";
+  # Inspect exposes different IDs with Docker's classic and containerd stores.
+  # Compare runnable content instead: platform, config and ordered layer hashes.
+  # Extract once at build time; cache-hit starts never decompress the archive.
+  imageIdentity = pkgs.runCommand "minecraft-image-identity.json" {
+    nativeBuildInputs = [ pkgs.gnutar pkgs.gzip pkgs.jq ];
+  } ''
+    config=$(tar -xOf ${image} manifest.json | jq -er '.[0].Config')
+    tar -xOf ${image} "$config" |
+      jq -cS '{os, architecture, config, rootfs}' > "$out"
+  '';
+  ensureImage = pkgs.writeShellScript "minecraft-ensure-image" ''
+    set -euo pipefail
+    export PATH=${lib.makeBinPath [ pkgs.docker pkgs.coreutils pkgs.jq ]}
+    expected=$(cat ${imageIdentity})
+    inspectIdentity() {
+      timeout 5s docker image inspect --format '{{json .}}' ${imageRef} |
+        jq -cS '{os: .Os, architecture: .Architecture, config: .Config,
+          rootfs: {type: .RootFS.Type, diff_ids: .RootFS.Layers}}'
+    }
+    actual=$(inspectIdentity 2>/dev/null) || actual=
+    if [[ "$actual" != "$expected" ]]; then
+      echo "Loading Minecraft image ${imageRef}"
+      timeout 5m docker load --input ${image}
+      actual=$(inspectIdentity)
+      [[ "$actual" = "$expected" ]] || {
+        echo "Minecraft image runtime content does not match the built archive" >&2
+        exit 1
+      }
+    fi
+  '';
   minecraftReady = pkgs.writeShellScript "minecraft-ready" ''
     set -euo pipefail
     export PATH=${lib.makeBinPath [ pkgs.docker pkgs.coreutils pkgs.gnugrep ]}
-    attempts=''${1:-60}
-    started=$(timeout 5s docker inspect --format '{{.State.StartedAt}}' minecraft)
+    attempts=''${1:-300}
     for ((attempt=0; attempt<attempts; attempt++)); do
-      [[ "$(timeout 5s docker inspect --format '{{.State.Running}}' minecraft)" = true ]]
-      logs=$(timeout 5s docker logs --since "$started" minecraft 2>&1)
-      if grep -F ' INFO]: Done (' <<< "$logs" > /dev/null &&
-         grep -E '\[AuthMe\] AuthMe .* successfully enabled!' <<< "$logs" > /dev/null &&
-         ! grep -F '[AuthMe] Disabling AuthMe' <<< "$logs" > /dev/null; then
-        echo "Minecraft startup complete; AuthMe enabled"
-        exit 0
+      # ExecStartPost can run before docker run has created/started the container.
+      if state=$(timeout 5s docker inspect --format '{{.State.Status}} {{.State.StartedAt}}' minecraft); then
+        read -r status started <<< "$state"
+        case "$status" in
+          running)
+            logs=$(timeout 5s docker logs --since "$started" minecraft 2>&1)
+            if grep -F ' INFO]: Done (' <<< "$logs" > /dev/null &&
+               grep -E '\[AuthMe\] AuthMe .* successfully enabled!' <<< "$logs" > /dev/null &&
+               ! grep -F '[AuthMe] Disabling AuthMe' <<< "$logs" > /dev/null; then
+              echo "Minecraft startup complete; AuthMe enabled"
+              exit 0
+            fi
+            ;;
+          created) ;;
+          *)
+            echo "Minecraft container entered $status before readiness" >&2
+            exit 1
+            ;;
+        esac
       fi
       if ((attempt + 1 < attempts)); then
-        sleep 5
+        sleep 1
       fi
     done
     echo "Minecraft is not ready: require completed Leaf startup and enabled AuthMe" >&2
@@ -399,11 +461,14 @@ in
     backend = "docker";
     containers.minecraft = {
       serviceName = "minecraft-server";
-      image = "leaf-minecraft-server:${leaf.version}";
+      image = imageRef;
       imageFile = image;
       pull = "never";
       autoRemoveOnStop = false;
-      volumes = [ "${dataDir}:/data" ];
+      volumes = [
+        "${dataDir}:/data"
+        "${managedConfig}:/etc/minecraft:ro"
+      ];
       ports = [ "0.0.0.0:25565:25565/tcp" ];
       extraOptions = [
         "--read-only"
@@ -419,22 +484,29 @@ in
   };
   networking.firewall.allowedTCPPorts = [ 25565 ];
 
+  # Unlike activationScripts, preSwitchChecks run before the old units stop.
+  # Staging for boot and dry activation must not mutate the Docker image cache.
+  system.preSwitchChecks.minecraftImage = ''
+    case "$2" in
+      switch|test)
+        if ${pkgs.systemd}/bin/systemctl is-active --quiet docker.service; then
+          ${ensureImage}
+        else
+          echo "Docker is not active; Minecraft will load its image at service start"
+        fi
+        ;;
+    esac
+  '';
+
   systemd.services.minecraft-server = {
     requires = [ "docker.service" ];
-    # Nix builds the image closure before activation. Docker import still occurs
-    # in ExecStartPre; only completed game/plugin startup counts as ready.
+    # Pre-switch checks warm the image cache; this also covers boot, pruning,
+    # and manual restarts without reimporting an already-loaded image.
     postStart = "${minecraftReady}";
     # A successful docker stop alone does not prove a clean save (SIGKILL may
     # have been needed). Send the console stop and require a clean Java exit.
     preStop = lib.mkForce ''
       set -euo pipefail
-      # Skip the warning delay if startup never completed.
-      if ${minecraftReady} 1 > /dev/null 2>&1; then
-        ${pkgs.coreutils}/bin/timeout 5s docker exec minecraft \
-          ${pkgs.bash}/bin/bash -c \
-          'printf "%s\n" "minecraft:say Сервер остановится через 30 секунд. Сохраняем мир; подключитесь позже." > /tmp/minecraft.stdin'
-        ${pkgs.coreutils}/bin/sleep 30
-      fi
       ${pkgs.coreutils}/bin/timeout 5s docker exec minecraft \
         ${pkgs.bash}/bin/bash -c 'printf "stop\n" > /tmp/minecraft.stdin'
       code=$(docker wait minecraft)
@@ -443,6 +515,13 @@ in
     '';
     postStop = lib.mkForce "docker rm -f minecraft";
     serviceConfig = {
+      ExecStartPre = lib.mkForce [
+        (pkgs.writeShellScript "minecraft-pre-start" ''
+          set -euo pipefail
+          ${ensureImage}
+          docker rm -f minecraft || true
+        '')
+      ];
       TimeoutStartSec = lib.mkForce "6min";
       TimeoutStopSec = lib.mkForce "5min";
       Restart = lib.mkForce "always";

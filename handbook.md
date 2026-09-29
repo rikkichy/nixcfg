@@ -319,11 +319,17 @@ Deployment, DNS and router changes require separate operator authorization:
    This deployment is required for startup-policy changes, not ordinary
    `/whitelist add` or `/whitelist remove` commands.
    Do not deploy or restart while a backup or restore is running.
-   `nixos-rebuild switch` builds and fetches the system/image closure before
-   activation stops the running service. Gestalt's bootstrap is local and pinned;
-   first-start Maven downloads by other plugin loaders are not an offline closure.
-   Docker image import still happens during startup. This is a single-world
-   stop/start deployment, not a rolling replacement with concurrent writers.
+   `nixos-rebuild switch` builds and fetches the system/image closure, then a
+   pre-switch check imports the desired image while the old server is still
+   running. The check runs for `switch` and `test` when Docker is already active;
+   `boot`, `dry-activate` and standalone `check` do not import images. Import
+   failure aborts before service stops, but the system profile may already point
+   at the new generation; this is not an automatic profile rollback.
+   If Docker is inactive, checks are bypassed, or the image was pruned, service
+   startup loads it instead. This is a single-world stop/start deployment, not
+   a rolling replacement with concurrent writers. Gestalt's bootstrap is local
+   and pinned; other plugin loaders' first-start Maven downloads are not an
+   offline closure.
 4. Confirm local startup and working AuthMe login enforcement before publishing
    the endpoint. A running Leaf process does not prove that an authentication
    plugin loaded. If AuthMe fails to load or becomes disabled, stop the server;
@@ -368,19 +374,38 @@ sudo timeout 5s docker exec minecraft /bin/bash -c 'printf "list\n" > /tmp/minec
 Use FIFO console commands only while the container is running. Manage lifecycle
 with `systemctl start|stop|restart minecraft-server`, not direct `docker stop`,
 `docker restart` or `docker rm`: systemd owns restarts and backup coordination.
-For a server that completed startup, the stop hook announces a stop in Russian
-and waits 30 seconds before sending console `stop`. The warning also applies to
-backups and host shutdown; an incomplete startup skips that delay.
-It then requires exit code zero and rejects an OOM-killed container before
-allowing backups. The five-minute stop-command budget includes the warning.
+The stop hook sends console `stop` immediately, with no player warning or
+countdown, including for backups and host shutdown. It waits for the server to
+save and exit, requires exit code zero and rejects an OOM-killed container before
+allowing backups. The stop-command budget is five minutes.
 A hung stop fails the unit and prevents archive publication; subsequent systemd
 termination and container cleanup can extend the total shutdown time.
 
-The service's post-start gate requires both Leaf's `Done (...)` message and
-AuthMe's successful-enable message from the current container start, with no
-subsequent AuthMe disable message. Systemd keeps the unit activating until this
-check passes; the entire start job has a six-minute timeout. This is a startup
-check, not continuous health monitoring or proof of a successful client login.
+The image has a Nix-derived tag. Preloading and service startup compare its OS,
+architecture, complete runtime configuration and ordered filesystem-layer hashes
+against the built archive. These fields verify runnable content independently of
+Docker's backend-specific image-ID semantics. A matching image skips archive
+import entirely; a missing or mismatched image is loaded and verified. Imports
+have a five-minute timeout. A tag's presence alone is not accepted as proof.
+
+Managed public templates and the icon are a separate immutable directory mounted
+read-only at `/etc/minecraft`. Config-only changes change the mount's store path
+and therefore restart the unit, without rebuilding the game image. The entrypoint
+copies templates into writable runtime files where plugins require them; account
+databases, the writable whitelist and game state remain in `/var/lib/minecraft`.
+Plugin JARs stay in the image and are copied only when their bytes differ.
+Server/plugin/JVM or entrypoint updates change the image; configuration edits do
+not. Preloading reduces the stop/start outage, not the image import's total work
+or the time Java, Leaf and plugins need to initialize.
+
+The service's post-start gate waits for Docker to create and start the container,
+then requires both Leaf's `Done (...)` message and AuthMe's successful-enable
+message from that container start, with no AuthMe disable message. Absent or
+created containers are pending startup, not immediate failures; exited or other
+non-running states fail the check. The gate polls at one-second intervals for
+up to 300 attempts. Systemd keeps the unit activating until the gate passes;
+the entire start job has a six-minute timeout. This is a startup check, not
+continuous health monitoring or proof of a successful client login.
 Failed starts remain subject to the configured restart policy.
 No RCON password or new SSH credential is needed. Pin updates deliberately,
 back up first and test the chosen build before inviting players; do not
@@ -469,8 +494,10 @@ from that local artifact. Other plugins and social's Maven libraries may still
 need network access during their first startup.
 
 `socialChatConfig` in `hosts/nixos-server/modules/system/minecraft.nix` owns
-`plugins/social/settings/chat.yml`. There is one shared `global` channel, no
-staff channel, no channel-command aliases, and no channel icon or hover prompt.
+`plugins/social/settings/chat.yml`. Its keys use ConfigLib's camelCase names;
+`joinByDefault: true` makes players members of the shared `global` channel so
+they receive its messages. There is no staff channel, no channel-command aliases,
+and no channel icon or hover prompt.
 The groups module is disabled, so `/group` is not registered. The generic
 `/social channel` subcommand remains upstream-provided, but there are no alternate
 configured public channels to switch to. Private messages are separate from
