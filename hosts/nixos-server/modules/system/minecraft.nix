@@ -2,7 +2,6 @@
 
 let
   dataDir = "/var/lib/minecraft";
-  defaultLives = 3;
   # Offline UUIDs use UUID.nameUUIDFromBytes(("OfflinePlayer:" + exactName).getBytes(UTF_8)).
   # These approved names/UUIDs are public; AuthMe credentials stay in /var/lib/minecraft.
   whitelistSeed = {
@@ -217,51 +216,56 @@ let
     message:
       - '<bold><gradient:#25D366:#39FF14:#00D4C4>WhatsApp Miku SMP</gradient></bold>'
       - '<gray>здарова, <green>$(nickname)</green></gray>'
-      - ""
-      - '<green>/lives</green><gray> — сколько осталось</gray>'
-      - '<green>/lives give 1 \<ник></green><gray> — спасти друга</gray>'
-      - '<gray>по понедельникам в <green>06:00 МСК</green> всем снова по <green>${toString defaultLives}</green> жизни</gray>'
   '';
-  limitedLives = pkgs.fetchurl {
-    url = "https://cdn.modrinth.com/data/LvTKDASD/versions/g6fmkYed/LimitedLives-4.2.2.jar";
-    sha512 = "6c7490caa5dcb6f87def429ac7d896d34e99823fa83100461f259bdee92eb4178badf8b61c123d0aefe653cbee285ecffb0f08ae2dff45b40cd96d459a2f16df";
+  inventoryRollback = pkgs.fetchurl {
+    url = "https://cdn.modrinth.com/data/XWKWAzd8/versions/eDsOfX6z/InventoryRollbackPlus-1.8.5.jar";
+    sha512 = "7982cbea2b067844908c1e2a2b3b5bfd83c6e1b5e1390f4a8c46c0303e9b944c807f89806e8f7c8cb48a114724e2a706a1169f75fe2074247e2f761753888206";
   };
-  limitedLivesConfig = pkgs.writeText "limitedlives-config.yml" ''
-    lives:
-      default: ${toString defaultLives}
-      max: 4
-      min: 0
-    death-causes: []
-    worlds-blacklist:
-      list: []
-      act-as-whitelist: false
-    keep-inventory:
+  inventoryRollbackConfig = pkgs.writeText "inventoryrollbackplus-config.yml" ''
+    enabled: true
+    max-saves:
+      join: 10
+      quit: 10
+      death: 50
+      world-change: 10
+      force: 10
+    folder-location: DEFAULT
+    mysql:
       enabled: false
-    grace-period:
-      enabled: false
-      duration: 60
-      triggers: [FIRST_JOIN, REVIVE]
-      bypass-causes: []
-      disabled-damage-causes: []
-    commands:
-      punishment:
-        death:
-          - "minecraft:ban %player% Out of lives! Ask a friend to donate a life."
-        respawn: []
-      revive:
-        - "minecraft:pardon %player%"
-    obtaining:
-      stealing: true
-      crafting:
-        enabled: false
+    time-zone: 'UTC+3'
+    time-format: 'yyyy-MM-dd HH:mm:ss z'
+    allow-other-plugins-edit-death-inventory: false
+    restore-to-player-button: true
+    save-empty-inventories: true
+    update-checker: false
+    bStats: false
   '';
-  playerPermissionsFile = pkgs.writeText "permissions.yml" ''
-    miku.lives.player:
-      description: View and donate your own LimitedLives lives
-      default: true
-      children:
-        limitedlives.get.self: true
-        limitedlives.give: true
+  coreProtect = pkgs.fetchurl {
+    url = "https://cdn.modrinth.com/data/Lu3KuzdV/versions/3sehX6Sg/CoreProtect-CE-24.1.jar";
+    sha512 = "76aad727528ddb990bbee5069f8ef3fcd018ae0bcdea89b965be2485e828633eb068672e841be64e550c8474f901a24d8c15c7bd44c2bd6c96244e1e58de0c95";
+  };
+  coreProtectConfig = pkgs.writeText "coreprotect-config.yml" ''
+    use-mysql: false
+    check-updates: false
+    error-reporting: false
+    # AuthMe login/register commands can contain passwords.
+    player-commands: false
+    player-messages: false
+  '';
+  leafGlobalConfig = pkgs.writeText "leaf-global.yml" ''
+    config-version: '3.0'
+    async:
+      async-chunk-send:
+        enabled: true
+    performance:
+      reduce-packets:
+        reduce-entity-move-packets: true
+        reduce-entity-motion-packets: true
+  '';
+  paperGlobalConfig = pkgs.writeText "paper-global.yml" ''
+    _version: 31
+    chunk-loading-basic:
+      player-max-chunk-send-rate: 50.0
   '';
   leaf = pkgs.stdenvNoCC.mkDerivation {
     pname = "leaf-minecraft-server";
@@ -288,13 +292,15 @@ let
     install -m 0444 ${eulaFile} "$out/eula.txt"
     install -m 0444 ${whitelistSeedFile} "$out/whitelist-seed.json"
     install -m 0444 ${operatorsFile} "$out/ops.json"
-    install -m 0444 ${playerPermissionsFile} "$out/permissions.yml"
     install -m 0444 ${propertiesFile} "$out/server.properties"
+    install -m 0444 ${leafGlobalConfig} "$out/leaf-global.yml"
+    install -m 0444 ${paperGlobalConfig} "$out/paper-global.yml"
     install -m 0444 ${../../dotfiles/minecraft/server-icon.png} "$out/server-icon.png"
     install -m 0444 ${miniMOTDConfig} "$out/minimotd.conf"
     install -m 0444 ${authMeConfig} "$out/authme.yml"
     install -m 0444 ${skinsRestorerConfig} "$out/skinsrestorer.yml"
-    install -m 0444 ${limitedLivesConfig} "$out/limitedlives.yml"
+    install -m 0444 ${inventoryRollbackConfig} "$out/inventoryrollbackplus.yml"
+    install -m 0444 ${coreProtectConfig} "$out/coreprotect.yml"
     install -m 0444 ${socialChatConfig} "$out/social-chat.yml"
     install -m 0444 ${socialMotdConfig} "$out/social-motd.yml"
   '';
@@ -338,13 +344,28 @@ let
     rm -f ops.json
     install -m 0600 /etc/minecraft/ops.json ops.json
     rm -f permissions.yml
-    install -m 0600 /etc/minecraft/permissions.yml permissions.yml
     # Properties must be writable: Minecraft regenerates them during startup.
     rm -f server.properties
     cp /etc/minecraft/server.properties server.properties
     chmod 0600 server.properties
+    # Leaf and Paper expand omitted settings to their pinned-version defaults.
+    mkdir -p config
+    rm -f config/leaf-global.yml config/paper-global.yml
+    install -m 0600 /etc/minecraft/leaf-global.yml config/leaf-global.yml
+    install -m 0600 /etc/minecraft/paper-global.yml config/paper-global.yml
     install -m 0644 /etc/minecraft/server-icon.png server-icon.png
-    mkdir -p plugins/MiniMOTD plugins/AuthMe plugins/SkinsRestorer plugins/LimitedLives plugins/social/settings
+    # Retire persisted gameplay state before Leaf scans the writable plugin directory.
+    if [[ -e plugins/LimitedLives.jar || -d plugins/LimitedLives ]]; then
+      if [[ -f banned-players.json ]]; then
+        bansTmp=$(mktemp .banned-players.XXXXXXXX)
+        ${pkgs.jq}/bin/jq 'map(select(.reason != "Out of lives! Ask a friend to donate a life."))' \
+          banned-players.json > "$bansTmp"
+        mv -T -- "$bansTmp" banned-players.json
+      fi
+      rm -f plugins/LimitedLives.jar plugins/.paper-remapped/LimitedLives.jar
+      rm -rf plugins/LimitedLives
+    fi
+    mkdir -p plugins/MiniMOTD plugins/AuthMe plugins/SkinsRestorer plugins/InventoryRollbackPlus plugins/CoreProtect plugins/social/settings
     installPlugin ${miniMOTD} plugins/MiniMOTD.jar
     # MiniMOTD saves normalized config on load, so this must be a writable copy.
     rm -f plugins/MiniMOTD/main.conf
@@ -355,10 +376,14 @@ let
     rm -f plugins/AuthMe/config.yml plugins/SkinsRestorer/config.yml
     install -m 0600 /etc/minecraft/authme.yml plugins/AuthMe/config.yml
     install -m 0600 /etc/minecraft/skinsrestorer.yml plugins/SkinsRestorer/config.yml
-    installPlugin ${limitedLives} plugins/LimitedLives.jar
-    # Life counts and storage settings are runtime state; replace only gameplay policy.
-    rm -f plugins/LimitedLives/config.yml
-    install -m 0600 /etc/minecraft/limitedlives.yml plugins/LimitedLives/config.yml
+    installPlugin ${inventoryRollback} plugins/InventoryRollbackPlus.jar
+    # Replace public policy only; per-player inventory snapshots persist.
+    rm -f plugins/InventoryRollbackPlus/config.yml
+    install -m 0600 /etc/minecraft/inventoryrollbackplus.yml plugins/InventoryRollbackPlus/config.yml
+    installPlugin ${coreProtect} plugins/CoreProtect.jar
+    # CoreProtect owns its persistent database; only public policy is replaced.
+    rm -f plugins/CoreProtect/config.yml
+    install -m 0600 /etc/minecraft/coreprotect.yml plugins/CoreProtect/config.yml
     installPlugin ${social} plugins/social.jar
     # Legacy settings.yml takes precedence over settings/chat.yml; fail closed.
     if [[ -e plugins/social/settings.yml || -L plugins/social/settings.yml ]]; then
@@ -527,36 +552,6 @@ in
       Restart = lib.mkForce "always";
       RestartSec = "10s";
     };
-  };
-
-  systemd.timers.minecraft-lives-reset = {
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnCalendar = "Mon *-*-* 06:00:00 Europe/Moscow";
-      Persistent = true;
-    };
-  };
-  systemd.services.minecraft-lives-reset = {
-    description = "Weekly Minecraft life reset for online and offline players";
-    requires = [ "minecraft-server.service" ];
-    after = [ "minecraft-server.service" "minecraft-backup.service" ];
-    path = [ pkgs.docker pkgs.coreutils ];
-    serviceConfig = {
-      Type = "oneshot";
-      TimeoutStartSec = "6min";
-      UMask = "0077";
-    };
-    script = ''
-      set -euo pipefail
-      # Requires/After waits for the server's postStart readiness gate.
-      # Recheck once so a stopped or disabled AuthMe cannot receive reset commands.
-      ${minecraftReady} 1
-      # AnnoyingAPI's !all_players includes offline players, unlike vanilla @a.
-      # LimitedLives runs its revive/pardon hook for each zero-to-positive change.
-      timeout 5s docker exec minecraft ${pkgs.bash}/bin/bash -c \
-        'printf "%s\n" "limitedlives:lives set ${toString defaultLives} !all_players" > /tmp/minecraft.stdin'
-      echo "Submitted weekly reset to ${toString defaultLives} lives for all known players"
-    '';
   };
 
   systemd.tmpfiles.rules = [

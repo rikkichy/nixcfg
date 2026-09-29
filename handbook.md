@@ -299,10 +299,16 @@ restores skins by name; authenticated players can use `/skin set <skinName>` and
 `/skin clear`. Skin lookups are not account verification. Cancelled logins do not
 trigger skin updates, and AuthMe's pre-login command list does not permit skin
 commands. No RCON, query, JMX or management listener is provisioned.
-MiniMOTD, AuthMe, SkinsRestorer, LimitedLives and social are the provisioned plugins.
-All run as the game user and must be treated as code. Managed public config
-templates are copied at startup; account databases, skin caches, saved life
-counts and social user data persist.
+MiniMOTD, AuthMe, SkinsRestorer, InventoryRollbackPlus, CoreProtect and social
+are the provisioned plugins. All run as the game user and must be treated as
+code. Managed public config templates are copied at startup; account databases,
+skin caches, inventory snapshots, CoreProtect history and social user data persist.
+There is no life limit, life-donation command or scheduled life reset. Startup
+removes persisted LimitedLives JARs and its data directory when present, and
+removes name bans with the exact reason
+`Out of lives! Ask a friend to donate a life.` while preserving other bans.
+The managed `permissions.yml` is cleared at startup; ordinary player access
+uses the installed plugins' defaults. Existing backup archives are unchanged.
 It runs as UID/GID **25565**, matching the host `minecraft` account, with all
 capabilities dropped, no new privileges, a read-only image and a private `/tmp`
 tmpfs with `exec,nosuid,nodev`: Java loads SQLite JDBC, JNA and Netty native
@@ -461,6 +467,107 @@ the login dialog must disconnect. Check skins after login. Port scans do not
 prove authentication. Inspect the timer schedule and a manual archive privately.
 Report observed capacity only, not the configured player ceiling as a load result.
 
+#### Minecraft network tuning
+
+`leafGlobalConfig` and `paperGlobalConfig` in
+`hosts/nixos-server/modules/system/minecraft.nix` own
+`/var/lib/minecraft/config/leaf-global.yml` and `paper-global.yml`.
+Startup replaces both with writable templates; Leaf and Paper expand omitted
+options to their pinned-version defaults. Put durable global settings in the
+templates, not the generated files. World-specific configuration is unchanged.
+
+Leaf enables `performance.reduce-packets.reduce-entity-move-packets` and
+`reduce-entity-motion-packets` to filter redundant entity packets, plus
+`async.async-chunk-send.enabled` to offload chunk preparation and sending.
+Paper limits `chunk-loading-basic.player-max-chunk-send-rate` to **50 chunks
+per second per player**. This caps chunk bursts at the cost of slower terrain
+delivery during joins, teleports and fast travel; it is not a byte-rate cap.
+View distance is 8 and simulation distance is 6. Network compression retains
+the pinned server's threshold of 256, with native transport enabled.
+Experimental async entity tracking and non-flush packet optimization remain off.
+
+Use the approved rebuild/restart workflow; async chunk sending requires a
+restart. These settings do not fix Internet routing, Wi-Fi loss or propagation
+latency. After activation, compare existing-terrain play and exploration while
+checking `/spark ping --player Denay39`, `/tps` and `/mspt`. Confirm client chunk
+delivery and entity movement in-game; startup validation alone does not prove
+lower latency or smoother play.
+
+#### Minecraft inventory recovery
+
+Pinned [InventoryRollbackPlus 1.8.5](https://modrinth.com/plugin/inventoryrollbackplus/version/eDsOfX6z)
+records inventories, armor, ender chests, XP and player status on death, join,
+quit, world change and manual backup. It retains 50 death snapshots and 10 of
+each other type per player, including empty inventories. Older snapshots roll
+off at those limits. The plugin captures death inventories before most other
+death handlers; items still drop normally.
+Recovery only covers events recorded after the plugin is activated.
+
+`inventoryRollbackConfig` in `hosts/nixos-server/modules/system/minecraft.nix`
+owns public policy, copied to `plugins/InventoryRollbackPlus/config.yml` at
+startup. Snapshots use local YAML storage under
+`/var/lib/minecraft/plugins/InventoryRollbackPlus/`, persist across image
+updates and are included in the daily offline archive. Display times use
+`UTC+3` (Moscow); update checks and bStats are disabled.
+
+As an authenticated operator, use:
+
+```text
+/irp forcebackup Denay39
+/irp restore Denay39
+```
+
+The first command snapshots the online player's current state before a restore.
+The second opens the backup menu: select the death category, timestamp and
+inventory restore action. The full-inventory restore button requires the target
+online and **overwrites their current inventory without making its own backup**.
+Do not also recover the same dropped items or copy items out of the preview:
+that can duplicate them. Restore only the intended inventory; teleport, XP,
+health and ender-chest recovery are separate actions.
+
+Restore/manual-backup permissions default to operators; ordinary players'
+snapshots are automatic. Before relying on recovery after deployment, use a
+disposable item to verify death capture and restoration through the in-game
+menu. Installing the plugin requires the approved rebuild/restart workflow;
+do not hot-load it into the running server.
+
+#### Minecraft block and container history
+
+Pinned [CoreProtect Community Edition 24.1](https://modrinth.com/plugin/coreprotect/version/3sehX6Sg)
+logs block changes, container transactions, item drops/pickups and other
+gameplay events using its upstream logging defaults. Player command and chat
+logging are disabled; authentication commands must not be stored as audit
+history. Update checks and automatic error reporting are also disabled.
+`coreProtectConfig` in the server module owns these settings and is copied to
+`plugins/CoreProtect/config.yml` at startup.
+
+CoreProtect uses SQLite at
+`/var/lib/minecraft/plugins/CoreProtect/database.db`; the database persists
+across rebuilds and is included in daily offline backups. No external database
+or credentials are required. No automatic purge is configured: monitor disk
+usage, and retain a backup before deliberately purging old history.
+History only covers events recorded after activation.
+
+As an authenticated operator, inspect blocks/containers with `/co inspect`
+(repeat to disable), check `/co status`, or use scoped lookups:
+
+```text
+/co lookup u:Denay39 t:1h r:20 a:block
+/co lookup u:Denay39 t:1h r:20 a:container
+/co rollback u:Denay39 t:1h r:20 a:block #preview
+```
+
+The radius is centered on the operator. Review a preview before applying a
+rollback without `#preview`; `/co restore` reapplies rolled-back actions.
+Avoid broad/global rollbacks. Lookup, inspection and rollback permissions
+default to operators; no additional player grants are provisioned.
+Use InventoryRollbackPlus for full death-inventory snapshots, and do not
+restore the same lost items through both plugins.
+
+Deployment uses the approved image rebuild/restart workflow. After activation,
+verify `/co status`, then place/break a disposable block and confirm its history
+with the inspector before relying on production recovery.
+
 #### Minecraft account provisioning
 
 Whitelisted players can connect using their exact name and create a unique
@@ -562,106 +669,6 @@ AuthMe's pre-login command allowlist is unchanged: do not add social commands.
 Explicitly test that a client without successful authentication cannot send
 chat, private messages or trigger reactions. Configuration evaluation and
 source inspection are not proof of this integration.
-
-#### LimitedLives gameplay
-
-[LimitedLives 4.2.2](https://modrinth.com/plugin/limitedlives/version/g6fmkYed)
-is the pinned stable release for Paper-compatible Minecraft 1.21.11. Its required
-AnnoyingAPI dependency is embedded; PlaceholderAPI and WorldGuard are optional
-and are not provisioned.
-
-Edit `limitedLivesConfig` in `hosts/nixos-server/modules/system/minecraft.nix`.
-Startup installs it as `/var/lib/minecraft/plugins/LimitedLives/config.yml`.
-Use the approved rebuild/restart workflow for durable changes; direct edits to
-that generated config are overwritten on the next container start.
-
-| Setting | Configured behavior | Alternatives |
-| --- | --- | --- |
-| `lives.default`, `max`, `min` | 3 starting, 4 maximum, punishment at 0 | Change starting/cap/threshold values |
-| `death-causes` | Empty list: all death causes cost a life | Restrict to causes such as `PLAYER_ATTACK` or `FALL` |
-| `commands.punishment.death` | Vanilla name ban immediately at zero lives; no expiry | Console commands with `%player%` and `%killer%` placeholders |
-| `commands.revive` | Vanilla pardon when lives increase above zero | Custom console commands |
-| `obtaining.stealing` | A PvP killer gains a life, up to their maximum | Set `false` to disable |
-| `obtaining.crafting.enabled` | Disabled: no craftable life item | Enable with a configured recipe, item, amount and trigger |
-| `grace-period` | Disabled; template supplies 60 seconds for `FIRST_JOIN`/`REVIVE` if enabled | Duration, triggers and cause exceptions |
-| `worlds-blacklist` | Empty: all worlds | Exclude worlds, or set `act-as-whitelist=true` to allow only listed worlds |
-| `keep-inventory.enabled` | Disabled: vanilla gamerule behavior is retained | Plugin-specific keep/drop/destroy rules; requires `keepInventory=false` |
-
-Do not enable the plugin's inventory rules casually: upstream warns of inventory
-loss if combined with the vanilla keepInventory gamerule. Its rule index is
-`max lives - current lives`, not a historical death counter.
-
-Operator commands (amount precedes the target name):
-
-```text
-/lives get Rikkichy
-/lives set 3 Rikkichy
-/lives add 1 ekhosmerti
-/lives remove 1 Denay39
-/lifereload
-```
-
-A surviving player rescues a banned friend with:
-
-```text
-/lives give 1 Rikkichy
-```
-
-This transfers a life, rather than creating one. The donor needs at least two
-lives and retains at least one; the recipient may be offline. Moving from zero
-to one life triggers `minecraft:pardon`, allowing the rescued player to reconnect
-and authenticate with one life. No timed-ban plugin is used.
-If everyone is at zero before the weekly reset, the operator can run `lives add 1 <name>` through the
-existing FIFO console to rescue someone. A bare pardon does not restore lives.
-Revival intentionally pardons any name ban for that player, including a manual
-moderation ban; this friends-server policy does not distinguish ban reasons.
-
-**Weekly reset:** `minecraft-lives-reset.timer` runs on **Monday at 06:00
-Europe/Moscow**, after the daily 05:00 backup slot. It sets every known player's
-lives to the configured default (3), including offline players and players with
-4 lives. Zero-to-positive changes invoke the same pardon hook as donations.
-The world and inventories are not reset. Players can donate to rescue friends
-before Monday; this is a shared calendar schedule, not seven days per death.
-
-The persistent timer catches a missed run after host downtime. Its service
-starts Minecraft if stopped, orders itself after any queued backup, and waits
-for the server's Leaf/AuthMe readiness gate. It rechecks readiness once before
-writing `limitedlives:lives set 3 !all_players` through the private console FIFO.
-The pinned plugin's `!all_players` selector includes offline players; vanilla
-`@a` does not. `defaultLives` in the module supplies both new-player lives and
-the reset amount. No database edits or additional plugin are needed.
-
-Inspect `systemctl list-timers minecraft-lives-reset.timer` and
-`journalctl -u minecraft-lives-reset.service` on the server. A successful service
-means the command was submitted, not that the plugin acknowledged every change;
-check the Minecraft console's per-player responses and `/lives get <name>` for
-acceptance. Startup or console transport failures fail the service without a
-reset retry. Manual runs of the service also reset lives immediately.
-
-The module's `playerPermissionsFile` installs managed `/data/permissions.yml`.
-Its default parent permission grants `limitedlives.get.self` and
-`limitedlives.give`, so ordinary authenticated players can check their own lives
-and donate. No admin add/set/remove, ban/pardon, bypass or wildcard permissions
-are granted. AuthMe still blocks `/lives` before login. Operator commands retain
-their upstream permissions; `limitedlives.bypass` defaults to false even for
-operators, so Rikkichy is not automatically exempt from life loss.
-`limitedlives.max.<number>` can override a player's cap; no permission-manager
-plugin is required for the two default player grants.
-
-`/lifereload` rereads the runtime gameplay config. Use the approved restart
-workflow for managed changes, especially permissions or crafting recipes.
-
-Life counts are UUID-keyed persistent plugin state under
-`/var/lib/minecraft/plugins/LimitedLives`, included in full-world backups.
-Startup replaces only the JAR and `config.yml`, not storage settings or data.
-Changing `lives.default` affects players without a stored life count; it does not
-reset saved counts. Lowering the maximum does not automatically clamp existing
-counts either. Use `/lives set 3 <name>` for a deliberate reset, rather than
-deleting storage. Existing spectators need an operator to restore their survival
-mode; this policy does not switch gamemodes. Restoring a backup also restores
-its saved life counts and vanilla ban list.
-See the [pinned upstream configuration](https://github.com/srnyx/limited-lives/blob/4.2.2/src/main/resources/config.yml)
-for feature filters, grace-period exceptions and complete recipe options.
 
 #### Minecraft backups and recovery
 
