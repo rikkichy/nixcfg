@@ -90,8 +90,48 @@ Verify the server host-key fingerprint through the console before accepting it.
 The SSH YubiKey stays connected to the client and requires touch; the server
 does not request FIDO2 user verification. An authenticator's AlwaysUV policy
 or a local key-file passphrase can still require an additional prompt.
-SSH does not unlock LUKS or forward the token for sudo: without a server-side
-token, use the configured password fallback for those operations.
+SSH does not unlock LUKS or forward the USB token. Server boot unlock needs a
+server-side token or the disk passphrase.
+
+For remote sudo, `nixos-server` enables `pam_rssh` for `sudo` and `sudo-i`.
+It requests signatures through a forwarded SSH agent and trusts only the
+root-controlled `/etc/ssh/authorized_keys.d/<user>` key inventory. The same
+FIDO SSH key authorizes login and remote sudo; removing it from the server's
+declarative authorized keys revokes both after activation. Server-local U2F
+and the Unix account password remain fallback paths. Other hosts and PAM
+services do not enable remote sudo authentication.
+
+On the **client**, use an OpenSSH agent with FIDO security-key support, load
+the existing credential handle, and connect:
+
+```sh
+ssh-add ~/.ssh/nixos-server
+ssh nixos-server
+```
+
+An agent must already be running and selected through `SSH_AUTH_SOCK`.
+`IdentityFile` alone does not load the key into an agent. For tunneled access,
+use `ssh nixos-server-remote` after starting the configured tunnel.
+The shared client configuration forwards the agent only for `nixos-server`
+and `nixos-server-remote`. Activate that configuration on the connecting
+client (`nix` or `ne`); rebuilding the server does not update client settings.
+Before client activation, pass `-A` explicitly; use `-a` to disable forwarding
+for an individual connection. Use a dedicated
+agent containing only the server key where practical. A compromised server
+can request signatures from a forwarded agent; touch does not identify the
+requesting operation. Do not approve unexpected touches.
+
+Activate server policy only with separate operator approval, using
+`sudo nixos-rebuild switch --flake path:/etc/nixos#nixos-server`, while retaining
+a working root recovery shell. Reconnect with forwarding and check `ssh-add -l`
+on the server: it must list the expected `ED25519-SK` identity.
+Invalidate sudo timestamps before each test: `sudo -k; sudo -v` and,
+separately, `sudo -k; sudo -i`. Verify client key/touch success, cancellation
+or no-touch without unintended authorization, absent agent/key with correct
+password fallback, and rejection with an unauthorized key and wrong password.
+Exit each test root shell without closing the recovery shell. Retain recovery
+until both sudo services pass. Cached sudo authorization is not proof of touch;
+evaluation and isolated PAM checks are not hardware-authentication proof.
 
 Numbered menus select the host, disk and YubiKey. The target menu shows only
 unused internal disks, with vendor/model and GiB/TiB sizes; choose "Show external

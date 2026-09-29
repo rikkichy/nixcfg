@@ -25,10 +25,24 @@
     enable = true;
     openFirewall = true;
     settings = {
+      AllowAgentForwarding = true;
       PasswordAuthentication = false;
       KbdInteractiveAuthentication = false;
       PermitRootLogin = "no";
     };
+  };
+
+  security.pam = {
+    rssh = {
+      enable = true;
+      settings = {
+        # Trust the root-controlled SSH key inventory, never a user-writable file.
+        auth_key_file = "/etc/ssh/authorized_keys.d/$user";
+        cue = true;
+      };
+    };
+    services.sudo.rssh = true;
+    services.sudo-i.rssh = true;
   };
 
   boot.loader.timeout = 5;

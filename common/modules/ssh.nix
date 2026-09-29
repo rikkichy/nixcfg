@@ -27,6 +27,7 @@
         User = "ri";
         IdentityFile = "~/.ssh/nixos-server";
         IdentitiesOnly = true;
+        ForwardAgent = true;
       };
       "nixos-server-remote" = {
         HostName = "127.0.0.1";
@@ -35,6 +36,7 @@
         User = "ri";
         IdentityFile = "~/.ssh/nixos-server";
         IdentitiesOnly = true;
+        ForwardAgent = true;
       };
     };
   };
