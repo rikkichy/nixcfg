@@ -29,8 +29,6 @@ reset, production secret access, or reboot is implied by running validation.
   newlines; assert exact SOPS scalar values survive decoding. Check a failed
   render does not publish a partial configuration, output is root-only, and
   missing HWID cannot silently become a new machine identity.
-  Run `python scripts/mihomo-config-test.py` with the renderer's Python/PyYAML
-  environment for the dummy-data regression.
 - Inspect secret-install/render/service ordering, lack of stale
   `RemainAfterExit` state, and restart propagation to `LoadCredential`.
   In an approved isolated runtime, change a dummy secret and verify that

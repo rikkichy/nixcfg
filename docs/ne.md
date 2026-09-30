@@ -13,6 +13,7 @@ Recovery: [Spotify update-cache protection](#spotify-and-spicetify) ·
 - [Ownership](#ownership)
 - [Bootstrap](#bootstrap)
 - [Updates and shell migration](#updates-and-shell-migration)
+- [SSH agent](#ssh-agent)
 - [Keyboard](#keyboard)
 - [Ghostty and wallpaper themes](#ghostty-and-wallpaper-themes)
 - [Discord and Equicord](#discord-and-equicord)
@@ -96,6 +97,22 @@ Before removing a Brew Fish installation, check `dscl . -read /Users/"$USER" Use
 and verify `/run/current-system/sw/bin/fish` starts. After activation registers
 that path in `/etc/shells`, select it with `chsh -s /run/current-system/sw/bin/fish`.
 macOS may request authentication for this account change.
+
+## SSH agent
+
+Home Manager runs the FIDO-capable Nix OpenSSH agent as the user launchd job
+`org.nix-community.home.ssh-agent`. Shell initialization selects its socket
+instead of Apple's agent, while preserving agents forwarded into SSH sessions.
+The `nixos-server` and `nixos-server-remote` aliases use `AddKeysToAgent`: the
+first login loads the existing `~/.ssh/nixos-server` credential handle into the
+agent, and fresh terminals reuse it. Agent identities must be loaded again after
+the agent exits, including logout; the next login loads the handle automatically.
+
+After approved activation, open a new terminal and connect with
+`ssh nixos-server`. On the server, `ssh-add -l` should list the forwarded
+`ED25519-SK` identity. See [remote sudo](nixos-server.md#ssh-and-remote-sudo)
+for touch tests, password recovery, and forwarding risks. Credential handles
+remain outside the checkout and Nix store; activation does not create keys.
 
 ## Keyboard
 

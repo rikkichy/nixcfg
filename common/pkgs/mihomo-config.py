@@ -4,19 +4,22 @@ from pathlib import Path
 import pwd
 import secrets
 import sys
+from string import Template
 import tempfile
 
-import yaml
+# YAML folds Unicode line separators and rejects raw C1 controls.
+YAML_ESCAPES = {code: f"\\u{code:04x}" for code in (*range(0x7f, 0xa0), 0x2028, 0x2029)}
 
 
 def render(template, primary, quattro, hwid, hostname, token):
-    config = yaml.safe_load(template)
-    config["secret"] = token
-    for name, url in (("primary", primary), ("quattro", quattro)):
-        config["proxy-providers"][name]["url"] = url
-        config["proxy-providers"][name]["header"]["x-hwid"] = [hwid]
-        config["proxy-providers"][name]["header"]["x-device-model"] = [hostname]
-    return json.dumps(config, ensure_ascii=False) + "\n"
+    values = dict(primary=primary, quattro=quattro, hwid=hwid, hostname=hostname, token=token)
+    template = Template(template)
+    if set(template.get_identifiers()) != values.keys():
+        raise ValueError("Missing or unknown template fields")
+    return template.substitute(
+        {name: json.dumps(value, ensure_ascii=False).translate(YAML_ESCAPES)
+         for name, value in values.items()}
+    )
 
 
 def publish(path, content, permissions, uid):

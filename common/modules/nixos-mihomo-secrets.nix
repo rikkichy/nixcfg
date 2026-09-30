@@ -2,7 +2,6 @@
 { config, lib, pkgs, ... }:
 let
   provisioned = builtins.pathExists sopsFile;
-  python = pkgs.python3.withPackages (ps: [ ps.pyyaml ]);
   source = name: legacy:
     if provisioned then config.sops.secrets."mihomo/${name}".path else "/etc/mihomo/${legacy}";
 in
@@ -34,7 +33,7 @@ in
       RuntimeDirectory = "mihomo";
       RuntimeDirectoryMode = "0700";
       RuntimeDirectoryPreserve = "yes";
-      ExecStart = "${python}/bin/python ${../pkgs/mihomo-config.py} ${if provisioned then "sops" else "legacy"} ${lib.escapeShellArg config.networking.hostName} ${../dotfiles/mihomo.yaml} ${source "primary_url" "subscription.url"} ${source "quattro_url" "quattro.url"} ${source "hwid" "hwid"} /run/mihomo/config.yaml /run/mihomo-api.header ${lib.escapeShellArg config.users.users.ri.name}";
+      ExecStart = "${pkgs.python3}/bin/python ${../pkgs/mihomo-config.py} ${if provisioned then "sops" else "legacy"} ${lib.escapeShellArg config.networking.hostName} ${../dotfiles/mihomo.yaml} ${source "primary_url" "subscription.url"} ${source "quattro_url" "quattro.url"} ${source "hwid" "hwid"} /run/mihomo/config.yaml /run/mihomo-api.header ${lib.escapeShellArg config.users.users.ri.name}";
     };
   };
   services.mihomo.configFile = "/run/mihomo/config.yaml";

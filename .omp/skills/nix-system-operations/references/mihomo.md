@@ -15,14 +15,17 @@ for validation and security acceptance checks.
 The NixOS Mihomo module runs a `DynamicUser` service, with `CAP_NET_ADMIN` from
 `tunMode`, and consumes `/run/mihomo/config.yaml` through `LoadCredential`.
 The repository template is public. `mihomo-config.py` takes a public hostname
-for `x-device-model`, inserts the three private values, and serializes JSON
-(valid YAML) at runtime; this safely preserves quotes, backslashes, and newlines.
+for `x-device-model` and fills the public YAML template with JSON-serialized
+scalars at runtime. Unicode line separators and YAML-sensitive controls are
+escaped so quotes, backslashes, newlines, and Unicode retain their exact values.
+Missing or unknown runtime placeholder fields fail before either output is published.
+Keep runtime placeholders `${name}` unquoted in the public template; the renderer
+supplies serialized scalars. Write `$$` for a literal dollar sign in that template.
 It also generates the controller's random bearer token on each render and
 atomically writes a mode-`0400` authorization-header file owned by the desktop
 user. The header lives directly under root-owned `/run`, not in a user-writable
 directory; all temporary files are created privately before publication.
-Never replace serialization with
-textual placeholder splicing or put secret strings into Nix, `writeText`,
+Never substitute raw secret text or put secret strings into Nix, `writeText`,
 derivation inputs, command arguments, logs, or documentation.
 
 The desktop wrapper uses SOPS only when `.secrets/nix/personal.yaml` exists.
@@ -117,5 +120,4 @@ active-subscription nodes by regex because provider names change; it makes a
 one-time selection. `vpn select NAME` validates an exact live name for pickers.
 Keep the distinction and the two-level group selection when changing callers;
 consult [desktop-shell](../../desktop-shell/SKILL.md) for the picker/keybind
-surface. `scripts/vpn-test.py` exercises the commands and picker against an
-isolated Mihomo instance without real subscriptions or a TUN.
+surface.

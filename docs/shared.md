@@ -24,6 +24,8 @@ aliases, Starship, zoxide, direnv, Matugen, Departure Mono Nerd Font, and shared
 Starship/fastfetch/btop/micro configuration. Optional local Fish additions belong
 in `~/.config/fish/user-config.fish`. Host modules own platform-specific shell
 initialization and terminal integration.
+The managed btop configuration contains theme overrides only; other settings
+follow the packaged btop defaults.
 
 Linux OMP comes from `github:rikkichy/oh-my-pi-flake`. Its hourly GitHub workflow
 commits the latest stable release after builds and smoke checks on both Linux
