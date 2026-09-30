@@ -6,7 +6,16 @@
   environment.systemPackages = with pkgs; [
     omp
 
-    brave-origin
+    (brave-origin.overrideAttrs (old: {
+      postInstall = (old.postInstall or "") + ''
+        cp ${pkgs.writeText "brave-origin-initial-preferences" (builtins.toJSON {
+          brave.new_tab_page = {
+            show_stats = false;
+            show_background_image = false;
+          };
+        })} "$out/opt/brave.com/brave-origin/initial_preferences"
+      '';
+    }))
     inputs.vhelper.packages.${pkgs.stdenv.hostPlatform.system}.default
 
     inputs.openwave.packages.${pkgs.stdenv.hostPlatform.system}.default
@@ -88,9 +97,12 @@
 
   programs.chromium = {
     enable = true;
+    defaultSearchProviderEnabled = true;
+    defaultSearchProviderSearchURL = "https://www.google.com/search?q={searchTerms}";
     extraOpts = {
       TranslateEnabled = false;
       PasswordManagerEnabled = false;
+      DefaultSearchProviderName = "Google";
     };
   };
 

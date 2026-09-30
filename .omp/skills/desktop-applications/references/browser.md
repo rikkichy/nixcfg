@@ -15,7 +15,14 @@ browser. It writes policy JSON, including `/etc/brave/policies/managed/`;
 `brave://policy` shows the loaded policies and their source.
 
 No extensions are force-installed. Translation and the browser password manager
-are disabled by policy; other extension choices remain user-owned.
+are disabled by policy, and Google is the managed default search engine;
+other extension choices remain user-owned.
+
+The package includes `initial_preferences` beside the Brave executable to seed
+new-tab stats and background images off for a fresh profile. The dashboard stays
+enabled. These are first-run defaults, not managed policies: existing profiles
+and subsequent user changes are preserved. For an existing profile, turn off
+Stats and Background Image in the new-tab customization panel.
 
 Brave Origin includes Brave Shields for content blocking. No additional blocker
 is declared. Home Manager does not seed Widevine; encrypted-media playback needs
