@@ -23,8 +23,6 @@
 
     lm_sensors
 
-    inputs.unsloth.packages.${pkgs.stdenv.hostPlatform.system}.unsloth-desktop
-
     file-roller
     catfish
 

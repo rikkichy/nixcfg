@@ -37,22 +37,6 @@ from inside the same FHS environment finds `org.freedesktop.secrets`, so
 gnome-keyring is reachable and the app's own `java-keyring` backend detection
 is what fails.
 
-## Unsloth Desktop — source-built shell, mutable training backend
-
-`inputs.unsloth.packages.${system}.unsloth-desktop` comes from
-`Trantorian1/unsloth-flake`, whose nixpkgs input follows this flake. It builds
-Unsloth's Tauri desktop client and React frontend from the pinned upstream
-source, installs the desktop entry and icons, and runs the result in an FHS
-environment.
-
-The FHS boundary is load-bearing. Unsloth's first-run installer uses the
-bundled `uv` to create and update the CUDA training environment under
-`~/.unsloth`; that mutable backend is application-owned rather than part of the
-Nix closure. The wrapper also supplies the compiler and host utilities needed
-by runtime kernel builds. Validate the immutable client with the ordinary
-path-flake evaluation. A real smoke check launches `unsloth-desktop` and
-confirms a mapped `class = "unsloth-desktop"` window through `hyprctl clients`.
-
 ## Project and editor ownership
 
 NokoChat development belongs to the external project checkout, not this

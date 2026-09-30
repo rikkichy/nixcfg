@@ -43,11 +43,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    unsloth = {
-      url = "github:Trantorian1/unsloth-flake";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     tg-ws-proxy = {
       url = "github:Flowseal/tg-ws-proxy";
       flake = false;
@@ -67,18 +62,9 @@
 
       commonOverlay = import ./common/pkgs/overlay.nix { inherit inputs; };
       overlay = import ./hosts/nix/pkgs/overlay.nix { inherit inputs; };
-
-      devPkgs = import nixpkgs {
-        inherit system;
-        overlays = [ commonOverlay overlay ];
-        config = {
-          allowUnfree = true;
-        };
-      };
     in
     {
       packages.${system} = {
-        rhythia = devPkgs.rhythia;
         install = nixpkgs.legacyPackages.${system}.callPackage ./install.nix { };
         hysteria-setup = nixpkgs.legacyPackages.${system}.callPackage ./hysteria-setup.nix { };
       };

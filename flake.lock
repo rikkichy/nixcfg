@@ -146,7 +146,6 @@
         "sops-nix": "sops-nix",
         "spicetify-nix": "spicetify-nix",
         "tg-ws-proxy": "tg-ws-proxy",
-        "unsloth": "unsloth",
         "vhelper": "vhelper"
       }
     },
@@ -240,43 +239,6 @@
       "original": {
         "owner": "Flowseal",
         "repo": "tg-ws-proxy",
-        "type": "github"
-      }
-    },
-    "unsloth": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ],
-        "unsloth-src": "unsloth-src"
-      },
-      "locked": {
-        "lastModified": 1789728876,
-        "narHash": "sha256-U8Zw1nGrv9o83yCzbYc7iBPztxxZ1dnGeNf2p2L8Ffw=",
-        "owner": "Trantorian1",
-        "repo": "unsloth-flake",
-        "rev": "236ab99fae3d13a5447281216be6b38fd2149145",
-        "type": "github"
-      },
-      "original": {
-        "owner": "Trantorian1",
-        "repo": "unsloth-flake",
-        "type": "github"
-      }
-    },
-    "unsloth-src": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1789726222,
-        "narHash": "sha256-qJKNvw64/R6ywC4XgP5R2y/cf+zkTQCCGz2INT92v6w=",
-        "owner": "unslothai",
-        "repo": "unsloth",
-        "rev": "93d4627e41469fbdc96f1627476ce8c9f7071a7d",
-        "type": "github"
-      },
-      "original": {
-        "owner": "unslothai",
-        "repo": "unsloth",
         "type": "github"
       }
     },

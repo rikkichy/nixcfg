@@ -1,6 +1,6 @@
 ---
 name: desktop-applications
-description: Linux host nix desktop application packaging and runtime integration, including Helium/Widevine, Thunar, osu!lazer, NokoChat AppImage, Unsloth and OpenDeck Flatpak. Use for Linux packages, desktop entries, MIME defaults, app-owned configuration seeding or sandbox permissions. macOS apps belong to darwin-host; shared Zed and toolchains belong to shared-home.
+description: Linux host nix desktop application packaging and runtime integration, including Helium/Widevine, Thunar, osu!lazer, NokoChat AppImage and OpenDeck Flatpak. Use for Linux packages, desktop entries, MIME defaults, app-owned configuration seeding or sandbox permissions. macOS apps belong to darwin-host; shared Zed and toolchains belong to shared-home.
 ---
 
 # Desktop Applications — host `nix`
@@ -16,7 +16,7 @@ read the applicable [host operator section](../../../docs/nix.md) before consequ
 - `common/modules/discord.nix`: writable Equicord settings and static theme for Linux and Darwin.
 - `hosts/nix/modules/home/fuzzel.nix`: desktop entries; [desktop-shell](../desktop-shell/SKILL.md) owns launcher/keybind behavior.
 - `hosts/nix/modules/system/{gaming,flatpak}.nix`: gaming integration and user Flatpak lifecycle.
-- `hosts/nix/pkgs/overlay.nix`: local wiring for `ricing/`, `gaming/` and `bypasses/` under `hosts/nix/pkgs/`.
+- `hosts/nix/pkgs/overlay.nix`: local wiring for `ricing/` and `bypasses/` under `hosts/nix/pkgs/`.
 - [darwin-host](../darwin-host/SKILL.md): macOS apps; [shared-home](../shared-home/SKILL.md): common Zed, shell and toolchains.
 - [wallpaper-theming](../wallpaper-theming/SKILL.md): generated styles and Equicord CSS.
 
@@ -27,7 +27,7 @@ read the applicable [host operator section](../../../docs/nix.md) before consequ
 | Browser, Widevine, web-app icons or single-instance launch behavior | [Browser](references/browser.md) |
 | Thunar, bookmarks, xfconf or portal activation stalls | [File manager](references/file-manager.md) |
 | osu! settings, credentials, tablet configuration or MIME types | [osu!lazer](references/osu.md) |
-| NokoChat AppImage, Unsloth FHS boundary or external project ownership | [Packages](references/packages.md) |
+| NokoChat AppImage or external project ownership | [Packages](references/packages.md) |
 | OpenDeck sockets, host commands, profiles or sandbox permissions | [OpenDeck](references/opendeck.md) |
 
 ## Mandatory rules

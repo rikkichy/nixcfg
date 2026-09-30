@@ -17,7 +17,6 @@ final: prev: {
   };
 
   nokochat = final.callPackage ./nokochat.nix { };
-  rhythia = final.callPackage ./gaming/rhythia.nix { };
 
   bibata-material-cursor = final.callPackage ./ricing/bibata-material-cursor.nix {
     src = inputs.bibata-cursor;

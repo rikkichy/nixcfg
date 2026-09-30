@@ -64,12 +64,7 @@
       "application/x-osu-beatmap-archive"
       "application/x-osu-replay"
       "x-scheme-handler/osu"
-    ] (_: "osu!.desktop")
-    // lib.genAttrs [
-      "application/x-rhythia-sspm"
-      "application/x-rhythia-map"
-      "application/x-rhythia-replay"
-    ] (_: "rhythia.desktop");
+    ] (_: "osu!.desktop");
   };
 
   systemd.user.services.tg-ws-proxy = {
