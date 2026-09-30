@@ -36,6 +36,21 @@ The host also owns reduced-motion, Dock, Finder, keyboard, trackpad, and
 per-power-source sleep/energy preferences. Some macOS preferences require
 logging out or restarting before taking effect; individual apps may still animate.
 
+The [noswoosh](https://github.com/mmathys/noswoosh) Homebrew cask runs a login
+agent for animation-free Spaces switching with Ctrl+Left/Right and three-finger
+horizontal swipes. It requires macOS 26.6+ or 27 and uses private APIs that may
+break with OS updates; other ways of switching Spaces can still animate.
+Reduce Motion remains enabled for the rest of the interface.
+
+After approved activation installs the cask, grant `/Applications/noswoosh.app`
+Accessibility permission in System Settings → Privacy & Security → Accessibility.
+The installer disables the native Ctrl+arrow bindings so the agent can handle
+them. If switching stops working, inspect `~/Library/Logs/noswoosh.log` and the
+Accessibility grant. For approved removal, remove the cask declaration and run
+`brew uninstall --cask noswoosh`; its uninstall hook stops the agent and restores
+the native Ctrl+arrow bindings. Removing the declaration alone does not uninstall
+the cask or restore those bindings.
+
 Ghostty explicitly selects the shared Departure Mono Nerd Font; activation installs
 the font on macOS, and Ghostty may need restarting before it appears.
 Do not duplicate shared tools in the Brew inventory. Removing a Brew declaration

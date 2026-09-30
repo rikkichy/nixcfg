@@ -5,6 +5,7 @@
       "can1357/tap"
       "facebook/fb"
       "hudochenkov/sshpass"
+      "mmathys/tap"
       "serpentiel/tools"
     ];
     brews = [
@@ -42,6 +43,7 @@
       "helium-browser"
       "kotlin-lsp"
       "marta"
+      "noswoosh"
       "prismlauncher"
       "wallspace"
       "wireshark-app"
