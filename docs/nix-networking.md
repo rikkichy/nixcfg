@@ -12,6 +12,13 @@ For immediate desktop reset scopes and their unsaved-work risk, see
 use [first provisioning](nix-security.md#private-inputs-and-first-provisioning)
 or [replacement and rollback](nix-security.md#reinstall-replacement-revocation-and-rollback).
 
+## LAN face tracking
+
+VBridger receives iFacialMocap tracking on UDP `49983`. The firewall permits
+that port on `enp11s0` and `wlp8s0` only, alongside the existing LAN application
+ports in `hosts/nix/modules/system/networking.nix`. Activate the configuration
+before reconnecting the phone; source edits alone do not change the live firewall.
+
 ## VPN (mihomo)
 
 `services.mihomo` runs the tunnel as a system service and starts at boot; there

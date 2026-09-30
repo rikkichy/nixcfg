@@ -23,7 +23,7 @@
     let
       lan = {
         allowedTCPPorts = [ 27036 27037 27040 53317 ];
-        allowedUDPPorts = [ 10400 10401 27036 53317 ];
+        allowedUDPPorts = [ 10400 10401 27036 49983 53317 ];
         allowedUDPPortRanges = [ { from = 27031; to = 27035; } ];
       };
     in
