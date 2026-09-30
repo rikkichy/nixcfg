@@ -75,6 +75,14 @@ Use its native actions for individual scopes, or
 and VPN choice intact. `troubleshootp` runs the same command in a held terminal.
 No post-reset connectivity checks run.
 
+OBS Studio uses the NixOS virtual-camera integration: `v4l2loopback` provides
+`/dev/video1` as **OBS Cam**, with exclusive capture capabilities for browser
+compatibility. The `ri` user belongs to `video` for camera-device access;
+this permits access to other video devices too. After separately approved
+activation, start a fresh login session for group membership. A separately
+approved reboot loads the configured module with the matching kernel.
+In OBS, select **Start Virtual Camera**, then choose **OBS Cam** in the receiving app.
+
 ## Notes and passwords
 
 Obsidian and Bitwarden are native desktop packages in

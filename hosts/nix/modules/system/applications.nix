@@ -67,6 +67,7 @@
 
   programs.obs-studio = {
     enable = true;
+    enableVirtualCamera = true;
   };
 
   services.gvfs.enable = true;

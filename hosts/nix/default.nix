@@ -29,7 +29,7 @@
     isNormalUser = true;
     shell = pkgs.fish;
 
-    extraGroups = [ "wheel" "networkmanager" "gamemode" "ydotool" "docker" ];
+    extraGroups = [ "wheel" "networkmanager" "gamemode" "ydotool" "docker" "video" ];
   };
 
   system.stateVersion = "26.05";
