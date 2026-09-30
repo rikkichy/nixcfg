@@ -61,21 +61,33 @@ Darwin activation deliberately does not upgrade Homebrew packages.
 
 The shared shell module generates `~/.omp/agent/rules/nixcfg-host.md` from the
 host and Home Manager configuration. OMP loads its full body as an always-apply
-rule before the first user message, including in task subagents; no extension,
-wrapper or model tool call is needed. Existing user context and rules remain
-independent. A conflicting unmanaged file uses the host's normal Home Manager
-backup policy rather than being force-overwritten.
+rule before the first user message, including in task subagents.
 
-The rule combines the installed host and Nix platform, and identifies the primary
-user and that user's configured home. These are not a live hostname/account lookup
-or an SSH target.
+The module also installs
+[`nixcfg-execution.js`](../common/dotfiles/omp/nixcfg-execution.js) under
+`~/.omp/agent/extensions/`. Its native `before_agent_start` handler adds
+launch-time execution context before the first model request, including in
+subagents. It uses inherited SSH environment and conventional container
+environment/file indicators, preserves combined SSH/container signals and
+does not expose peer addresses or environment values. Absence of indicators
+does not prove a bare-metal local session. No wrapper or model tool call is
+needed; `--no-extensions` skips this dynamic field unless explicitly loaded.
+Existing user context and rules remain independent. Conflicting unmanaged files
+use the host's normal Home Manager backup policy rather than being force-overwritten.
+
+The static rule combines the installed host and Nix platform, and identifies the
+primary user, configuration model and configured desktop. These are not a live
+hostname/account lookup, an SSH target or proof of an active GUI session.
 Activation requires separate approval; start a new OMP session afterward. Named
 profiles and `PI_CODING_AGENT_DIR` use their own rule directories and do not read
 the default directory. Do not copy machine identity rules between hosts.
 
-To verify startup loading without a model request, run OMP in RPC mode and send
-only `{"id":"startup","type":"get_state"}`. The response's `systemPrompt` must
-contain the host rule while `messageCount` is zero.
+To verify static startup loading without a model request, run OMP in RPC mode
+and send only `{"id":"startup","type":"get_state"}`. The response's
+`systemPrompt` must contain the host rule while `messageCount` is zero.
+The dynamic execution-context field is not part of this zero-message state;
+it is appended when a prompt reaches `before_agent_start`. The classifier's
+standalone regression check is `bun scripts/omp-context-test.mjs`.
 
 ## Spotify and wallpaper colors
 

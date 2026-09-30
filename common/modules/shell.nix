@@ -20,12 +20,16 @@
 
     - Local configured host: ${osConfig.networking.hostName} (${pkgs.stdenv.hostPlatform.system})
     - Configured primary user: ${config.home.username}
-    - Primary user's configured home: ${config.home.homeDirectory}
+    - Configuration model: ${if pkgs.stdenv.hostPlatform.isDarwin then "nix-darwin" else "NixOS"} + Home Manager
+    - Configured desktop: ${if pkgs.stdenv.hostPlatform.isDarwin then "macOS desktop" else if osConfig.programs.hyprland.enable then "Hyprland (Wayland)" else "none"}
 
     These values identify the local installed Nix configuration, not the current
     process user, session working directory or a remote SSH target. Verify live
     identity when an operation depends on it.
   '';
+
+  home.file.".omp/agent/extensions/nixcfg-execution.js".source =
+    ../dotfiles/omp/nixcfg-execution.js;
 
   programs.direnv = {
     enable = true;

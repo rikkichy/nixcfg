@@ -18,6 +18,9 @@ action. Paths below are repository-relative.
 - `common/modules/shell.nix`: portable packages, Fish initialization and
   [OMP startup host context](../../../docs/shared.md#omp-startup-host-context);
   `common/dotfiles/` owns shared assets; Micro settings are generated in the shell module.
+- `common/dotfiles/omp/nixcfg-execution.js`: runtime execution-context extension
+  deployed by the shared shell module; `scripts/omp-context-test.mjs` owns its
+  standalone classification check.
 - `common/modules/zed.nix`: shared editor settings, theme and language-server commands.
 - `common/modules/spotify.nix`: build-time injection and writable palette.
   Keep zero-add-on themes loading matching rewritten JS/CSS via `common/pkgs/`.
