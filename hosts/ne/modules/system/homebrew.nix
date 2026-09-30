@@ -43,7 +43,10 @@
       "helium-browser"
       "kotlin-lsp"
       "marta"
-      "noswoosh"
+      {
+        name = "mmathys/tap/noswoosh";
+        trusted = true;
+      }
       "prismlauncher"
       "wallspace"
       "wireshark-app"

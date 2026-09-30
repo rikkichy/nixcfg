@@ -41,6 +41,8 @@ agent for animation-free Spaces switching with Ctrl+Left/Right and three-finger
 horizontal swipes. It requires macOS 26.6+ or 27 and uses private APIs that may
 break with OS updates; other ways of switching Spaces can still animate.
 Reduce Motion remains enabled for the rest of the interface.
+Homebrew trust is scoped to the fully qualified `mmathys/tap/noswoosh` cask,
+not the entire tap, so Homebrew's third-party trust requirement permits installation.
 
 After approved activation installs the cask, grant `/Applications/noswoosh.app`
 Accessibility permission in System Settings → Privacy & Security → Accessibility.
