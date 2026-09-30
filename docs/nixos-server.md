@@ -179,9 +179,7 @@ Operator acceptance: from a separate client, prove authorized key/touch plus
 correct passphrase unlocks, wrong key is rejected, wrong passphrase leaves root
 locked, and arbitrary commands/forwarding are refused. Also test console
 passphrase recovery without network and local FIDO boot. Preserve recovery
-access throughout. The disposable `scripts/initrd-ssh-test.nix` VM exercises
-transport restrictions and real encrypted-root unlock with generated test keys;
-it does not prove the physical FIDO token, server NIC or installed boot image.
+access throughout.
 
 ## Bootloader migration
 

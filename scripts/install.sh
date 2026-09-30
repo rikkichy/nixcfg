@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# This file is also sourced by the non-destructive safety regression script.
 set +x
 set -euo pipefail
 

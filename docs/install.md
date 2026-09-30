@@ -105,9 +105,8 @@ port 2222, followed by the LUKS passphrase prompt. Verify wired NIC/firmware
 support, the DHCP address and the separate host fingerprint before relying on
 [remote disk unlock](nixos-server.md#encrypted-root-ssh-unlock).
 
-Developer verification: `bash scripts/install-test.sh` exercises mandatory
-enrollment decisions and disposable initrd host-key generation/overwrite refusal.
-Use packaged `--help` or read-only `--plan` for the installer surface.
+Developer verification: use packaged `--help` or read-only `--plan` for the
+installer surface.
 The native pre-push hook owns repository-wide evaluation; do not repeat it here.
 These checks do not prove disk installation, live PAM, or physical cold boot.
 
