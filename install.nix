@@ -1,11 +1,11 @@
 { writeShellApplication, nix, nixos-install-tools, git, jq, util-linux, parted
-, dosfstools, xfsprogs, cryptsetup, systemd, pam_u2f, coreutils, findutils, gnutar
+, dosfstools, xfsprogs, cryptsetup, systemd, pam_u2f, coreutils, findutils, gnutar, openssh
 }:
 writeShellApplication {
   name = "nixcfg-install";
   runtimeInputs = [
     nix nixos-install-tools git jq util-linux parted dosfstools xfsprogs
-    cryptsetup systemd pam_u2f coreutils findutils gnutar
+    cryptsetup systemd pam_u2f coreutils findutils gnutar openssh
   ];
   text = ''
     export NIXCFG_CRYPTSETUP_PLUGINS=${systemd}/lib/cryptsetup

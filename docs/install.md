@@ -81,9 +81,11 @@ match the mapper and UUIDs read directly from the new filesystems/LUKS header.
 Evaluation is not a full build, and post-erase failures require manual recovery.
 
 Enter disk, root and `ri` passwords interactively; retain them independently
-of the YubiKey. The token must be USB-visible to the server: KVM keyboard
-forwarding is insufficient. Choose `0` to skip token enrollment.
-Sudo and boot enrollments have separate `y/N` approvals before disk erasure.
+of the YubiKey. A compatible FIDO2 token must be USB-visible to the target:
+KVM keyboard forwarding is insufficient. Disk and local sudo enrollment are
+mandatory on both hosts. There is no skip selection; missing hardware or
+declining either separate `y/N` approval cancels before disk erasure. Recovery
+passphrases, account-password fallback and server SSH-agent sudo remain enabled.
 
 `common/modules/nixos-yubikey.nix` provides both Linux hosts' systemd-initrd
 FIDO2 discovery and touch-only sudo policy. Sudo registration is host-specific
@@ -95,10 +97,19 @@ Use the [disk](nix-security.md#touch-only-disk-unlock) and
 [sudo](nix-security.md#touch-only-sudo-with-password-fallback) acceptance checklists
 with the selected hostname before relying on touch-only authentication.
 
-Developer verification: run one focused installer smoke for the changed
-behavior, such as packaged `--help` or read-only `--plan`. The native Git
-pre-push hook owns repository-wide evaluation; do not repeat it here.
-These checks do not prove disk installation, live PAM, or cold boot.
+For `nixos-server`, a separate pre-erase approval covers the dedicated initrd
+SSH host key. The installer generates it outside the checkout before installing
+the system and prints its public fingerprint; its private key is included on
+unencrypted `/boot`. The server offers key-authenticated, unlock-only SSH on
+port 2222, followed by the LUKS passphrase prompt. Verify wired NIC/firmware
+support, the DHCP address and the separate host fingerprint before relying on
+[remote disk unlock](nixos-server.md#encrypted-root-ssh-unlock).
+
+Developer verification: `bash scripts/install-test.sh` exercises mandatory
+enrollment decisions and disposable initrd host-key generation/overwrite refusal.
+Use packaged `--help` or read-only `--plan` for the installer surface.
+The native pre-push hook owns repository-wide evaluation; do not repeat it here.
+These checks do not prove disk installation, live PAM, or physical cold boot.
 
 ### Adopt the installed snapshot
 

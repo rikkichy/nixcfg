@@ -2,11 +2,13 @@
 
 Related: [Installation](install.md) · [Shared configuration](shared.md) · [Minecraft](minecraft.md)
 
-The server uses NetworkManager-managed DHCP, console login, and key-only SSH on
-port 22. SSH password/keyboard-interactive authentication and root login are
-disabled. No desktop session is enabled.
+The normal system uses NetworkManager-managed DHCP, console login, and key-only
+SSH on port 22. Normal SSH password/keyboard-interactive authentication and root
+login are disabled. The initrd has a separate unlock-only SSH endpoint on port
+2222. No desktop session is enabled.
 
 Recovery: [SSH access and sudo password fallback](#ssh-and-remote-sudo) ·
+[Encrypted-root SSH unlock](#encrypted-root-ssh-unlock) ·
 [Bootloader checkpoints](#bootloader-migration) ·
 [Minecraft restoration](minecraft.md#minecraft-backups-and-recovery)
 
@@ -40,8 +42,9 @@ Verify the server host-key fingerprint through the console before accepting it.
 The SSH YubiKey stays connected to the client and requires touch; the server
 does not request FIDO2 user verification. An authenticator's AlwaysUV policy
 or a local key-file passphrase can still require an additional prompt.
-SSH does not unlock LUKS or forward the USB token. Server boot unlock needs a
-server-side token or the disk passphrase.
+SSH does not forward the USB token. Local boot unlock uses a server-side token
+or the disk passphrase; [initrd SSH](#encrypted-root-ssh-unlock) accepts the disk
+passphrase remotely after authenticating the client's SSH key.
 
 For remote sudo, `nixos-server` enables `pam_rssh` for `sudo` and `sudo-i`.
 It requests signatures through a forwarded SSH agent and trusts only the
@@ -84,6 +87,101 @@ password fallback, and rejection with an unauthorized key and wrong password.
 Exit each test root shell without closing the recovery shell. Retain recovery
 until both sudo services pass. Cached sudo authorization is not proof of touch;
 evaluation and isolated PAM checks are not hardware-authentication proof.
+
+## Encrypted-root SSH unlock
+
+`modules/system/initrd-ssh.nix` enables native systemd initrd networking and
+OpenSSH on **IPv4 TCP 2222**, only until normal boot takes over. It reuses `ri`'s
+declarative SSH public keys to authenticate **root in the initrd**, then forces
+`systemd-tty-ask-password-agent --query`. This is an unlock prompt, not a root
+shell: supplied commands, agent/TCP/X11 forwarding, tunnels and user RC scripts
+are not available. Normal root SSH remains disabled on port 22.
+Authorized-key changes must also reach the installed boot images; retained older
+generations keep their initrd authorization until separately retired.
+
+The two credentials have different jobs: touch the client-side FIDO key to
+authenticate SSH, then enter the existing **LUKS recovery passphrase** over the
+encrypted connection. The client's token does not become a server-local LUKS
+token. Local FIDO unlock and console passphrase recovery remain available.
+
+### Provisioning and trust
+
+The guided installer asks before generating a dedicated host key at
+`/etc/secrets/initrd/ssh_host_ed25519_key` in the target and prints its public
+fingerprint. Declining cancels before erasure. It never reuses normal SSH host
+keys or places the private key in the checkout. Limine appends it at bootloader
+installation time, outside the Nix store.
+
+**The private initrd host key is present on unencrypted `/boot`.** Anyone who
+can read that partition can obtain it and impersonate the unlock endpoint.
+Untrusted physical access/boot tampering is not addressed by this feature.
+Use a trusted LAN or independently available router VPN, retain console access,
+and do not expose this endpoint directly to the Internet. The normal-system
+firewall and Hysteria tunnel do not protect or provide access to the initrd.
+
+On an **existing server**, separately approve provisioning and keep a recovery
+shell. Generate only if both key files are absent; preserve an existing key:
+
+```sh
+sudo -i
+install -d -m 0700 /etc/secrets /etc/secrets/initrd
+key=/etc/secrets/initrd/ssh_host_ed25519_key
+if [ ! -e "$key" ] && [ ! -L "$key" ] && [ ! -e "$key.pub" ] && [ ! -L "$key.pub" ]; then
+  ssh-keygen -q -t ed25519 -N '' -f "$key"
+fi
+ssh-keygen -lf "$key.pub"
+exit
+```
+
+Check the actual wired NIC driver (`ethtool -i INTERFACE` or `lspci -k`) against
+the module's `boot.initrd.availableKernelModules`; add missing drivers and check
+required firmware before reboot. The hardware generator does not supply all
+initrd NIC drivers. The module includes common Intel, Realtek, USB Ethernet and
+virtio drivers, not every NIC.
+
+After separate boot-configuration approval, use
+`nh os boot path:/etc/nixos --hostname nixos-server`. A pre-switch check rejects
+a missing/empty host key. Inspect the selected Limine entry, appended secrets
+image, crypttab and built initrd; a successful build is not boot proof. Keep a
+working generation, console and disk passphrase until acceptance succeeds.
+
+### Connect and unlock
+
+The initrd requests DHCP on wired Ethernet; it has no Avahi/mDNS, Wi-Fi setup,
+Hysteria or host-side VPN. Reserve/verify a reachable DHCP address through the
+router or console; the initrd lease can differ from the normal-system lease.
+Networking is not required for local boot/unlock.
+
+With the shared client configuration activated and the SSH credential handle
+provisioned, connect from `nix` or `ne`:
+
+```sh
+ssh -o HostName=SERVER_IP nixos-server-unlock
+```
+
+Without the client alias:
+
+```sh
+ssh -tt -p 2222 -o IdentitiesOnly=yes -o ForwardAgent=no \
+  -o ClearAllForwardings=yes -o HostKeyAlias=nixos-server-initrd \
+  -i ~/.ssh/nixos-server root@SERVER_IP
+```
+
+Verify the presented fingerprint against the recorded **initrd** fingerprint
+before entering the disk passphrase. The distinct `nixos-server-initrd` trust
+identity avoids confusing this key with normal SSH; never bypass a mismatch.
+The client key can authenticate directly; agent forwarding is unnecessary.
+After successful unlock, boot proceeds and this SSH connection closes. Reconnect
+normally with `ssh nixos-server` (or its IP override). If local FIDO already
+unlocked root, the initrd endpoint may have disappeared before you connect.
+
+Operator acceptance: from a separate client, prove authorized key/touch plus
+correct passphrase unlocks, wrong key is rejected, wrong passphrase leaves root
+locked, and arbitrary commands/forwarding are refused. Also test console
+passphrase recovery without network and local FIDO boot. Preserve recovery
+access throughout. The disposable `scripts/initrd-ssh-test.nix` VM exercises
+transport restrictions and real encrypted-root unlock with generated test keys;
+it does not prove the physical FIDO token, server NIC or installed boot image.
 
 ## Bootloader migration
 

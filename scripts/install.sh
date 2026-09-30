@@ -36,7 +36,9 @@ path: flakes include ignored files even before this program starts.
 
 Numbered menus select the host, disk and YubiKey. USB/removable targets are
 hidden until "Show external disks"; --list-disks includes all exclusion reasons.
-Boot and sudo enrollment have separate y/N approvals BEFORE erase.
+Boot and sudo FIDO2 enrollments are REQUIRED; declining either cancels BEFORE erase.
+Server installation also asks to generate a separate initrd SSH host key;
+its private key is kept outside the checkout but included on unencrypted /boot.
 Passwords are entered directly into cryptsetup/passwd, never command arguments.
 No reboot, forced unmount, enrollment removal, or automatic recovery cleanup.
 HELP
@@ -45,9 +47,10 @@ HELP
 plan() {
   cat <<'PLAN'
 Plan: select host -> snapshot and evaluate build plan -> select unused disk
--> select YubiKey (or skip) -> approve sudo/boot enrollment
+-> select required YubiKey -> approve mandatory sudo/boot enrollment
 -> ERASE confirmation -> recheck disk -> GPT/EFI/LUKS2/XFS -> mount /mnt
 -> copy repository and generate hosts/HOST/hardware.nix from actual hardware
+-> generate the approved server-only initrd SSH host key outside the checkout
 -> nixos-install -> set root and ri passwords -> approved FIDO2 enrollments
 -> retain mounted system and recovery shell; NEVER auto-reboot.
 
@@ -227,12 +230,10 @@ select_fido() {
     devices+=("$device")
     labels+=("$description ($device)")
   done <<<"$listing"
-  choose 'YubiKey / FIDO2 (USB forwarding required)' 'Skip enrollment; use passwords' "${labels[@]}"
-  fido=''
-  if (( choice > 0 )); then
-    fido=${devices[choice-1]}
-    fido_visible "$fido" || fail 'Selected FIDO2 device disappeared.'
-  fi
+  (( ${#devices[@]} > 0 )) || fail 'A USB-visible FIDO2 token is required for disk and sudo enrollment.'
+  choose 'Required YubiKey / FIDO2 (USB forwarding required)' '' "${labels[@]}"
+  fido=${devices[choice-1]}
+  fido_visible "$fido" || fail 'Selected FIDO2 device disappeared.'
 }
 
 fido_visible() {
@@ -256,12 +257,9 @@ check_mount_target() {
 }
 
 plan_enrollment() {
-  boot_enroll=false
-  sudo_enroll=false
   select_fido
-  [[ -n $fido ]] || return 0
-  if approve 'Enable YubiKey for sudo?'; then sudo_enroll=true; fi
-  if approve 'Enable YubiKey for disk unlock?'; then boot_enroll=true; fi
+  approve 'Approve required YubiKey enrollment for sudo?' || fail 'Sudo enrollment is required; installation cancelled before erase.'
+  approve 'Approve required YubiKey enrollment for disk unlock?' || fail 'Disk enrollment is required; installation cancelled before erase.'
 }
 
 enroll_boot() {
@@ -296,6 +294,16 @@ enroll_sudo() {
   chmod 0600 "$mapping"
   rm -- "$work/u2f-mapping"
   printf 'Sudo registration installed root:root 0600; PAM authentication remains UNTESTED.\n'
+}
+
+prepare_initrd_ssh() {
+  local key="$1/etc/secrets/initrd/ssh_host_ed25519_key"
+  [[ ! -e $key && ! -L $key && ! -e $key.pub && ! -L $key.pub ]] ||
+    fail 'Existing initrd SSH host key must not be overwritten.'
+  install -d -m 0700 "$1/etc/secrets" "$1/etc/secrets/initrd"
+  ssh-keygen -q -t ed25519 -N '' -f "$key"
+  printf '\nRecord this separate initrd SSH host fingerprint before remote unlock:\n'
+  ssh-keygen -lf "$key.pub"
 }
 
 prepare_checkout() {
@@ -391,6 +399,10 @@ main() {
   identity=$(jq -c '[.name, .["maj:min"], .size, .model, .serial]' <<<"$row")
   seq=$(cat "/sys/class/block/${disk##*/}/diskseq")
   plan_enrollment
+  if [[ $host == nixos-server ]]; then
+    approve 'Approve a separate initrd SSH host key stored on unencrypted /boot?' ||
+      fail 'Initrd SSH host key provisioning declined; installation cancelled before erase.'
+  fi
   confirm_erase
   # Hold a device lock and repeat every exclusion after the human confirmation.
   exec {disk_lock}<"$disk"
@@ -423,6 +435,7 @@ main() {
   rm -- "/mnt/etc/nixos/hosts/$host/hardware.nix"
   install -m 0644 "$work/hardware.nix" "/mnt/etc/nixos/hosts/$host/hardware.nix"
   verify_boot_devices
+  if [[ $host == nixos-server ]]; then prepare_initrd_ssh /mnt; fi
   nixos-install --root /mnt --flake "path:/mnt/etc/nixos#$host" --no-root-passwd --no-write-lock-file
   nixos-enter --root /mnt -c 'chown -R ri:users /etc/nixos'
   printf '\nSet a nonempty ROOT recovery password:\n'
@@ -435,8 +448,8 @@ main() {
   [[ $password_status == 'ri P '* ]] || fail 'ri does not have an unlocked password.'
   printf '\nConfirm the original LUKS passphrase independently of any token:\n'
   cryptsetup open --test-passphrase --disable-external-tokens "$rootpart"
-  if [[ $boot_enroll == true ]]; then enroll_boot; fi
-  if [[ $sudo_enroll == true ]]; then enroll_sudo; fi
+  enroll_boot
+  enroll_sudo
   sync
   cat <<'DONE'
 
@@ -452,6 +465,9 @@ sudo -k before EACH attempt: touch/no PIN, no token/correct password, wrong
 password, no touch, and an unregistered key. Keep root until failures reject
 access and password fallback works. Plan cold-boot token/no-token/no-touch
 checks and recovery before leaving the KVM. Do not retire any recovery slot.
+For nixos-server, verify the wired NIC driver is included in the initrd and
+record the separate SSH host fingerprint. Remote unlock uses port 2222 and
+the disk passphrase; see docs/nixos-server.md. Actual SSH unlock is UNTESTED.
 SOPS/PIV identities, private service data and VPN provisioning are separate;
 this installer never copies private live-system secrets into the target.
 DONE

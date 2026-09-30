@@ -29,6 +29,19 @@
         IdentitiesOnly = true;
         ForwardAgent = true;
       };
+      "nixos-server-unlock" = {
+        # Initrd has no mDNS; supply -o HostName=SERVER_IP when connecting.
+        HostName = "nixos-server.local";
+        HostKeyAlias = "nixos-server-initrd";
+        Port = 2222;
+        User = "root";
+        IdentityFile = "~/.ssh/nixos-server";
+        IdentitiesOnly = true;
+        ForwardAgent = false;
+        ForwardX11 = false;
+        ClearAllForwardings = true;
+        RequestTTY = "force";
+      };
       "nixos-server-remote" = {
         HostName = "127.0.0.1";
         Port = 2222;

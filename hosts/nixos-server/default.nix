@@ -7,6 +7,7 @@
     ../../common/modules/nixos-yubikey.nix
     ../../common/modules/nixos-limine.nix
     ../../common/modules/nixos-networking.nix
+    ./modules/system/initrd-ssh.nix
     ./modules/system/services.nix
     ./modules/system/hysteria.nix
     ./modules/system/minecraft.nix
