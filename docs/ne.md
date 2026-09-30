@@ -205,10 +205,11 @@ The next activation restores the protection. The native guard regression check i
 
 Marta's template lives in `hosts/ne/dotfiles/marta/Matugen.theme`; its generated
 output is `~/Library/Application Support/org.yanex.marta/Themes/Matugen.theme`.
-Keep that output writable rather than linking it to the Nix store. Select
-`Matugen` once through Marta's **Switch Theme** action; existing Marta preferences
-are not managed or replaced by Home Manager. The template follows the mode passed
-to `wallpaper-theme`. If an open Marta window retains the previous colors, restart
+Keep that output writable rather than linking it to the Nix store. Home Manager
+owns `conf.marco` through `hosts/ne/modules/home/marta.nix`, selecting `Matugen`
+and hiding the bottom Action Bar. Edit that module rather than Marta's preferences
+editor. The template follows the mode passed to `wallpaper-theme`.
+If an open Marta window retains the previous colors, restart
 Marta; automatic theme-file reloading is not assumed.
 Darwin also preserves Marta's native first-launch-completed preference to skip
 the onboarding tutorial; its manual Tutorial action remains available. Patreon
