@@ -142,10 +142,9 @@ prompted, then run `betterglobekey doctor`.
 ## Ghostty and wallpaper themes
 
 The Darwin home configuration also manages Matugen's configuration, `wallpaper-theme`, and
-Ghostty's settings and selected shaders. Ghostty and Zed applications remain
-externally installed on macOS. Edit Ghostty's managed assets under `hosts/ne/dotfiles/ghostty/`,
+Ghostty's settings. Ghostty and Zed applications remain externally installed on macOS.
+Edit Ghostty's settings in `hosts/ne/modules/home/ghostty.nix`,
 not the store-backed files in `~/.config`.
-Ghostty's continuous shader animation is disabled; shaders still render on terminal updates.
 Ghostty uses the shared `common/dotfiles/matugen/templates/terminal-colors.conf` palette
 and the same `scheme-content` mode as NixOS, including Fastfetch's accent slots 16–18.
 Run `wallpaper-theme` (or `wallpaper-theme light`) after changing the macOS wallpaper,

@@ -1,4 +1,4 @@
-{ config, ... }:
+{ ... }:
 
 {
   programs.ghostty = {
@@ -18,17 +18,6 @@
       window-padding-balance = true;
       resize-overlay = "never";
       scrollback-limit = 10000;
-      custom-shader = [
-        "${config.xdg.configHome}/ghostty/shaders/cursor_sweep.glsl"
-        "${config.xdg.configHome}/ghostty/shaders/in-game-crt-cursor.glsl"
-      ];
-      custom-shader-animation = false;
     };
-  };
-
-  xdg.configFile = {
-    "ghostty/shaders/cursor_sweep.glsl".source = ../../dotfiles/ghostty/shaders/cursor_sweep.glsl;
-    "ghostty/shaders/in-game-crt-cursor.glsl".source =
-      ../../dotfiles/ghostty/shaders/in-game-crt-cursor.glsl;
   };
 }

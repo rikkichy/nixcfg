@@ -28,7 +28,7 @@ as the normal user, following the guide's prerequisite backups and approval.
 | `hosts/ne/modules/system/homebrew.nix` | Brew formulae, casks, taps and BetterGlobeKey service |
 | `hosts/ne/modules/system/preferences.nix` | native preferences and per-power-source pmset activation |
 | `hosts/ne/modules/home/shell.nix` | Homebrew, rustup and Bun PATH integration |
-| `hosts/ne/modules/home/ghostty.nix` | Ghostty settings and shader deployment |
+| `hosts/ne/modules/home/ghostty.nix` | Ghostty settings |
 | `hosts/ne/modules/home/matugen.nix` | Matugen configuration and wallpaper-theme |
 | `hosts/ne/modules/home/marta.nix` | official Marta launcher wrapper |
 | `hosts/ne/modules/home/keyboard.nix` | BetterGlobeKey configuration deployment |
@@ -37,7 +37,7 @@ as the normal user, following the guide's prerequisite backups and approval.
 | `hosts/ne/modules/home/spotify.nix` | post-copy Spotify palette link and non-destructive native updater guard |
 | `hosts/ne/modules/home/file-associations.nix` | explicit text/source extension list |
 | `hosts/ne/pkgs/zed-file-associations.nix` | native NSWorkspace association helper |
-| `hosts/ne/dotfiles/` | Ghostty shaders, Marta template and keyboard configuration |
+| `hosts/ne/dotfiles/` | Marta template and keyboard configuration |
 
 `flake.nix` imports nix-darwin and Home Manager's Darwin module together, with
 `useGlobalPkgs`, `useUserPackages`, and `.before-nix-darwin` backup suffix.
@@ -102,7 +102,7 @@ Generated destinations must remain writable:
 
 Edit templates, not mutable outputs; read [Ghostty and wallpaper themes](../../../docs/ne.md#ghostty-and-wallpaper-themes)
 and [Marta](../../../docs/ne.md#marta) for reload/restart and initial selection procedures.
-Keep Zed's theme static and Ghostty's continuous shader animation disabled.
+Keep Zed's theme static.
 Use the exact family `DepartureMono Nerd Font`; font visibility may require an app restart.
 Keep Spotify's resource link after `copyApps`; see [update-cache recovery](../../../docs/ne.md#spotify-and-spicetify)
 before changing the user-immutable updater directory.
