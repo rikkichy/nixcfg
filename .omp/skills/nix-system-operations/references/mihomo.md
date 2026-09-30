@@ -83,9 +83,14 @@ downloads and Git pushes do not need a VPN mode toggle. `PROXY` only selects
 a subscription, whose group selects a concrete server. Do not stop Mihomo to
 change routing: that removes the tunnel. `profile.store-selected` persists
 server choices in `cache.db` under the service's state directory.
-The process sandbox remains intact; do not add process rules without accounting
-for its restricted `/proc` access. See the operator guide for service coverage
-and the IP-addressed Discord media limitation.
+Native Discord is matched by its `.Discord-wrapped` executable, including
+IP-addressed voice UDP. Process lookup requires `ProtectProc=default` and
+`CAP_SYS_PTRACE`/`CAP_DAC_READ_SEARCH` alongside `CAP_NET_ADMIN`; retain
+`DynamicUser` and the remaining sandbox. These are broad cross-user inspection
+privileges, not Discord-only access. Browser Discord is only domain-routed.
+`scripts/mihomo-routing-test.py` checks same-user lookup and UDP fail-closed
+behavior in isolated Mihomo; cross-user service lookup needs live verification
+after approved activation. See the operator guide for this security boundary.
 
 ## Subscription and node failure modes
 

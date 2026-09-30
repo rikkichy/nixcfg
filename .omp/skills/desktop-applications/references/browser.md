@@ -36,6 +36,9 @@ policy JSON, `/etc/chromium/policies/managed/` among other prefixes, and
 helium reads that directory as any Chromium build does; `chrome://policy` shows
 each one as Platform / Machine / Mandatory once it has been picked up.
 
+Helium embeds uBlock Origin; do not force-install uBlock Origin Lite alongside it,
+because the two blockers conflict.
+
 Two things make this awkward to verify:
 
 - **`--headless` will not start**, exiting on `Multiple targets are not

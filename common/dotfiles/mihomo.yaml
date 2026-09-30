@@ -2,6 +2,7 @@
 mixed-port: 7890
 allow-lan: false
 mode: rule
+find-process-mode: strict
 tcp-concurrent: true
 log-level: info
 ipv6: false
@@ -124,6 +125,9 @@ rules:
 
   # If the selected node cannot relay a matching flow (notably UDP),
   # reject it instead of continuing to the default DIRECT rule.
+  # The native Nix-packaged Discord executable owns voice UDP sockets.
+  - PROCESS-NAME,.Discord-wrapped,PROXY
+  - PROCESS-NAME,.Discord-wrapped,REJECT
   - GEOSITE,youtube,PROXY
   - GEOSITE,youtube,REJECT
   - GEOSITE,discord,PROXY
@@ -134,28 +138,15 @@ rules:
   - GEOSITE,instagram,REJECT
   - GEOSITE,protonmail,PROXY
   - GEOSITE,protonmail,REJECT
+  - GEOSITE,spotify,PROXY
+  - GEOSITE,spotify,REJECT
   - GEOSITE,bitwarden,PROXY
   - GEOSITE,bitwarden,REJECT
   - DOMAIN-SUFFIX,noko.chat,PROXY
   - DOMAIN-SUFFIX,noko.chat,REJECT
+  - DOMAIN-SUFFIX,anime-365.ru,PROXY
+  - DOMAIN-SUFFIX,anime-365.ru,REJECT
   - IP-ASN,22697,PROXY,no-resolve
   - IP-ASN,22697,REJECT,no-resolve
-
-  # Discord media uses IP-addressed UDP. These are observed assignments,
-  # not an exhaustive list; keep process inspection sandboxed.
-  - IP-CIDR,104.29.159.128/32,PROXY,no-resolve
-  - IP-CIDR,104.29.159.128/32,REJECT,no-resolve
-  - IP-CIDR,104.29.148.61/32,PROXY,no-resolve
-  - IP-CIDR,104.29.148.61/32,REJECT,no-resolve
-  - IP-CIDR,104.29.136.193/32,PROXY,no-resolve
-  - IP-CIDR,104.29.136.193/32,REJECT,no-resolve
-  - IP-CIDR,104.29.146.68/32,PROXY,no-resolve
-  - IP-CIDR,104.29.146.68/32,REJECT,no-resolve
-  - IP-CIDR,104.29.153.100/32,PROXY,no-resolve
-  - IP-CIDR,104.29.153.100/32,REJECT,no-resolve
-  - IP-CIDR,104.29.153.203/32,PROXY,no-resolve
-  - IP-CIDR,104.29.153.203/32,REJECT,no-resolve
-  - IP-CIDR,35.217.31.203/32,PROXY,no-resolve
-  - IP-CIDR,35.217.31.203/32,REJECT,no-resolve
 
   - MATCH,DIRECT
