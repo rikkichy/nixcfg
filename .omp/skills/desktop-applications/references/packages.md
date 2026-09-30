@@ -37,6 +37,12 @@ from inside the same FHS environment finds `org.freedesktop.secrets`, so
 gnome-keyring is reachable and the app's own `java-keyring` backend detection
 is what fails.
 
+## Filen
+
+The overlay patches Canvas's missing `<cstdint>` includes between npm dependency
+installation and native rebuild. Keep `npm rebuild` enabled after patching;
+`--ignore-scripts` only defers the npm hook's early rebuild.
+
 ## Project and editor ownership
 
 NokoChat development belongs to the external project checkout, not this

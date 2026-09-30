@@ -44,9 +44,15 @@ Validate recovery only with temporary profiles and stubbed external effects. Nev
 
 ## Nix maintenance desktop actions
 
-`nixp.desktop` is an entry, not a shell command. The parent opens a held Foot window with `nixos-rebuild list-generations`. Native actions expose switch, boot, update-and-switch, rollback, both garbage collections and store verification.
+`nixp.desktop` opens a held Foot terminal with `nixos-rebuild list-generations`.
+`terminalAction` takes trusted Desktop Exec fragments, not runtime user input;
+multi-command actions use private scripts.
 
-`terminalAction` accepts trusted declaration-time Desktop Exec fragments, not runtime user input. Simple commands use direct argv; only the three conjunctions use private shell scripts. `--rollback` has no `--flake`. Rebuilds use `path:` so untracked sources remain visible; observe the [host guide's source/secret safety rules](../../../../docs/nix.md#rebuilds-and-desktop-tools) before running them. Garbage collection runs unprivileged and under sudo because user/system generations are separate.
+Rebuild actions use `nh`, the Git-aware checkout, and `--no-update-lock-file`.
+Build-only retains `${XDG_STATE_HOME}/nixcfg-next`; switching it confirms the
+snapshot, which may predate later edits or a failed build. Updates do not switch.
+See [source inclusion and prebuilds](../../../../docs/nix.md#updates-and-prebuilt-systems).
+Rollback has no `--flake`. GC runs as both user and root for their separate profiles.
 
 ## Verification
 

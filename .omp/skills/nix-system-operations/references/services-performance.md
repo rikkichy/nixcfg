@@ -2,7 +2,7 @@
 
 Sources: `hosts/nix/boot.nix`, `hosts/nix/hardware-policy.nix`,
 `hosts/nix/lighting.nix`, `hosts/nix/storage.nix`, and
-`hosts/nix/modules/system/{nix,security,session,gaming,flatpak,maintenance}.nix`.
+`hosts/nix/modules/system/{nix,security,session,gaming,flatpak}.nix`.
 Operator procedures: [docs/nix.md](../../../../docs/nix.md). For validation use
 [nixcfg-validation](../../nixcfg-validation/SKILL.md); any activation or disruptive
 runtime experiment needs operator approval.
@@ -118,7 +118,7 @@ oneshot has no SDK server, GUI or polling; see [RGB lighting](../../../../docs/n
 `slab_nomerge`, and `page_alloc.shuffle=1`; `init_on_free` is deliberately absent
 because of its gaming cost. Do not assume a maintained hardened-kernel/profile
 option exists in the locked Nixpkgs. A custom kernel configuration loses cache
-coverage and can make daily upgrades build the kernel and out-of-tree NVIDIA
+coverage and can make input updates build the kernel and out-of-tree NVIDIA
 module. Check actual kernel/module compatibility before proposing RANDSTRUCT,
 CFI, lockdown, or signing changes; they are not free hardening toggles for this
 GPU stack.
@@ -141,9 +141,10 @@ outputs before inventing `ExecStart`; hyprpolkitagent lives in `libexec`, not
 it. `hosts/nix/modules/system/session.nix` uses the packaged hyprpolkitagent and
 hyprsunset units, targeted to `graphical-session.target`.
 
-`hosts/nix/modules/system/maintenance.nix` configures daily auto-upgrades with
-`operation = "boot"`: build and stage for next boot, do not disturb the running
-session. Compare `/run/booted-system` with `/nix/var/nix/profiles/system` to
-identify pending activation. Preserve recovery generations, especially before
-boot/authentication changes. See [Auto-updates](../../../../docs/nix.md#auto-updates)
+`hosts/nix/modules/system/nix.nix` sets two concurrent builds and eight cores per
+build. Before activation, pass `--max-jobs 2 --cores 8` to `nh`.
+
+Compare `/run/booted-system` with `/nix/var/nix/profiles/system` to identify pending
+activation. Preserve recovery generations, especially before boot/authentication
+changes. See [prebuilds](../../../../docs/nix.md#updates-and-prebuilt-systems)
 and [boot recovery](boot-auth-secrets.md#boot-evidence-and-recovery).

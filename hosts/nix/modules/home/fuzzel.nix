@@ -65,15 +65,22 @@ in
     };
     maintenanceActions = {
       switch = terminalAction "Rebuild and switch"
-        ''sudo nixos-rebuild switch --flake "path:${nixcfgPath}#nix"''
+        ''nh os switch "${nixcfgPath}" --hostname nix --no-update-lock-file''
         // { icon = "system-software-update"; };
       boot = terminalAction "Rebuild for the next boot"
-        ''sudo nixos-rebuild boot --flake "path:${nixcfgPath}#nix"''
+        ''nh os boot "${nixcfgPath}" --hostname nix --no-update-lock-file''
         // { icon = "system-reboot"; };
-      update = terminalAction "Update inputs and switch" (toString (pkgs.writeShellScript "nix-update" ''
-        nix flake update --flake ${lib.escapeShellArg "path:${nixcfgPath}"} &&
-          sudo nixos-rebuild switch --flake ${lib.escapeShellArg "path:${nixcfgPath}#nix"}
-      '')) // { icon = "system-software-install"; };
+      update = terminalAction "Update inputs only"
+        ''nix flake update --flake "${nixcfgPath}"''
+        // { icon = "system-software-install"; };
+      build = terminalAction "Build without switching" (toString (pkgs.writeShellScript "nix-build-next" ''
+        mkdir -p ${lib.escapeShellArg config.xdg.stateHome} &&
+          exec nh os build ${lib.escapeShellArg nixcfgPath} --hostname nix --no-update-lock-file \
+            --out-link ${lib.escapeShellArg "${config.xdg.stateHome}/nixcfg-next"}
+      '')) // { icon = "nix-snowflake"; };
+      switch-prebuilt = terminalAction "Switch prebuilt system"
+        ''nh os switch "${config.xdg.stateHome}/nixcfg-next" --ask''
+        // { icon = "system-software-update"; };
       rollback = terminalAction "Roll back one generation" "sudo nixos-rebuild switch --rollback"
         // { icon = "${papirus}/24x24/actions/edit-undo.svg"; };
       generations = terminalAction "List generations" "nixos-rebuild list-generations"

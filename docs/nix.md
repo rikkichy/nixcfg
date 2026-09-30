@@ -23,7 +23,7 @@ and [existing-system manual recovery](install.md#manual-installation--recovery-r
 - [VPN and Telegram proxy](nix-networking.md)
 - [Security and private provisioning](nix-security.md)
 - [RGB lighting](#rgb-lighting)
-- [Auto-updates](#auto-updates)
+- [Updates and prebuilt systems](#updates-and-prebuilt-systems)
 
 ## Installation
 
@@ -39,13 +39,13 @@ is desktop-only; fresh-install disk erasure is never an existing-system recovery
 
 ## Rebuilds and desktop tools
 
-After separate activation approval, apply later changes with `nh os switch`;
-see [shared rebuild behavior](shared.md#rebuild-commands) for checkout selection,
-environment precedence and elevation.
-Review and commit any intentional `flake.lock` changes.
+After separate activation approval, apply configuration changes with
+`nh os switch --no-update-lock-file`; see [shared rebuild behavior](shared.md#rebuild-commands)
+for checkout selection, environment precedence and elevation.
 Press META+ALT and select **Nix maintenance**: the parent lists generations in
-a held terminal, and native actions include **Rebuild and switch**, rollback
-and garbage collection.
+a held terminal. Separate actions update inputs only, build without switching,
+switch the prebuilt system, rebuild and switch, or stage for the next boot.
+Rollback, garbage collection and store verification are explicit actions.
 
 The live `~/.config/hypr` symlink targets `hosts/nix/dotfiles/ricing/hypr/`.
 If it points elsewhere, switch the host configuration before reloading Hyprland.
@@ -268,17 +268,37 @@ Inspect failures with `journalctl -u openrgb-off`. The root-only service does no
 require user-facing OpenRGB udev permissions. If a non-libc allocator is enabled,
 its private mount namespace hides the allocator preload only for this service.
 
-## Auto-updates
+## Updates and prebuilt systems
 
-`system.autoUpgrade` builds daily and **stages** for next boot (`operation =
-"boot"`), so a kernel or NVIDIA bump never disturbs a running session. For a bad
-update, use [Limine recovery with a zero timeout](nix-security.md#limine-recovery-with-a-zero-timeout)
-to select a previous generation; the default menu is not visible.
-Watch it with `journalctl -u nixos-upgrade.service`.
+Update selected pins with `nix flake update nixpkgs home-manager --flake /etc/nixos`.
+**Update inputs only** updates all inputs. Review and commit `flake.lock` after
+a successful build.
 
-`nh`'s default `/etc/nixos` reads the tree through Git.
-Tracked modifications are visible without committing; new source files need
-`git add` (or `git add -N` to mark intent without staging their contents).
+```sh
+mkdir -p ~/.local/state
+nh os build /etc/nixos --hostname nix --no-update-lock-file \
+  --max-jobs 2 --cores 8 --out-link ~/.local/state/nixcfg-next
+```
+
+The explicit limits cover builds before the two-job/eight-core defaults are
+activated. The result link retains the built system against garbage collection.
+
+With separate activation approval, switch that exact snapshot:
+
+```sh
+nh os switch ~/.local/state/nixcfg-next --ask
+```
+
+The link is a snapshot: later edits are excluded, and a failed build can leave
+an older result. For next-boot staging, use
+`nh os boot /etc/nixos --hostname nix --no-update-lock-file`.
+Keep known-good generations for
+[Limine recovery](nix-security.md#limine-recovery-with-a-zero-timeout);
+**Collect garbage, everything old** removes that rollback history.
+
+`nh`'s default `/etc/nixos` and the maintenance rebuild actions read the tree
+through Git. Tracked modifications are visible without committing; new source
+files need `git add` (or `git add -N` to mark intent without staging their contents).
 For approved activation with untracked source files, use
-`nh os switch path:/etc/nixos --hostname nix`.
+`nh os switch path:/etc/nixos --hostname nix --no-update-lock-file`.
 Neither mode makes plaintext safe in the tree.

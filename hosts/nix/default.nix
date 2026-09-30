@@ -6,7 +6,6 @@
     ./hardware.nix
     ./storage.nix
     ./modules/system/nix.nix
-    ./modules/system/maintenance.nix
     ./boot.nix
     ./hardware-policy.nix
     ./lighting.nix

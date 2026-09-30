@@ -16,6 +16,10 @@ for OS commands. For an explicit checkout/host, use
 Switching activates the configuration and requires separate operator approval;
 source edits and successful verification do not grant that approval.
 
+`--no-update-lock-file` rejects implicit pin changes. See the
+[desktop prebuild workflow](nix.md#updates-and-prebuilt-systems) to retain a
+built system for later activation.
+
 ## Shared shell and editor
 
 All three hosts import `common/modules/shell.nix` through Home Manager for their
@@ -29,9 +33,9 @@ follow the packaged btop defaults.
 
 Linux OMP comes from `github:rikkichy/oh-my-pi-flake`. Its hourly GitHub workflow
 commits the latest stable release after builds and smoke checks on both Linux
-architectures. `flake.lock` selects the installed release; `nix flake update omp`
-refreshes that pin. The desktop's daily upgrade includes OMP and takes effect
-after reboot. macOS uses the `can1357/tap/omp` Homebrew formula.
+architectures. `flake.lock` selects the installed release;
+`nix flake update omp --flake /etc/nixos` refreshes that pin explicitly.
+macOS uses the `can1357/tap/omp` Homebrew formula.
 
 The server's `hosts/nixos-server/home.nix` imports only the shared shell module.
 Fish is `ri`'s system login shell; reconnect SSH after activation to start it.

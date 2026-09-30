@@ -1,6 +1,17 @@
 { inputs }:
 
 final: prev: {
+  filen-desktop = prev.filen-desktop.overrideAttrs (old: {
+    # Defer native rebuilds until canvas's installed headers can be patched.
+    npmRebuildFlags = (old.npmRebuildFlags or [ ]) ++ [ "--ignore-scripts" ];
+    preBuild = (old.preBuild or "") + ''
+      substituteInPlace node_modules/canvas/src/{CharData,FontParser}.h \
+        --replace-fail '#pragma once' $'#pragma once\n#include <cstdint>'
+      npm rebuild
+      patchShebangs node_modules
+    '';
+  });
+
   quickshell = prev.quickshell.overrideAttrs (old: {
     postPatch = (old.postPatch or "") + ''
       substituteInPlace src/wayland/hyprland/ipc/connection.cpp \

@@ -163,9 +163,10 @@ carrying anything.
 
 ## Telegram proxy (tg-ws-proxy)
 
-`Flowseal/tg-ws-proxy` is packaged from source in `hosts/nix/pkgs/bypasses/tg-ws-proxy.nix` and
-pulled in as a `flake = false` input, so the nightly `autoUpgrade` bumps it
-like everything else.
+`Flowseal/tg-ws-proxy` is packaged from source in `hosts/nix/pkgs/bypasses/tg-ws-proxy.nix`
+and pinned as a `flake = false` input. Update it explicitly with
+`nix flake update tg-ws-proxy --flake /etc/nixos`, then build and activate through
+the [host maintenance workflow](nix.md#updates-and-prebuilt-systems).
 
 A systemd **user** service runs it headless on `127.0.0.1:1443`. The secret is
 generated once on first start and kept in
