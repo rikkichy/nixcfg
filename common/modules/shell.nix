@@ -1,4 +1,4 @@
-{ config, osConfig, lib, pkgs, ... }:
+{ config, osConfig, nixcfgPath, lib, pkgs, ... }:
 
 {
   home.packages = with pkgs; [
@@ -18,14 +18,14 @@
     ---
     # Local configured identity
 
-    - Configured host: ${osConfig.networking.hostName}
-    - Platform: ${pkgs.stdenv.hostPlatform.system}
+    - Local configured host: ${osConfig.networking.hostName} (${pkgs.stdenv.hostPlatform.system})
     - Configured primary user: ${config.home.username}
-    - Configured home: ${config.home.homeDirectory}
+    - Primary user's configured home: ${config.home.homeDirectory}
+    - Nix configuration checkout: ${nixcfgPath}
 
-    These values describe the local installed configuration, not a remote SSH
-    target or a runtime identity check. Verify live identity when an operation
-    depends on it.
+    These values identify the local installed Nix configuration, not the current
+    process user, session working directory or a remote SSH target. Verify live
+    identity when an operation depends on it.
   '';
 
   programs.direnv = {
