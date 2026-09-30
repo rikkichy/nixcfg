@@ -1,4 +1,4 @@
-{ lib, pkgs, ... }:
+{ config, osConfig, lib, pkgs, ... }:
 
 {
   home.packages = with pkgs; [
@@ -11,6 +11,22 @@
   ];
 
   fonts.fontconfig.enable = pkgs.stdenv.hostPlatform.isLinux;
+
+  home.file.".omp/agent/rules/nixcfg-host.md".text = ''
+    ---
+    alwaysApply: true
+    ---
+    # Local configured identity
+
+    - Configured host: ${osConfig.networking.hostName}
+    - Platform: ${pkgs.stdenv.hostPlatform.system}
+    - Configured primary user: ${config.home.username}
+    - Configured home: ${config.home.homeDirectory}
+
+    These values describe the local installed configuration, not a remote SSH
+    target or a runtime identity check. Verify live identity when an operation
+    depends on it.
+  '';
 
   programs.direnv = {
     enable = true;

@@ -57,6 +57,25 @@ build, update `hosts/nix/pkgs/kotlin-lsp.nix` from the upstream release and chec
 upgrade only the Darwin cask with `brew upgrade --cask kotlin-lsp`.
 Darwin activation deliberately does not upgrade Homebrew packages.
 
+### OMP startup host context
+
+The shared shell module generates `~/.omp/agent/rules/nixcfg-host.md` from the
+host and Home Manager configuration. OMP loads its full body as an always-apply
+rule before the first user message, including in task subagents; no extension,
+wrapper or model tool call is needed. Existing user context and rules remain
+independent. A conflicting unmanaged file uses the host's normal Home Manager
+backup policy rather than being force-overwritten.
+
+The rule identifies the installed host, platform, primary user and home, not a
+live account/hostname lookup or an SSH target. Activation requires separate
+approval; start a new OMP session afterward. Named profiles and
+`PI_CODING_AGENT_DIR` use their own rule directories and do not read the default
+directory. Do not copy machine identity rules between hosts.
+
+To verify startup loading without a model request, run OMP in RPC mode and send
+only `{"id":"startup","type":"get_state"}`. The response's `systemPrompt` must
+contain the host rule while `messageCount` is zero.
+
 ## Spotify and wallpaper colors
 
 The desktop and Mac import `common/modules/spotify.nix`. The pinned

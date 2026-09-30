@@ -15,7 +15,8 @@ action. Paths below are repository-relative.
 
 - `common/modules/nh.nix`: system-level nh package and checkout default for all
   three hosts, imported from host `default.nix` files, not Home Manager.
-- `common/modules/shell.nix`: portable packages and Fish initialization;
+- `common/modules/shell.nix`: portable packages, Fish initialization and
+  [OMP startup host context](../../../docs/shared.md#omp-startup-host-context);
   `common/dotfiles/` owns shared assets; Micro settings are generated in the shell module.
 - `common/modules/zed.nix`: shared editor settings, theme and language-server commands.
 - `common/modules/spotify.nix`: build-time injection and writable palette.
