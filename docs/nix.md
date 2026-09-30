@@ -1,26 +1,29 @@
 # nix — NixOS
 
-[Handbook](../handbook.md) · [macOS host](ne.md)
+[Installation](install.md) · [Security and recovery](nix-security.md) · [Networking](nix-networking.md) · [Shared operations](shared.md)
 
 Ryzen 9950X3D / RTX 3090 / LUKS / Hyprland + Quickshell, user `ri`.
 Source paths below are relative to `/etc/nixos`; run repository commands there
 unless an installation step specifies otherwise.
 
+Recovery: [disk unlock](nix-security.md#touch-only-disk-unlock),
+[zero-timeout boot menu](nix-security.md#limine-recovery-with-a-zero-timeout),
+[sudo fallback](nix-security.md#touch-only-sudo-with-password-fallback),
+[SOPS identity recovery](nix-security.md#reinstall-replacement-revocation-and-rollback),
+and [existing-system manual recovery](install.md#manual-installation--recovery-reference).
+
 ## Contents
 
 - [Installation](#installation)
-- [Manual installation / recovery reference](#manual-installation--recovery-reference)
 - [Rebuilds and desktop tools](#rebuilds-and-desktop-tools)
+- [Notes and passwords](#notes-and-passwords)
 - [Wallpapers and colours](#wallpapers-and-colours)
 - [Theme ownership rules](#two-rules-that-are-easy-to-break)
 - [Expressive desktop shell](#expressive-desktop-shell)
-- [VPN and private inputs](#vpn-mihomo)
-- [Telegram proxy](#telegram-proxy-tg-ws-proxy)
+- [VPN and Telegram proxy](nix-networking.md)
+- [Security and private provisioning](nix-security.md)
 - [RGB lighting](#rgb-lighting)
 - [Auto-updates](#auto-updates)
-- [Touch-only disk unlock](#touch-only-disk-unlock)
-- [Limine recovery](#limine-recovery-with-a-zero-timeout)
-- [Touch-only sudo](#touch-only-sudo-with-password-fallback)
 
 ## Installation
 
@@ -30,162 +33,15 @@ hardware configuration, sets recovery passwords and offers separately approved
 YubiKey enrollment. It leaves an `ri`-owned Git checkout for normal maintenance.
 Use [checkout adoption](install.md#adopt-the-installed-snapshot) only to
 recover an installed configuration that has no Git metadata.
+The [manual alternative](install.md#manual-installation--recovery-reference)
+is desktop-only; fresh-install disk erasure is never an existing-system recovery step.
 
-## Manual installation / recovery reference
-
-The procedure below is the manual alternative for the `nix` desktop, not a
-second sequence to run after the guided installer. For recovery of an existing
-installation, use only the relevant steps; do not partition or format its disk.
-
-Boot the NixOS 26.05 minimal ISO. **Secure Boot must be OFF** — the ISO is not
-signed with custom keys, and the stick simply will not appear in the boot menu
-otherwise.
-
-### 0. Get a network + become root
-
-```
-sudo -i
-# wifi only: wpa_passphrase SSID PASS > /tmp/w.conf && wpa_supplicant -B -c /tmp/w.conf -i <iface>
-ping -c1 github.com
-```
-
-### 1. Partition and encrypt
-
-Target is the 1 TB NVMe. **This destroys it.** `lsblk` first and confirm the
-name — it is `nvme0n1` on this box.
-
-```
-parted /dev/nvme0n1 -- mklabel gpt
-parted /dev/nvme0n1 -- mkpart ESP fat32 1MiB 4GiB
-parted /dev/nvme0n1 -- set 1 esp on
-parted /dev/nvme0n1 -- mkpart primary 4GiB 100%
-
-mkfs.fat -F32 -n BOOT /dev/nvme0n1p1
-
-cryptsetup luksFormat /dev/nvme0n1p2          # type YES, then a passphrase
-cryptsetup open /dev/nvme0n1p2 cryptroot
-mkfs.xfs -L nixos /dev/mapper/cryptroot
-```
-
-4 GiB ESP is deliberate: `boot.loader.limine.maxGenerations = 10` keeps roughly
-150 MB per generation in there.
-
-### 2. Mount
-
-```
-mount /dev/mapper/cryptroot /mnt
-mkdir -p /mnt/boot
-mount /dev/nvme0n1p1 /mnt/boot
-```
-
-### 3. Generate hardware config, then clone this repo
-
-```
-nixos-generate-config --root /mnt
-mv /mnt/etc/nixos /mnt/etc/nixos.generated
-
-nix-shell -p git --run '
-  git clone https://github.com/rikkichy/nixcfg /mnt/etc/nixos
-'
-cp /mnt/etc/nixos.generated/hardware-configuration.nix /mnt/etc/nixos/hosts/nix/hardware.nix
-```
-
-The clone lands as `root:root` because you are root here. You do not need to fix
-that — `hosts/nix/storage.nix` reasserts `ri:users` on the tree at every boot,
-before the desktop starts.
-
-`hosts/nix/hardware.nix` is tracked and specific to this machine.
-For another host, create its own `hosts/<name>/` configuration and verify every
-disk/boot setting. `hosts/nix/default.nix` imports this desktop's hardware.
-Ignore the generated `/mnt/etc/nixos.generated/configuration.nix`; the system module
-comes from this repo.
-
-### 4. Fill in the LUKS device name
-
-`nixos-generate-config` already wrote the LUKS device into
-the generated hardware configuration, copied to `hosts/nix/hardware.nix`, named after the mapping you opened in step 1:
-
-```
-boot.initrd.luks.devices."cryptroot".device = "/dev/disk/by-uuid/<uuid>";
-```
-
-`hosts/nix/boot.nix` adds discard support; `common/modules/nixos-yubikey.nix`
-adds systemd FIDO discovery to that same mapping. Neither enrolls the disk.
-Keep the name `cryptroot` consistent.
-The retained passphrase remains the fallback; see **Touch-only disk unlock**
-below before enrolling a token.
-
-Without `allowDiscards`, `services.fstrim` runs but no discard reaches the SSD
-through the crypt layer.
-
-**Use the name that is already there — do not invent a second one.** These are
-attribute names, not device paths, so declaring `"luks-<uuid>"` alongside
-`"cryptroot"` does not override it, it defines a *second* mapping of the same
-partition. initrd then races two `systemd-cryptsetup@` units for
-`/dev/nvme0n1p2`; the loser finds it busy, and when the loser is `cryptroot`,
-`/dev/mapper/cryptroot` never appears and the boot hangs waiting for root. It
-is a race, so it can boot fine several times before stranding you in the
-initrd — recovery is a live USB, `cryptsetup open`, chroot, and edit. Verify
-with `nix eval 'path:.#nixosConfigurations.nix.config.boot.initrd.luks.devices'`
-before rebooting; there must be exactly one entry for this root partition.
-
-### 5. Review source paths before installing
-
-Nix's Git flake view omits untracked files. Review and stage only intended
-public configuration/ciphertext paths, never use a blanket add around secret
-provisioning. `path:` includes untracked and ignored files, so **no plaintext,
-identity descriptor, or private key may be staged anywhere inside the checkout**.
-
-```
-cd /mnt/etc/nixos
-git add hosts/nix/hardware.nix
-```
-
-### 6. Install
-
-```
-nixos-install --flake /mnt/etc/nixos#nix
-```
-
-It prompts for a **root** password at the end. Set one you remember.
-
-### 7. Set a password for `ri` — you cannot sudo without it
-
-The config declares `users.users.ri` with no password, so the account has none
-after install. Autologin still works (greetd needs no password), but `sudo`
-will reject you. Before rebooting, while still in the installer:
-
-```
-nixos-enter --root /mnt -c 'passwd ri'
-```
-
-Or after first boot: log in on a TTY as `root` and run `passwd ri`.
-No password is set in the config on purpose — this repo is public.
-
-### 8. Reboot
-
-Flatpak apps install themselves a couple of minutes after you log in — Flathub
-plus `org.vinegarhq.Sober` and `me.amankhanna.opendeck`. To add another, put it
-in the list in `hosts/nix/modules/system/flatpak.nix` and rebuild. If one is missing:
-
-```
-systemctl --user start flatpak-bootstrap
-journalctl --user -u flatpak-bootstrap
-```
-
-There is still one thing you must do by hand:
-
-At the first keyring prompt leave the password **empty** and confirm —
-autologin types no password, so a non-blank keyring would stay locked forever.
-At rest it is protected by LUKS.
 
 ## Rebuilds and desktop tools
 
-After separate activation approval, apply later changes with `nh os switch`.
-The shared system module `common/modules/nh.nix` sets `NH_FLAKE=/etc/nixos`;
-no custom Fish export is needed. Run as your normal user; `nh` requests elevation
-as needed. An explicit `NH_OS_FLAKE` takes precedence for OS commands.
-For an explicit checkout, use `nh os switch path:/etc/nixos --hostname nix`.
+After separate activation approval, apply later changes with `nh os switch`;
+see [shared rebuild behavior](shared.md#rebuild-commands) for checkout selection,
+environment precedence and elevation.
 Review and commit any intentional `flake.lock` changes.
 Press META+ALT and select **Nix maintenance**: the parent lists generations in
 a held terminal, and native actions include **Rebuild and switch**, rollback
@@ -314,7 +170,6 @@ clock/calendar, and occupied workspaces, in that order. Empty workspaces are
 hidden; occupied ordinary and special workspaces appear beneath the clock.
 Tray icons expand vertically upward without moving the clock or overlapping
 the notification button; Escape or the toggle folds them away.
-The folded tray and notification buttons both occupy 56 × 48 logical pixels.
 Special workspaces use Google's official Material Symbols Rounded:
 `communication` uses `chat`, `music` uses `music_note`, and other special
 workspaces use `layers`. Bundled SVGs and their Apache-2.0 license live in
@@ -350,7 +205,7 @@ IPC selects the same configuration as the service. `reveal` avoids the CLI's
 reserved `show` subcommand. Escape and clicking outside dismiss panels.
 Calendar, notifications and device controls are compact popovers next to their
 trigger, centered vertically on it where screen bounds allow. Hyprland handles
-their subtle 96%–100% pop-in and fade, reversed on close; QML keeps a fixed size.
+their pop-in and fade, reversed on close; QML keeps a fixed size.
 Calendar height follows its contents; notification history and device controls
 scroll within capped heights. Keyboard IPC uses the corresponding rail button
 on the focused monitor as its origin. No full-screen overlay is created.
@@ -385,324 +240,19 @@ Qt dimensions and spring coefficients are desktop adaptations, not claims of
 pixel-identical Android tokens. The shell uses relevant components rather than
 inserting every FAB/loading shape into a desktop that has no use for it.
 
-Tray motion uses Material's [Expressive spring tokens](https://raw.githubusercontent.com/androidx/androidx/androidx-main/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/ExpressiveMotionTokens.kt):
-default spatial (stiffness 380, damping ratio 0.8) for expansion/shape, default
-effects (1600, 1.0) for opacity, and fast spatial (800, 0.6) for icon rotation.
-The coefficients are converted for Qt's native 16ms spring integrator; geometry
-and opacity remain separate so transparency does not bounce. The toggle uses
-the stock `pan-up` theme icon. Occupied-workspace selection retains its animated
-48-to-56-pixel size and rounded-shape transition.
+Tray motion adapts Material's [Expressive spring tokens](https://raw.githubusercontent.com/androidx/androidx/androidx-main/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/ExpressiveMotionTokens.kt)
+to Qt's native spring integrator: default spatial for expansion/shape,
+default effects for opacity, and fast spatial for icon rotation. Geometry
+and opacity remain separate so transparency does not bounce. The toggle
+uses the stock `pan-up` theme icon; workspace selection retains its animated
+size and rounded-shape transition. Exact geometry and coefficients belong
+in the [Quickshell source](../hosts/nix/dotfiles/ricing/quickshell/)
+and [engineering reference](../.omp/skills/desktop-shell/references/quickshell.md).
 
 Implementation reference: [Quickshell v0.3.1](https://git.outfoxxed.me/quickshell/quickshell/src/tag/v0.3.1),
 including its native Hyprland IPC and service APIs. The flake applies a
 socket-lifetime correction required with the pinned Qt.
 
-## VPN (mihomo)
-
-`services.mihomo` runs the tunnel as a system service and starts at boot; there
-is no app to launch. The web dashboard is disabled. The localhost controller at
-`127.0.0.1:9090` remains available to the VPN picker and CLI with bearer-token
-authentication. Browser origins are restricted to that localhost origin.
-
-### Split routing and server selection
-
-YouTube, Discord, Roblox/Sober, Instagram, Proton Mail, Bitwarden and noko.chat
-use the selected proxy server; other destinations use `DIRECT`. Domain rules use
-Mihomo's geosite data except noko.chat, whose domain-suffix rule includes all
-subdomains (including api.noko.chat and dl.noko.chat). Roblox's production network
-uses ASN data, and the template includes observed Discord voice IPs. Mihomo
-downloads geosite and ASN data from the publisher's jsDelivr mirror and checks
-for updates daily; first startup needs access to it.
-In Mihomo 1.19.31, a failed overdue GEO update during startup can stop its updater
-until a reload/restart. Check the GEO logs after a connectivity failure.
-The service retains its process sandbox: it does not identify desktop apps by
-process. Discord can assign new IP-addressed media endpoints, which may need
-additional rules. Shared service domains can also include related products.
-
-Empty subscriptions reject traffic instead of falling back to a direct connection.
-Each service's proxy rule has a matching rejection rule: if the selected server
-cannot relay UDP, that service fails closed while unrelated traffic stays direct.
-Keep these pairs together when editing the target list. Use a UDP-capable server
-for voice and games; a successful HTTP health check does not prove UDP support.
-Health checks require the endpoint's HTTP 204 response. Checks remain lazy, so
-an inactive subscription can show stale measurements.
-
-TCP concurrency races multiple resolved addresses for faster connection setup;
-it does not increase bandwidth. The TUN retains its gVisor stack.
-
-**`SUPER + SHIFT + V`** opens the VPN picker. **Switch subscription** opens
-**Primary** and **Quattro**, each retaining its selected server. **Choose server**
-opens only the active subscription's live nodes, fastest first. Dismissing
-either submenu leaves the selection unchanged. **Edit config** opens the public
-`common/dotfiles/mihomo.yaml` template in Zed (`zeditor`), including when Mihomo
-is unavailable; it never opens the private rendered configuration. Saving edits
-does not activate them: apply them with an approved NixOS rebuild.
-There are no DIRECT, AUTO or on/off controls. The picker is also available as
-`vpnp` and as **VPN server** in desktop tools:
-
-```
-vpn                              # show the selected server
-vpn status                       # show the selected server
-vpn subscription                 # active subscription name
-vpn subscription primary         # select Primary's remembered server
-vpn subscription quattro         # select Quattro's remembered server
-vpn list                         # active subscription's nodes and latency
-vpn use <pattern>                # fastest matching node in that subscription
-vpn select <name>                # exact node in that subscription
-vpn ip                           # default DIRECT public IP and country
-```
-
-Selection persists in Mihomo's cache. `vpn use` is a one-time manual choice,
-not continuous automatic selection.
-
-`vpn use` takes a case-insensitive regex, not a node name — `vpn use швец`
-picks the fastest Swedish node. **Match on the flag emoji** (`vpn use 🇸🇪`) when
-you want something durable: node names carry numbering, `WlFl`/`LTE` suffixes
-and trailing spaces that providers change without notice.
-
-The proxy-group hierarchy is **PROXY** choosing **PRIMARY** or
-**QUATTRO**, and each subscription group contains only provider nodes.
-`profile.store-selected` persists selections in
-`/var/lib/private/mihomo/cache.db`. With no valid cached choice, Mihomo uses
-the first available member. Runtime state does not need to be deleted.
-
-Changing servers does not change routing policy. Direct destinations still
-pass through the TUN, but Mihomo connects through the physical interface.
-Stopping Mihomo removes the tunnel; it is not a routing toggle.
-External shortcuts should invoke `vpnp` or `vpn select <name>`, not mode commands.
-
-For a zapret cutover, pause it rather than uninstalling it, then verify video
-playback, Discord voice/screenshare and a Sober game join. Confirm their
-connections select `PROXY` while an unrelated destination selects `DIRECT`.
-Configuration evaluation does not prove these live application paths.
-
-Edit the public template `common/dotfiles/mihomo.yaml`; [runtime rendering](../.omp/skills/nix-system-operations/references/mihomo.md#public-template-private-runtime-rendering)
-supplies private strings outside Nix evaluation/build inputs. Never put credentials
-in the template; Mihomo's private provider/state files must also stay outside Git.
-
-The renderer also generates a fresh controller token on each service start.
-It publishes `/run/mihomo-api.header` atomically, owned by desktop user `ri`
-with mode `0400`, under the root-owned `/run` directory. The file contains only
-the controller authorization header, never subscription URLs or HWID. CLI and
-recovery requests use `curl --header @/run/mihomo-api.header` so the token is not
-placed in process arguments. Do not copy it into Git, logs, shell history or
-application profiles. No new age key or SOPS input is required.
-
-Other controller clients must read that header at request time and authenticate.
-OpenDeck should invoke the host `vpn` command rather than access the controller
-directly from its sandbox. The template is not a standalone runnable config:
-the runtime renderer supplies authentication and subscription credentials.
-
-Mihomo's DNS server and TUN DNS hijacking are disabled. Applications and
-proxy-node lookups use the system resolver; configure upstream DNS through
-NetworkManager, not the Mihomo template. When the system uses the LAN router,
-the router retains its ControlD DoQ connection and private endpoint.
-
-Domain rules rely on HTTP/TLS/QUIC sniffing without DNS mappings. ECH and
-unsupported traffic can prevent domain classification; those connections
-follow IP rules or the final `DIRECT` rule. Sniffing does not replace the
-destination address selected by the system resolver.
-
-After an approved rebuild disables fake-IP handling, fully restart applications
-to discard cached synthetic addresses. `network-reset system` refreshes system
-DNS and closes Mihomo connections without stopping the tunnel, but does not
-reload Mihomo's configuration or restart applications.
-
-### Private inputs and first provisioning
-
-`.secrets/nix/personal.yaml` contains the encrypted inputs, and the nested policy
-authorizes the administrator YubiKey and host key. SOPS supplies the active
-runtime inputs. Keep `/etc/mihomo/subscription.url`, `/etc/mihomo/quattro.url`,
-and `/etc/mihomo/hwid` for rollback. On an unprovisioned checkout without
-ciphertext these are the inputs instead. All three must exist, be nonempty, and be
-root-owned mode `0600`; HWID is not generated automatically. Restore them from
-the installed system or a protected backup, using an editor/file transfer that
-does not expose values in terminal output, command arguments, or shell history.
-For a genuinely new subscription, obtain its intended device identity from the
-operator/provider rather than inventing a migration value.
-
-| Path | Contents |
-| --- | --- |
-| `.secrets/.sops.yaml` | Public recipient policy, matching `^nix/personal\.yaml$` |
-| `.secrets/nix/personal.yaml` | Operator-created ciphertext for host `nix`, intended for Git |
-| `.secrets/nix/sops.nix` | Desktop wrapper selecting its ciphertext for the shared secret module |
-| `/var/lib/sops-nix/key.txt` | Root-only native host age private key |
-| `~/.config/sops/age/yubikey.txt` | Administrator PIV identity descriptor, outside Git |
-| `/run/secrets/mihomo/{primary_url,quattro_url,hwid}` | Root-owned mode `0400` decrypted runtime inputs |
-| `/run/mihomo/config.yaml` | Root-only serialized runtime configuration |
-
-The administrator YubiKey and host recipients are **alternatives in one
-recipient group**, not a threshold scheme. The host decrypts unattended;
-the administrator uses a PIV YubiKey touch. There is deliberately no independent
-recovery recipient: losing both private keys loses access to the ciphertext.
-The operator accepts this risk. Neither the account password nor the LUKS
-passphrase automatically decrypts SOPS.
-
-First provisioning is an operator procedure, not something a rebuild does:
-
-1. Establish the administrator PIV identity as described below and obtain its
-   public recipient. Keep its identity descriptor outside the checkout.
-2. Retain an existing host key. Only if none exists, create one in a root shell
-   with `umask 077`, a root-owned `0700` `/var/lib/sops-nix` directory, and
-   `age-keygen -o /var/lib/sops-nix/key.txt`. Never overwrite an established key.
-   Keep it `root:root`, mode `0600`; obtain only its public recipient with
-   `age-keygen -y /var/lib/sops-nix/key.txt`. Automatic key generation is disabled.
-3. Set the policy rule's `age` value to the two real public recipients
-   (administrator and host), comma-separated. Do not copy example keys or
-   create separate `key_groups`. The rule is relative to `.secrets/`.
-4. In a protected editor, create a YAML mapping `mihomo` containing the string
-   keys `primary_url`, `quattro_url`, and `hwid`. Import the existing effective
-   values without displaying them. In particular preserve the **exact meaningful
-   HWID**, not this installation's machine-id. The legacy renderer removed
-   whitespace; distinguish file framing from the actual established value and
-   privately compare the imported value with the working device identity.
-   Do not perform blind whitespace replacement on the SOPS strings.
-5. Encrypt using the nested policy, writing only ciphertext into the checkout.
-   For `sops edit`, set `TMPDIR` to a private `0700` directory outside the
-   checkout, preferably tmpfs, and disable editor swap, backup, and persistent
-   undo files. Never create an unencrypted `personal.yaml` in the repo first.
-   Use the commands below to create/edit the encrypted document; enter secrets
-   only in the protected editor, not in command arguments.
-6. Independently test administrator and host decryption without
-   printing plaintext. Privately compare all imported values, especially HWID.
-   Merely adding `personal.yaml` selects SOPS at the next evaluation: finish
-   these tests and provision the host key **before activation**.
-7. Review/stage the policy, ciphertext, and module explicitly. Run quick/full
-   validation and a build, then request activation. Check runtime permissions,
-   start ordering, a controlled changed-secret restart, and provider behavior.
-   Keep all `/etc/mihomo` inputs and the known-working generation until cutover
-   and rollback have been exercised.
-
-After repairing inputs, an approved `sudo systemctl restart mihomo` rerenders them.
-Source changes do not update a running credential without restart; see [unit ordering](../.omp/skills/nix-system-operations/references/mihomo.md#public-template-private-runtime-rendering).
-Check service state without dumping configuration or provider URLs to logs.
-
-### PIV touch-only administration and nested SOPS commands
-
-PIV via `age-plugin-yubikey` is separate from the FIDO credentials used by boot
-and sudo. Inspect the model, firmware, management setup, and occupied compatible
-PIV slots first; absence of a certificate alone does not prove a slot unused.
-Check installed `age-plugin-yubikey --help`. For an approved **new key** in a
-confirmed-unused slot, request `--generate --serial SERIAL --slot SLOT
---pin-policy never --touch-policy always` and save its output only to
-`~/.config/sops/age/yubikey.txt` with restrictive permissions. `SERIAL` and
-`SLOT` mean the inspected device and slot, not literal values to copy.
-
-Generation may require management authorization or a PIN. The plugin may also
-change default PIN/PUK/management settings during setup: review that behavior
-before authorizing it. Never reset an applet, clear a FIDO PIN, or weaken other
-credentials. PIN/touch policy is fixed at generation/import; an existing
-PIN-requiring PIV key needs a separately authorized replacement, not an edited
-descriptor. FIPS policies can prohibit `never`; report incompatibility rather
-than silently choosing `once` or cached touch. See the
-[plugin documentation](https://github.com/str4d/age-plugin-yubikey#configuration)
-and [Yubico policy restrictions](https://docs.yubico.com/yesdk/users-manual/application-piv/pin-touch-policies.html).
-
-Run SOPS as the administrator, not root merely to borrow the host key. In Bash:
-
-```bash
-export SOPS_AGE_KEY_FILE="$HOME/.config/sops/age/yubikey.txt"
-umask 077
-export TMPDIR="$(mktemp -d /run/user/"$(id -u)"/sops-edit.XXXXXX)"
-# From the repository root; also creates a new encrypted document via the editor:
-sops --config .secrets/.sops.yaml edit .secrets/nix/personal.yaml
-```
-
-Remove the private temporary directory after the editor
-has exited and no recovery files are needed. SOPS searches for config upward,
-never downward from the repository root; do not rely on it finding the child
-policy. Changing policy alone does not update ciphertext; use the reviewed [replacement/updatekeys procedure](#reinstall-replacement-revocation-and-rollback).
-
-For an independent decryption test use a clean test environment with no other
-age identities, SOPS key environment variables/commands, SSH keys, or GPG
-keyring; an explicit `SOPS_AGE_KEY_FILE` alone is not proof of isolation.
-Leave unused identity variables/commands unset, not empty. In that isolated
-environment, use `sops --config .secrets/.sops.yaml decrypt
-.secrets/nix/personal.yaml > /dev/null` from the repository root, not a command that
-prints plaintext. Replug the YubiKey before the
-administrator-only test: no routine PIN, touch required, no-touch must not
-complete decryption. Repeat with only the root host key and no token. Do not
-record these checks as passed until actually performed. Touch proves presence, not identity;
-the host and any compromised secret-consuming process can access plaintext.
-
-### Reinstall, replacement, revocation, and rollback
-
-On a replacement machine, restore or reconstruct the **existing** PIV descriptor
-with `age-plugin-yubikey --identity --serial SERIAL --slot SLOT`; do not run
-`--generate` as recovery. Create a new root-only native host age key, add its
-public recipient alongside the administrator in the policy, then use an
-already-authorized identity to run:
-
-```bash
-sops --config .secrets/.sops.yaml updatekeys .secrets/nix/personal.yaml
-```
-
-Test the new host alone, with the YubiKey removed and all other identities
-excluded, before unattended provisioning. Restore the same URLs and HWID; do
-not regenerate HWID from the new machine-id. Successful decryption does not
-guarantee provider acceptance or simultaneous-device limits. Generate/verify
-the new machine's hardware configuration. Its disk enrollment and sudo mapping
-are separate procedures. Keep the old host recipient until explicit retirement.
-
-If the host age key is lost, use the administrator YubiKey to authorize a
-replacement host key; a rebuild cannot regenerate access to existing ciphertext.
-If the YubiKey is lost, use an authorized host to add/test a replacement
-administrator recipient. There is no third decryption route if both are lost.
-
-Recipient removal with `updatekeys` changes who can unwrap the current SOPS
-data key; it is not data-key rotation (`sops rotate --in-place`) or revocation
-of subscription credentials at the provider. For compromise, review all three:
-remove the compromised recipient and update ciphertext, rotate its data key with
-the remaining recipients, and replace exposed application credentials. Old Git
-revisions remain decryptable by old authorized recipients. A lost token also
-needs separate removal of its exact sudo registration and LUKS token/keyslot,
-after fallback/replacement tests; never wipe all slots or an entire applet.
-
-For SOPS cutover rollback, use a known-working system generation with retained
-`/etc/mihomo` inputs. For source rollback, restore the matched module,
-policy/ciphertext, renderer, and imports from the chosen revision; preserve host
-private keys. Removing ciphertext alone is not a revocation procedure. A pure
-layout move preserves ciphertext bytes/metadata and runtime identities: compare
-checksums, adapt relative paths/rules/imports, and do not rotate or reenroll
-hardware merely because a file moved.
-
-When renaming the TUN, preserve the [three-way device-name invariant](../.omp/skills/nix-system-operations/references/mihomo.md#tunnel-and-local-control-boundaries).
-
-If the VPN looks connected but traffic is not tunnelled, do not trust the
-controller status — check that the interface actually has its IPv4 address:
-
-```
-ip -br addr show mihomo
-```
-
-A link that is `UP` with only a link-local v6 address is a tunnel that is not
-carrying anything.
-
-## Telegram proxy (tg-ws-proxy)
-
-`Flowseal/tg-ws-proxy` is packaged from source in `hosts/nix/pkgs/bypasses/tg-ws-proxy.nix` and
-pulled in as a `flake = false` input, so the nightly `autoUpgrade` bumps it
-like everything else.
-
-A systemd **user** service runs it headless on `127.0.0.1:1443`. The secret is
-generated once on first start and kept in
-`~/.local/state/tg-ws-proxy/secret` (mode 600) — deliberately *not* in this
-repo, which is public, and persisted so the value stays stable across restarts
-instead of changing every time the service comes up.
-
-Read it with:
-
-```
-cat ~/.local/state/tg-ws-proxy/secret
-systemctl --user status tg-ws-proxy
-```
-
-Then in Telegram Desktop: **Settings → Advanced → Connection type → Proxy**,
-add an **MTProto** proxy, server `127.0.0.1`, port `1443`, and paste that
-secret.
-
-The GUI tray version is also on PATH as `tg-ws-proxy-tray-linux` if you prefer
-it; stop the user service first so the two do not both bind 1443.
 
 ## RGB lighting
 
@@ -722,8 +272,8 @@ its private mount namespace hides the allocator preload only for this service.
 
 `system.autoUpgrade` builds daily and **stages** for next boot (`operation =
 "boot"`), so a kernel or NVIDIA bump never disturbs a running session. For a bad
-update, use **Limine recovery with a zero timeout** below to select a previous
-generation; the default menu is not visible.
+update, use [Limine recovery with a zero timeout](nix-security.md#limine-recovery-with-a-zero-timeout)
+to select a previous generation; the default menu is not visible.
 Watch it with `journalctl -u nixos-upgrade.service`.
 
 `nh`'s default `/etc/nixos` reads the tree through Git.
@@ -732,142 +282,3 @@ Tracked modifications are visible without committing; new source files need
 For approved activation with untracked source files, use
 `nh os switch path:/etc/nixos --hostname nix`.
 Neither mode makes plaintext safe in the tree.
-
-## Touch-only disk unlock
-
-**Enrollment and boot tests are operator-only and pending until explicitly
-performed.** PIV SOPS enrollment does not enroll FIDO2 disk unlock. Keep the
-existing passphrase, a tested recovery ISO, and a known-working boot generation.
-Never delete/reformat a volume or wipe existing keyslots to add touch support.
-
-For this installed machine the encrypted backing partition is
-`/dev/disk/by-uuid/7f0ee47d-3794-4ec0-a006-f8eea8fc471a`, from
-`hosts/nix/hardware.nix`; `/dev/mapper/cryptroot` is the **opened** mapping,
-not the enrollment target. On another machine use its verified backing UUID.
-In an authenticated root shell, after approving enrollment:
-
-```bash
-disk=/dev/disk/by-uuid/7f0ee47d-3794-4ec0-a006-f8eea8fc471a
-cryptsetup luksDump "$disk"
-cryptsetup open --test-passphrase "$disk"
-```
-
-Confirm LUKS **version 2**, the correct physical disk, a working passphrase,
-and free token/keyslot capacity. Do not proceed without passphrase confirmation.
-
-List devices with `systemd-cryptenroll --fido2-device=list` and check installed
-`--help`. After confirming the specific compatible `/dev/hidrawN`, enroll:
-
-```bash
-systemd-cryptenroll "$disk" --fido2-device=/dev/hidrawN \
-  --fido2-with-client-pin=no \
-  --fido2-with-user-presence=yes \
-  --fido2-with-user-verification=no
-```
-
-`/dev/hidrawN` is a placeholder for the freshly verified device; its number can
-change. No `--wipe-slot` belongs in initial enrollment. Hardware restrictions
-may refuse these policies; do not clear a device PIN to work around them.
-Inspect token metadata afterward: UP required, client PIN/UV not required.
-If an existing enrollment requires a PIN, plan a replacement enrollment and
-test it before targeted retirement; editing its JSON is not re-enrollment.
-
-The systemd initrd enables FIDO2 support and extends only `cryptroot` with
-`fido2-device=auto,token-timeout=10s`, retaining discard support. That timeout
-bounds token discovery, **not all touch interactions**. Password fallback stays
-available; do not enable `headless`. Root unlock cannot depend on a SOPS key
-inside the still-locked root filesystem.
-
-Before an approved reboot, inspect the built initrd's crypttab (one root mapping
-named `cryptroot`), FIDO2 library/udev support, and USB/HID modules. Inspect
-`/boot/limine/limine.conf` to associate the intended generation with its actual
-initrd; `readlink /nix/var/nix/profiles/system` identifies the selected system
-profile. A successful evaluation/build/switch is not a successful unlock.
-
-At the console, separately test cold boot with token + touch/no PIN, boot
-without the token using the retained passphrase, and no-touch/wrong-token
-fallback. Record waits and results. Do not garbage-collect the recovery
-generation or remove fallback slots until all paths work.
-
-### Limine recovery with a zero timeout
-
-`boot.loader.timeout = 0` means immediate boot without a visible menu. The
-locked [Limine 12.9.0 documentation](https://github.com/limine-bootloader/limine/blob/v12.9.0/CONFIG.md)
-documents UEFI one-shot timeout override. When the installed bootloader supports
-it, an operator-approved `sudo systemctl reboot --boot-loader-menu=30s` requests
-a menu on that next reboot; select the known-working generation there. Do not
-assume holding Shift/Escape works at timeout zero, or assume a newer checkout
-means the installed EFI binary was updated.
-
-For a controlled boot experiment, an alternative is temporarily setting
-`boot.loader.timeout = 10`, rebuilding the boot configuration, and verifying the
-generated timeout before reboot. If the machine cannot boot or the one-shot
-request is unsupported, use the firmware boot menu to start the recovery ISO.
-Identify and mount the installed ESP (this machine:
-`/dev/disk/by-uuid/612D-84DE`), back up its active `limine/limine.conf`, then edit
-its global `timeout: 0` to `timeout: no`. Verify no earlier config candidate
-shadows it, following the linked Limine search order. Reboot to the disk and
-select the known-working generation. This emergency ESP edit is overwritten
-by bootloader regeneration; put any lasting timeout change in Nix.
-
-If no generation unlocks root, the ISO can open the verified backing partition
-with its retained passphrase as `cryptroot`; mount root and ESP, enter via
-`nixos-enter`, and repair the configuration. Do not format anything. A NixOS
-rollback changes boot configuration, not LUKS enrollment or keyslots.
-
-## Touch-only sudo with password fallback
-
-Only PAM services `sudo` and `sudo-i` use U2F as `sufficient`, before the Unix
-password path. sudo-rs authorization and `wheelNeedsPassword = true` remain;
-this is not a NOPASSWD grant. Touch is requested with `userpresence=1`,
-`pinverification=0`, `userverification=0`, and a cue. The central mapping is
-`/etc/u2f-mappings`, root-controlled, with origin **and** appid `pam://nix`.
-It contains public registration metadata, not an exported private key, and
-does not depend on SOPS. Desktop login, autologin, locker, keyring, and polkit
-authentication are not part of this setup.
-
-Keep a working authenticated root shell open throughout registration and
-testing. As `ri`, check `pamu2fcfg --help`, then register the inspected key to a
-protected temporary file outside the checkout, using ordinary non-resident
-credentials:
-
-```bash
-umask 077
-mapping="$(mktemp /run/user/"$(id -u)"/u2f-mapping.XXXXXX)"
-pamu2fcfg --username=ri --origin=pam://nix --appid=pam://nix > "$mapping"
-```
-
-Do not add `--resident`, `--pin-verification`, `--user-verification`, or
-`--no-user-presence`. In the retained root shell, inspect the result privately
-and, for **first enrollment only**, install it with
-`install -o root -g root -m 0600 /the/verified/temporary/file /etc/u2f-mappings`.
-If the file already exists, back it up and merge the new registration into
-`ri`'s existing colon-separated entry, preserving every other user/key; do not
-overwrite it. Remove the temporary file afterward. Do not reset FIDO or clear
-its existing PIN. The [pamu2fcfg manual](https://developers.yubico.com/pam-u2f/Manuals/pamu2fcfg.1.html)
-describes registration flags.
-
-Inspect generated `/etc/pam.d/sudo` and `/etc/pam.d/sudo-i`: numeric `=0`
-arguments must actually be present, U2F must be `sufficient`, the normal password
-and account/session checks must remain, and `nouserok`/`alwaysok` must be absent.
-Do not change global PAM enablement or timestamp policy.
-
-After approved activation, run each fresh attempt from a separate **`ri`**
-terminal, never from the root shell: `sudo -k; sudo true`, and separately
-`sudo -k; sudo -i` (then `exit` the acquired shell). For **both** commands test:
-
-- Enrolled key + touch: succeeds without a PIN.
-- Enrolled key without touch: no hardware success; it may wait and fall back
-  to a password. Record the wait; do not mistake cached authorization for touch.
-- No key + correct account password: succeeds.
-- No key + wrong password: fails.
-- Unregistered key, and controlled missing/malformed mapping: no
-  unconditional success; password fallback still works.
-
-Keep the root shell until the good-password and negative tests pass. If PAM
-fails, use it to restore the saved mapping and switch to the known-working
-configuration (`nixos-rebuild switch --rollback` when that previous generation
-is the intended one); repeat fresh password tests before closing the shell.
-Mapping edits are outside Nix generations and need their own restoration.
-For a lost token, remove only its reviewed registration after replacement/
-fallback tests; separately revoke its SOPS and disk access.

@@ -1,6 +1,6 @@
 # Shared shell, editor, and applications
 
-[Handbook](../handbook.md) · [Desktop Linux](nix.md) · [macOS](ne.md) · [Server](nixos-server.md)
+Related: [Desktop Linux](nix.md) · [macOS](ne.md) · [Server](nixos-server.md)
 
 ## Rebuild commands
 
@@ -9,7 +9,8 @@ All three hosts import the system module `common/modules/nh.nix`, which installs
 `nh darwin switch --hostname ne` on the Mac. Keep `--hostname ne` when the Mac's
 local hostname differs from the flake attribute. The server does not need
 Home Manager for this shared command. Run as your normal user; `nh` requests
-elevation as needed. For an explicit checkout/host, use
+elevation as needed. An explicit `NH_OS_FLAKE` takes precedence over `NH_FLAKE`
+for OS commands. For an explicit checkout/host, use
 `nh os switch path:/etc/nixos --hostname nixos-server` or
 `nh darwin switch path:/etc/nixos --hostname ne`.
 Switching activates the configuration and requires separate operator approval;

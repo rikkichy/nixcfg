@@ -1,10 +1,14 @@
 # nixos-server — headless NixOS
 
-[Handbook](../handbook.md) · [Installation](install.md) · [Minecraft](minecraft.md)
+Related: [Installation](install.md) · [Shared configuration](shared.md) · [Minecraft](minecraft.md)
 
 The server uses NetworkManager-managed DHCP, console login, and key-only SSH on
 port 22. SSH password/keyboard-interactive authentication and root login are
 disabled. No desktop session is enabled.
+
+Recovery: [SSH access and sudo password fallback](#ssh-and-remote-sudo) ·
+[Bootloader checkpoints](#bootloader-migration) ·
+[Minecraft restoration](minecraft.md#minecraft-backups-and-recovery)
 
 ## SSH and remote sudo
 

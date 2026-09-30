@@ -89,7 +89,7 @@ Load only the relevant subsystem skill for its changed interaction: shell/editor
 Mac native behavior, desktop UI, palette consumer, packaged application, or
 boot/PAM/FIDO/SOPS/Mihomo. Security work also uses the
 [security checklist](references/security.md) and operator procedures in
-[docs/nix.md](../../../docs/nix.md).
+[docs/nix-security.md](../../../docs/nix-security.md).
 
 Evaluation is not rendering, runtime authentication or boot proof. Keep UI previews
 on a private compositor and session bus; never displace the running notification

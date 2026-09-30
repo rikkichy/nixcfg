@@ -1,6 +1,6 @@
 # SOPS, PAM, and FIDO validation
 
-Use the operator procedures in `docs/nix.md` and the contracts in
+Use the operator procedures in `docs/nix-security.md` and the contracts in
 `nix-system-operations`. Record PASS, FAIL, or NOT RUN for each layer:
 evaluation, build, activation, live authentication, and boot are different
 checks. No activation, enrollment, recipient update, keyslot deletion, token

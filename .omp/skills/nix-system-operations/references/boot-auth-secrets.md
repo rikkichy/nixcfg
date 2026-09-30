@@ -3,7 +3,7 @@
 Sources: `hosts/nix/hardware.nix`, `hosts/nix/boot.nix`,
 `hosts/nix/modules/system/security.nix`, `.secrets/nix/sops.nix`, and the Linux
 module imports in `flake.nix`. Operator commands and recovery checkpoints are
-in [docs/nix.md](../../../../docs/nix.md); use
+in [docs/nix-security.md](../../../../docs/nix-security.md); use
 [nixcfg-validation](../../nixcfg-validation/SKILL.md) for the validation workflow
 and security checklist. No enrollment or boot test is implied by a source edit.
 
@@ -61,7 +61,7 @@ Initrd changes take effect only on reboot. Before requesting one:
 
 Limine's zero timeout gives no visible menu; do not rely on Shift/Escape.
 Before any operator-approved boot-recovery action, read the
-[Limine recovery runbook](../../../../docs/nix.md#limine-recovery-with-a-zero-timeout).
+[Limine recovery runbook](../../../../docs/nix-security.md#limine-recovery-with-a-zero-timeout).
 Verify the installed EFI version before relying on a one-shot menu override;
 a newer checkout is not proof. Retain the passphrase and recovery ISO; never format.
 Nix rollback restores boot configuration, **not LUKS enrollment or keyslots**.
@@ -79,7 +79,7 @@ policy unchanged.
 `userverification=0`. Nix's PAM renderer omits boolean false: inspect generated
 `sudo` and `sudo-i` PAM arguments for literal `=0`.
 
-Before approved registration, activation or recovery, read [Touch-only sudo](../../../../docs/nix.md#touch-only-sudo-with-password-fallback).
+Before approved registration, activation or recovery, read [Touch-only sudo](../../../../docs/nix-security.md#touch-only-sudo-with-password-fallback).
 Keep an authenticated root shell until fresh good-password and negative tests pass.
 The mapping is root-controlled public metadata outside SOPS, not a private key.
 Register ordinary non-resident credentials with matching origin/appid `pam://nix`;
@@ -172,4 +172,4 @@ cutover rollback. Restore a matched module, policy/ciphertext, renderer, and
 imports with the intended generation; deleting ciphertext is not revocation.
 A layout-only move preserves ciphertext bytes/metadata, key paths, and
 enrollments: compare checksums and adapt paths, do not rotate or reenroll.
-Full procedures: [SOPS recovery](../../../../docs/nix.md#reinstall-replacement-revocation-and-rollback).
+Full procedures: [SOPS recovery](../../../../docs/nix-security.md#reinstall-replacement-revocation-and-rollback).

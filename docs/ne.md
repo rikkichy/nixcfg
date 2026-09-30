@@ -1,9 +1,12 @@
 # ne — macOS
 
-[Handbook](../handbook.md) · [NixOS host](nix.md)
+Related: [Shared configuration](shared.md) · [Server access](nixos-server.md#ssh-and-remote-sudo)
 
 Apple Silicon (`aarch64-darwin`), user `rii`, checkout `/etc/nixos`.
 Source paths below are relative to the checkout; run repository commands there.
+
+Recovery: [Spotify update-cache protection](#spotify-and-spicetify) ·
+[Shell migration and managed-file conflicts](#updates-and-shell-migration)
 
 ## Contents
 
@@ -81,16 +84,9 @@ delete existing configuration blindly.
 ## Updates and shell migration
 
 When intentionally updating dependencies, review and commit `flake.lock` with
-the configuration. After separate activation approval, apply later changes with
-the shared `NH_FLAKE=/etc/nixos` default:
-
-```sh
-nh darwin switch --hostname ne
-```
-
-Keep `--hostname ne` because the Mac's local hostname may not match the flake
-attribute. For an explicit checkout, use
-`nh darwin switch path:/etc/nixos --hostname ne`.
+the configuration. After separate activation approval, use the
+[shared rebuild commands](shared.md#rebuild-commands), retaining `--hostname ne`
+when the Mac's local hostname differs from the flake attribute.
 Home Manager backs up other conflicting managed files with the
 `.before-nix-darwin` suffix; an existing backup is not silently overwritten.
 Open a new terminal after activation. Optional machine-local Fish additions

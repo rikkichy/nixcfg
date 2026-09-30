@@ -1,6 +1,10 @@
 # Minecraft operations
 
-[Handbook](../handbook.md) · [Server operations](nixos-server.md)
+Related: [Server access](nixos-server.md#ssh-and-remote-sudo)
+
+Recovery: [Inventory](#minecraft-inventory-recovery) ·
+[Block and container history](#minecraft-block-and-container-history) ·
+[Full backup restoration](#minecraft-backups-and-recovery)
 
 ## Contents
 
