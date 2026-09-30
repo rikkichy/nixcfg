@@ -36,6 +36,9 @@ policy JSON, `/etc/chromium/policies/managed/` among other prefixes, and
 helium reads that directory as any Chromium build does; `chrome://policy` shows
 each one as Platform / Machine / Mandatory once it has been picked up.
 
+No extensions are force-installed. Translation and the browser password manager
+are disabled by policy; other extension choices remain user-owned.
+
 Helium embeds uBlock Origin; do not force-install uBlock Origin Lite alongside it,
 because the two blockers conflict.
 

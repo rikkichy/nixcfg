@@ -88,12 +88,6 @@
 
   programs.chromium = {
     enable = true;
-    extensions = [
-      "mnjggcdmjocbbbhaepdhchncahnbgone"
-      "gebbhagfogifgggkldgodflihgfeippi"
-      "ammjkodgmmoknidbanneddgankgfejfh"
-    ];
-
     extraOpts = {
       TranslateEnabled = false;
       PasswordManagerEnabled = false;
