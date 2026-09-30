@@ -83,6 +83,12 @@ activation, start a fresh login session for group membership. A separately
 approved reboot loads the configured module with the matching kernel.
 In OBS, select **Start Virtual Camera**, then choose **OBS Cam** in the receiving app.
 
+VTube Studio and Shoost share `steam_app_1325860` when launched in the VTube Studio
+Proton prefix. Hyprland's `hyprland/rules.lua` enables `render_unfocused` for that
+class so hidden windows keep receiving render callbacks; `hyprland/misc.lua`
+sets the shared limit for windows using this rule to 60 FPS. Application and
+Spout/OBS frame-rate settings remain independent.
+
 ## Notes and passwords
 
 Obsidian and Bitwarden are native desktop packages in

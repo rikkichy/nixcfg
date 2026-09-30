@@ -16,6 +16,7 @@ hl.config({
         session_lock_xray            = true,
 
         initial_workspace_tracking   = 2,
+        render_unfocused_fps         = 60,
 
         mouse_move_enables_dpms      = true,
         key_press_enables_dpms       = true,

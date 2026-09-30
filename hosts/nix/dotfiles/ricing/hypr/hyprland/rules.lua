@@ -64,6 +64,12 @@ hl.window_rule({
     idle_inhibit = "always",
 })
 
+-- VTube Studio and Shoost share this Steam app class in the same Proton prefix.
+hl.window_rule({
+    match            = { class = "steam_app_1325860" },
+    render_unfocused = true,
+})
+
 hl.window_rule({
     match     = { class = "osu!" },
     immediate = true,
