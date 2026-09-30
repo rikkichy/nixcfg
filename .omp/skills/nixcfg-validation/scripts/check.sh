@@ -4,8 +4,9 @@ set -u
 
 mode="${1:-quick}"
 host="${2:-all}"
-if [[ $# -gt 2 || ! "$mode" =~ ^(quick|full)$ || ! "$host" =~ ^(nix|ne|all)$ ]]; then
-  printf 'usage: %s [quick|full] [nix|ne|all]\n' "$0" >&2
+base="${3:-HEAD}"
+if [[ $# -gt 3 || ! "$mode" =~ ^(quick|full)$ || ! "$host" =~ ^(nix|ne|nixos-server|all)$ ]]; then
+  printf 'usage: %s [quick|full] [nix|ne|nixos-server|all] [comparison-revision]\n' "$0" >&2
   exit 2
 fi
 
@@ -14,6 +15,10 @@ root=$(git rev-parse --show-toplevel 2>/dev/null) || {
   exit 2
 }
 cd "$root" || exit 2
+if ! git cat-file -e "${base}^{tree}" 2>/dev/null; then
+  printf 'error: invalid comparison revision: %s\n' "$base" >&2
+  exit 2
+fi
 
 failures=0
 checks=0
@@ -37,7 +42,7 @@ parse_nix() {
   nix-instantiate --parse "$1" > /dev/null
 }
 
-run "Git diff whitespace" git diff --check HEAD --
+run "Git diff whitespace" git diff --check "$base" --
 
 hypr_changed=false
 nix_inputs_changed=false
@@ -63,7 +68,7 @@ while IFS= read -r -d '' file; do
       ;;
   esac
 done < <(
-  git diff --name-only -z HEAD --
+  git diff --name-only -z "$base" --
   git ls-files --others --exclude-standard -z
 )
 
@@ -106,6 +111,10 @@ evaluate_ne() {
   nix eval --raw 'path:.#darwinConfigurations.ne.system.drvPath' && printf '\n'
 }
 
+evaluate_server() {
+  nix eval --raw 'path:.#nixosConfigurations.nixos-server.config.system.build.toplevel.drvPath' && printf '\n'
+}
+
 if [[ "$mode" == full ]]; then
   if [[ "$host" == nix || "$host" == all ]]; then
     run "NixOS system evaluation" evaluate_nix
@@ -113,11 +122,14 @@ if [[ "$mode" == full ]]; then
   if [[ "$host" == ne || "$host" == all ]]; then
     run "Darwin system evaluation (not a build)" evaluate_ne
   fi
+  if [[ "$host" == nixos-server || "$host" == all ]]; then
+    run "Server system evaluation (not a build)" evaluate_server
+  fi
 elif [[ "$nix_inputs_changed" == true ]]; then
-  printf '\nnote: Nix-managed inputs changed; run `%s full` before completion.\n' "$0"
+  printf '\nnote: Nix-managed inputs changed; full evaluation is owned by pre-push.\n'
 fi
 
 printf '\n%d check(s), %d failure(s), %d not run\n' "$checks" "$failures" "$skipped"
-if (( failures > 0 )); then
+if (( failures > 0 )) || [[ "$mode" == full && "$skipped" -gt 0 ]]; then
   exit 1
 fi

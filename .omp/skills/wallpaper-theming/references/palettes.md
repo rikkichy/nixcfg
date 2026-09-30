@@ -17,16 +17,12 @@ outputs belong to [darwin-host](../../darwin-host/SKILL.md).
 
 ## Linux generation and write ownership
 
-`matugen` derives a Material palette from the wallpaper and renders every
-themed file from Linux templates in `hosts/nix/dotfiles/ricing/matugen/templates/`
-and the shared terminal/btop templates above. The config
-naming each template and its destination uses `pkgs.formats.toml` in
-`hosts/nix/modules/home/matugen.nix` and is installed at
-`~/.config/matugen/config.toml`.
-Wallpaper callers display the image with awww's `--transition-type none`.
-Private `theme-apply` only runs matugen → terminal OSC delivery → cursor rendering,
-then records success. Palette/cursor generation does not delay the still image;
-a later theme failure can leave the image changed without updating the success record.
+`matugen` derives a Material palette from the wallpaper and renders files from
+`hosts/nix/dotfiles/ricing/matugen/templates/` and the shared terminal/btop templates.
+`hosts/nix/modules/home/matugen.nix` declares each template and destination with
+`pkgs.formats.toml`, installed at `~/.config/matugen/config.toml`.
+Palettes are generated only after display acceptance; see the canonical
+[wallpaper state machine](wallpapers.md) for apply ordering, failures and success-record semantics.
 Matugen writes `hypr/scheme/current.lua`,
 `quickshell/colors.json`, `fuzzel/colors.ini`, both GTK and Thunar styles,
 btop/nvtop/Qt palettes, Equicord QuickCSS, terminal colours and cursor accent.
@@ -85,12 +81,7 @@ Two more things the pipeline depends on:
 - The btop template's nonfatal post-hook sends SIGUSR2 after its file is written.
   Do not move success-critical steps into hooks: matugen logs hook failures but
   returns success. GTK watches files; Fuzzel reads its palette on launch.
-- `~/.config/hypr-user/` holds `hypr-vars.lua` and `hypr-user.lua`, both
-  created on first start. `io.open(…, "w")` returns nil rather than creating a
-  missing directory, so `maybe_create` in `hosts/nix/dotfiles/ricing/hypr/hyprland.lua`
-  runs `mkdir -p` first
-  — without it the `require` below would raise, and a raw Lua error aborts the
-  rest of that file with no log line at all.
+- Preserve [Hyprland override creation and Lua-load ordering](../../desktop-shell/references/hyprland.md#source-and-live-configuration).
 
 ## Fonts
 

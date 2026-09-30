@@ -1,10 +1,7 @@
 # Linux package boundaries
 
-The inventory is `hosts/nix/modules/system/applications.nix`; package wiring is
-`hosts/nix/pkgs/overlay.nix`. Ricing packages live in `hosts/nix/pkgs/ricing/`,
-games in `hosts/nix/pkgs/gaming/`, and VPN/proxy packages in
-`hosts/nix/pkgs/bypasses/`. Use [nix-system-operations](../../nix-system-operations/SKILL.md)
-for bypass networking and system security, not a new application-side workaround.
+See the [skill ownership map](../SKILL.md#ownership-and-routing): `hosts/nix/modules/system/applications.nix` owns inventory and `hosts/nix/pkgs/overlay.nix` owns package wiring.
+Route proxy networking and security to [nix-system-operations](../../nix-system-operations/SKILL.md), not an application-side workaround.
 
 Home Manager installs `xdg.desktopEntries` as packages under
 `/etc/profiles/per-user/ri/share/applications`, including when `xdg.enable = false`.
@@ -62,6 +59,4 @@ NokoChat development belongs to the external project checkout, not this
 configuration. Follow the [project-environment ownership guidance](../../../../docs/ne.md#project-environments)
 and inspect that checkout's own flake and README before changing its environment.
 This repository does not export a NokoChat development shell.
-Shared Zed configuration, language servers and toolchain policy belong to
-[shared-home](../../shared-home/SKILL.md); macOS application inventory belongs to
-[darwin-host](../../darwin-host/SKILL.md).
+For shared Zed/toolchains and macOS apps, follow the [adjacent ownership map](../SKILL.md#ownership-and-routing).

@@ -6,8 +6,16 @@ description: nix-darwin and Home Manager engineering for the Apple Silicon host 
 # Darwin Host
 
 `ne` is `aarch64-darwin`, primary user `rii`, home `/Users/rii`, checkout
-`/etc/nixos`. Read [the macOS guide](../../../docs/ne.md) for bootstrap and
-operator commands. Paths below are repository-relative.
+`/etc/nixos`. Read the applicable operator section in [the macOS guide](../../../docs/ne.md)
+before consequential action. Paths below are repository-relative.
+
+For separately approved activation on the configured Mac, use
+`nh darwin switch --hostname ne` with the shared `NH_FLAKE=/etc/nixos` default.
+Keep `--hostname ne` when the local hostname does not match the flake attribute;
+an explicit checkout is `nh darwin switch path:/etc/nixos --hostname ne`.
+Before `nh` exists, bootstrap with
+`nix run --inputs-from path:. nixpkgs#nh -- darwin switch path:. --hostname ne`
+as the normal user, following the guide's prerequisite backups and approval.
 
 ## Ownership
 
@@ -46,14 +54,11 @@ Keep state versions fixed unless deliberately performing a compatibility migrati
   modules set `package = null`. Nix owns their configuration, not those app bundles.
 - Load `shared-home` for portable CLI packages, fonts and Zed. Do not duplicate
   them in Brew or turn editor-scoped runtimes into global project toolchains.
-- Project development shells belong to each project's own flake. This repository
-  exports no Nokochat dev shell. Do not add Java/Node/Go/Colima globally to solve
-  a project setup issue; consult that project's source and guide.
-- Existing account records can retain an old Fish path. After approved activation,
-  verify `dscl . -read /Users/"$USER" UserShell`, that the Nix Fish runs, and that
-  `/run/current-system/sw/bin/fish` is registered in `/etc/shells` before `chsh`.
-  Back up unmanaged Fish startup files rather than letting old conf.d/functions
-  override shared policy. Never overwrite an existing backup.
+- Load `shared-home` for project/toolchain boundaries; do not add project runtimes globally.
+  For Nokochat setup, read [project environments](../../../docs/ne.md#project-environments) and its project's guide.
+- Home Manager does not migrate existing account login shells.
+  Before approved migration, read [shell migration](../../../docs/ne.md#updates-and-shell-migration) and [bootstrap](../../../docs/ne.md#bootstrap);
+  verify registered/runnable Nix Fish and preserve unmanaged startup files and existing backups.
 
 ## Preferences, keyboard and file handling
 
@@ -95,22 +100,20 @@ Generated destinations must remain writable:
 - `~/Library/Application Support/Equicord/settings/quickCss.css`
 - `~/.config/spicetify/colors.css`
 
-Edit templates, not those outputs. Ghostty needs Reload Configuration; restart
-btop or Marta if they retain the previous palette. Select Matugen once in Marta.
-Zed's captured theme is static and is not a wallpaper-theme output. Ghostty's
-continuous shader animation stays disabled; updates still render the shaders.
-Use the exact font family `DepartureMono Nerd Font`; font installation may
-require restarting the app before it is visible.
-Spotify uses the shared Spicetify module and needs a restart for palette changes.
-Keep its resource link after `copyApps`; see [update-cache recovery](../../../docs/ne.md#spotify-and-spicetify)
+Edit templates, not mutable outputs; read [Ghostty and wallpaper themes](../../../docs/ne.md#ghostty-and-wallpaper-themes)
+and [Marta](../../../docs/ne.md#marta) for reload/restart and initial selection procedures.
+Keep Zed's theme static and Ghostty's continuous shader animation disabled.
+Use the exact family `DepartureMono Nerd Font`; font visibility may require an app restart.
+Keep Spotify's resource link after `copyApps`; see [update-cache recovery](../../../docs/ne.md#spotify-and-spicetify)
 before changing the user-immutable updater directory.
 
 ## Verification
 
-Load `nixcfg-validation`: quick checks plus `full ne` for Darwin-only changes,
-`full` for shared or flake changes. Cross-platform derivation evaluation does not
-build the Swift helper or run macOS activation. Build on the Mac with
-`darwin-rebuild build --flake path:.#ne` before claiming build success.
+Load `nixcfg-validation` and run one smallest check that proves the changed
+behavior. The native Git pre-push hook owns full repository-wide verification;
+do not repeat its evaluation gate during development or finishing.
+Darwin evaluation does not build the Swift helper or exercise activation;
+claim only observed proof.
 
 For changed native behavior, separately exercise the actual Mac surface with
 operator approval: defaults/pmset values, keyboard doctor, file reveal/defaults,

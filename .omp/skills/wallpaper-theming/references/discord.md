@@ -26,8 +26,8 @@ destination and renames it only after successful JSON processing. Invalid input
 leaves the existing settings untouched. This settings file is not QuickCSS and
 does not use its inode-watcher contract.
 
-Run `bash common/dotfiles/discord/test-sync-settings.sh` with GNU coreutils and jq
-on PATH to check merge precedence, private-state preservation and failure safety.
+For settings-merge changes, use `bash common/dotfiles/discord/test-sync-settings.sh`
+with GNU coreutils and jq on PATH to check merge precedence, private-state preservation and failure safety.
 
 ## Color-only theme
 
@@ -64,9 +64,11 @@ theme during each palette update. Theme symlinks into the Nix store are supporte
 
 ## Verification
 
-Render the palette with an isolated Matugen config and confirm the stylesheet
-contains only color custom properties. Evaluate both host configurations without
-activation. In Discord, enable only Wallpaper plus QuickCSS, then check chat,
-settings, menus and status indicators. Layout, home icon, window controls, fonts
-and animations should remain native. Change wallpaper and confirm colors update
-without restarting Discord. Host evaluation alone does not prove this UI check.
+Choose the smallest check covering the changed surface. For palette changes,
+render with an isolated Matugen config and confirm the stylesheet contains only
+color custom properties. The pre-push gate owns host evaluation; do not duplicate it here.
+For visual changes, check the affected Discord surface in an approved or isolated
+session with Wallpaper plus QuickCSS. Layout, home icon, window controls, fonts
+and animations should remain native. For palette reload changes, change the
+isolated wallpaper and confirm colors update without restarting Discord.
+Host evaluation alone does not prove these UI checks.

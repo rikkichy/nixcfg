@@ -7,7 +7,7 @@ Owner: `hosts/nix/modules/home/matugen.nix`. The built-in image is
 
 `wpp` is the picker: fuzzel in dmenu mode over `~/Pictures/Wallpapers`.
 It draws the still through awww, stops animated playback, then calls private
-`theme-apply` for application palettes, including Quickshell's semantic color roles.
+`theme-apply`: Matugen application palettes (including Quickshell semantic roles) → terminal OSC delivery → cursor rendering, then success recording.
 `wallpaper-restore` also displays its image before calling that helper at login.
 Successful application records the image in `~/.local/state/wallpaper/current`.
 
@@ -21,10 +21,8 @@ Home Manager's configured XDG locations; collection overrides remain supported.
 The checked application steps stay outside Matugen's wallpaper command and hooks:
 version 4.2 logs nonzero command exits but returns success.
 
-Quickshell reads and watches `quickshell/colors.json`, but does not own it.
-Its deployed QML lives in the read-only `~/.config/quickshell/expressive` directory.
-Render `hosts/nix/dotfiles/ricing/matugen/templates/quickshell.json` to a temporary destination
-and verify live palette reload in an isolated shell when changing color roles.
+Matugen owns `quickshell/colors.json`; render `hosts/nix/dotfiles/ricing/matugen/templates/quickshell.json` to a temporary destination when changing roles.
+Follow the [Quickshell writable-consumer and isolated-verification contract](../../desktop-shell/references/quickshell.md#palette-and-native-crash-boundary) to prove live reload without touching the running shell.
 
 Thumbnails are pre-rendered to `~/.cache/wallpaper-picker` with
 `gdk-pixbuf-thumbnailer` because fuzzel builds with `+png +svg` only — a JPEG

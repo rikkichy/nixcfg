@@ -6,24 +6,19 @@ description: Linux host nix desktop application packaging and runtime integratio
 # Desktop Applications — host `nix`
 
 This skill owns Linux application integration, not macOS app installation or
-project development environments. Start from `handbook.md` and `docs/nix.md`;
-load only the relevant reference below.
+project development environments. Load only the relevant reference below;
+read the applicable [host operator section](../../../docs/nix.md) before consequential action.
 
 ## Ownership and routing
 
 - `hosts/nix/modules/system/applications.nix`: package inventory and app services.
-- `hosts/nix/modules/home/applications.nix`: Widevine, MIME defaults, Thunar and
-  absent-only osu! seeds. `common/modules/discord.nix` owns writable Equicord settings
-  and its static theme for Linux and Darwin.
-- `hosts/nix/modules/home/fuzzel.nix`: desktop entries; use
-  [desktop-shell](../desktop-shell/SKILL.md) for launcher/keybind behavior.
-- `hosts/nix/modules/system/gaming.nix` and `hosts/nix/modules/system/flatpak.nix`:
-  gaming integration and user Flatpak lifecycle.
-- `hosts/nix/pkgs/overlay.nix`: local package wiring; categories are `ricing/`,
-  `gaming/` and `bypasses/` under `hosts/nix/pkgs/`.
-- [darwin-host](../darwin-host/SKILL.md): macOS application ownership.
-  [shared-home](../shared-home/SKILL.md): common Zed, shell and toolchain policy.
-  [wallpaper-theming](../wallpaper-theming/SKILL.md): generated styles and Equicord CSS.
+- `hosts/nix/modules/home/applications.nix`: Widevine, MIME defaults, Thunar and absent-only osu! seeds.
+- `common/modules/discord.nix`: writable Equicord settings and static theme for Linux and Darwin.
+- `hosts/nix/modules/home/fuzzel.nix`: desktop entries; [desktop-shell](../desktop-shell/SKILL.md) owns launcher/keybind behavior.
+- `hosts/nix/modules/system/{gaming,flatpak}.nix`: gaming integration and user Flatpak lifecycle.
+- `hosts/nix/pkgs/overlay.nix`: local wiring for `ricing/`, `gaming/` and `bypasses/` under `hosts/nix/pkgs/`.
+- [darwin-host](../darwin-host/SKILL.md): macOS apps; [shared-home](../shared-home/SKILL.md): common Zed, shell and toolchains.
+- [wallpaper-theming](../wallpaper-theming/SKILL.md): generated styles and Equicord CSS.
 
 ## Load when relevant
 
@@ -45,5 +40,6 @@ load only the relevant reference below.
   measure the real window class and activation path before changing integration.
 - Do not mistake sandbox visibility for host visibility or a working JVM for a
   complete AppImage runtime. Follow the relevant package reference.
-- Use [nixcfg-validation](../nixcfg-validation/SKILL.md) after changes; package
-  evaluation alone does not prove app startup, media playback or IPC connectivity.
+- Use one focused check of the changed application behavior; the
+  [pre-push gate](../nixcfg-validation/SKILL.md#pre-push-gate) owns repository-wide
+  evaluation. Evaluation alone does not prove app startup, media playback or IPC connectivity.

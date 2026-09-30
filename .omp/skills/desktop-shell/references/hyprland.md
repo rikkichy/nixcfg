@@ -8,7 +8,9 @@
 
 This is the Lua API (Hyprland ≥0.55), not deprecated hyprlang. `hosts/nix/dotfiles/ricing/hypr/current_scheme.lua` reads `scheme.current` and falls back to `scheme.default` when loading fails or the required palette shape is missing. Keep that fallback: `hosts/nix/dotfiles/ricing/hypr/variables.lua` interpolates colours, and a failed import can silently truncate configuration, losing keybinds and window rules. Matugen owns the writable generated `hosts/nix/dotfiles/ricing/hypr/scheme/current.lua`; do not deploy a store symlink there.
 
-The entry point also loads optional user overrides from the runtime `~/.config/hypr-user` directory. Keep these distinct from tracked sources; do not move shared shell or Zed settings into Hyprland. Those belong to [shared-home](../../shared-home/SKILL.md).
+The entry point creates `hypr-vars.lua` and `hypr-user.lua` on first start and loads these optional overrides from runtime `~/.config/hypr-user/`. Keep them distinct from tracked sources; shared shell/Zed settings belong to [shared-home](../../shared-home/SKILL.md).
+
+`io.open(…, "w")` cannot create a missing directory. Preserve `maybe_create`'s `mkdir -p` before the Lua `require`: without it, a raw Lua error aborts subsequent configuration without a log line.
 
 ## Lua and monitor pitfalls
 

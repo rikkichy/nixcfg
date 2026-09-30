@@ -24,11 +24,11 @@ unless an installation step specifies otherwise.
 
 ## Installation
 
-Use the [interactive Linux installer](../handbook.md#interactive-linux-installer)
+Use the [interactive Linux installer](install.md#interactive-linux-installer)
 for the normal installation path. It guides host/disk selection, generates the
 hardware configuration, sets recovery passwords and offers separately approved
 YubiKey enrollment. It leaves an `ri`-owned Git checkout for normal maintenance.
-Use [checkout adoption](../handbook.md#adopt-the-installed-snapshot) only to
+Use [checkout adoption](install.md#adopt-the-installed-snapshot) only to
 recover an installed configuration that has no Git metadata.
 
 ## Manual installation / recovery reference
@@ -181,14 +181,15 @@ At rest it is protected by LUKS.
 
 ## Rebuilds and desktop tools
 
-Later changes are `sudo nixos-rebuild switch --flake path:/etc/nixos#nix`
-(first build also writes `flake.lock` — commit it). Press META+ALT and select
-**Nix maintenance**: the parent lists generations in a held terminal,
-and native actions include **Rebuild and switch**, rollback and garbage collection.
-`nh os switch` is the terminal alternative: the shared system module
-`common/modules/nh.nix` sets `NH_FLAKE=/etc/nixos`. No custom Fish export is needed.
-Run it as your normal user; it requests elevation as needed. An explicit
-`NH_OS_FLAKE` takes precedence for OS commands.
+After separate activation approval, apply later changes with `nh os switch`.
+The shared system module `common/modules/nh.nix` sets `NH_FLAKE=/etc/nixos`;
+no custom Fish export is needed. Run as your normal user; `nh` requests elevation
+as needed. An explicit `NH_OS_FLAKE` takes precedence for OS commands.
+For an explicit checkout, use `nh os switch path:/etc/nixos --hostname nix`.
+Review and commit any intentional `flake.lock` changes.
+Press META+ALT and select **Nix maintenance**: the parent lists generations in
+a held terminal, and native actions include **Rebuild and switch**, rollback
+and garbage collection.
 
 The live `~/.config/hypr` symlink targets `hosts/nix/dotfiles/ricing/hypr/`.
 If it points elsewhere, switch the host configuration before reloading Hyprland.
@@ -286,40 +287,27 @@ fresh cache entries. Cursor rendering also reuses unchanged, complete outputs;
 changing the accent or renderer, or losing a cursor file, triggers regeneration.
 
 Spotify is the native Spicetify package, available from the launcher and music
-workspace keybinding. Its [shared color-only theme](../handbook.md#spotify-and-wallpaper-colors)
+workspace keybinding. Its [shared color-only theme](shared.md#spotify-and-wallpaper-colors)
 follows Matugen; restart Spotify after generating a new palette.
 
 ## Two rules that are easy to break
 
-**The colour engine owns a set of files at runtime.** Every time the wallpaper
-changes, `matugen` rewrites `fuzzel/colors.ini`, `btop/themes/wallpaper.theme`,
-`nvtop/nvtop.colors`, `gtk-3.0/gtk.css`, `gtk-4.0/gtk.css`, both `thunar.css`,
-`qtengine/scheme.colors`, `quickshell/colors.json`, `spicetify/colors.css`,
-`obsidian/matugen.css` and `hypr/scheme/current.lua`. Home-manager files are
-read-only store symlinks, so **do not** put any of those under
-`xdg.configFile` — every colour change would start failing. This is also why
-home-manager's `gtk` module is not used: it emits `gtk-4.0/gtk.css` too.
-
-**Change the colours by editing templates, not the generated files.** The
-shared terminal, btop, Discord and Spotify templates are in `common/dotfiles/matugen/templates/`; the
-Linux-only templates are in `hosts/nix/dotfiles/ricing/matugen/templates/`. Anything you type
-into the generated files is gone at the next wallpaper. Run `wpp` to re-render
-after editing a template.
-
-Home Manager installs the template configuration at `~/.config/matugen/config.toml`,
-with noninteractive source-color selection. Direct Matugen commands render palettes;
-`wpp`/`awpp` also apply terminal and cursor updates, set the wallpaper, and keep
-wallpaper records. Those steps stay outside Matugen hooks because failed hooks do not
-produce a failing exit status. `services.awww` owns the daemon; its readiness
-check orders wallpaper restoration after the socket is usable.
+**Runtime colour outputs must stay writable**, not Home Manager store symlinks.
+Do not put them under `xdg.configFile` or enable Home Manager's `gtk` module,
+which also owns `gtk-4.0/gtk.css`; see [palette ownership](../.omp/skills/wallpaper-theming/references/palettes.md#linux-generation-and-write-ownership).
+**Edit templates, not generated files**, which are replaced at the next wallpaper.
+Shared templates live in `common/dotfiles/matugen/templates/`; Linux-only ones
+live in `hosts/nix/dotfiles/ricing/matugen/templates/`.
+Use `wpp`/`awpp` after editing: bare Matugen renders palettes, not the complete
+wallpaper, terminal, cursor and wallpaper-record application.
 
 ## Expressive desktop shell
 
 `quickshell.service` runs the pinned Quickshell package with
 `hosts/nix/dotfiles/ricing/quickshell/`. The unit's restart trigger includes the QML store path,
-so a configuration rebuild updates the unit as well as its files. Apply with the
-normal `nixos-rebuild switch --flake path:/etc/nixos#nix`; no manual
-notification daemon or wallpaper daemon should run alongside the managed ones.
+so a configuration rebuild updates the unit as well as its files. After separate
+activation approval, apply with `nh os switch`; no manual notification daemon
+or wallpaper daemon should run alongside the managed ones.
 
 The left rail groups a folded tray toggle, notifications, the centered
 clock/calendar, and occupied workspaces, in that order. Empty workspaces are
@@ -384,25 +372,11 @@ to disable shell animations.
 
 ### Material 3 Expressive design basis
 
-The [official introduction](https://m3.material.io/blog/building-with-m3-expressive)
-describes an evolution of M3, not M4. Its fourteen component additions/updates
-are app bars, button groups, common buttons, extended FABs, FAB menus, FABs,
-icon buttons, loading indicators, navigation bars, navigation rails, progress
-indicators, sliders, split buttons and toolbars. Its style updates are spatial
-and effects springs, emphasized typography, 35 decorative shapes with morphing,
-and richer dynamic color schemes.
+The [official M3 Expressive introduction](https://m3.material.io/blog/building-with-m3-expressive)
+informs this desktop's rounded controls, dynamic colours and spatial/effects motion.
 
-Its seven tactics map to this desktop as follows:
-
-| Tactic | Shell application |
-|---|---|
-| Vary shapes | selected workspace pills, rounded cards and pressed corner morphs |
-| Rich, nuanced color | wallpaper-derived primary, secondary and tertiary role pairs |
-| Guide with typography | bold rounded headings, readable labels and the stacked rail clock |
-| Contain related content | separate microphone, sound, network and Bluetooth popovers |
-| Fluid, natural motion | spatial springs for controls; compositor pop-in/fade for popovers |
-| Flexible components | per-monitor rails, scrollable controls and device-dependent actions |
-| Combine tactics for hero moments | media artwork and playback controls in the sound popup |
+The shell combines grouped device popovers, readable typography and flexible
+per-monitor controls, with media artwork and playback controls as the focal point.
 
 The article cautions against making essential actions too small, insufficient
 contrast, ungrouped information, and too many hero moments. Controls provide
@@ -502,12 +476,9 @@ playback, Discord voice/screenshare and a Sober game join. Confirm their
 connections select `PROXY` while an unrelated destination selects `DIRECT`.
 Configuration evaluation does not prove these live application paths.
 
-The public template is `common/dotfiles/mihomo.yaml`. `mihomo-config` serializes the
-three private strings into a root-only `/run/mihomo/config.yaml`; Mihomo receives
-it through systemd `LoadCredential`, retaining `DynamicUser`. SOPS scalar values
-are preserved exactly; legacy file inputs retain their existing whitespace
-normalization. Values are never Nix evaluation/build inputs. Mihomo's private
-provider/state files can also contain credentials; keep those outside Git.
+Edit the public template `common/dotfiles/mihomo.yaml`; [runtime rendering](../.omp/skills/nix-system-operations/references/mihomo.md#public-template-private-runtime-rendering)
+supplies private strings outside Nix evaluation/build inputs. Never put credentials
+in the template; Mihomo's private provider/state files must also stay outside Git.
 
 The renderer also generates a fresh controller token on each service start.
 It publishes `/run/mihomo-api.header` atomically, owned by desktop user `ri`
@@ -602,12 +573,8 @@ First provisioning is an operator procedure, not something a rebuild does:
    Keep all `/etc/mihomo` inputs and the known-working generation until cutover
    and rollback have been exercised.
 
-`mihomo-config` has no persistent completed state and reruns on each Mihomo
-start, after its required `sops-install-secrets.service` in SOPS mode. Secret
-installation uses sops-nix's systemd activation mode. SOPS changes request a
-Mihomo restart so `LoadCredential` picks up the new rendered file; updating its
-source alone cannot update a running credential. After repairing missing
-inputs, `sudo systemctl restart mihomo` rerenders them.
+After repairing inputs, an approved `sudo systemctl restart mihomo` rerenders them.
+Source changes do not update a running credential without restart; see [unit ordering](../.omp/skills/nix-system-operations/references/mihomo.md#public-template-private-runtime-rendering).
 Check service state without dumping configuration or provider URLs to logs.
 
 ### PIV touch-only administration and nested SOPS commands
@@ -639,17 +606,12 @@ umask 077
 export TMPDIR="$(mktemp -d /run/user/"$(id -u)"/sops-edit.XXXXXX)"
 # From the repository root; also creates a new encrypted document via the editor:
 sops --config .secrets/.sops.yaml edit .secrets/nix/personal.yaml
-# Equivalent after cd .secrets:
-sops --config .sops.yaml edit nix/personal.yaml
-# Only after a reviewed change to real recipients, using an authorized identity:
-sops --config .sops.yaml updatekeys nix/personal.yaml
 ```
 
-The last two commands are alternatives run **inside `.secrets/`**, not subsequent
-root-directory commands. Remove the private temporary directory after the editor
+Remove the private temporary directory after the editor
 has exited and no recovery files are needed. SOPS searches for config upward,
 never downward from the repository root; do not rely on it finding the child
-policy. Changing policy alone does not update existing ciphertext.
+policy. Changing policy alone does not update ciphertext; use the reviewed [replacement/updatekeys procedure](#reinstall-replacement-revocation-and-rollback).
 
 For an independent decryption test use a clean test environment with no other
 age identities, SOPS key environment variables/commands, SSH keys, or GPG
@@ -704,10 +666,7 @@ layout move preserves ciphertext bytes/metadata and runtime identities: compare
 checksums, adapt relative paths/rules/imports, and do not rotate or reenroll
 hardware merely because a file moved.
 
-Two settings in `hosts/nix/modules/system/networking.nix` are tied to `tun.device: mihomo` inside that
-file — `networking.firewall.trustedInterfaces` and
-`networking.networkmanager.unmanaged`. Rename the device in one place and all
-three need to change together.
+When renaming the TUN, preserve the [three-way device-name invariant](../.omp/skills/nix-system-operations/references/mihomo.md#tunnel-and-local-control-boundaries).
 
 If the VPN looks connected but traffic is not tunnelled, do not trust the
 controller status — check that the interface actually has its IPv4 address:
@@ -767,11 +726,12 @@ update, use **Limine recovery with a zero timeout** below to select a previous
 generation; the default menu is not visible.
 Watch it with `journalctl -u nixos-upgrade.service`.
 
-`nh`'s default `/etc/nixos` and `--flake /etc/nixos` read the tree through Git.
+`nh`'s default `/etc/nixos` reads the tree through Git.
 Tracked modifications are visible without committing; new source files need
 `git add` (or `git add -N` to mark intent without staging their contents).
-For untracked iteration use `nh os switch path:/etc/nixos` or an explicit
-`--flake path:/etc/nixos#nix`. Neither mode makes plaintext safe in the tree.
+For approved activation with untracked source files, use
+`nh os switch path:/etc/nixos --hostname nix`.
+Neither mode makes plaintext safe in the tree.
 
 ## Touch-only disk unlock
 

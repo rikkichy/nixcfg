@@ -1,11 +1,9 @@
 # The browser
 
-Helium, a Chromium build, from the `helium` flake input. It is the browser
-`hosts/nix/dotfiles/ricing/hypr/variables.lua` names, the `x-scheme-handler/*` and `text/html` default in
-`hosts/nix/modules/home/applications.nix`. Bitwarden is the native
-`bitwarden-desktop` package in `hosts/nix/modules/system/applications.nix`;
-its launcher comes from that package. Spotify uses the native package from
-`common/modules/spotify.nix`.
+Helium comes from the `helium` flake input; `hosts/nix/dotfiles/ricing/hypr/variables.lua` selects it, and `hosts/nix/modules/home/applications.nix` owns `x-scheme-handler/*`/`text/html` defaults.
+Bitwarden uses the native `bitwarden-desktop` package in
+`hosts/nix/modules/system/applications.nix`; its launcher comes from that package.
+Spotify uses the native `common/modules/spotify.nix` package; see [shared Spotify integration](../../../../docs/shared.md#spotify-and-wallpaper-colors).
 
 **Widevine is not in the browser package**, and Spotify's web player requires it. Without it Spotify loads, searches and browses normally and then
 refuses to play any track, with nothing in the UI or the logs naming a missing
@@ -51,10 +49,9 @@ Two things make this awkward to verify:
   feature being compiled out. `http://localhost` is trustworthy enough for it,
   so the smallest real test is a page served by socat.
 
-`StartupWMClass` only affects the icon of a **running window** (bar, alt-tab).
-It does nothing for the launcher entry, whose icon comes from `Icon=` resolved
-against the icon theme — a separate problem with a separate fix. Establish which
-one is actually wrong before changing anything.
+`StartupWMClass` controls **running-window** icons (bar/alt-tab); launcher icons instead
+come from `Icon=` resolved against the icon theme. Measure the actual window class
+and identify which path is wrong before changing it.
 
 The browser is single-instance: subsequent invocations hand off to the running
 process and the launcher exits immediately. Close the intended window through

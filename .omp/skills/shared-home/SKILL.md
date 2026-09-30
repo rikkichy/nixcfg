@@ -7,24 +7,20 @@ description: Portable Home Manager shell, CLI, fonts and Zed configuration share
 
 All three hosts import `common/modules/shell.nix` from their `home.nix`.
 The desktop and Mac also import `common/modules/zed.nix`; the server does not
-import editor or desktop modules. Read
-[the shared handbook](../../../handbook.md#shared-shell-and-editor) for the user
-contract. Paths below are repository-relative.
+import editor or desktop modules. Read the applicable operator section in
+[the shared guide](../../../docs/shared.md#shared-shell-and-editor) before consequential
+action. Paths below are repository-relative.
 
 ## Ownership
 
 - `common/modules/nh.nix`: system-level nh package and checkout default for all
   three hosts, imported from host `default.nix` files, not Home Manager.
-- `common/modules/shell.nix`: portable CLI packages, Matugen, Departure Mono
-  Nerd Font, Fish abbreviations/aliases/greeting, Starship, zoxide and direnv.
-- `common/modules/zed.nix`: Zed settings, extensions, captured theme, language
-  servers, formatters and platform-specific editor package selection.
-- `common/modules/spotify.nix`: shared build-time Spicetify injection and writable
-  Matugen palette. The bootstrap patch in `common/pkgs/` keeps zero-add-on themes
-  loading the matching rewritten JavaScript and CSS. See
-  [Spotify](../../../handbook.md#spotify-and-wallpaper-colors) for reload semantics.
-- `common/dotfiles/`: Starship, fastfetch, btop, Zed theme, and shared terminal/btop
-  Matugen templates. Micro settings are generated in the shell module.
+- `common/modules/shell.nix`: portable packages and Fish initialization;
+  `common/dotfiles/` owns shared assets; Micro settings are generated in the shell module.
+- `common/modules/zed.nix`: shared editor settings, theme and language-server commands.
+- `common/modules/spotify.nix`: build-time injection and writable palette.
+  Keep zero-add-on themes loading matching rewritten JS/CSS via `common/pkgs/`.
+  Read [Spotify](../../../docs/shared.md#spotify-and-wallpaper-colors) for the operator contract.
 - `hosts/ne/modules/home/shell.nix`: Brew/rustup/Bun environment only.
 - `hosts/nix/modules/home/foot.nix`: Linux terminal integration; do not move its
   OSC delivery or systemd behavior into the portable shell module.
@@ -51,31 +47,29 @@ Use direnv/project flakes for project runtimes; this repository has no
 
 - Home Manager settings and the captured theme are read-only. Edit their source,
   not Zed's settings UI; back up unmanaged conflicts before first activation.
-- Linux installs the Nix Zed package; Darwin configures the externally installed
-  app (`package = null`). Zed installs extensions at startup; they are not pinned
-  by Nix. Restart Zed after activation to use the new language-server generation.
+- Linux owns the Zed package; Darwin configures the external app (`package = null`).
+  Extensions remain unpinned; read [the shared guide](../../../docs/shared.md#shared-shell-and-editor) for activation/restart procedures.
 - `load_direnv = "direct"` supplies project environments. Zed's Node/npm are
   editor-scoped, and gopls appends a fallback Go runtime so project Go stays first.
   Do not expose those runtimes globally or override project toolchain selection.
-- Darwin Rust uses rustup, with `rust-src`/`rustfmt` installed for each applicable
-  project toolchain. Linux provides default Rust tools and sources. Both use the
-  shared rust-analyzer configuration; project shells may override toolchains.
+- Preserve Darwin rustup versus Linux default Rust tools/sources and shared rust-analyzer;
+  project shells may override toolchains. Read [the shared guide](../../../docs/shared.md#shared-shell-and-editor) for rustup component setup.
 - QML language-server support is Linux-only. Qt/Quickshell imports are explicit
   binary arguments; Darwin retains QML syntax support. Do not make Qt a Darwin
   dependency to satisfy a Linux editor feature.
 - nixd evaluates both system option trees and the current host's Home Manager
   options through `nixcfgPath`. Preserve the host-specific Home Manager selection.
-- Kotlin LSP uses `hosts/nix/pkgs/kotlin-lsp.nix` on Linux and the Brew cask's
-  `/opt/homebrew/bin/kotlin-lsp` on Darwin. JetBrains pre-release builds expire;
-  update the actual pin/cask rather than switching to the unrelated fwcd server.
-  Darwin activation deliberately does not upgrade Brew packages.
+- Kotlin LSP uses `hosts/nix/pkgs/kotlin-lsp.nix` or `/opt/homebrew/bin/kotlin-lsp`.
+  Read [the shared guide](../../../docs/shared.md#shared-shell-and-editor) for expired-build recovery; do not substitute fwcd's server.
+  Darwin activation never upgrades Brew packages.
 - Native macOS file associations belong to `darwin-host`, not shared editor
   settings. The captured `common/dotfiles/zed/themes/matugen.json` does not follow
   wallpaper changes. Shared palette changes also require `wallpaper-theming`.
 
 ## Verification
 
-Run `nixcfg-validation` quick and full: shared changes affect **both** hosts.
+Use the single smallest check proving the changed behavior; the native pre-push
+gate owns evaluation of all three configurations: `nix`, `ne` and `nixos-server`.
 Evaluation proves option/package selection, not editor or shell behavior.
 For shell changes, run Fish with the generated configuration in a disposable
 home and check the changed interaction. For Zed changes, launch the appropriate

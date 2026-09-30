@@ -1,11 +1,8 @@
 # AGENTS.md
 
-Host-oriented Nix configuration for `nix` (Ryzen 9950X3D, RTX 3090, LUKS,
-Hyprland and Quickshell) and `ne` (Apple Silicon macOS, user `rii`).
-`common/` contains shared Home Manager configuration; each host owns its
-system modules, packages and assets. `handbook.md` is the documentation entry
-point; `docs/nix.md` and `docs/ne.md` contain host procedures.
-`.omp/skills/` contains detailed engineering constraints.
+Host-oriented Nix configuration for desktop Linux `nix`, headless Linux
+`nixos-server`, and Apple Silicon macOS `ne`. `handbook.md` routes operator
+guides and recovery; `.omp/skills/` owns task-specific engineering constraints.
 
 ## Working rules
 
@@ -27,93 +24,50 @@ point; `docs/nix.md` and `docs/ne.md` contain host procedures.
   reboot require separate operator approval. Never read production secrets into
   tool output or manufacture recipients/ciphertext to bypass pending provisioning.
 
-## Commands
+## Commands and validation
 
-```sh
-sudo nixos-rebuild switch --flake path:/etc/nixos#nix
-nix build --dry-run 'path:.#nixosConfigurations.nix.config.system.build.toplevel'
-nix eval 'path:.#nixosConfigurations.nix.config.<option>'
-# On the Mac:
-darwin-rebuild build --flake path:.#ne
-nh darwin switch /etc/nixos --hostname ne
-# On the Linux desktop:
-Hyprland --verify-config
-hyprctl reload
-hyprctl repl '<lua>'
-```
+Run only the smallest check proving the changed behavior; reuse user verification.
+Load `nixcfg-validation` for the native pre-push gate and explicit diagnostics.
+Do not run automatic quick/full matrices or duplicate the gate before pushing.
+Use explicit `path:` references while iterating; Git flakes omit new files.
+Host guides own operator procedures. Separately authorized activation uses
+`nh os switch` on Linux and `nh darwin switch` on macOS.
 
-Use `path:.#` while iterating. A plain `.#` flake reference reads through Git,
-where untracked files are invisible; a newly referenced file can therefore fail
-with "path is not tracked" even though it exists. Tracked modifications are
-visible. `nix build --dry-run` proves evaluation, not that every derivation
-compiles.
+## Completion and publication
 
-Run `.omp/skills/nixcfg-validation/scripts/check.sh quick` after focused edits and
-`... full` before declaring configuration changes complete. Full mode evaluates
-both hosts; `... full nix` or `... full ne` is for single-host changes only.
-Shared configuration and flake changes require both. `/check` uses this interface.
+After an implementation task is complete, commit and push task-owned changes
+without asking for confirmation, unless the user explicitly requested otherwise.
+Preserve unrelated working-tree and staged changes; stage only owned hunks in
+overlapping files, never a blanket add. Do not force-push or bypass the pre-push
+hook. Read-only reviews/proposals do not create commits. Publication does not
+authorize activation, restarts, secret changes, enrollment or reboot.
 
 ## Architecture
 
-`flake.nix` exposes `nixosConfigurations.nix` and `darwinConfigurations.ne`.
-Each host's `default.nix` imports `modules/system/`; its `home.nix` imports
-`modules/home/` and the shared shell and editor modules in `common/modules/`.
-`hosts/nix/pkgs/overlay.nix` supplies Linux packages and patches; Darwin does
-not import it. `nixcfgPath` is passed through `specialArgs` because evaluation
-can occur elsewhere while runtime configuration needs `/etc/nixos`.
-
-| Area | Source of truth |
-| --- | --- |
-| host identity, users and system imports | `hosts/{nix,ne}/default.nix` |
-| Home Manager imports and state version | `hosts/{nix,ne}/home.nix` |
-| portable Fish, CLI tools and Zed | `common/modules/` |
-| shared CLI assets, Zed theme and terminal/btop templates | `common/dotfiles/` |
-| Linux boot, hardware, storage and lighting | `hosts/nix/` |
-| Linux services, security, networking and package inventory | `hosts/nix/modules/system/` |
-| Linux themes, launchers, application settings and Quickshell integration | `hosts/nix/modules/home/` |
-| live Hyprland configuration and Quickshell assets | `hosts/nix/dotfiles/ricing/{hypr,quickshell}/` |
-| Linux packages, overrides and VPN command | `hosts/nix/pkgs/` |
-| macOS Nix policy, Homebrew inventory and preferences | `hosts/ne/modules/system/` |
-| Ghostty, Matugen, Marta, keyboard and file associations | `hosts/ne/modules/home/` |
-| macOS assets and native association helper | `hosts/ne/dotfiles/`, `hosts/ne/pkgs/` |
-| SOPS declarations, recipient policy and ciphertext | `.secrets/nix/sops.nix`, `.secrets/.sops.yaml`, `.secrets/nix/personal.yaml` |
-
-See `handbook.md#layout` for the detailed ownership map. Nokochat development
-toolchains belong to that project's own flake, not this repository.
+`flake.nix` exposes the three host configurations. Each host owns explicit system
+and Home Manager imports; `common/` owns only genuinely shared configuration.
+Darwin does not import the Linux overlay or system modules. `nixcfgPath` carries
+the runtime checkout path independently of evaluation. See `handbook.md#layout`
+for source ownership; external projects own their development toolchains.
 
 ## Project skills
 
-OMP advertises these automatically and loads their full instructions only when a
-task matches:
-
-- `darwin-host` — nix-darwin, Homebrew, macOS preferences, power, Ghostty,
-  BetterGlobeKey, Marta, wallpaper-theme and native file associations for `ne`.
-- `shared-home` — portable Fish, CLI packages, fonts, direnv and Zed in `common/`.
-- `nix-system-operations` — Linux boot, security, services, CPU policy and VPN.
-- `desktop-shell` — Linux Quickshell, Hyprland, Fuzzel and network recovery.
-- `wallpaper-theming` — shared palette rules and the Linux wallpaper, cursor
-  and Discord pipeline; Darwin application integration lives in `darwin-host`.
-- `desktop-applications` — Linux packaging, browser, Thunar, osu! and Flatpak.
-- `nixcfg-validation` — quick checks, host-selectable evaluation and acceptance.
-
-Skill entry points route to topic references. Read the relevant reference before
-changing its subsystem rather than loading every Linux reference for a Mac task.
-`.omp/` and this file are tracked repository resources. Review their diffs,
-check reference targets, and include applicable changed-file validation.
-
-Project commands live in `.omp/commands/`: `/plan`, `/review`,
-`/check [quick|full] [nix|ne|all]`, and `/finish`.
+OMP advertises skill names/descriptions and loads bodies on demand. Load the
+matching skill and only its relevant references; read the applicable operator
+procedure before consequential actions. Do not import whole runbooks into context.
+Review `.omp/` and `AGENTS.md` as tracked resources, including reference targets.
+Commands in `.omp/commands/`: `/plan`, `/review`,
+`/check [quick|full] [nix|ne|nixos-server|all]`, and `/finish`.
 
 ## Validation policy
 
-- Always inspect `git diff --check` and the final diff.
-- Nix or packaged-source changes require a `path:` flake evaluation.
-- Full validation evaluates both hosts by default. Darwin's derivation can be
-  evaluated on Linux, but its build and runtime checks require macOS; neither
-  host's evaluation proves activation, authentication or boot.
+- Inspect the scoped final diff; the pre-push gate owns whitespace, syntax and
+  all three host evaluations. Do not repeat that matrix during ordinary work.
+- Evaluation is not compilation, activation, authentication or boot proof.
+  Native build/runtime checks require the applicable platform and changed surface.
 - `hosts/nix/dotfiles/ricing/hypr/` changes require `Hyprland --verify-config`; reload logs and
   `hyprctl configerrors` are not reliable validation.
-- Never treat a successful `nixos-rebuild switch` as proof that an initrd change
+- Never treat a successful `nh os switch` as proof that an initrd change
   will boot. Load `nix-system-operations` and inspect the generated boot inputs.
 - For SOPS/PAM/FIDO work, use the enrollment and recovery checklist in
   `docs/nix.md`. Dummy-data tests, evaluation, activation, and actual hardware

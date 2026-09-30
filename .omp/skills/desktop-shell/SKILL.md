@@ -5,7 +5,7 @@ description: Linux desktop-shell engineering for host nix, including Hyprland Lu
 
 # Desktop shell — host `nix` only
 
-Start with the [shared handbook](../../../handbook.md) and [NixOS host guide](../../../docs/nix.md). This skill owns the Linux desktop shell, not host `ne`.
+This skill owns the Linux desktop shell, not host `ne`. Load only the relevant reference below; read the applicable [host operator section](../../../docs/nix.md) before consequential action.
 
 ## Load only the relevant reference
 
@@ -22,7 +22,7 @@ Start with the [shared handbook](../../../handbook.md) and [NixOS host guide](..
 - Generated palettes remain writable. Home Manager owns static sources, never generated Quickshell/Fuzzel colours or the generated Hyprland scheme. The Hyprland directory is a live out-of-store symlink; QML is store-deployed with a service restart trigger.
 - Never replace the running notification daemon or alter live audio/network state to test a candidate. Quickshell previews need a separate compositor **and** D-Bus session. Snapshot and restore the user-manager and D-Bus activation environments around nested Hyprland; details are in the Quickshell reference.
 - Network recovery kills selected apps without confirmation. Validate only with temporary profiles and stubbed external effects, never against the user's session. Preserve the backup, quarantine and ownership/symlink checks.
-- Follow [nixcfg-validation](../nixcfg-validation/SKILL.md) for changed-file checks. QML load/Nix evaluation is not visual proof: exercise the actual isolated shell and capture its Wayland output. Hyprland reload logs and `configerrors` are not substitutes for `--verify-config`.
+- Use the single smallest check proving the changed behavior; the [pre-push gate](../nixcfg-validation/SKILL.md#pre-push-gate) owns repository-wide evaluation. For visual changes, exercise the actual isolated shell and capture its Wayland output: QML load/Nix evaluation is not visual proof. For Hyprland parsing changes, reload logs and `configerrors` are not substitutes for `--verify-config`.
 
 ## Adjacent ownership
 

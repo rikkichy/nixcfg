@@ -22,8 +22,7 @@ Source paths below are relative to the checkout; run repository commands there.
 
 The separate host lives in `hosts/ne/default.nix`. It manages Nix with Lix,
 installs `nh`, and enables Fish as the login shell. `hosts/ne/home.nix` imports
-the same `common/modules/shell.nix` as NixOS: Fish abbreviations, aliases,
-Starship, zoxide, direnv, and the shared Starship/fastfetch/btop/micro configs.
+the shared `common/modules/shell.nix` configuration described below.
 It does not import the Linux desktop, secrets, or overlays. The Darwin host
 declares Brew-owned formulae, casks, and taps in `hosts/ne/modules/system/homebrew.nix`;
 activation neither upgrades nor removes packages. Applications installed outside
@@ -33,14 +32,13 @@ The host also owns reduced-motion, Dock, Finder, keyboard, trackpad, and
 per-power-source sleep/energy preferences. Some macOS preferences require
 logging out or restarting before taking effect; individual apps may still animate.
 
-The shared Home Manager shell module owns the portable CLI packages, Matugen,
-and Departure Mono Nerd Font for both users. Ghostty selects that font explicitly;
-macOS font installation takes effect on activation and may require restarting Ghostty.
-Do not duplicate these tools in the Brew inventory. Removing a Brew declaration
+Ghostty explicitly selects the shared Departure Mono Nerd Font; activation installs
+the font on macOS, and Ghostty may need restarting before it appears.
+Do not duplicate shared tools in the Brew inventory. Removing a Brew declaration
 does not uninstall an existing copy: cleanup remains disabled. Before a targeted
 uninstall, verify the deployed Nix binary, login-shell paths, and Brew dependents.
 
-See [shared shell and editor configuration](../handbook.md#shared-shell-and-editor)
+See [shared shell and editor configuration](shared.md#shared-shell-and-editor)
 for portable packages, Zed settings, and language-server ownership.
 
 ## Bootstrap
@@ -61,16 +59,19 @@ Keep the checkout owned by your normal user so lock updates do not require sudo.
 Use the committed `flake.lock` for bootstrap; dependency updates are a separate
 maintenance operation. `path:` includes new files without staging them, but also
 includes ignored files: keep plaintext secrets and private identities outside
-the checkout.
+the checkout. Before `nh` is installed, run it from the pinned `nixpkgs` input.
+Run as your normal user; `nh` requests elevation for activation. Building does
+not authorize the first switch or shell-directory migration: obtain separate
+operator approval before those steps.
 
 ```sh
 cd /etc/nixos
-nix run --inputs-from path:. nix-darwin#darwin-rebuild -- build --flake path:.#ne
+nix run --inputs-from path:. nixpkgs#nh -- darwin build path:. --hostname ne
 # Once, before first activation: back up the old Fish directory so unmanaged
 # conf.d scripts and functions cannot override the shared configuration.
 # Use a fresh backup name if this destination already exists.
 mv ~/.config/fish ~/.config/fish.before-nix-darwin
-sudo /nix/var/nix/profiles/default/bin/nix run --inputs-from path:. nix-darwin#darwin-rebuild -- switch --flake path:.#ne
+nix run --inputs-from path:. nixpkgs#nh -- darwin switch path:. --hostname ne
 ```
 
 If activation reports an existing `/etc` file conflict, inspect and back up that
@@ -80,11 +81,16 @@ delete existing configuration blindly.
 ## Updates and shell migration
 
 When intentionally updating dependencies, review and commit `flake.lock` with
-the configuration. Apply later configuration changes with:
+the configuration. After separate activation approval, apply later changes with
+the shared `NH_FLAKE=/etc/nixos` default:
 
 ```sh
-nh darwin switch /etc/nixos --hostname ne
+nh darwin switch --hostname ne
 ```
+
+Keep `--hostname ne` because the Mac's local hostname may not match the flake
+attribute. For an explicit checkout, use
+`nh darwin switch path:/etc/nixos --hostname ne`.
 Home Manager backs up other conflicting managed files with the
 `.before-nix-darwin` suffix; an existing backup is not silently overwritten.
 Open a new terminal after activation. Optional machine-local Fish additions
@@ -147,7 +153,7 @@ Client modifications are against Discord's terms of service.
 ## Spotify and Spicetify
 
 Launch `~/Applications/Home Manager Apps/Spotify.app`. The
-[shared Spotify configuration](../handbook.md#spotify-and-wallpaper-colors) owns
+[shared Spotify configuration](shared.md#spotify-and-wallpaper-colors) owns
 build-time injection and the color-only theme; `hosts/ne/modules/home/spotify.nix`
 owns macOS deployment. Close Spotify before activation. The post-copy activation
 links only its generated color stylesheet; the native executable is not wrapped.

@@ -59,21 +59,12 @@ Initrd changes take effect only on reboot. Before requesting one:
    results; successful evaluation, build, or switch is not unlock evidence.
    Do not garbage-collect recovery generations or remove fallback slots first.
 
-Limine has a zero timeout: do not assume a visible menu or Shift/Escape escape
-sequence. The [Limine 12.9.0 configuration reference](https://github.com/limine-bootloader/limine/blob/v12.9.0/CONFIG.md)
-documents the UEFI one-shot override requested by
-`systemctl reboot --boot-loader-menu=30s`. Verify the **installed EFI version**
-before relying on it; a newer checkout does not prove it was installed.
-An approved temporary Nix timeout increase is another option. From a recovery
-ISO, the fallback is to identify/mount the ESP, back up its active config, and
-set `timeout: no`, checking that no earlier config candidate shadows it. This
-emergency edit is overwritten by bootloader regeneration.
-
-If no generation unlocks root, use the recovery ISO and retained passphrase to
-open the verified backing partition as `cryptroot`, mount root and ESP, and
-repair through `nixos-enter`. Do not format anything. Nix rollback restores
-boot configuration, **not LUKS enrollment or keyslots**. Full procedures:
-[Touch-only disk unlock](../../../../docs/nix.md#touch-only-disk-unlock).
+Limine's zero timeout gives no visible menu; do not rely on Shift/Escape.
+Before any operator-approved boot-recovery action, read the
+[Limine recovery runbook](../../../../docs/nix.md#limine-recovery-with-a-zero-timeout).
+Verify the installed EFI version before relying on a one-shot menu override;
+a newer checkout is not proof. Retain the passphrase and recovery ISO; never format.
+Nix rollback restores boot configuration, **not LUKS enrollment or keyslots**.
 
 ## Sudo touch with password fallback
 
@@ -88,27 +79,17 @@ policy unchanged.
 `userverification=0`. Nix's PAM renderer omits boolean false: inspect generated
 `sudo` and `sudo-i` PAM arguments for literal `=0`.
 
-Keep an authenticated root shell open throughout registration and testing.
-The mapping is root-controlled **public registration metadata**, not a private
-key or SOPS secret. Register `ri` using ordinary non-resident credentials with
-both `--origin=pam://nix --appid=pam://nix`, without PIN/UV/no-presence flags.
-Use a protected temporary file outside the checkout; install mode `0600` only
-for first enrollment. Back up an existing mapping and merge into `ri`'s entry,
-preserving every other user/key rather than overwriting it. Do not clear FIDO
-PINs or reset the token.
-
-After approved activation, from a separate `ri` terminal invalidate timestamps
-before **each** `sudo` and `sudo -i` attempt. Test enrolled key/touch/no PIN,
-enrolled key/no touch, no key/correct password, no key/wrong password,
-unregistered key, and controlled missing/malformed mapping. Failure or absence
-may reach password fallback but must never unconditionally succeed. Record
-waits rather than treating cached authorization as touch success.
-
-Keep root until positive password and negative tests pass. If needed restore
-the saved mapping and intended known-working generation, then repeat fresh
-password tests. **Nix rollback does not restore `/etc/u2f-mappings`.** A lost
-token needs separate, targeted sudo, LUKS, and SOPS revocation after replacement
-and fallback tests. See [Touch-only sudo](../../../../docs/nix.md#touch-only-sudo-with-password-fallback).
+Before approved registration, activation or recovery, read [Touch-only sudo](../../../../docs/nix.md#touch-only-sudo-with-password-fallback).
+Keep an authenticated root shell until fresh good-password and negative tests pass.
+The mapping is root-controlled public metadata outside SOPS, not a private key.
+Register ordinary non-resident credentials with matching origin/appid `pam://nix`;
+no PIN/UV/no-presence flags. Use protected temporary storage outside the checkout.
+Install mode `0600` only for first enrollment; back up and merge existing mappings,
+preserving every other user/key. Never reset the token or clear its FIDO PIN.
+Invalidate timestamps before each `sudo` and `sudo -i` test; absence/failure must
+not unconditionally succeed. Record waits; cached authorization is not touch proof.
+Restore mappings separately from Nix rollback, then repeat fresh password tests.
+Revoke only targeted sudo/LUKS/SOPS access after replacement and fallback checks.
 
 ## SOPS authoring and identity boundaries
 

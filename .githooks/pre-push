@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Validate pushed commits, never the caller's uncommitted configuration.
+set -euo pipefail
+
+root=$(git rev-parse --show-toplevel)
+remote=${1:-origin}
+work=$(mktemp -d "${TMPDIR:-/tmp}/nixcfg-pre-push.XXXXXX")
+checkout="$work/checkout"
+cleanup() {
+  if [[ -e "$checkout/.git" ]]; then
+    git -C "$root" worktree remove --force "$checkout"
+  fi
+  rmdir "$work"
+}
+trap cleanup EXIT
+seen=' '
+
+while read -r local_ref local_oid remote_ref remote_oid; do
+  [[ ! "$local_oid" =~ ^0+$ ]] || continue # Deleting a ref publishes no new tree.
+  tip=$(git rev-parse --verify "${local_oid}^{commit}")
+  if [[ ! "$remote_oid" =~ ^0+$ ]] && git cat-file -e "${remote_oid}^{tree}" 2>/dev/null; then
+    base=$remote_oid
+  elif base=$(git merge-base "$tip" "refs/remotes/$remote/HEAD" 2>/dev/null); then
+    : # A new branch can reuse its remote's published ancestor.
+  else
+    base=$(git hash-object -w -t tree --stdin < /dev/null)
+  fi
+  key="$tip:$base"
+  case "$seen" in *" $key "*) continue ;; esac
+  seen="$seen$key "
+
+  printf '\nPre-push: validating %s at %s\n' "$local_ref" "$tip"
+  git worktree add --quiet --detach "$checkout" "$tip"
+  (
+    # Git exports repository-local variables to hooks; do not leak them into
+    # the detached worktree's Git and Nix calls.
+    while IFS= read -r name; do unset "$name"; done < <(git rev-parse --local-env-vars)
+    cd "$checkout"
+    bash .omp/skills/nixcfg-validation/scripts/check.sh full all "$base"
+  ) < /dev/null
+  git worktree remove --force "$checkout"
+done

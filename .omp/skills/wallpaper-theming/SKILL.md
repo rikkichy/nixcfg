@@ -5,26 +5,21 @@ description: Shared Matugen palette templates and Linux host nix wallpaper-drive
 
 # Wallpaper and Theming
 
-Own shared palette semantics and the Linux `nix` runtime. Start from
-`handbook.md` and the relevant host guide; load only the reference needed.
+Own shared palette semantics and the Linux `nix` runtime. Load only the relevant reference;
+read the applicable host or [shared operator section](../../../docs/shared.md#spotify-and-wallpaper-colors) before consequential action.
 
 ## Ownership and routing
 
-- `common/dotfiles/matugen/templates/`: shared terminal assignment format,
-  btop, Discord and Spotify palettes. Both hosts consume these; inspect both when changing the format.
-- `hosts/nix/modules/home/matugen.nix`: Linux template destinations, private
-  helpers, public `wpp`/`awpp`, awww readiness and wallpaper restoration.
+- `common/dotfiles/matugen/templates/`: shared terminal assignment format and btop/Discord/Spotify palettes; inspect both hosts when changing the format.
+- `hosts/nix/modules/home/matugen.nix`: Linux destinations, helpers, `wpp`/`awpp`, awww readiness and restoration.
 - `hosts/nix/dotfiles/ricing/`: Linux Matugen templates, Hyprland and Quickshell.
-  `hosts/nix/pkgs/ricing/` owns cursor/font packages.
-- `common/modules/discord.nix` and `common/dotfiles/discord/`: shared Equicord
-  settings, plugin declarations and static color-only theme.
-- `common/modules/spotify.nix`: color-only Spicetify integration; the writable
-  palette is loaded through Spotify's XPUI stylesheet, with a restart required.
-- `hosts/ne/modules/home/matugen.nix`: separate Darwin `wallpaper-theme` command,
-  owned by [darwin-host](../darwin-host/SKILL.md), not the Linux pipeline.
-- [shared-home](../shared-home/SKILL.md): shared shell, font package and static Zed
-  theme. [desktop-shell](../desktop-shell/SKILL.md): Linux shell/QML/keybinds.
-  [desktop-applications](../desktop-applications/SKILL.md): application packaging.
+- `hosts/nix/pkgs/ricing/`: cursor/font packages.
+- `common/modules/discord.nix` and `common/dotfiles/discord/`: shared Equicord settings, plugin declarations and static color-only theme.
+- `common/modules/spotify.nix`: color-only Spicetify; writable XPUI palette requires a restart.
+- `hosts/ne/modules/home/matugen.nix`: independent Darwin `wallpaper-theme`, owned by [darwin-host](../darwin-host/SKILL.md).
+- [shared-home](../shared-home/SKILL.md): shared shell, font package and static Zed theme.
+- [desktop-shell](../desktop-shell/SKILL.md): Linux shell/QML/keybinds.
+- [desktop-applications](../desktop-applications/SKILL.md): application packaging.
 
 ## Load when relevant
 
@@ -46,5 +41,6 @@ Own shared palette semantics and the Linux `nix` runtime. Start from
 - Keep Equicord's static theme separate from in-place-written QuickCSS; atomic
   rename breaks the QuickCSS file watcher. Keep settings writable; plugin
   declarations merge on activation while private/runtime state stays local.
-- Use [nixcfg-validation](../nixcfg-validation/SKILL.md) after changes and the relevant
-  reference's runtime checks; `hyprctl setcursor` returning `ok` is not visual proof.
+- Use the single smallest check proving the changed behavior from the relevant
+  reference; the [pre-push gate](../nixcfg-validation/SKILL.md#pre-push-gate)
+  owns repository-wide evaluation. `hyprctl setcursor` returning `ok` is not visual proof.
