@@ -78,11 +78,14 @@ All controller requests must use `--header @/run/mihomo-api.header`; never expan
 the token into command arguments or log it. Browser CORS permits only the
 localhost controller origin. See the operator guide for ownership and lifecycle.
 
-The tunnel uses service-selective rules with `MATCH,DIRECT`; ordinary Nix
-downloads and Git pushes do not need a VPN mode toggle. `PROXY` only selects
-a subscription, whose group selects a concrete server. Do not stop Mihomo to
-change routing: that removes the tunnel. `profile.store-selected` persists
-server choices in `cache.db` under the service's state directory.
+Scoped mode uses service-selective rules with `MATCH,DIRECT`; ordinary Nix
+downloads and Git pushes go direct. `vpn mode global` selects `PROXY` in `GLOBAL`
+before changing Mihomo's mode, so global traffic uses the same subscription/server
+instead of `GLOBAL`'s default `DIRECT`. `vpn mode scoped` restores rule mode.
+Both changes close tracked connections so existing traffic follows the new policy.
+The mode is runtime-only; the template starts scoped. Do not stop Mihomo to change
+routing: that removes the tunnel. `profile.store-selected` persists server choices
+in `cache.db` under the service's state directory.
 Native Discord is matched by its `.Discord-wrapped` executable, including
 IP-addressed voice UDP. Process lookup requires `ProtectProc=default` and
 `CAP_SYS_PTRACE`/`CAP_DAC_READ_SEARCH` alongside `CAP_NET_ADMIN`; retain
@@ -119,7 +122,8 @@ after approved activation. See the operator guide for this security boundary.
 `vpn` is a `writeShellApplication` installed in `environment.systemPackages`,
 not an alias: fish, Hyprland, and the Stream Deck use the same command.
 `vpn subscription` selects Primary/Quattro, each retaining its manual server
-selection. There are no mode toggles, AUTO groups or separate selection-state
+selection. `vpn mode [global|scoped]` reads or changes routing; the Fuzzel VPN
+menu offers the opposite mode. There are no AUTO groups or separate selection-state
 files. Bare `vpn` reports the server. `vpn use PATTERN` searches live
 active-subscription nodes by regex because provider names change; it makes a
 one-time selection. `vpn select NAME` validates an exact live name for pickers.

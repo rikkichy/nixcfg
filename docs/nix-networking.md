@@ -68,7 +68,12 @@ it does not increase bandwidth. The TUN retains its gVisor stack.
 **`SUPER + SHIFT + V`** opens the VPN picker. **Switch subscription** opens
 **Primary** and **Quattro**, each retaining its selected server. **Choose server**
 opens only the active subscription's live nodes, fastest first. Dismissing
-either submenu leaves the selection unchanged. **Edit config** opens the public
+either submenu leaves the selection unchanged. **Switch to global** routes traffic
+handled by Mihomo through the selected subscription/server; **Switch to scoped**
+restores the service-specific rules. The prompt shows the current mode.
+Switching closes existing Mihomo connections so applications reconnect using the
+new policy; downloads, calls and games can be interrupted. The mode is a runtime
+choice; Mihomo starts in scoped mode from the template. **Edit config** opens the public
 `common/dotfiles/mihomo.yaml` template in Zed (`zeditor`), including when Mihomo
 is unavailable; it never opens the private rendered configuration. Saving edits
 does not activate them: apply them with an approved NixOS rebuild.
@@ -78,13 +83,16 @@ There are no DIRECT, AUTO or on/off controls. The picker is also available as
 ```
 vpn                              # show the selected server
 vpn status                       # show the selected server
+vpn mode                         # show global or scoped routing
+vpn mode global                  # proxy Mihomo traffic through the selected server
+vpn mode scoped                  # restore service-specific routing
 vpn subscription                 # active subscription name
 vpn subscription primary         # select Primary's remembered server
 vpn subscription quattro         # select Quattro's remembered server
 vpn list                         # active subscription's nodes and latency
 vpn use <pattern>                # fastest matching node in that subscription
 vpn select <name>                # exact node in that subscription
-vpn ip                           # default DIRECT public IP and country
+vpn ip                           # public IP and country under the current routing mode
 ```
 
 Selection persists in Mihomo's cache. `vpn use` is a one-time manual choice,
@@ -104,7 +112,13 @@ the first available member. Runtime state does not need to be deleted.
 Changing servers does not change routing policy. Direct destinations still
 pass through the TUN, but Mihomo connects through the physical interface.
 Stopping Mihomo removes the tunnel; it is not a routing toggle.
-External shortcuts should invoke `vpnp` or `vpn select <name>`, not mode commands.
+External shortcuts can invoke `vpnp`, `vpn mode global`, `vpn mode scoped`,
+or `vpn select <name>`.
+
+`scripts/vpn-mode-test.py /nix/store/...-vpn/bin/vpn` checks a built CLI against
+isolated Mihomo with loopback-only traffic. It requires Python and `mihomo` on
+PATH, and verifies global proxy selection, scoped routing and closing old flows
+without accessing production credentials or changing the desktop tunnel.
 
 For a zapret cutover, pause it rather than uninstalling it, then verify video
 playback, Discord voice/screenshare and a Sober game join. Confirm their

@@ -206,13 +206,16 @@ in
       name = "vpnp";
       runtimeInputs = [ desktopPicker pkgs.zed-editor ];
       text = ''
+        mode=$(vpn mode 2>/dev/null || true)
+        if [ "$mode" = global ]; then target=scoped; else target=global; fi
         menu=$(
           printf '%s\x00icon\x1f%s\n' \
             "Switch subscription" network-vpn \
             "Choose server" network-server \
+            "Switch to $target" network-vpn \
             "Edit config" document-edit \
-            | desktop-picker --index --prompt "vpn> " \
-                --lines 3 --width 48
+            | desktop-picker --index --prompt "vpn [''${mode:-unavailable}]> " \
+                --lines 4 --width 48
         ) || exit 0
 
         case "$menu" in
@@ -231,7 +234,8 @@ in
             prompt="server [$active · $cur]> "
             lines=14
             ;;
-          2) exec zeditor ${lib.escapeShellArg "${nixcfgPath}/common/dotfiles/mihomo.yaml"} ;;
+          2) exec vpn mode "$target" ;;
+          3) exec zeditor ${lib.escapeShellArg "${nixcfgPath}/common/dotfiles/mihomo.yaml"} ;;
           *) exit 0 ;;
         esac
 

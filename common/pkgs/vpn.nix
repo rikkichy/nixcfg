@@ -121,9 +121,33 @@ writeShellApplication {
       group_selection "$(active_subscription)"
     }
 
+    routing_mode() {
+      if [ "$#" = 0 ]; then
+        curl -fsS --noproxy '*' --header @/run/mihomo-api.header --max-time 3 "$api/configs" \
+          | jq -er '.mode | if . == "rule" then "scoped" else . end'
+        return
+      fi
+      case "$1" in
+        global) mode=global ;;
+        scoped) mode=rule ;;
+        *) echo "usage: vpn mode [global|scoped]" >&2; return 2 ;;
+      esac
+      # GLOBAL defaults to DIRECT; use the same subscription/server as scoped mode.
+      if [ "$mode" = global ]; then api_put GLOBAL PROXY; fi
+      curl -fsS --noproxy '*' --header @/run/mihomo-api.header --max-time 3 -X PATCH "$api/configs" \
+        --data "$(jq -nc --arg mode "$mode" '{mode:$mode}')"
+      # Existing flows retain their outbound until they reconnect.
+      curl -fsS --noproxy '*' --header @/run/mihomo-api.header --max-time 3 -X DELETE "$api/connections"
+      say network-vpn-symbolic "routing -- $1"
+    }
+
     case "''${1:-status}" in
       use)    use_node "''${2:-}" ;;
       select) select_node "''${2:-}" ;;
+      mode)
+        [ "$#" -le 2 ] || { echo "usage: vpn mode [global|scoped]" >&2; exit 2; }
+        routing_mode "''${@:2}"
+        ;;
       subscriptions) printf 'PRIMARY\tPrimary\nQUATTRO\tQuattro\n' ;;
       subscription)
         if [ -n "''${2:-}" ]; then
@@ -141,7 +165,7 @@ writeShellApplication {
               done ;;
       ip)     curl -fsS --max-time 15 https://cloudflare.com/cdn-cgi/trace \
                 | sed -n 's/^ip=//p;s/^loc=/ /p' | tr -d '\n'; echo ;;
-      *)      echo "usage: vpn [subscription [primary|quattro]|subscriptions|use <pattern>|select <name>|nodes|status|list|ip]" >&2; exit 2 ;;
+      *)      echo "usage: vpn [mode [global|scoped]|subscription [primary|quattro]|subscriptions|use <pattern>|select <name>|nodes|status|list|ip]" >&2; exit 2 ;;
     esac
   '';
 }
