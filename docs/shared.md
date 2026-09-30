@@ -67,8 +67,8 @@ independent. A conflicting unmanaged file uses the host's normal Home Manager
 backup policy rather than being force-overwritten.
 
 The rule combines the installed host and Nix platform, and identifies the primary
-user, that user's configured home and the Nix configuration checkout. These are
-not the current process user, session working directory or an SSH target.
+user and that user's configured home. These are not a live hostname/account lookup
+or an SSH target.
 Activation requires separate approval; start a new OMP session afterward. Named
 profiles and `PI_CODING_AGENT_DIR` use their own rule directories and do not read
 the default directory. Do not copy machine identity rules between hosts.

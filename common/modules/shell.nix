@@ -1,4 +1,4 @@
-{ config, osConfig, nixcfgPath, lib, pkgs, ... }:
+{ config, osConfig, lib, pkgs, ... }:
 
 {
   home.packages = with pkgs; [
@@ -21,7 +21,6 @@
     - Local configured host: ${osConfig.networking.hostName} (${pkgs.stdenv.hostPlatform.system})
     - Configured primary user: ${config.home.username}
     - Primary user's configured home: ${config.home.homeDirectory}
-    - Nix configuration checkout: ${nixcfgPath}
 
     These values identify the local installed Nix configuration, not the current
     process user, session working directory or a remote SSH target. Verify live
