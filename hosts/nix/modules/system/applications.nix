@@ -6,7 +6,7 @@
   environment.systemPackages = with pkgs; [
     omp
 
-    inputs.helium.packages.${pkgs.stdenv.hostPlatform.system}.default
+    brave-origin
     inputs.vhelper.packages.${pkgs.stdenv.hostPlatform.system}.default
 
     inputs.openwave.packages.${pkgs.stdenv.hostPlatform.system}.default

@@ -10,11 +10,11 @@ let
       roots=()
       names=""
       case "$scope" in
-        all) roots=("$cfg/net.imput.helium" "$cfg/discord"); names='helium|helium_crashpad|Discord|\.Discord-wrappe' ;;
-        helium) roots=("$cfg/net.imput.helium"); names='helium|helium_crashpad' ;;
+        all) roots=("$cfg/BraveSoftware/Brave-Origin" "$cfg/discord"); names='Discord|\.Discord-wrappe' ;;
+        brave-origin) roots=("$cfg/BraveSoftware/Brave-Origin") ;;
         discord) roots=("$cfg/discord"); names='Discord|\.Discord-wrappe' ;;
         system|reconnect) ;;
-        *) echo "usage: network-reset [all|system|helium|discord|reconnect]" >&2; exit 2 ;;
+        *) echo "usage: network-reset [all|system|brave-origin|discord|reconnect]" >&2; exit 2 ;;
       esac
       [ "$#" -le 1 ] || exit 2
 
@@ -45,6 +45,13 @@ let
           exit 1
         fi
       }
+
+      if [[ "$scope" = all || "$scope" = brave-origin ]]; then
+        # Crashpad's process name is shared with other Chromium browsers.
+        browser='^/nix/store/[^/ ]+-brave-origin-[^/ ]+/opt/brave[.]com/brave-origin/(brave|chrome_crashpad_handler)( |$)'
+        pkill -KILL -u "$UID" -f "$browser" || (( $? == 1 ))
+        timeout 5s pidwait -u "$UID" -f "$browser" || (( $? == 1 ))
+      fi
 
       if [ -n "$names" ]; then
         pkill -KILL -u "$UID" -x "$names" || (( $? == 1 ))
@@ -144,11 +151,11 @@ in
       icon = "${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/view-refresh.svg";
       terminal = false;
       categories = [ "System" ];
-      settings.Keywords = "troubleshootp;troubleshoot;network;system;helium;browser;discord;cache;";
+      settings.Keywords = "troubleshootp;troubleshoot;network;system;brave-origin;browser;discord;cache;";
       settings.OnlyShowIn = "X-DesktopTools;";
       actions = {
         system = { name = "Reset system networking"; exec = "troubleshootp system"; };
-        helium = { name = "Kill Helium and reset networking"; exec = "troubleshootp helium"; };
+        brave-origin = { name = "Kill Brave Origin and reset networking"; exec = "troubleshootp brave-origin"; };
         discord = { name = "Kill Discord, reset networking and clean cache"; exec = "troubleshootp discord"; };
         reconnect = { name = "Reconnect Ethernet"; exec = "troubleshootp reconnect"; };
       };

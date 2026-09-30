@@ -64,13 +64,17 @@ launcher using native desktop-entry visibility.
 Clipboard capture is supervised by Home Manager. Start a fresh graphical session
 after applying this configuration to avoid overlapping old unmanaged watchers.
 
+Brave Origin (`pkgs.brave-origin`) is the default browser for the browser shortcut,
+HTML files and web links. Its profile remains application-owned under
+`~/.config/BraveSoftware/Brave-Origin`. No extensions are force-installed.
+
 **Network recovery acts immediately, without confirmation.** Its default action
-force-kills Helium and Discord, clears failed network-route backoff, cleans
+force-kills Brave Origin and Discord, clears failed network-route backoff, cleans
 Discord's disposable caches, and refreshes system DNS/connections. Apps remain
 closed; nothing restores their sessions. Cookies, settings and persistent
 application data are preserved, but unsaved work can be lost.
 Use its native actions for individual scopes, or
-`network-reset [all|system|helium|discord|reconnect]` in a terminal.
+`network-reset [all|system|brave-origin|discord|reconnect]` in a terminal.
 `reconnect` briefly disconnects Ethernet; ordinary system reset keeps the link
 and VPN choice intact. `troubleshootp` runs the same command in a held terminal.
 No post-reset connectivity checks run.

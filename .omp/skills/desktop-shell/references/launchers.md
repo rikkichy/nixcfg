@@ -27,20 +27,21 @@ Power selection maps fixed indexes to argv (`systemctl poweroff`, `reboot`, `sus
 
 ## Network recovery: deliberately destructive scopes
 
-`Network recovery` runs `troubleshootp all`; native actions expose `system`, `helium`, `discord` and `reconnect`. `troubleshootp [scope]` opens a held Foot terminal running `network-reset [scope]`; the default is `all`.
+`Network recovery` runs `troubleshootp all`; native actions expose `system`, `brave-origin`, `discord` and `reconnect`. `troubleshootp [scope]` opens a held Foot terminal running `network-reset [scope]`; the default is `all`.
 
-There are **no confirmation prompts**. Selected Helium and Discord process families receive SIGKILL, are waited for, and remain closed. Unsaved work can be lost. There is no session restoration, relaunch or post-reset connectivity probe. Do not silently add any of those behaviors.
+There are **no confirmation prompts**. Selected Brave Origin and Discord process families receive SIGKILL, are waited for, and remain closed. Unsaved work can be lost. There is no session restoration, relaunch or post-reset connectivity probe. Do not silently add any of those behaviors.
 
 Preserve these boundaries when editing the reset:
 
 - Only the current user's exact selected process families are killed. Scope and argument count are checked before effects. A nonblocking lock prevents concurrent resets; private state/backups use restrictive permissions.
+- Brave Origin and its crash handler are selected by their Nix package executable paths; `chrome_crashpad` alone also matches unrelated Chromium browsers. Profile recovery targets `BraveSoftware/Brave-Origin`, not regular Brave's profile.
 - App resets stage valid Chromium network-state JSON and back it up before replacement. Remove only `.net.http_server_properties.broken_alternative_services`; do not wipe entire networking or application profiles. Reject malformed input rather than replacing it with empty state.
 - Discord cache cleaning allows only `Cache`, `Code Cache`, `GPUCache`, `DawnGraphiteCache` and `DawnWebGPUCache`. Quarantine before removal; failures retain quarantine and report its path. Ownership, symlink, directory and file checks protect the selected paths.
 - Cookies, sessions, persistent web storage, service workers, modules and Equicord data remain untouched.
 - System reset republishes NetworkManager DNS, clears Mihomo's resolver cache and closes its tracked connections. It preserves VPN selection, does not restart services, and interrupts connections from other applications. The controller requests stay localhost-only with proxy bypass and bounded timeouts.
 - `reconnect` first records the active profile UUID on Ethernet `enp11s0`, disconnects it, brings up that exact UUID on that interface, then performs system reset. Ordinary system reset does not reconnect the link. No new privilege policy is required.
 
-Validate recovery only with temporary profiles and stubbed external effects. Never run a live reset on the user's session for verification.
+Validate recovery only with temporary profiles and stubbed external effects. Never run a live reset on the user's session for verification. `bash scripts/network-reset-test.sh` checks Brave Origin process selection, profile isolation and network-state backups.
 
 ## Nix maintenance desktop actions
 

@@ -33,11 +33,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    helium = {
-      url = "github:oxcl/nix-flake-helium-browser";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     omp = {
       url = "github:rikkichy/oh-my-pi-flake";
       inputs.nixpkgs.follows = "nixpkgs";

@@ -3,7 +3,7 @@ local scheme = require("current_scheme")
 return {
     terminal                   = "foot",
 
-    browser                    = "helium",
+    browser                    = "brave-origin",
     editor                     = "zeditor",
     fileExplorer               = "thunar",
     audioSettings              = "pavucontrol",

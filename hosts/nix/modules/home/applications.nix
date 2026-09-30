@@ -1,11 +1,6 @@
 { config, pkgs, lib, ... }:
 
 {
-  home.file.".config/net.imput.helium/WidevineCdm/${pkgs.widevine-cdm.version}" = {
-    source = "${pkgs.widevine-cdm}/share/google/chrome/WidevineCdm";
-    recursive = true;
-  };
-
   home.activation.osuSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     osudir="${config.home.homeDirectory}/.local/share/osu"
     run mkdir -p "$osudir"
@@ -34,11 +29,11 @@
   xdg.mimeApps = {
     enable = true;
     defaultApplications = {
-      "text/html" = "helium.desktop";
-      "x-scheme-handler/http" = "helium.desktop";
-      "x-scheme-handler/https" = "helium.desktop";
-      "x-scheme-handler/about" = "helium.desktop";
-      "x-scheme-handler/unknown" = "helium.desktop";
+      "text/html" = "brave-origin.desktop";
+      "x-scheme-handler/http" = "brave-origin.desktop";
+      "x-scheme-handler/https" = "brave-origin.desktop";
+      "x-scheme-handler/about" = "brave-origin.desktop";
+      "x-scheme-handler/unknown" = "brave-origin.desktop";
       "inode/directory" = "thunar.desktop";
       "video/mp4" = "mpv.desktop";
       "video/x-matroska" = "mpv.desktop";

@@ -1,59 +1,30 @@
 # The browser
 
-Helium comes from the `helium` flake input; `hosts/nix/dotfiles/ricing/hypr/variables.lua` selects it, and `hosts/nix/modules/home/applications.nix` owns `x-scheme-handler/*`/`text/html` defaults.
+Brave Origin comes from `pkgs.brave-origin` in `hosts/nix/modules/system/applications.nix`.
+`hosts/nix/dotfiles/ricing/hypr/variables.lua` selects `brave-origin`, and
+`hosts/nix/modules/home/applications.nix` owns the `brave-origin.desktop` HTML
+and URL-handler defaults. The browser owns its writable profile under
+`~/.config/BraveSoftware/Brave-Origin`; do not copy another browser's profile
+over it or delete old profiles during package changes.
 Bitwarden uses the native `bitwarden-desktop` package in
 `hosts/nix/modules/system/applications.nix`; its launcher comes from that package.
 Spotify uses the native `common/modules/spotify.nix` package; see [shared Spotify integration](../../../../docs/shared.md#spotify-and-wallpaper-colors).
 
-**Widevine is not in the browser package**, and Spotify's web player requires it. Without it Spotify loads, searches and browses normally and then
-refuses to play any track, with nothing in the UI or the logs naming a missing
-decryption module — it presents as broken audio, so the sink and the mute state
-get investigated first and are always fine.
-
-A build takes the CDM by one of two routes and this one has only the second:
-
-- **Bundled**, from `WidevineCdm/` beside the binary. That lookup is compiled
-  in or it is not — nixpkgs patches `BUNDLE_WIDEVINE_CDM=true` into
-  `third_party/widevine/cdm/BUILD.gn` to get it — so dropping the directory
-  into a binary release's tree achieves nothing at all.
-- **As a component**, from `~/.config/net.imput.helium/WidevineCdm/<version>/`,
-  which `hosts/nix/modules/home/applications.nix` seeds from `pkgs.widevine-cdm`. Startup scans that
-  directory, registers the highest version whose `manifest.json` agrees with
-  the directory name, and records it in `latest-component-updated-widevine-cdm`
-  beside it, holding `{"Path": …}`. Registration happens from that hint, so
-  **the CDM arrives one start late**: the run that first sees a newly seeded
-  directory writes the hint and plays nothing.
-
-`strings` on the two binaries is what separates the routes: `Registering
-bundled Widevine ` against `Registering hinted Widevine `, one string each.
-Beyond that the entry is a real directory of symlinks (`recursive = true`)
-rather than a symlinked directory, because the hint records the path as found —
-a symlink resolves to the store and a nixpkgs bump then moves it out from
-under the hint.
-
-`programs.chromium` in `hosts/nix/modules/system/applications.nix` installs no browser. It writes
-policy JSON, `/etc/chromium/policies/managed/` among other prefixes, and
-helium reads that directory as any Chromium build does; `chrome://policy` shows
-each one as Platform / Machine / Mandatory once it has been picked up.
+`programs.chromium` in `hosts/nix/modules/system/applications.nix` installs no
+browser. It writes policy JSON, including `/etc/brave/policies/managed/`;
+`brave://policy` shows the loaded policies and their source.
 
 No extensions are force-installed. Translation and the browser password manager
 are disabled by policy; other extension choices remain user-owned.
 
-Helium embeds uBlock Origin; do not force-install uBlock Origin Lite alongside it,
-because the two blockers conflict.
+Brave Origin includes Brave Shields for content blocking. No additional blocker
+is declared. Home Manager does not seed Widevine; encrypted-media playback needs
+separate browser-level verification.
 
-Two things make this awkward to verify:
-
-- **`--headless` will not start**, exiting on `Multiple targets are not
-  supported in headless mode`. `--ozone-platform=headless` is the way to run it
-  without a window, and it takes the ordinary flags —
-  `--enable-logging=stderr --v=1` is where the Widevine lines appear. Driving
-  such an instance needs the bundled `chromedriver`, which is not patchelfed
-  and has to be started through the loader with helium's own `RUNPATH`.
-- **EME is a secure-context API.** `navigator.requestMediaKeySystemAccess` is
-  simply not a function on `file://` or `about:blank`, which reads as the
-  feature being compiled out. `http://localhost` is trustworthy enough for it,
-  so the smallest real test is a page served by socat.
+Smoke-test the packaged executable with an isolated disposable profile, never
+the user's existing session. Verify a rendered page and JavaScript execution;
+version output alone does not prove browser startup. Headless rendering is not
+proof of Wayland GPU acceleration or DRM playback.
 
 `StartupWMClass` controls **running-window** icons (bar/alt-tab); launcher icons instead
 come from `Icon=` resolved against the icon theme. Measure the actual window class
