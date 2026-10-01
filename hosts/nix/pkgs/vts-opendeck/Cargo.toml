@@ -1,0 +1,18 @@
+[package]
+name = "vts-opendeck"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+anyhow = "1"
+futures-util = { version = "0.3", features = ["sink"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "time", "sync"] }
+tokio-tungstenite = "0.28"
+
+[profile.release]
+lto = true
+strip = true
+codegen-units = 1

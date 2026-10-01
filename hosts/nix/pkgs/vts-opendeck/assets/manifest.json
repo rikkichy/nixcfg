@@ -1,0 +1,37 @@
+{
+  "Name": "VTube Studio Native",
+  "Description": "Native Linux VTube Studio hotkeys and model switching for OpenDeck.",
+  "Author": "rikkichy",
+  "Version": "0.1.0",
+  "UUID": "com.rikkichy.vtubestudio",
+  "CodePathLin": "bin/vts-opendeck",
+  "CodePaths": {
+    "x86_64-unknown-linux-gnu": "bin/vts-opendeck"
+  },
+  "Icon": "icons/plugin",
+  "Category": "VTube Studio Native",
+  "CategoryIcon": "icons/plugin",
+  "OS": [{ "Platform": "linux" }],
+  "Actions": [
+    {
+      "UUID": "com.rikkichy.vtubestudio.hotkey",
+      "Name": "Trigger Hotkey",
+      "Tooltip": "Trigger a VTube Studio hotkey by its ID on the selected model.",
+      "Icon": "icons/hotkey",
+      "States": [{ "Image": "icons/hotkey" }],
+      "Controllers": ["Keypad"],
+      "SupportedInMultiActions": true,
+      "PropertyInspectorPath": "inspector.html"
+    },
+    {
+      "UUID": "com.rikkichy.vtubestudio.model",
+      "Name": "Switch Model",
+      "Tooltip": "Load the selected VTube Studio model.",
+      "Icon": "icons/model",
+      "States": [{ "Image": "icons/model" }],
+      "Controllers": ["Keypad"],
+      "SupportedInMultiActions": true,
+      "PropertyInspectorPath": "inspector.html"
+    }
+  ]
+}

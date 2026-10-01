@@ -62,6 +62,7 @@
       packages.${system} = {
         install = nixpkgs.legacyPackages.${system}.callPackage ./install.nix { };
         hysteria-setup = nixpkgs.legacyPackages.${system}.callPackage ./hysteria-setup.nix { };
+        vts-opendeck = nixpkgs.legacyPackages.${system}.pkgsStatic.callPackage ./hosts/nix/pkgs/vts-opendeck { };
       };
       apps.${system}.install = {
         type = "app";
