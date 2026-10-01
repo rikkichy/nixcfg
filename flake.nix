@@ -32,6 +32,10 @@
       url = "github:rikkichy/openwave";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    vts-opendeck = {
+      url = "github:rikkichy/vts-opendeck";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     omp = {
       url = "github:rikkichy/oh-my-pi-flake";
@@ -62,7 +66,7 @@
       packages.${system} = {
         install = nixpkgs.legacyPackages.${system}.callPackage ./install.nix { };
         hysteria-setup = nixpkgs.legacyPackages.${system}.callPackage ./hysteria-setup.nix { };
-        vts-opendeck = nixpkgs.legacyPackages.${system}.pkgsStatic.callPackage ./hosts/nix/pkgs/vts-opendeck { };
+        vts-opendeck = inputs.vts-opendeck.packages.${system}.default;
       };
       apps.${system}.install = {
         type = "app";

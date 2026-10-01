@@ -95,10 +95,11 @@ Spout/OBS frame-rate settings remain independent.
 
 ### OpenDeck: VTube Studio Native
 
-`hosts/nix/pkgs/vts-opendeck` contains a Rust plugin with **Trigger Hotkey** and
-**Switch Model** actions. The `vts-opendeck` flake package builds a static
-x86_64 Linux executable and an OpenDeck-installable archive; it needs neither
-Wine nor a host runtime inside Flatpak.
+The `vts-opendeck` flake input pins
+[rikkichy/vts-opendeck](https://github.com/rikkichy/vts-opendeck), which owns the
+Rust plugin, property inspector, tests, and static Linux packaging. Edit the
+plugin in that repository, not this checkout. The package needs neither Wine
+nor a host runtime inside OpenDeck's Flatpak.
 
 Build without activating the system, then copy the archive out of the Nix store
 so the Flatpak file picker can access it:
@@ -109,37 +110,11 @@ install -m644 /tmp/vts-opendeck-result/share/com.rikkichy.vtubestudio.streamDeck
   "$HOME/Downloads/vts-opendeck-0.1.0.streamDeckPlugin"
 ```
 
-In OpenDeck's Plugins page, install that local archive. Add an action from
-**VTube Studio Native**, enable **Allow Plugin API access** in VTube Studio,
-and set the action's API port (default `8001`). Click **Connect / Authorize**
-and approve **OpenDeck VTube Studio** by **rikkichy** inside VTube Studio.
-Select a model and, for a hotkey action, a hotkey. **Refresh** reloads the
-dropdowns without prompting for permission or changing the loaded model.
-Existing plugins and profiles are not migrated or removed.
-
-The plugin connects only to `127.0.0.1`. VTube Studio itself may run under
-Proton. Each operation uses a fresh authenticated connection, so restarting
-VTube Studio does not require restarting the plugin. Credentials are stored
-per port in `$XDG_DATA_HOME/vts-opendeck/<port>.token`, with a private directory
-and mode `0600` files; the HOME fallback is `~/.local/share/vts-opendeck`.
-For the OpenDeck Flatpak this normally resolves under
-`~/.var/app/me.amankhanna.opendeck/data/`. Tokens never enter button settings
-or the plugin archive. After revoking access in VTube Studio, authorize again
-from the inspector.
-
-Hotkeys are saved by ID. A hotkey bound to a specific model fails rather than
-switching models implicitly; **Current model** omits that model guard.
-Changing the model selection clears its hotkey selection. Missing saved IDs
-remain visible instead of silently selecting another action. Unconfigured
-model buttons never unload the current model. VTube Studio's own cooldowns
-still apply; add a delay between model switches in multi-actions.
-Requests are serialized, queued button presses expire after three seconds,
-and failed requests are never replayed because a hotkey may toggle state.
-Failures show a key alert and a diagnostic in OpenDeck's plugin log.
-
-The Nix build runs the actual plugin against isolated WebSocket peers to check
-authorization, private credential persistence, model guards, and lost-response
-behavior. This is not live VTube Studio or Stream Deck hardware proof.
+Install the local archive from OpenDeck's Plugins page. Follow the upstream
+[README](https://github.com/rikkichy/vts-opendeck#configure) for API authorization,
+model/hotkey setup, credential locations, and troubleshooting. Existing
+plugins and profiles remain application-owned; no installation or migration
+runs during NixOS activation.
 
 ## Notes and passwords
 

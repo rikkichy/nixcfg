@@ -68,6 +68,8 @@ shell configuration belongs in `common/`; Linux themes, Foot and systemd user
 services stay host-owned. External projects own their development toolchains:
 Nokochat uses its project flake; `vhelper` and `openwave` are edited in
 `rikkichy/vhelper` and `rikkichy/openwave`, not this checkout.
+The native VTube Studio OpenDeck plugin is edited in `rikkichy/vts-opendeck`;
+this checkout only pins and exposes its package.
 
 ## Operating procedures
 

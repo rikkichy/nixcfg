@@ -125,7 +125,8 @@
         "sops-nix": "sops-nix",
         "spicetify-nix": "spicetify-nix",
         "tg-ws-proxy": "tg-ws-proxy",
-        "vhelper": "vhelper"
+        "vhelper": "vhelper",
+        "vts-opendeck": "vts-opendeck"
       }
     },
     "rust-overlay": {
@@ -238,6 +239,26 @@
       "original": {
         "owner": "rikkichy",
         "repo": "vhelper",
+        "type": "github"
+      }
+    },
+    "vts-opendeck": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1790880501,
+        "narHash": "sha256-gULYDLUiH4J5fHJXg07ZMGm6KH/VJunznUriWOiB3IQ=",
+        "owner": "rikkichy",
+        "repo": "vts-opendeck",
+        "rev": "c7aef7ec0757d1274d9b22f00525cb44df16c80a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "rikkichy",
+        "repo": "vts-opendeck",
         "type": "github"
       }
     }
