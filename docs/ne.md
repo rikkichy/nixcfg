@@ -27,7 +27,9 @@ Recovery: [Spotify update-cache protection](#spotify-and-spicetify) ·
 The separate host lives in `hosts/ne/default.nix`. It manages Nix with Lix,
 installs `nh`, and enables Fish as the login shell. `hosts/ne/home.nix` imports
 the shared `common/modules/shell.nix` configuration described below.
-It does not import the Linux desktop, secrets, or overlays. The Darwin host
+Lix's Darwin package omits the ELF-only `-z,noexecstack` linker flag; Mach-O
+retains its default non-executable stack.
+The host does not import the Linux desktop, secrets, or overlays. The Darwin host
 declares Brew-owned formulae, casks, and taps in `hosts/ne/modules/system/homebrew.nix`;
 activation neither upgrades nor removes packages. Applications installed outside
 Homebrew remain owned by their existing installers.
