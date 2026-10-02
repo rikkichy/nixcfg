@@ -90,6 +90,10 @@ evaluation and isolated PAM checks are not hardware-authentication proof.
 
 ## Encrypted-root SSH unlock
 
+The module import is commented out in `hosts/nixos-server/default.nix`; remote
+initrd SSH unlock is disabled. Provision the dedicated host key before enabling
+the import. The following describes the opt-in configuration.
+
 `modules/system/initrd-ssh.nix` enables native systemd initrd networking and
 OpenSSH on **IPv4 TCP 2222**, only until normal boot takes over. It reuses `ri`'s
 declarative SSH public keys to authenticate **root in the initrd**, then forces
