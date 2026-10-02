@@ -88,9 +88,9 @@ approved reboot loads the configured module with the matching kernel.
 In OBS, select **Start Virtual Camera**, then choose **OBS Cam** in the receiving app.
 
 VTube Studio and Shoost share `steam_app_1325860` when launched in the VTube Studio
-Proton prefix. Hyprland's `hyprland/rules.lua` enables `render_unfocused` for that
-class so hidden windows keep receiving render callbacks; `hyprland/misc.lua`
-sets the shared limit for windows using this rule to 60 FPS. Application and
+Proton prefix; VBridger uses `steam_app_1898830`. Hyprland's `hyprland/rules.lua`
+enables `render_unfocused` for both classes so hidden windows keep receiving
+render callbacks; `hyprland/misc.lua` sets their shared limit to 60 FPS. Application and
 Spout/OBS frame-rate settings remain independent.
 
 ### OpenDeck: VTube Studio Native

@@ -64,9 +64,9 @@ hl.window_rule({
     idle_inhibit = "always",
 })
 
--- VTube Studio and Shoost share this Steam app class in the same Proton prefix.
+-- VTube Studio/Shoost share 1325860; VBridger uses 1898830.
 hl.window_rule({
-    match            = { class = "steam_app_1325860" },
+    match            = { class = "steam_app_(1325860|1898830)" },
     render_unfocused = true,
 })
 
