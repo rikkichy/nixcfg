@@ -10,6 +10,7 @@ Recovery: [Inventory](#minecraft-inventory-recovery) ·
 
 - [Deployment and access](#minecraft-deployment-and-access)
 - [Network tuning](#minecraft-network-tuning)
+- [Anti-cheat protection](#minecraft-anti-cheat-protection)
 - [Inventory recovery](#minecraft-inventory-recovery)
 - [Block and container history](#minecraft-block-and-container-history)
 - [Account provisioning](#minecraft-account-provisioning)
@@ -19,7 +20,7 @@ Recovery: [Inventory](#minecraft-inventory-recovery) ·
 ## Minecraft deployment and access
 
 The server module builds a pinned Docker image containing Leaf **1.21.11 build
-179** and Java 21. NixOS manages container `minecraft` through
+179** and Java 21, with the client brand **Nimue**. NixOS manages container `minecraft` through
 `minecraft-server.service`; no Compose file or registry image is required.
 The container has a **20-player ceiling**, `-Xms2G -Xmx8G`, and a 12 GiB Docker
 memory limit with no additional swap allowance. Heap size is not total process
@@ -48,10 +49,11 @@ restores skins by name; authenticated players can use `/skin set <skinName>` and
 `/skin clear`. Skin lookups are not account verification. Cancelled logins do not
 trigger skin updates, and AuthMe's pre-login command list does not permit skin
 commands. No RCON, query, JMX or management listener is provisioned.
-MiniMOTD, AuthMe, SkinsRestorer, InventoryRollbackPlus, CoreProtect and social
-are the provisioned plugins. All run as the game user and must be treated as
-code. Managed public config templates are copied at startup; account databases,
-skin caches, inventory snapshots, CoreProtect history and social user data persist.
+MiniMOTD, AuthMe, SkinsRestorer, InventoryRollbackPlus, CoreProtect, social and
+the [anti-cheat stack](#minecraft-anti-cheat-protection) are provisioned.
+All run as the game user and must be treated as code. Managed public config
+templates are copied at startup; account databases, skin caches, inventory
+snapshots, CoreProtect/Grim history and social user data persist.
 There is no life limit, life-donation command or scheduled life reset. Startup
 removes persisted LimitedLives JARs and its data directory when present, and
 removes name bans with the exact reason
@@ -221,12 +223,14 @@ Report observed capacity only, not the configured player ceiling as a load resul
 
 ## Minecraft network tuning
 
-`leafGlobalConfig` and `paperGlobalConfig` in
-`hosts/nixos-server/modules/system/minecraft.nix` own
-`/var/lib/minecraft/config/leaf-global.yml` and `paper-global.yml`.
-Startup replaces both with writable templates; Leaf and Paper expand omitted
-options to their pinned-version defaults. Put durable global settings in the
-templates, not the generated files. World-specific configuration is unchanged.
+`leafGlobalConfig`, `paperGlobalConfig` and `paperWorldConfig` in
+`hosts/nixos-server/modules/system/minecraft.nix` own the corresponding
+`leaf-global.yml`, `paper-global.yml` and `paper-world-defaults.yml` under
+`/var/lib/minecraft/config/`. Startup replaces them with writable templates;
+Leaf and Paper expand omitted options to their pinned-version defaults.
+Put durable settings in the templates, not the generated files. Individual
+worlds' `paper-world.yml` files remain writable overrides: ensure they do not
+disable the default Anti-Xray policy.
 
 Leaf enables `performance.reduce-packets.reduce-entity-move-packets` and
 `reduce-entity-motion-packets` to filter redundant entity packets, plus
@@ -244,6 +248,60 @@ latency. After activation, compare existing-terrain play and exploration while
 checking `/spark ping --player Denay39`, `/tps` and `/mspt`. Confirm client chunk
 delivery and entity movement in-game; startup validation alone does not prove
 lower latency or smoother play.
+
+## Minecraft anti-cheat protection
+
+The module pins [GrimAC 2.3.73](https://github.com/GrimAnticheat/Grim/releases/tag/v2.3.73),
+the latest stable release selected for this configuration, alongside
+[PacketEvents 2.13.0](https://github.com/retrooper/packetevents/releases/tag/v2.13.0)
+and [Phantom 1.2.0](https://modrinth.com/plugin/phantom-antixray/version/PmiuoJUJ).
+PacketEvents uses Phantom's documented version, not an automatic latest download.
+Grim also embeds its own relocated PacketEvents; updating the standalone plugin
+does not update Grim's decoder. Pin upgrades and test the combination together.
+
+**NimuAC** is Grim's configurable message prefix. Its unmodified JAR retains
+the `GrimAC` plugin/data-directory identity, `/grim` commands, `grim.*`
+permissions, license and version diagnostics. **Nimue** uses Leaf's native
+`misc.rebrand` client/GUI settings; upstream version diagnostics remain Leaf.
+Neither branding changes the MiniMOTD server title.
+
+Grim is the only full movement/combat anti-cheat. Its managed configuration is
+derived from the pinned JAR's complete defaults, preserving check groups,
+buffers, setbacks and impossible-hit cancellation. Experimental checks stay off.
+Punishment actions are only staff/console alerts and local SQLite history;
+there are no automatic anti-cheat bans or punishment kicks. Invalid-packet,
+packet-flood and transaction-timeout disconnects remain enabled, as do Paper's
+packet limits, item validation and exploit protections. AuthMe's separate
+password-attempt IP bans are unchanged.
+
+Phantom protects `world`, `world_nether` and `world_the_end`, including
+ray-traced ores/containers, living entities, players and dropped items.
+Projectiles remain visible. F5 camera tracing is enabled; upstream worker/ray
+budgets are retained. Permission bypass is disabled. Cave/depth masking,
+dungeon and mineshaft protection complement
+[Paper Anti-Xray mode 1](https://docs.papermc.io/paper/anti-xray/), which conceals
+buried ores (including Nether ores) without generating fake ore clouds.
+
+These are information-hiding layers, not a way to disable a client's freecam.
+Phantom's depth mask covers Y ≤ 16 and reveals it for players at Y ≤ 24;
+ray tracing has finite range/work budgets. Explored terrain remains revealed
+for the session, and no server can erase data a modified client already cached.
+Paper mode 1 alone cannot hide ores or containers exposed to air.
+
+After an approved deployment, check `/plugins`, `/phantom status` and
+`/phantom worlds`; all three worlds must be protected. Use `/grim alerts`,
+`/grim profile <player>` and `/grim history <player>` for review before any
+manual punishment. Do not grant `grim.exempt`, `grim.nosetback` or
+`grim.nomodifypacket` to ordinary players. The service's AuthMe readiness gate
+does not certify anti-cheat health: stop the server if required protection
+fails to initialize rather than ignoring decoder/config errors.
+
+Acceptance includes prejoin registration/login, walking/mining, inventory and
+container use, F5 views, teleports, elytra and combat under normal player latency.
+Check ore/entity reveal in each dimension and `/tps`/`/mspt` during exploration;
+a successful startup or synthetic packet smoke is not visual or load proof.
+Keep the authentication and transaction timeouts intact. Apply managed changes
+through the approved rebuild/restart workflow, not `/reload`.
 
 ## Minecraft inventory recovery
 
