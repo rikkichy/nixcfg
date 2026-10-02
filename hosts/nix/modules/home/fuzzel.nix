@@ -22,12 +22,6 @@ in
 {
   _module.args.desktopPicker = desktopPicker;
 
-  services.cliphist = {
-    enable = true;
-    systemdTargets = [ "graphical-session.target" ];
-    extraOptions = [];
-  };
-
   programs.fuzzel = {
     enable = true;
     settings = {
@@ -59,52 +53,14 @@ in
 
   xdg.desktopEntries = let
     papirus = "${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark";
-    terminalAction = name: command: {
-      inherit name;
+    terminalEntry = name: command: icon: {
+      inherit name icon;
       exec = "${pkgs.foot}/bin/foot --app-id=nix-menu --title=Nix --hold ${command}";
-    };
-    maintenanceActions = {
-      switch = terminalAction "Rebuild and switch"
-        ''nh os switch "${nixcfgPath}" --hostname nix --no-update-lock-file''
-        // { icon = "system-software-update"; };
-      boot = terminalAction "Rebuild for the next boot"
-        ''nh os boot "${nixcfgPath}" --hostname nix --no-update-lock-file''
-        // { icon = "system-reboot"; };
-      update = terminalAction "Update inputs only"
-        ''nix flake update --flake "${nixcfgPath}"''
-        // { icon = "system-software-install"; };
-      build = terminalAction "Build without switching" (toString (pkgs.writeShellScript "nix-build-next" ''
-        mkdir -p ${lib.escapeShellArg config.xdg.stateHome} &&
-          exec nh os build ${lib.escapeShellArg nixcfgPath} --hostname nix --no-update-lock-file \
-            --out-link ${lib.escapeShellArg "${config.xdg.stateHome}/nixcfg-next"}
-      '')) // { icon = "nix-snowflake"; };
-      switch-prebuilt = terminalAction "Switch prebuilt system"
-        ''nh os switch "${config.xdg.stateHome}/nixcfg-next" --ask''
-        // { icon = "system-software-update"; };
-      rollback = terminalAction "Roll back one generation" "sudo nixos-rebuild switch --rollback"
-        // { icon = "${papirus}/24x24/actions/edit-undo.svg"; };
-      generations = terminalAction "List generations" "nixos-rebuild list-generations"
-        // { icon = "${papirus}/24x24/actions/document-open-recent.svg"; };
-      gc = terminalAction "Collect garbage" (toString (pkgs.writeShellScript "nix-gc" ''
-        nix-collect-garbage --delete-older-than 30d &&
-          sudo nix-collect-garbage --delete-older-than 30d
-      '')) // { icon = "${papirus}/24x24/actions/trash-empty.svg"; };
-      gc-all = terminalAction "Collect garbage, everything old" (toString (pkgs.writeShellScript "nix-gc-all" ''
-        nix-collect-garbage -d && sudo nix-collect-garbage -d
-      '')) // { icon = "${papirus}/24x24/actions/edit-delete.svg"; };
-      verify = terminalAction "Verify the store (slow)" "sudo nix-store --verify --check-contents"
-        // { icon = "${papirus}/32x32/devices/drive-harddisk.svg"; };
-    };
-  in {
-    clipp = {
-      name = "Clipboard";
-      exec = "clipp";
-      icon = "${papirus}/24x24/actions/edit-paste.svg";
       terminal = false;
       categories = [ "System" ];
       settings.OnlyShowIn = "X-DesktopTools;";
-      actions.delete = { name = "Delete clipboard entry"; exec = "clipp -d"; icon = "${papirus}/24x24/actions/edit-delete.svg"; };
     };
+  in {
     bemoji = {
       name = "Emoji";
       exec = "bemoji";
@@ -137,15 +93,15 @@ in
       categories = [ "System" ];
       settings.OnlyShowIn = "X-DesktopTools;";
     };
-    nixp = {
-      name = "Nix maintenance";
-      exec = maintenanceActions.generations.exec;
-      icon = "nix-snowflake";
-      terminal = false;
-      categories = [ "System" ];
-      settings.OnlyShowIn = "X-DesktopTools;";
-      actions = builtins.removeAttrs maintenanceActions [ "generations" ];
-    };
+    nix-switch = terminalEntry "nh os switch"
+      ''nh os switch "${nixcfgPath}" --hostname nix --no-update-lock-file''
+      "system-software-update";
+    nix-update = terminalEntry "nh os switch --update"
+      ''nh os switch "${nixcfgPath}" --hostname nix --update''
+      "system-software-install";
+    nix-clean = terminalEntry "Garbage collection — nh clean all"
+      "nh clean all"
+      "${papirus}/24x24/actions/trash-empty.svg";
   };
 
   home.packages = lib.mkAfter (with pkgs; [
@@ -176,28 +132,6 @@ in
             "Power" "''${err:-''${act[*]} failed}" 2>/dev/null || true
           echo "powermenu: ''${act[*]}: ''${err:-failed}" >&2
           exit 1
-        fi
-      '';
-    })
-
-    (writeShellApplication {
-      name = "clipp";
-      runtimeInputs = [ desktopPicker cliphist wl-clipboard ];
-      text = ''
-        if [ "''${1:-}" = "-d" ]; then
-          prompt="del> "
-        else
-          prompt="clip> "
-        fi
-
-        selected=$(cliphist list | desktop-picker --with-nth='{2..}' \
-          --prompt "$prompt" --lines 12) || exit 0
-        [[ "$selected" =~ ^[0-9]+$'\t' ]] || exit 0
-
-        if [ "''${1:-}" = "-d" ]; then
-          printf '%s\n' "$selected" | cliphist delete
-        else
-          printf '%s\n' "$selected" | cliphist decode | wl-copy
         fi
       '';
     })

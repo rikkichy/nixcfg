@@ -180,14 +180,7 @@ hl.bind(
 
 hl.bind("SUPER + SHIFT + L", hl.dsp.exec_cmd(vars.sleepGestureCmd), { locked = true })
 
-hl.bind("SUPER + V", hl.dsp.exec_cmd("pkill fuzzel || clipp"))
-hl.bind("SUPER + ALT + V", hl.dsp.exec_cmd("pkill fuzzel || clipp -d"))
 hl.bind("SUPER + Period", hl.dsp.exec_cmd("pkill fuzzel || bemoji"))
-hl.bind(
-    "CTRL + SHIFT + ALT + V",
-    hl.dsp.exec_cmd('sleep 0.5s && ydotool type -d 1 "$(cliphist list | head -1 | cliphist decode)"'),
-    { locked = true }
-)
 
 hl.bind(
     "SUPER + ALT + F12",

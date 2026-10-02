@@ -4,8 +4,8 @@
 
 ## Ownership and launcher visibility
 
-- `hosts/nix/modules/home/fuzzel.nix`: static Fuzzel settings, general desktop entries, shared `desktop-picker`, clipboard capture and clipboard/VPN/power/night-light pickers.
-- `hosts/nix/modules/home/network-reset.nix`: recovery implementation, `troubleshootp` wrapper and recovery desktop entry/actions.
+- `hosts/nix/modules/home/fuzzel.nix`: static Fuzzel settings, general desktop entries, shared `desktop-picker`, VPN/power/night-light pickers and Nix maintenance entries.
+- `hosts/nix/modules/home/network-reset.nix`: recovery implementation, `troubleshootp` wrapper and single recovery desktop entry.
 - `hosts/nix/modules/home/matugen.nix`: wallpaper entries/pickers and theming dependencies. See [wallpaper-theming](../../wallpaper-theming/SKILL.md).
 - `hosts/nix/dotfiles/ricing/hypr/hyprland/keybinds.lua`: launcher release bindings; `hosts/nix/dotfiles/ricing/quickshell/Bar.qml`: symbolic rail launcher.
 
@@ -15,19 +15,17 @@ Bare Meta and the rail launcher show apps only: desktop filtering is enabled and
 
 Fuzzel restricts launcher theme lookup to Applications/Apps/Legacy contexts. Entries using Actions or Devices glyphs must reference existing Papirus SVG store paths directly; picker mode has no such restriction. Public pickers each have a desktop entry. Search includes filename, name, generic name, Exec and keywords. PATH-wide executable listing stays disabled.
 
-## Picker input and clipboard safety
+## Picker input safety
 
 Private `desktop-picker` supplies dmenu, only-match, no-run-if-empty, font15 and 32px rows. Callers retain prompts and dimensions; wallpaper thumbnails use 64px rows. `execute-input=none` in Fuzzel settings is essential: only-match alone does not disable Shift+Enter's raw-input action.
 
 Wallpaper and VPN indexes must be canonical decimals within the row count, with length checked **before** arithmetic. VPN nodes go to `vpn select` as one exact argument, never regex-based `vpn use`. Preserve the subscription rows and their exact identifiers when adjusting the VPN picker; Mihomo command semantics belong to [nix-system-operations](../../nix-system-operations/SKILL.md).
 
-Clipboard uses `--with-nth='{2..}'` to hide the ID visually while returning the full tab-separated row for `cliphist decode` or `delete`. Never discard the ID with `--accept-nth`. Home Manager supervises text/default-MIME and image capture under `graphical-session.target`, without imposing a history limit. Roll out in a fresh graphical session so old unmanaged watchers cannot overlap; never kill arbitrary `wl-paste` processes.
-
 Power selection maps fixed indexes to argv (`systemctl poweroff`, `reboot`, `suspend`, or `uwsm stop`). Keep command failures visible through notifications and stderr, rather than treating menu dismissal as success.
 
 ## Network recovery: deliberately destructive scopes
 
-`Network recovery` runs `troubleshootp all`; native actions expose `system`, `brave-origin`, `discord` and `reconnect`. `troubleshootp [scope]` opens a held Foot terminal running `network-reset [scope]`; the default is `all`.
+`Reset network` is a single entry running `troubleshootp all`, with no native actions. Individual scopes remain available through `troubleshootp [scope]`, which opens a held Foot terminal running `network-reset [scope]`; the default is `all`.
 
 There are **no confirmation prompts**. Selected Brave Origin and Discord process families receive SIGKILL, are waited for, and remain closed. Unsaved work can be lost. There is no session restoration, relaunch or post-reset connectivity probe. Do not silently add any of those behaviors.
 
@@ -43,17 +41,17 @@ Preserve these boundaries when editing the reset:
 
 Validate recovery only with temporary profiles and stubbed external effects. Never run a live reset on the user's session for verification. `bash scripts/network-reset-test.sh` checks Brave Origin process selection, profile isolation and network-state backups.
 
-## Nix maintenance desktop actions
+## Nix maintenance entries
 
-`nixp.desktop` opens a held Foot terminal with `nixos-rebuild list-generations`.
-`terminalAction` takes trusted Desktop Exec fragments, not runtime user input;
-multi-command actions use private scripts.
+Three flat desktop entries open held Foot terminals: `nh os switch`,
+`nh os switch --update`, and `nh clean all`. `terminalEntry` takes trusted Desktop
+Exec fragments, not runtime user input.
 
-Rebuild actions use `nh`, the Git-aware checkout, and `--no-update-lock-file`.
-Build-only retains `${XDG_STATE_HOME}/nixcfg-next`; switching it confirms the
-snapshot, which may predate later edits or a failed build. Updates do not switch.
-See [source inclusion and prebuilds](../../../../docs/nix.md#updates-and-prebuilt-systems).
-Rollback has no `--flake`. GC runs as both user and root for their separate profiles.
+Rebuilds use `nh` and the Git-aware checkout. Plain switching uses
+`--no-update-lock-file`; the update entry updates all inputs before rebuilding
+and switching. See [source inclusion and prebuilds](../../../../docs/nix.md#updates-and-prebuilt-systems).
+`nh clean all` cleans all profiles and runs garbage collection, keeping one
+generation per profile by default.
 
 ## Verification
 

@@ -38,8 +38,6 @@
   services.gnome.gnome-keyring.enable = true;
   security.pam.services.greetd.enableGnomeKeyring = true;
 
-  programs.ydotool.enable = true;
-
   environment.sessionVariables = {
     NIXOS_OZONE_WL = "1";
 

@@ -146,19 +146,13 @@ in
 {
   xdg.desktopEntries = {
     network-reset = {
-      name = "Network recovery";
+      name = "Reset network";
       exec = "troubleshootp all";
       icon = "${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark/24x24/actions/view-refresh.svg";
       terminal = false;
       categories = [ "System" ];
       settings.Keywords = "troubleshootp;troubleshoot;network;system;brave-origin;browser;discord;cache;";
       settings.OnlyShowIn = "X-DesktopTools;";
-      actions = {
-        system = { name = "Reset system networking"; exec = "troubleshootp system"; };
-        brave-origin = { name = "Kill Brave Origin and reset networking"; exec = "troubleshootp brave-origin"; };
-        discord = { name = "Kill Discord, reset networking and clean cache"; exec = "troubleshootp discord"; };
-        reconnect = { name = "Reconnect Ethernet"; exec = "troubleshootp reconnect"; };
-      };
     };
   };
 

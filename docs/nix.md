@@ -42,38 +42,34 @@ is desktop-only; fresh-install disk erasure is never an existing-system recovery
 After separate activation approval, apply configuration changes with
 `nh os switch --no-update-lock-file`; see [shared rebuild behavior](shared.md#rebuild-commands)
 for checkout selection, environment precedence and elevation.
-Press META+ALT and select **Nix maintenance**: the parent lists generations in
-a held terminal. Separate actions update inputs only, build without switching,
-switch the prebuilt system, rebuild and switch, or stage for the next boot.
-Rollback, garbage collection and store verification are explicit actions.
+META+ALT exposes three Nix commands in held terminals: **nh os switch**,
+**nh os switch --update** (update all inputs, rebuild and switch), and
+**Garbage collection — nh clean all**.
 
 The live `~/.config/hypr` symlink targets `hosts/nix/dotfiles/ricing/hypr/`.
 If it points elsewhere, switch the host configuration before reloading Hyprland.
 Keep the locally generated `scheme/current.lua` in that directory; it is ignored
 by Git and must remain writable.
 
-Wallpaper, animated wallpaper, clipboard, emoji, blue-light filter, VPN,
+Wallpaper, animated wallpaper, emoji, blue-light filter, VPN,
 network recovery and session tools are available through META+ALT.
-Short commands such as `wpp`, `clipp`, `vpnp` and `troubleshootp` remain searchable there.
+Short commands such as `wpp`, `vpnp` and `troubleshootp` remain searchable there.
 Bare META and the palette-tinted rune on the bar open the apps-only launcher.
-There is no `nixp` shell command; maintenance operations are desktop actions.
 **META + ALT** opens Fuzzel on a directory containing only these tools and their
 native actions. Search starts empty and matches tool names normally. Press the
 chord again to dismiss it. Tools and desktop actions stay hidden from the main
 launcher using native desktop-entry visibility.
-Clipboard capture is supervised by Home Manager. Start a fresh graphical session
-after applying this configuration to avoid overlapping old unmanaged watchers.
 
 Brave Origin (`pkgs.brave-origin`) is the default browser for the browser shortcut,
 HTML files and web links. Its profile remains application-owned under
 `~/.config/BraveSoftware/Brave-Origin`. No extensions are force-installed.
 
-**Network recovery acts immediately, without confirmation.** Its default action
+**Reset network acts immediately, without confirmation.** Its single launcher entry
 force-kills Brave Origin and Discord, clears failed network-route backoff, cleans
 Discord's disposable caches, and refreshes system DNS/connections. Apps remain
 closed; nothing restores their sessions. Cookies, settings and persistent
 application data are preserved, but unsaved work can be lost.
-Use its native actions for individual scopes, or
+Individual scopes remain available through
 `network-reset [all|system|brave-origin|discord|reconnect]` in a terminal.
 `reconnect` briefly disconnects Ethernet; ordinary system reset keeps the link
 and VPN choice intact. `troubleshootp` runs the same command in a held terminal.
@@ -312,8 +308,8 @@ its private mount namespace hides the allocator preload only for this service.
 ## Updates and prebuilt systems
 
 Update selected pins with `nix flake update nixpkgs home-manager --flake /etc/nixos`.
-**Update inputs only** updates all inputs. Review and commit `flake.lock` after
-a successful build.
+**nh os switch --update** updates all inputs, rebuilds and switches.
+Review and commit `flake.lock` after a successful build.
 
 ```sh
 mkdir -p ~/.local/state
@@ -335,7 +331,7 @@ an older result. For next-boot staging, use
 `nh os boot /etc/nixos --hostname nix --no-update-lock-file`.
 Keep known-good generations for
 [Limine recovery](nix-security.md#limine-recovery-with-a-zero-timeout);
-**Collect garbage, everything old** removes that rollback history.
+**Garbage collection — nh clean all** removes older generations, keeping one per profile.
 
 `nh`'s default `/etc/nixos` and the maintenance rebuild actions read the tree
 through Git. Tracked modifications are visible without committing; new source
