@@ -7,9 +7,8 @@ Run repository commands there. The server and macOS host do not use these
 VPN services. Source edits do not authorize activation, service restarts,
 subscription changes or live application/network tests; obtain operator approval.
 
-For immediate desktop reset scopes and their unsaved-work risk, see
-[network recovery](nix.md#rebuilds-and-desktop-tools). For missing private inputs,
-use [first provisioning](nix-security.md#private-inputs-and-first-provisioning)
+For missing private inputs, use
+[first provisioning](nix-security.md#private-inputs-and-first-provisioning)
 or [replacement and rollback](nix-security.md#reinstall-replacement-revocation-and-rollback).
 
 ## LAN face tracking
@@ -153,9 +152,7 @@ follow IP rules or the final `DIRECT` rule. Sniffing does not replace the
 destination address selected by the system resolver.
 
 After an approved rebuild disables fake-IP handling, fully restart applications
-to discard cached synthetic addresses. `network-reset system` refreshes system
-DNS and closes Mihomo connections without stopping the tunnel, but does not
-reload Mihomo's configuration or restart applications.
+to discard cached synthetic addresses.
 
 
 Private input provisioning and SOPS/PIV administration are in

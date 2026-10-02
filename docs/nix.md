@@ -51,9 +51,9 @@ If it points elsewhere, switch the host configuration before reloading Hyprland.
 Keep the locally generated `scheme/current.lua` in that directory; it is ignored
 by Git and must remain writable.
 
-Wallpaper, animated wallpaper, emoji, blue-light filter, VPN,
-network recovery and session tools are available through META+ALT.
-Short commands such as `wpp`, `vpnp` and `troubleshootp` remain searchable there.
+Wallpaper, animated wallpaper, emoji, blue-light filter, VPN and session tools
+are available through META+ALT.
+Short commands such as `wpp`, `awpp` and `vpnp` remain searchable there.
 Bare META and the palette-tinted rune on the bar open the apps-only launcher.
 **META + ALT** opens Fuzzel on a directory containing only these tools and their
 native actions. Search starts empty and matches tool names normally. Press the
@@ -63,17 +63,6 @@ launcher using native desktop-entry visibility.
 Brave Origin (`pkgs.brave-origin`) is the default browser for the browser shortcut,
 HTML files and web links. Its profile remains application-owned under
 `~/.config/BraveSoftware/Brave-Origin`. No extensions are force-installed.
-
-**Reset network acts immediately, without confirmation.** Its single launcher entry
-force-kills Brave Origin and Discord, clears failed network-route backoff, cleans
-Discord's disposable caches, and refreshes system DNS/connections. Apps remain
-closed; nothing restores their sessions. Cookies, settings and persistent
-application data are preserved, but unsaved work can be lost.
-Individual scopes remain available through
-`network-reset [all|system|brave-origin|discord|reconnect]` in a terminal.
-`reconnect` briefly disconnects Ethernet; ordinary system reset keeps the link
-and VPN choice intact. `troubleshootp` runs the same command in a held terminal.
-No post-reset connectivity checks run.
 
 OBS Studio uses the NixOS virtual-camera integration: `v4l2loopback` provides
 `/dev/video1` as **OBS Cam**, with exclusive capture capabilities for browser

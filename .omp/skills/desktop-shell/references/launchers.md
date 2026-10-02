@@ -1,13 +1,13 @@
-# Fuzzel, desktop tools and network recovery
+# Fuzzel and desktop tools
 
 [Skill routing](../SKILL.md) · [Host desktop-tools guide](../../../../docs/nix.md#rebuilds-and-desktop-tools)
 
 ## Ownership and launcher visibility
 
 - `hosts/nix/modules/home/fuzzel.nix`: static Fuzzel settings, general desktop entries, shared `desktop-picker`, VPN/power/night-light pickers and Nix maintenance entries.
-- `hosts/nix/modules/home/network-reset.nix`: recovery implementation, `troubleshootp` wrapper and single recovery desktop entry.
 - `hosts/nix/modules/home/matugen.nix`: wallpaper entries/pickers and theming dependencies. See [wallpaper-theming](../../wallpaper-theming/SKILL.md).
 - `hosts/nix/dotfiles/ricing/hypr/hyprland/keybinds.lua`: launcher release bindings; `hosts/nix/dotfiles/ricing/quickshell/Bar.qml`: symbolic rail launcher.
+- `hosts/nix/pkgs/overlay.nix`: native Fuzzel wheel-selection patch.
 
 `programs.fuzzel.settings` owns static `fuzzel/fuzzel.ini` under the user's config directory; Matugen writes only its included writable `colors.ini`. The launcher uses font17, 40px rows and five lines. `Papirus-Dark` is case-sensitive; icons scale with row height. Both the release binding and rail launcher use `pkill -x fuzzel || fuzzel`: dismiss-on-second-tap, not just stack prevention. Fuzzel also has its own single-instance lock.
 
@@ -19,27 +19,14 @@ Fuzzel restricts launcher theme lookup to Applications/Apps/Legacy contexts. Ent
 
 Private `desktop-picker` supplies dmenu, only-match, no-run-if-empty, font15 and 32px rows. Callers retain prompts and dimensions; wallpaper thumbnails use 64px rows. `execute-input=none` in Fuzzel settings is essential: only-match alone does not disable Shift+Enter's raw-input action.
 
+Fuzzel's discrete and continuous wheel handlers repaint after changing selection,
+without reselecting the row under a stationary cursor. The Linux overlay owns
+this behavior for both wallpaper pickers and the other Fuzzel menus; pointer
+motion retains native hover selection.
+
 Wallpaper and VPN indexes must be canonical decimals within the row count, with length checked **before** arithmetic. VPN nodes go to `vpn select` as one exact argument, never regex-based `vpn use`. Preserve the subscription rows and their exact identifiers when adjusting the VPN picker; Mihomo command semantics belong to [nix-system-operations](../../nix-system-operations/SKILL.md).
 
 Power selection maps fixed indexes to argv (`systemctl poweroff`, `reboot`, `suspend`, or `uwsm stop`). Keep command failures visible through notifications and stderr, rather than treating menu dismissal as success.
-
-## Network recovery: deliberately destructive scopes
-
-`Reset network` is a single entry running `troubleshootp all`, with no native actions. Individual scopes remain available through `troubleshootp [scope]`, which opens a held Foot terminal running `network-reset [scope]`; the default is `all`.
-
-There are **no confirmation prompts**. Selected Brave Origin and Discord process families receive SIGKILL, are waited for, and remain closed. Unsaved work can be lost. There is no session restoration, relaunch or post-reset connectivity probe. Do not silently add any of those behaviors.
-
-Preserve these boundaries when editing the reset:
-
-- Only the current user's exact selected process families are killed. Scope and argument count are checked before effects. A nonblocking lock prevents concurrent resets; private state/backups use restrictive permissions.
-- Brave Origin and its crash handler are selected by their Nix package executable paths; `chrome_crashpad` alone also matches unrelated Chromium browsers. Profile recovery targets `BraveSoftware/Brave-Origin`, not regular Brave's profile.
-- App resets stage valid Chromium network-state JSON and back it up before replacement. Remove only `.net.http_server_properties.broken_alternative_services`; do not wipe entire networking or application profiles. Reject malformed input rather than replacing it with empty state.
-- Discord cache cleaning allows only `Cache`, `Code Cache`, `GPUCache`, `DawnGraphiteCache` and `DawnWebGPUCache`. Quarantine before removal; failures retain quarantine and report its path. Ownership, symlink, directory and file checks protect the selected paths.
-- Cookies, sessions, persistent web storage, service workers, modules and Equicord data remain untouched.
-- System reset republishes NetworkManager DNS, clears Mihomo's resolver cache and closes its tracked connections. It preserves VPN selection, does not restart services, and interrupts connections from other applications. The controller requests stay localhost-only with proxy bypass and bounded timeouts.
-- `reconnect` first records the active profile UUID on Ethernet `enp11s0`, disconnects it, brings up that exact UUID on that interface, then performs system reset. Ordinary system reset does not reconnect the link. No new privilege policy is required.
-
-Validate recovery only with temporary profiles and stubbed external effects. Never run a live reset on the user's session for verification. `bash scripts/network-reset-test.sh` checks Brave Origin process selection, profile isolation and network-state backups.
 
 ## Nix maintenance entries
 

@@ -5,7 +5,6 @@
     ./modules/home/quickshell.nix
     ./modules/home/fuzzel.nix
     ./modules/home/matugen.nix
-    ./modules/home/network-reset.nix
     ./modules/home/applications.nix
     ../../common/modules/discord.nix
     ../../common/modules/spotify.nix

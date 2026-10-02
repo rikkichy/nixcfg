@@ -12,6 +12,14 @@ final: prev: {
     '';
   });
 
+  fuzzel = prev.fuzzel.overrideAttrs (old: {
+    postPatch = (old.postPatch or "") + ''
+      # Wheel selection must not be reset to the row under a stationary cursor.
+      substituteInPlace wayland.c \
+        --replace-fail 'select_hovered_match(seat, true);' 'wayl_refresh(wayl);'
+    '';
+  });
+
   quickshell = prev.quickshell.overrideAttrs (old: {
     postPatch = (old.postPatch or "") + ''
       substituteInPlace src/wayland/hyprland/ipc/connection.cpp \
