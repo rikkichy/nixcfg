@@ -252,66 +252,6 @@ let
     player-commands: false
     player-messages: false
   '';
-  # Grim is the only full movement/combat anti-cheat. Keep its upstream identity
-  # and thresholds; NimuAC is presentation, not a fork of its packet/check code.
-  grim = pkgs.fetchurl {
-    url = "https://cdn.modrinth.com/data/LJNGWSvH/versions/1FIGlM6Q/grimac-bukkit-2.3.73.jar";
-    sha512 = "bf9be1194eb45afe1dec6bd8e98d078dacf41539025c8aabe24d31337cbea86625774e30842568b47f34ca174472c724c7876cc30793945e7408b03609672655";
-  };
-  grimConfig = pkgs.runCommand "nimuac-config" {
-    nativeBuildInputs = [ pkgs.unzip ];
-  } ''
-    mkdir -p "$out"
-    unzip -p ${grim} config/en.yml > "$out/config.yml"
-    unzip -p ${grim} messages/en.yml > "$out/messages.yml"
-    # Preserve every check group and buffer, with only local alerts/history.
-    unzip -p ${grim} punishments/en.yml |
-      grep -vE '\[(webhook|proxy)\]' > "$out/punishments.yml"
-    substituteInPlace "$out/config.yml" \
-      --replace-fail 'check-for-updates: true' 'check-for-updates: false' \
-      --replace-fail 'server-name: Prison' 'server-name: nixos-server'
-    substituteInPlace "$out/messages.yml" \
-      --replace-fail '&bGrim ' '&bNimuAC '
-  '';
-  # Phantom documents this external version; Grim also embeds its own private copy.
-  packetEvents = pkgs.fetchurl {
-    url = "https://cdn.modrinth.com/data/HYKaKraK/versions/h0ncTpUP/packetevents-spigot-2.13.0.jar";
-    sha512 = "f0f85e601855a5849418df807e116a369bfb70aa8b4c25b8904bdd04cf6a483ef5d2679a345e9d690dd2221f9daff6a25be17d8b3e63cf665e12a31b0124dd27";
-  };
-  phantom = pkgs.fetchurl {
-    url = "https://cdn.modrinth.com/data/uF6Reytk/versions/PmiuoJUJ/Phantom-1.2.0.jar";
-    sha512 = "49d7453e3778fc9779943249b0c82d739e1ec79ebe7889314147776c4527d3e47c029091edbe8ab78cd1a97aae63fd1de944173e060bbf83ad22c2c0775b2798";
-  };
-  phantomConfig = pkgs.writeText "phantom-config.yml" ''
-    enabled: true
-    worlds:
-      enabled:
-        - world
-        - world_nether
-        - world_the_end
-      disabled: []
-    access:
-      allow-bypass: false
-      skip-bedrock-players: false
-    fill:
-      enabled: true
-    ore-trace:
-      enabled: true
-      # Respect legitimate F5 camera views rather than hiding visible blocks.
-      third-person: true
-    entity-trace:
-      enabled: true
-      hide-players: true
-      hide-items: true
-      hide-projectiles: false
-    # Keep upstream ray/work budgets; no persistent exploration database.
-    reveal:
-      remember-visited: false
-      rehide-when-leaving: false
-    performance:
-      async-packets: true
-      worker-threads: 2
-  '';
   leafGlobalConfig = pkgs.writeText "leaf-global.yml" ''
     config-version: '3.0'
     misc:
@@ -330,7 +270,7 @@ let
     _version: 31
     chunk-loading-basic:
       player-max-chunk-send-rate: 50.0
-    # Retain disconnects for packet floods, not bans for anti-cheat violations.
+    # Retain disconnects for packet floods.
     packet-limiter:
       all-packets:
         action: KICK
@@ -350,36 +290,7 @@ let
     _version: 31
     anticheat:
       anti-xray:
-        enabled: true
-        engine-mode: 1
-        max-block-height: 320
-        update-radius: 2
-        lava-obscures: false
-        use-permission: false
-        hidden-blocks:
-          - coal_ore
-          - deepslate_coal_ore
-          - copper_ore
-          - deepslate_copper_ore
-          - raw_copper_block
-          - iron_ore
-          - deepslate_iron_ore
-          - raw_iron_block
-          - gold_ore
-          - deepslate_gold_ore
-          - lapis_ore
-          - deepslate_lapis_ore
-          - redstone_ore
-          - deepslate_redstone_ore
-          - diamond_ore
-          - deepslate_diamond_ore
-          - emerald_ore
-          - deepslate_emerald_ore
-          - ancient_debris
-          - nether_gold_ore
-          - nether_quartz_ore
-          - chest
-          - ender_chest
+        enabled: false
   '';
   leaf = pkgs.stdenvNoCC.mkDerivation {
     pname = "leaf-minecraft-server";
@@ -418,10 +329,6 @@ let
     install -m 0444 ${coreProtectConfig} "$out/coreprotect.yml"
     install -m 0444 ${socialChatConfig} "$out/social-chat.yml"
     install -m 0444 ${socialMotdConfig} "$out/social-motd.yml"
-    install -m 0444 ${phantomConfig} "$out/phantom.yml"
-    install -m 0444 ${grimConfig}/config.yml "$out/grim-config.yml"
-    install -m 0444 ${grimConfig}/messages.yml "$out/grim-messages.yml"
-    install -m 0444 ${grimConfig}/punishments.yml "$out/grim-punishments.yml"
   '';
   entrypoint = pkgs.writeShellScript "minecraft-container-start" ''
     set -euo pipefail
@@ -473,6 +380,12 @@ let
     install -m 0600 /etc/minecraft/leaf-global.yml config/leaf-global.yml
     install -m 0600 /etc/minecraft/paper-global.yml config/paper-global.yml
     install -m 0600 /etc/minecraft/paper-world-defaults.yml config/paper-world-defaults.yml
+    # Existing per-world overrides must not re-enable ore/container obfuscation.
+    for worldConfig in world/paper-world.yml world_nether/paper-world.yml world_the_end/paper-world.yml; do
+      if [[ -f "$worldConfig" ]]; then
+        ${pkgs.yq-go}/bin/yq -i '.anticheat.anti-xray.enabled = false' "$worldConfig"
+      fi
+    done
     install -m 0644 /etc/minecraft/server-icon.png server-icon.png
     # Retire persisted gameplay state before Leaf scans the writable plugin directory.
     if [[ -e plugins/LimitedLives.jar || -d plugins/LimitedLives ]]; then
@@ -485,6 +398,10 @@ let
       rm -f plugins/LimitedLives.jar plugins/.paper-remapped/LimitedLives.jar
       rm -rf plugins/LimitedLives
     fi
+    # Retire managed anti-cheat JARs before Leaf scans persistent plugins.
+    for plugin in GrimAC Phantom packetevents; do
+      rm -f "plugins/$plugin.jar" "plugins/.paper-remapped/$plugin.jar"
+    done
     mkdir -p plugins/MiniMOTD plugins/AuthMe plugins/SkinsRestorer plugins/InventoryRollbackPlus plugins/CoreProtect plugins/social/settings
     installPlugin ${miniMOTD} plugins/MiniMOTD.jar
     # MiniMOTD saves normalized config on load, so this must be a writable copy.
@@ -514,18 +431,6 @@ let
     rm -f plugins/social/settings/chat.yml plugins/social/settings/motd.yml
     install -m 0600 /etc/minecraft/social-chat.yml plugins/social/settings/chat.yml
     install -m 0600 /etc/minecraft/social-motd.yml plugins/social/settings/motd.yml
-    mkdir -p plugins/GrimAC
-    installPlugin ${packetEvents} plugins/packetevents.jar
-    installPlugin ${grim} plugins/GrimAC.jar
-    # Public policy is managed; violations.sqlite remains persistent history.
-    rm -f plugins/GrimAC/config.yml plugins/GrimAC/messages.yml plugins/GrimAC/punishments.yml
-    install -m 0600 /etc/minecraft/grim-config.yml plugins/GrimAC/config.yml
-    install -m 0600 /etc/minecraft/grim-messages.yml plugins/GrimAC/messages.yml
-    install -m 0600 /etc/minecraft/grim-punishments.yml plugins/GrimAC/punishments.yml
-    mkdir -p plugins/Phantom
-    installPlugin ${phantom} plugins/Phantom.jar
-    rm -f plugins/Phantom/config.yml
-    install -m 0600 /etc/minecraft/phantom.yml plugins/Phantom/config.yml
     touch .declarative
     mkfifo -m 0600 /tmp/minecraft.stdin
     exec 3<> /tmp/minecraft.stdin
