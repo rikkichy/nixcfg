@@ -13,6 +13,7 @@ let
     server-ip = "";
     server-port = 25565;
     max-players = 20;
+    difficulty = "hard";
     online-mode = false;
     white-list = true;
     enforce-whitelist = true;

@@ -25,6 +25,7 @@ The server module builds a pinned Docker image containing Leaf **1.21.11 build
 The container has a **20-player ceiling**, `-Xms2G -Xmx8G`, and a 12 GiB Docker
 memory limit with no additional swap allowance. Heap size is not total process
 memory, and neither setting guarantees 20-player performance.
+Difficulty is **hard**, managed through the `serverProperties` startup template.
 The server uses **offline mode** (`online-mode=false`, secure profiles disabled).
 Pinned [AuthMeReloaded 6.0.1](https://github.com/AuthMe/AuthMeReloaded/releases/tag/6.0.1)
 requires password authentication before entering the world; Mojang account
