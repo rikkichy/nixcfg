@@ -16,6 +16,7 @@ and [existing-system manual recovery](install.md#manual-installation--recovery-r
 
 - [Installation](#installation)
 - [Rebuilds and desktop tools](#rebuilds-and-desktop-tools)
+- [Local models with Ollama](#local-models-with-ollama)
 - [Notes and passwords](#notes-and-passwords)
 - [Wallpapers and colours](#wallpapers-and-colours)
 - [Theme ownership rules](#two-rules-that-are-easy-to-break)
@@ -104,6 +105,20 @@ Install the local archive from OpenDeck's Plugins page. Follow the upstream
 model/hotkey setup, credential locations, and troubleshooting. Existing
 plugins and profiles remain application-owned; no installation or migration
 runs during NixOS activation.
+
+## Local models with Ollama
+
+`hosts/nix/modules/system/applications.nix` enables Ollama with
+`pkgs.ollama-cuda` for the RTX 3090's 24 GB VRAM. The module installs the
+`ollama` CLI and runs a system service listening only on `127.0.0.1:11434`;
+no firewall port is opened. Models are stored in `/var/lib/ollama/models`.
+CPU threads, context length and cache precision retain Ollama's defaults.
+
+After separately approved activation, select a model with `ollama run MODEL`.
+Use `ollama ps` to check GPU placement while it is loaded: `100% GPU` means
+the model fits entirely on the GPU. Model size and context length both affect
+VRAM use; reduce either if inference spills into system RAM.
+Inspect service failures with `journalctl -u ollama`.
 
 ## Notes and passwords
 
