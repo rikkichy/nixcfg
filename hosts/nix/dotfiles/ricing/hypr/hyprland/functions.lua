@@ -27,16 +27,6 @@ local function resize_by_screen(x, y)
     end
 end
 
-local function resize_active_window(x, y)
-    local win = hl.get_active_window()
-    if win and win.size then
-        local w = (win.size.x * (x / 100)) or 800
-        local h = (win.size.y * (y / 100)) or 600
-
-        return { x = w, y = h, relative = true }
-    end
-end
-
 local function resizer(window, pattern, x_percent, y_percent, actions, exact)
     if (window and window.title) and string.find(window.title, pattern, 1, exact) then
         local disp = (type(actions) == "table") and actions or { actions }
@@ -78,8 +68,6 @@ end
 
 return {
     resizer              = resizer,
-    resize_by_screen     = resize_by_screen,
-    resize_active_window = resize_active_window,
     wsaction             = wsaction,
     move_actions         = move_actions,
 }

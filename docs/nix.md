@@ -60,6 +60,10 @@ native actions. Search starts empty and matches tool names normally. Press the
 chord again to dismiss it. Tools and desktop actions stay hidden from the main
 launcher using native desktop-entry visibility.
 
+Hyprland has no global audio or media hotkeys; use the sound panel (**META + K**)
+or application controls. Manual window resizing uses **META + right mouse drag**
+only. **META + ALT + \\** remains the picture-in-picture shortcut.
+
 Brave Origin (`pkgs.brave-origin`) is the default browser for the browser shortcut,
 HTML files and web links. Its profile remains application-owned under
 `~/.config/BraveSoftware/Brave-Origin`. No extensions are force-installed.

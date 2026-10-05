@@ -38,9 +38,6 @@ return {
     activeWindowBorderColour   = "rgba(" .. scheme.primary .. "e6)",
     inactiveWindowBorderColour = "rgba(" .. scheme.onSurfaceVariant .. "11)",
 
-    volumeStep                 = 10,
-    volumeMax                  = 100,
-
     cursorTheme                = "Bibata-Material-Dynamic",
     cursorSize                 = 24,
 
@@ -59,7 +56,6 @@ return {
     kbToggleGroup              = "SUPER + Comma",
 
     kbMoveWindow               = "SUPER + Z",
-    kbResizeWindow             = "SUPER + X",
     kbWindowPip                = "SUPER + ALT + backslash",
     kbPinWindow                = "SUPER + P",
     kbWindowFullscreen         = "SUPER + F",
