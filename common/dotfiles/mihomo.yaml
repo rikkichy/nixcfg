@@ -148,6 +148,14 @@ rules:
   - DOMAIN-SUFFIX,anime-365.ru,REJECT
   - DOMAIN-SUFFIX,6b6t.org,PROXY
   - DOMAIN-SUFFIX,6b6t.org,REJECT
+
+  # ponytail: current DNS IPs; refresh after endpoint changes, DNS mapping if frequent.
+  # mc.hypixel.net and 6b6t.org's SRV target alt.6b6t.org.
+  - AND,((DST-PORT,25565),(IP-CIDR,172.65.197.160/32,no-resolve)),PROXY
+  - AND,((DST-PORT,25565),(IP-CIDR,172.65.197.160/32,no-resolve)),REJECT
+  - AND,((DST-PORT,25565),(IP-CIDR,15.204.129.101/32,no-resolve)),PROXY
+  - AND,((DST-PORT,25565),(IP-CIDR,15.204.129.101/32,no-resolve)),REJECT
+
   - IP-ASN,22697,PROXY,no-resolve
   - IP-ASN,22697,REJECT,no-resolve
 
