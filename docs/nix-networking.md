@@ -31,9 +31,7 @@ YouTube, Discord, Roblox/Sober, Instagram, Proton Mail, Spotify, Bitwarden,
 noko.chat, anime-365.ru and 6b6t.org use the selected proxy server; other
 destinations use `DIRECT`. The listed services use Mihomo's geosite data except
 noko.chat, anime-365.ru and 6b6t.org, whose domain-suffix rules include all
-subdomains (including api.noko.chat and dl.noko.chat). Public destinations on
-Minecraft Java port `25565` also use the proxy, including IP-addressed game
-connections that cannot be domain-sniffed; loopback and private LAN stay direct.
+subdomains (including api.noko.chat and dl.noko.chat).
 Roblox's production network uses ASN data. Mihomo downloads geosite and ASN data
 from the publisher's jsDelivr mirror and checks for updates daily; first startup
 needs access to it.
