@@ -28,9 +28,9 @@ authentication. Browser origins are restricted to that localhost origin.
 ### Split routing and server selection
 
 YouTube, Discord, Roblox/Sober, Instagram, Proton Mail, Spotify, Bitwarden,
-noko.chat, anime-365.ru and 6b6t.org use the selected proxy server; other
+noko.chat, anime-365.ru, 6b6t.org and enderdash.com use the selected proxy server; other
 destinations use `DIRECT`. The listed services use Mihomo's geosite data except
-noko.chat, anime-365.ru and 6b6t.org, whose domain-suffix rules include all
+noko.chat, anime-365.ru, 6b6t.org and enderdash.com, whose domain-suffix rules include all
 subdomains (including api.noko.chat and dl.noko.chat).
 Minecraft port `25565` uses the proxy only at Hypixel's `172.65.197.160`
 (`mc.hypixel.net`) and 6b6t's `15.204.129.101` (`alt.6b6t.org`, the SRV target
