@@ -142,6 +142,10 @@ rules:
   - GEOSITE,spotify,REJECT
   - GEOSITE,bitwarden,PROXY
   - GEOSITE,bitwarden,REJECT
+  - GEOSITE,pinterest,PROXY
+  - GEOSITE,pinterest,REJECT
+  - DOMAIN-SUFFIX,cachix.org,PROXY
+  - DOMAIN-SUFFIX,cachix.org,REJECT
   - DOMAIN-SUFFIX,noko.chat,PROXY
   - DOMAIN-SUFFIX,noko.chat,REJECT
   - DOMAIN-SUFFIX,anime-365.ru,PROXY
