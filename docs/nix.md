@@ -319,6 +319,11 @@ Update selected pins with `nix flake update nixpkgs home-manager --flake /etc/ni
 **nh os switch --update** updates all inputs, rebuilds and switches.
 Review and commit `flake.lock` after a successful build.
 
+The desktop trusts the official NixOS cache and
+[NixOS CUDA cache](https://wiki.nixos.org/wiki/CUDA#Setting_up_CUDA_Binary_Cache).
+The CUDA cache supplies matching GPU-enabled outputs such as `ollama-cuda`;
+local package patches still require an exact matching cached build.
+
 ```sh
 mkdir -p ~/.local/state
 nh os build /etc/nixos --hostname nix --no-update-lock-file \
