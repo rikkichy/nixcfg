@@ -184,6 +184,10 @@ carrying anything.
 and pinned as a `flake = false` input. Update it explicitly with
 `nix flake update tg-ws-proxy --flake /etc/nixos`, then build and activate through
 the [host maintenance workflow](nix.md#updates-and-prebuilt-systems).
+The package includes `httpx` and `h2` for upstream's HTTP/2 transport.
+After updating the pin, check upstream runtime dependencies and build
+`nix build --no-link 'path:.#nixosConfigurations.nix.pkgs.tg-ws-proxy'`
+before activation.
 
 A systemd **user** service runs it headless on `127.0.0.1:1443`. The secret is
 generated once on first start and kept in

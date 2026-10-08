@@ -6,7 +6,7 @@
 
 python3Packages.buildPythonApplication {
   pname = "tg-ws-proxy";
-  version = "1.9.1-unstable-${builtins.substring 0 8 (src.rev or "00000000")}";
+  version = "1.11.1-unstable-${builtins.substring 0 8 (src.rev or "00000000")}";
   inherit src;
 
   pyproject = true;
@@ -16,6 +16,8 @@ python3Packages.buildPythonApplication {
   dependencies = with python3Packages; [
     certifi
     cryptography
+    httpx
+    h2
     pyperclip
     psutil
     pillow
