@@ -69,6 +69,13 @@ Brave Origin (`pkgs.brave-origin`) is the default browser for the browser shortc
 HTML files and web links. Its profile remains application-owned under
 `~/.config/BraveSoftware/Brave-Origin`. No extensions are force-installed.
 
+PhotoCraft and FilmCraft are pinned upstream AppImages packaged in
+`hosts/nix/pkgs/{photocraft,filmcraft}.nix` and installed as `photocraft` and
+`filmcraft`. Nix owns their launcher entries, icons and MIME definitions;
+existing default file associations remain unchanged. Update each package's
+version and hash together. Both editors are experimental; keep backups of
+documents and projects. FilmCraft has no Linux hardware video decoding path.
+
 OBS Studio uses the NixOS virtual-camera integration: `v4l2loopback` provides
 `/dev/video1` as **OBS Cam**, with exclusive capture capabilities for browser
 compatibility. The `ri` user belongs to `video` for camera-device access;

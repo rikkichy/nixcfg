@@ -36,6 +36,8 @@ final: prev: {
   };
 
   nokochat = final.callPackage ./nokochat.nix { };
+  photocraft = final.callPackage ./photocraft.nix { };
+  filmcraft = final.callPackage ./filmcraft.nix { };
 
   bibata-material-cursor = final.callPackage ./ricing/bibata-material-cursor.nix {
     src = inputs.bibata-cursor;
