@@ -154,6 +154,8 @@ rules:
   - DOMAIN-SUFFIX,6b6t.org,REJECT
   - DOMAIN-SUFFIX,enderdash.com,PROXY
   - DOMAIN-SUFFIX,enderdash.com,REJECT
+  - DOMAIN-SUFFIX,cyrisia.com,PROXY
+  - DOMAIN-SUFFIX,cyrisia.com,REJECT
 
   # ponytail: current DNS IPs; refresh after endpoint changes, DNS mapping if frequent.
   # mc.hypixel.net and 6b6t.org's SRV target alt.6b6t.org.
