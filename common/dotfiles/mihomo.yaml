@@ -148,8 +148,6 @@ rules:
   - DOMAIN-SUFFIX,patreon.com,REJECT
   - DOMAIN-SUFFIX,patreonusercontent.com,PROXY
   - DOMAIN-SUFFIX,patreonusercontent.com,REJECT
-  - DOMAIN-SUFFIX,cachix.org,PROXY
-  - DOMAIN-SUFFIX,cachix.org,REJECT
   - DOMAIN-SUFFIX,noko.chat,PROXY
   - DOMAIN-SUFFIX,noko.chat,REJECT
   - DOMAIN-SUFFIX,anime-365.ru,PROXY

@@ -28,10 +28,11 @@ authentication. Browser origins are restricted to that localhost origin.
 ### Split routing and server selection
 
 YouTube, Discord, Roblox/Sober, Instagram, Proton Mail, Spotify, Bitwarden, Pinterest,
-cachix.org, noko.chat, anime-365.ru, 6b6t.org, enderdash.com and cyrisia.com use the selected proxy server; other
+noko.chat, anime-365.ru, 6b6t.org, enderdash.com and cyrisia.com use the selected proxy server; other
 destinations use `DIRECT`. The listed services use Mihomo's geosite data except
-cachix.org, noko.chat, anime-365.ru, 6b6t.org, enderdash.com and cyrisia.com, whose domain-suffix rules include all
+noko.chat, anime-365.ru, 6b6t.org, enderdash.com and cyrisia.com, whose domain-suffix rules include all
 subdomains (including api.noko.chat and dl.noko.chat).
+Cachix and its `*.cachix.org` cache endpoints use `DIRECT` in scoped mode.
 Patreon's website and API use `patreon.com`; its CDN uses `patreonusercontent.com`
 (including `c10.patreonusercontent.com`).
 Minecraft port `25565` uses the proxy only at Hypixel's `172.65.197.160`
