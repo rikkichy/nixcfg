@@ -32,6 +32,8 @@ cachix.org, noko.chat, anime-365.ru, 6b6t.org, enderdash.com and cyrisia.com use
 destinations use `DIRECT`. The listed services use Mihomo's geosite data except
 cachix.org, noko.chat, anime-365.ru, 6b6t.org, enderdash.com and cyrisia.com, whose domain-suffix rules include all
 subdomains (including api.noko.chat and dl.noko.chat).
+Patreon's website and API use `patreon.com`; its CDN uses `patreonusercontent.com`
+(including `c10.patreonusercontent.com`).
 Minecraft port `25565` uses the proxy only at Hypixel's `172.65.197.160`
 (`mc.hypixel.net`) and 6b6t's `15.204.129.101` (`alt.6b6t.org`, the SRV target
 for `6b6t.org` and `join.6b6t.org`). IP-and-port rules do not proxy other ports
