@@ -3,11 +3,6 @@
 {
   programs.git.enable = true;
 
-  services.ollama = {
-    enable = true;
-    package = pkgs.ollama-cuda;
-  };
-
   environment.systemPackages = with pkgs; [
     omp
 
