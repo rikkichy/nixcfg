@@ -100,7 +100,6 @@
   };
 
   services.tumbler.enable = true;
-  programs.xfconf.enable = true;
 
   programs.chromium = {
     enable = true;

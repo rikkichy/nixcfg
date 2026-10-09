@@ -26,12 +26,7 @@
   services.journald.settings.Journal.SyncIntervalSec = "30s";
 
   boot.extraModulePackages = [
-    (config.boot.kernelPackages.nct6687d.overrideAttrs (old: {
-      postPatch = (old.postPatch or "") + ''
-        sed -i 's/strncpy(valcp, val, 16);/strscpy(valcp, val, sizeof(valcp));/' \
-          nct6687.c
-      '';
-    }))
+    config.boot.kernelPackages.nct6687d
   ];
   boot.kernelModules = [ "nct6687" ];
   boot.blacklistedKernelModules = [ "nct6683" ];

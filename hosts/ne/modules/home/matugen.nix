@@ -57,6 +57,5 @@ let
 in
 {
   xdg.configFile."matugen/config.toml".source = matugenConfig;
-  home.file.".local/bin/wallpaper-theme".source = "${wallpaperTheme}/bin/wallpaper-theme";
   home.packages = [ wallpaperTheme ];
 }

@@ -16,7 +16,7 @@
       RestartSec = "2s";
       Slice = "session.slice";
       Environment = [
-        "PATH=${lib.makeBinPath [ pkgs.fuzzel pkgs.psmisc pkgs.networkmanager pkgs.foot pkgs.pavucontrol pkgs.blueman ]}:/etc/profiles/per-user/ri/bin:/run/current-system/sw/bin"
+        "PATH=${lib.makeBinPath [ pkgs.networkmanager pkgs.foot pkgs.pavucontrol pkgs.blueman ]}:/etc/profiles/per-user/ri/bin:/run/current-system/sw/bin"
         "QT_QUICK_CONTROLS_STYLE=Basic"
       ];
     };

@@ -55,7 +55,7 @@ by Git and must remain writable.
 Wallpaper, animated wallpaper, emoji, blue-light filter, VPN and session tools
 are available through META+ALT.
 Short commands such as `wpp`, `awpp` and `vpnp` remain searchable there.
-Bare META and the palette-tinted rune on the bar open the apps-only launcher.
+Bare META opens the apps-only launcher.
 **META + ALT** opens Fuzzel on a directory containing only these tools and their
 native actions. Search starts empty and matches tool names normally. Press the
 chord again to dismiss it. Tools and desktop actions stay hidden from the main
@@ -296,7 +296,7 @@ Tray motion adapts Material's [Expressive spring tokens](https://raw.githubuserc
 to Qt's native spring integrator: default spatial for expansion/shape,
 default effects for opacity, and fast spatial for icon rotation. Geometry
 and opacity remain separate so transparency does not bounce. The toggle
-uses the stock `pan-up` theme icon; workspace selection retains its animated
+uses the bundled `expand_less` icon; workspace selection retains its animated
 size and rounded-shape transition. Exact geometry and coefficients belong
 in the [Quickshell source](../hosts/nix/dotfiles/ricing/quickshell/)
 and [engineering reference](../.omp/skills/desktop-shell/references/quickshell.md).
@@ -330,6 +330,23 @@ The desktop trusts the official NixOS cache and
 [NixOS CUDA cache](https://wiki.nixos.org/wiki/CUDA#Setting_up_CUDA_Binary_Cache).
 The CUDA cache supplies matching GPU-enabled outputs such as `ollama-cuda`;
 local package patches still require an exact matching cached build.
+Ananicy and the NCT6687 sensor module use unmodified Nixpkgs packages.
+
+To avoid ordinary local compilation, inspect the build plan after updating:
+
+```sh
+nix build --dry-run --no-write-lock-file \
+  'path:/etc/nixos#nixosConfigurations.nix.config.system.build.toplevel'
+mkdir -p ~/.local/state
+nh os build path:/etc/nixos --hostname nix --no-update-lock-file \
+  --max-jobs 0 --out-link ~/.local/state/nixcfg-next
+```
+
+With no remote builders, `--max-jobs 0` rejects uncached ordinary packages.
+Derivations marked `preferLocalBuild`, including small configuration generators,
+can still run locally. Binary AppImage wrapping and Python/script packaging
+are distinct from native compilation. The normal build below permits local work
+with bounded parallelism.
 
 ```sh
 mkdir -p ~/.local/state

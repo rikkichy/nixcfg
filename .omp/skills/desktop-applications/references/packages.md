@@ -43,6 +43,14 @@ The overlay patches Canvas's missing `<cstdint>` includes between npm dependency
 installation and native rebuild. Keep `npm rebuild` enabled after patching;
 `--ignore-scripts` only defers the npm hook's early rebuild.
 
+## Telegram proxy
+
+`hosts/nix/pkgs/bypasses/tg-ws-proxy.nix` packages only the headless
+`tg-ws-proxy` server. Its runtime dependencies are certifi, cryptography, HTTPX
+and HTTP/2; wheel metadata excludes tray-only requirements. No platform tray
+entry points, UI modules or updater are shipped. The optional `--log-file`
+path retains `utils.logging_setup`.
+
 ## Project and editor ownership
 
 NokoChat development belongs to the external project checkout, not this

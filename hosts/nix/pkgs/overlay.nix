@@ -47,10 +47,4 @@ final: prev: {
 
   google-sans-rounded =
     final.callPackage ./ricing/google-sans-rounded.nix { };
-
-  ananicy-cpp = prev.ananicy-cpp.overrideAttrs (old: {
-    postPatch = (old.postPatch or "") + ''
-      find src -name "*.cpp" -exec sed -i "1i #include <cstring>\n#include <cstdint>" {} +
-    '';
-  });
 }

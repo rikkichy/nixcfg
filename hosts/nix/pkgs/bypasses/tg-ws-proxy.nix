@@ -18,22 +18,43 @@ python3Packages.buildPythonApplication {
     cryptography
     httpx
     h2
-    pyperclip
-    psutil
-    pillow
-    customtkinter
-    pystray
-    tkinter
   ];
 
   pythonRelaxDeps = true;
+  pythonRemoveDeps = [
+    "pyperclip"
+    "psutil"
+    "pillow"
+    "customtkinter"
+    "pystray"
+    "pyobjc-framework-cocoa"
+  ];
 
-  pythonImportsCheck = [ "proxy" ];
+  pythonImportsCheck = [
+    "proxy"
+    "proxy.tg_ws_proxy"
+    "utils.logging_setup"
+  ];
 
   doCheck = false;
 
-  postInstall = ''
-    rm -f $out/bin/tg-ws-proxy-tray-win $out/bin/tg-ws-proxy-tray-macos
+  postPatch = ''
+    substituteInPlace pyproject.toml \
+      --replace-fail 'tg-ws-proxy-tray-win = "windows:main"' "" \
+      --replace-fail 'tg-ws-proxy-tray-macos = "macos:main"' "" \
+      --replace-fail 'tg-ws-proxy-tray-linux = "linux:main"' "" \
+      --replace-fail 'packages = ["proxy", "ui", "utils"]' 'packages = ["proxy", "utils"]' \
+      --replace-fail '[tool.hatch.build.force-include]
+    "windows.py" = "windows.py"
+    "macos.py" = "macos.py"
+    "linux.py" = "linux.py"' ""
+
+    rm -r ui windows.py macos.py linux.py \
+      utils/default_config.py utils/diagnostics.py utils/tray_common.py \
+      utils/update_check.py utils/win32_theme.py
+
+    # The server only needs logging_setup, not the package's tray updater exports.
+    truncate -s 0 utils/__init__.py
   '';
 
   meta = {

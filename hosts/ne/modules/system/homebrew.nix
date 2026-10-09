@@ -4,7 +4,6 @@
     taps = [
       "can1357/tap"
       "facebook/fb"
-      "hudochenkov/sshpass"
       "mmathys/tap"
       "serpentiel/tools"
     ];
