@@ -418,7 +418,7 @@ PanelWindow {
 
                 IconRailButton {
                     id: networkButton
-                    iconName: !bar.networkDevice ? "boxicons-wifi-slash-filled" : Networking.connectivity === NetworkConnectivity.Portal || Networking.connectivity === NetworkConnectivity.Limited ? "boxicons-wifi-filled" : bar.networkDevice.type === DeviceType.Wired ? "boxicons-ethernet-filled" : "boxicons-wifi-filled"
+                    iconName: !bar.networkDevice ? "boxicons-plug-connect-filled" : Networking.connectivity === NetworkConnectivity.Portal || Networking.connectivity === NetworkConnectivity.Limited ? "boxicons-wifi-filled" : bar.networkDevice.type === DeviceType.Wired ? "boxicons-ethernet-filled" : "boxicons-wifi-filled"
                     badgeName: bar.networkDevice && (Networking.connectivity === NetworkConnectivity.Portal || Networking.connectivity === NetworkConnectivity.Limited) ? "boxicons-alert-triangle-filled" : ""
                     description: (bar.networkDevice ? bar.networkDevice.name + ": " + NetworkConnectivity.toString(Networking.connectivity) : "Network disconnected") + ". Open network controls"
                     onClicked: shell.togglePanel("network", bar.screen, networkButton)

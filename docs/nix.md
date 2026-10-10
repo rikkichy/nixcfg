@@ -233,7 +233,7 @@ The rail uses filled Boxicons for microphone, sound and notifications:
 Notification history selects `bell-filled` when nonempty, `bell-check-filled`
 when empty, and `bell-slash-filled` whenever DND is enabled, regardless of count.
 The notification panel and sound OSD use the same corresponding Boxicons assets.
-Network uses `ethernet-filled`, `wifi-filled` or `wifi-slash-filled`, with an
+Network uses `ethernet-filled`, `wifi-filled` or `plug-connect-filled`, with an
 `alert-triangle-filled` badge for limited/captive connections. Bluetooth uses
 `bluetooth-filled`, with `x-filled` when off or `check-filled` when connected.
 Navigation, dropdowns, playback, settings, clear-all and dismiss controls use the
