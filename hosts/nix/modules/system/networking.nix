@@ -3,6 +3,8 @@
 {
   imports = [ ../../../../common/modules/nixos-networking.nix ];
 
+  networking.modemmanager.enable = false;
+
   environment.systemPackages = [ pkgs.vpn ];
 
   services.mihomo = {

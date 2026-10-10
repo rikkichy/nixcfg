@@ -83,8 +83,6 @@
 
   services.gvfs.enable = true;
 
-  services.udisks2.enable = true;
-
   programs.thunar = {
     enable = true;
     plugins = with pkgs; [
@@ -109,6 +107,7 @@
 
   virtualisation.docker = {
     enable = true;
+    enableOnBoot = false;
     autoPrune.enable = true;
   };
 

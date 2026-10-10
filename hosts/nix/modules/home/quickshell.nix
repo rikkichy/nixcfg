@@ -24,6 +24,12 @@
   };
 
   xdg.configFile = {
+    "autostart/blueman.desktop".text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Blueman
+      Hidden=true
+    '';
     "quickshell/expressive".source = ../../dotfiles/ricing/quickshell;
     "hypr".source = config.lib.file.mkOutOfStoreSymlink "${nixcfgPath}/hosts/nix/dotfiles/ricing/hypr";
   };

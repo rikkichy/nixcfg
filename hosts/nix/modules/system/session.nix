@@ -7,6 +7,8 @@
     xwayland.enable = true;
   };
 
+  services.speechd.enable = false;
+
   systemd.packages = [ pkgs.hyprpolkitagent pkgs.hyprsunset ];
   systemd.user.services.hyprpolkitagent.wantedBy = [ "graphical-session.target" ];
 
@@ -16,7 +18,6 @@
 
   xdg.portal = {
     enable = true;
-    extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
     config.common.default = [ "hyprland" "gtk" ];
   };
 

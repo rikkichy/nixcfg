@@ -131,6 +131,35 @@ has no CUPS service or socket and declares no printing listener. Source edits
 do not stop a running daemon; applying this policy requires separately approved
 activation.
 
+## Desktop service policy
+
+Docker retains its CLI, group access and socket activation, with
+`virtualisation.docker.enableOnBoot = false` in the desktop applications module.
+The first client starts the daemon; restart-policy containers do not start merely
+because the machine boots. Weekly automatic pruning can also start Docker, and
+the daemon does not automatically exit when idle.
+
+The desktop session disables Speech Dispatcher, including its user socket,
+and desktop networking disables ModemManager. Speech Dispatcher-based screen
+readers/text-to-speech and ModemManager-managed cellular/WWAN or modem GPS are
+not supported by this policy; ordinary Ethernet and Wi-Fi remain managed by
+NetworkManager.
+
+Blueman stays installed and on the Quickshell service PATH. Home Manager's
+`~/.config/autostart/blueman.desktop` sets `Hidden=true`, suppressing only its
+login applet/tray through XDG autostart precedence. The Bluetooth control center
+opens `blueman-manager` for discovery and pairing; its native D-Bus activation
+can start the applet when needed. Unattended incoming pairing, file-transfer
+approval and other applet background features require the applet to be running.
+BlueZ, OBEX and the Bluetooth MPRIS bridge remain available.
+
+GVFS and fwupd retain UDisks; Hyprland retains the GTK portal with the explicit
+`[ "hyprland" "gtk" ]` default preference. Avahi, Flatpak maintenance,
+PipeWire/WirePlumber/RTKit, keyring/GCR/PCSC, firmware updates, gaming helpers and
+desktop shell/wallpaper/night-light services retain their configured consumers.
+Source publication does not stop live services; activation and actual
+first-client/pairing acceptance require separate operator approval.
+
 ## Notes and passwords
 
 Obsidian and Bitwarden are native desktop packages in
