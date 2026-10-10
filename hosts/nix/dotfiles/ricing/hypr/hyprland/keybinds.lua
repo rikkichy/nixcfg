@@ -97,27 +97,30 @@ hl.bind(vars.kbCloseWindow, hl.dsp.window.close())
 
 hl.bind(vars.kbForceCloseWindow, hl.dsp.window.kill())
 
-local function toggle_ws(name, needle, spawn)
+local function toggle_ws(name, apps)
     return function()
-        if needle and spawn then
+        for _, app in ipairs(apps or {}) do
             local running = false
             for _, w in ipairs(hl.get_windows()) do
                 local class = w.class
-                if class and class:lower():find(needle, 1, true) then
+                if class and class:lower():find(app[1], 1, true) then
                     running = true
                     break
                 end
             end
-            if not running then hl.dispatch(hl.dsp.exec_cmd(spawn)) end
+            if not running then hl.dispatch(hl.dsp.exec_cmd(app[2])) end
         end
         hl.dispatch(hl.dsp.workspace.toggle_special(name))
     end
 end
 
 hl.bind(vars.kbSpecialWs, toggle_ws("special"))
-hl.bind(vars.kbSystemMonitorWs, toggle_ws("sysmon", "btop", vars.terminal .. " --app-id=btop btop"))
-hl.bind(vars.kbMusicWs, toggle_ws("music", "spotify", "spotify"))
-hl.bind(vars.kbCommunicationWs, toggle_ws("communication", "discord", "discord"))
+hl.bind(vars.kbSystemMonitorWs, toggle_ws("sysmon", { { "btop", vars.terminal .. " --app-id=btop btop" } }))
+hl.bind(vars.kbMusicWs, toggle_ws("music", { { "spotify", "spotify" } }))
+hl.bind(vars.kbCommunicationWs, toggle_ws("communication", {
+    { "discord", "discord" },
+    { "org.telegram.desktop", "Telegram" },
+}))
 hl.bind(vars.kbTodoWs, toggle_ws("todo"))
 
 hl.bind(vars.kbTerminal, hl.dsp.exec_cmd(vars.terminal))

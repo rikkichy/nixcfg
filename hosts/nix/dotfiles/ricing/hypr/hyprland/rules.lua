@@ -116,6 +116,29 @@ hl.window_rule({ match = { class = "Todoist" }, workspace = "special:todo" })
 
 hl.window_rule({ match = { class = "^chrome-discord\\.com.*$" }, workspace = "special:communication" })
 
+hl.workspace_rule({
+    workspace = "special:communication",
+    layout = "master",
+    layout_opts = { orientation = "left" },
+})
+
+hl.on("window.open", function(opened)
+    if not opened.workspace or opened.workspace.name ~= "special:communication" then return end
+    if opened.class ~= "discord" and opened.class ~= "org.telegram.desktop" then return end
+
+    for _, w in ipairs(hl.get_windows()) do
+        if w.class == "discord" and w.workspace and w.workspace.name == "special:communication"
+            and w.layout and w.layout.name == "master" then
+            local active = hl.get_active_window()
+            hl.dispatch(hl.dsp.focus({ window = w }))
+            hl.dispatch(hl.dsp.layout("swapwithmaster master ignoremaster"))
+            hl.dispatch(hl.dsp.layout("mfact exact 0.81"))
+            if active and active.address ~= w.address then hl.dispatch(hl.dsp.focus({ window = active })) end
+            break
+        end
+    end
+end)
+
 hl.workspace_rule({ workspace = "w[tv1]s[false]", gaps_out = vars.singleWindowGapsOut })
 hl.workspace_rule({ workspace = "f[1]s[false]", gaps_out = vars.singleWindowGapsOut })
 

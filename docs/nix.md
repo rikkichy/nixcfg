@@ -64,6 +64,14 @@ Hyprland has no global audio or media hotkeys; use the sound panel (**META + K**
 or application controls. Manual window resizing uses **META + right mouse drag**
 only. **META + ALT + \\** remains the picture-in-picture shortcut.
 
+**META + D** toggles the communication workspace and launches missing Discord
+and Telegram windows. This workspace alone uses the master layout: Discord on
+the left at approximately 81% width, Telegram on the right at 19%, both full-height.
+Opening either app restores this arrangement; toggling the workspace preserves
+manual resizing. Other workspaces retain dwindle.
+The launch decision regression check runs from the repository root with
+`Hyprland --verify-config --config "$PWD/scripts/communication-workspace-test.lua"`.
+
 Brave Origin (`pkgs.brave-origin`) is the default browser for the browser shortcut,
 HTML files and web links. Its profile remains application-owned under
 `~/.config/BraveSoftware/Brave-Origin`. No extensions are force-installed.
