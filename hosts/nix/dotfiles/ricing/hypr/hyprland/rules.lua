@@ -112,6 +112,7 @@ hl.window_rule({
 })
 hl.window_rule({ match = { initial_title = "Spotify( \\(Free\\))?" }, workspace = "special:music" })
 hl.window_rule({ match = { class = "discord|equibop|vesktop|org\\.telegram\\.desktop" }, workspace = "special:communication" })
+hl.window_rule({ match = { class = "org\\.telegram\\.desktop" }, focus_on_activate = false })
 hl.window_rule({ match = { class = "Todoist" }, workspace = "special:todo" })
 
 hl.window_rule({ match = { class = "^chrome-discord\\.com.*$" }, workspace = "special:communication" })

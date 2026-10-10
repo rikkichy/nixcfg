@@ -69,6 +69,9 @@ and Telegram windows. This workspace alone uses the master layout: Discord on
 the left at approximately 81% width, Telegram on the right at 19%, both full-height.
 Opening either app restores this arrangement; toggling the workspace preserves
 manual resizing. Other workspaces retain dwindle.
+Telegram activation requests do not steal focus or reveal its workspace.
+Use **META + D** to bring it forward; notification clicks that request application
+activation are subject to the same focus policy.
 The launch decision regression check runs from the repository root with
 `Hyprland --verify-config --config "$PWD/scripts/communication-workspace-test.lua"`.
 
