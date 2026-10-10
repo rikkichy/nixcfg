@@ -16,6 +16,7 @@ and [existing-system manual recovery](install.md#manual-installation--recovery-r
 
 - [Installation](#installation)
 - [Rebuilds and desktop tools](#rebuilds-and-desktop-tools)
+- [Printing](#printing)
 - [Notes and passwords](#notes-and-passwords)
 - [Wallpapers and colours](#wallpapers-and-colours)
 - [Theme ownership rules](#two-rules-that-are-easy-to-break)
@@ -122,6 +123,14 @@ Install the local archive from OpenDeck's Plugins page. Follow the upstream
 model/hotkey setup, credential locations, and troubleshooting. Existing
 plugins and profiles remain application-owned; no installation or migration
 runs during NixOS activation.
+
+## Printing
+
+`hosts/nix/modules/system/applications.nix` keeps CUPS enabled on
+`127.0.0.1:631` and its local Unix socket. The explicit IPv4 loopback listener
+matches this host's disabled IPv6 policy without exposing printing to the LAN.
+After separately approved activation, check fresh `journalctl -u cups.service`
+output for listener errors; source edits alone do not change the running daemon.
 
 ## Notes and passwords
 

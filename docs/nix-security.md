@@ -98,6 +98,21 @@ with its retained passphrase as `cryptroot`; mount root and ESP, enter via
 `nixos-enter`, and repair the configuration. Do not format anything. A NixOS
 rollback changes boot configuration, not LUKS enrollment or keyslots.
 
+## EFI partition permissions
+
+`hosts/nix/hardware.nix` mounts the FAT EFI partition at `/boot` with
+`fmask=0077,dmask=0077`, restricting its files and directories to root.
+This protects the boot random seed from ordinary local users. FAT permissions
+come from mount masks; changing a file's mode does not fix a permissive mount.
+The ESP remains unencrypted, so these masks do not prevent offline access.
+
+After separately approved activation and remount or reboot, check
+`findmnt /boot -o TARGET,FSTYPE,OPTIONS` and
+`stat -c '%a %U:%G %n' /boot /boot/loader/random-seed` without reading the seed.
+Require both masks to be `0077`, root ownership and no group/other permissions.
+Check fresh `journalctl -b -u systemd-boot-random-seed.service` output for
+permission warnings; old boot records are not proof of the active mount policy.
+
 ## Touch-only sudo with password fallback
 
 Only PAM services `sudo` and `sudo-i` use U2F as `sufficient`, before the Unix
