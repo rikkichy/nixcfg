@@ -78,11 +78,29 @@ PanelWindow {
     component IconRailButton: RailButton {
         id: iconButton
         required property string iconName
+        property string badgeName: ""
         contentItem: Item {
-            MaterialIcon {
+            BoxIcon {
                 anchors.centerIn: parent
                 name: iconButton.iconName
                 tint: iconButton.prominent ? Theme.textOnPrimary : iconButton.checked ? Theme.textOnSecondaryContainer : Theme.textOnSurface
+            }
+            Rectangle {
+                visible: iconButton.badgeName !== ""
+                anchors.centerIn: parent
+                anchors.horizontalCenterOffset: 10
+                anchors.verticalCenterOffset: 10
+                width: 14
+                height: 14
+                radius: 7
+                color: iconButton.prominent ? Theme.primary : iconButton.checked ? Theme.secondaryContainer : Theme.surfaceContainerHigh
+                BoxIcon {
+                    anchors.centerIn: parent
+                    width: 10
+                    height: 10
+                    name: iconButton.badgeName
+                    tint: iconButton.prominent ? Theme.textOnPrimary : iconButton.checked ? Theme.textOnSecondaryContainer : Theme.textOnSurface
+                }
             }
         }
     }
@@ -122,7 +140,7 @@ PanelWindow {
                         id: workspaceButton
                         required property var modelData
                         readonly property bool selected: modelData === bar.activeWorkspace
-                        readonly property string workspaceIcon: modelData.name === "special:communication" ? "boxicons-message-circle-dots-2-filled" : modelData.name === "special:music" ? "music_note" : modelData.id < 0 ? "layers" : ""
+                        readonly property string workspaceIcon: modelData.name === "special:communication" ? "boxicons-message-circle-dots-2-filled" : modelData.name === "special:music" ? "boxicons-music-library-filled" : modelData.id < 0 ? "boxicons-layers-filled" : ""
                         implicitHeight: selected ? 56 : 48
                         checked: selected
                         prominent: selected
@@ -158,7 +176,7 @@ PanelWindow {
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                             }
-                            MaterialIcon {
+                            BoxIcon {
                                 anchors.centerIn: parent
                                 visible: workspaceButton.workspaceIcon !== ""
                                 name: workspaceButton.workspaceIcon
@@ -284,9 +302,9 @@ PanelWindow {
                     description: (bar.trayExpanded ? "Fold" : "Show") + " system tray · " + SystemTray.items.values.length + " items"
                     onClicked: bar.trayExpanded = !bar.trayExpanded
                     contentItem: Item {
-                        MaterialIcon {
+                        BoxIcon {
                             anchors.centerIn: parent
-                            name: "expand_less"
+                            name: "boxicons-chevron-up-filled"
                             tint: trayToggle.checked ? Theme.textOnSecondaryContainer : Theme.textOnSurface
                             rotation: bar.trayExpanded ? 180 : 0
                             Behavior on rotation {
@@ -398,16 +416,18 @@ PanelWindow {
                     }
                 }
 
-                RailButton {
+                IconRailButton {
                     id: networkButton
-                    glyph: !bar.networkDevice ? "󰖪" : Networking.connectivity === NetworkConnectivity.Portal || Networking.connectivity === NetworkConnectivity.Limited ? "󰖫" : bar.networkDevice.type === DeviceType.Wired ? "󰈀" : "󰖩"
+                    iconName: !bar.networkDevice ? "boxicons-wifi-slash-filled" : Networking.connectivity === NetworkConnectivity.Portal || Networking.connectivity === NetworkConnectivity.Limited ? "boxicons-wifi-filled" : bar.networkDevice.type === DeviceType.Wired ? "boxicons-ethernet-filled" : "boxicons-wifi-filled"
+                    badgeName: bar.networkDevice && (Networking.connectivity === NetworkConnectivity.Portal || Networking.connectivity === NetworkConnectivity.Limited) ? "boxicons-alert-triangle-filled" : ""
                     description: (bar.networkDevice ? bar.networkDevice.name + ": " + NetworkConnectivity.toString(Networking.connectivity) : "Network disconnected") + ". Open network controls"
                     onClicked: shell.togglePanel("network", bar.screen, networkButton)
                 }
 
-                RailButton {
+                IconRailButton {
                     id: bluetoothButton
-                    glyph: !bar.bluetoothEnabled ? "󰂲" : bar.bluetoothConnections > 0 ? "󰂱" : "󰂯"
+                    iconName: "boxicons-bluetooth-filled"
+                    badgeName: !bar.bluetoothEnabled ? "boxicons-x-filled" : bar.bluetoothConnections > 0 ? "boxicons-check-filled" : ""
                     checked: bar.bluetoothConnections > 0
                     description: (bar.bluetoothEnabled ? "Bluetooth on, " + bar.bluetoothConnections + " connected devices" : "Bluetooth off") + ". Open Bluetooth controls"
                     onClicked: shell.togglePanel("bluetooth", bar.screen, bluetoothButton)

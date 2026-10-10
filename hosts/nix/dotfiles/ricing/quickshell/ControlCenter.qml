@@ -71,7 +71,7 @@ Item {
         Layout.preferredHeight: 56
         scale: 1
         contentItem: Item {
-            MaterialIcon {
+            BoxIcon {
                 anchors.centerIn: parent
                 width: 28
                 height: 28
@@ -486,10 +486,10 @@ Item {
                                     asynchronous: true
                                     fillMode: Image.PreserveAspectFit
                                 }
-                                MaterialIcon {
+                                BoxIcon {
                                     anchors.centerIn: parent
                                     visible: !artwork.usableCover
-                                    name: "music_note"
+                                    name: "boxicons-music-library-filled"
                                     width: 36
                                     height: 36
                                     tint: Theme.textOnSurfaceVariant
@@ -529,14 +529,14 @@ Item {
                             Accessible.name: "Playback controls for " + media.modelData.identity
                             PlaybackButton {
                                 position: 0
-                                iconName: "skip_previous"
+                                iconName: "boxicons-skip-previous-filled"
                                 description: "Previous track in " + media.modelData.identity
                                 enabled: media.modelData.canControl && media.modelData.canGoPrevious
                                 onClicked: media.modelData.previous()
                             }
                             PlaybackButton {
                                 position: 1
-                                iconName: media.modelData.isPlaying ? "pause" : "play_arrow"
+                                iconName: media.modelData.isPlaying ? "boxicons-pause-filled" : "boxicons-play-filled"
                                 prominent: true
                                 description: (media.modelData.isPlaying ? "Pause" : "Play") + " in " + media.modelData.identity
                                 enabled: media.modelData.canControl && media.modelData.canTogglePlaying
@@ -544,7 +544,7 @@ Item {
                             }
                             PlaybackButton {
                                 position: 2
-                                iconName: "skip_next"
+                                iconName: "boxicons-skip-next-filled"
                                 description: "Next track in " + media.modelData.identity
                                 enabled: media.modelData.canControl && media.modelData.canGoNext
                                 onClicked: media.modelData.next()

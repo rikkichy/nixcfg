@@ -22,7 +22,7 @@ Item {
                 width: parent.width - 48
                 spacing: 12
                 visible: root.center.count === 0
-                MaterialIcon {
+                BoxIcon {
                     Layout.alignment: Qt.AlignHCenter
                     name: "boxicons-bell-check-filled"
                     width: 64
@@ -72,7 +72,7 @@ Item {
             contentItem: RowLayout {
                 spacing: 8
                 Item { Layout.fillWidth: true }
-                MaterialIcon { name: "done_all"; tint: Theme.textOnSurface }
+                BoxIcon { name: "boxicons-checks-filled"; tint: Theme.textOnSurface }
                 Text {
                     text: clearAll.text
                     color: Theme.textOnSurface
@@ -150,7 +150,13 @@ Item {
                 }
                 ExpressiveButton {
                     implicitWidth: 48
-                    text: "×"
+                    contentItem: Item {
+                        BoxIcon {
+                            anchors.centerIn: parent
+                            name: "boxicons-x-filled"
+                            tint: Theme.textOnSurface
+                        }
+                    }
                     description: "Dismiss " + (card.notification ? card.notification.summary : "notification")
                     onClicked: card.center.dismiss(card.entry)
                 }

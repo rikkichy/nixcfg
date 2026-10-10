@@ -218,13 +218,14 @@ clock/calendar, and occupied workspaces, in that order. Empty workspaces are
 hidden; occupied ordinary and special workspaces appear beneath the clock.
 Tray icons expand vertically upward without moving the clock or overlapping
 the notification button; Escape or the toggle folds them away.
-Communication uses Boxicons `message-circle-dots-2-filled`; music and other
-special workspaces use Material Symbols Rounded `music_note` and `layers`.
-Bundled SVGs and their Apache-2.0/MIT licenses live in
-`hosts/nix/dotfiles/ricing/quickshell/icons/`. Icons follow workspace names rather
-than temporary IDs; ordinary workspaces retain their numeric labels.
-Icon-only font glyphs are centered by their visible ink bounds on both axes,
-without per-button offsets. SVG tint layers are enabled only for visible, loaded icons.
+All shell-owned icons use bundled filled Boxicons SVGs through `BoxIcon.qml`.
+Communication uses `message-circle-dots-2-filled`; music uses `music-library-filled`,
+including missing-artwork placeholders and the sound OSD; other special workspaces
+use `layers-filled`. Icons follow workspace names rather than temporary IDs;
+ordinary workspaces retain their numeric labels.
+SVGs, source attribution and the MIT license live in
+`hosts/nix/dotfiles/ricing/quickshell/icons/`. Tint layers are enabled only for
+visible, loaded icons. App-provided tray, menu and notification icons remain app-owned.
 Microphone, volume, network and Bluetooth remain at the bottom.
 The rail uses filled Boxicons for microphone, sound and notifications:
 `microphone-filled` / `microphone-slash-filled` follow input mute state;
@@ -232,6 +233,11 @@ The rail uses filled Boxicons for microphone, sound and notifications:
 Notification history selects `bell-filled` when nonempty, `bell-check-filled`
 when empty, and `bell-slash-filled` whenever DND is enabled, regardless of count.
 The notification panel and sound OSD use the same corresponding Boxicons assets.
+Network uses `ethernet-filled`, `wifi-filled` or `wifi-slash-filled`, with an
+`alert-triangle-filled` badge for limited/captive connections. Bluetooth uses
+`bluetooth-filled`, with `x-filled` when off or `check-filled` when connected.
+Navigation, dropdowns, playback, settings, clear-all and dismiss controls use the
+same Boxicons family.
 Each of those buttons opens only its own controls: microphone input,
 sound output/media, internet connections, or Bluetooth devices. They use native
 PipeWire, MPRIS, NetworkManager and Bluetooth models. Network credentials use
@@ -300,7 +306,7 @@ Tray motion adapts Material's [Expressive spring tokens](https://raw.githubuserc
 to Qt's native spring integrator: default spatial for expansion/shape,
 default effects for opacity, and fast spatial for icon rotation. Geometry
 and opacity remain separate so transparency does not bounce. The toggle
-uses the bundled `expand_less` icon; workspace selection retains its animated
+uses the bundled `chevron-up-filled` icon; workspace selection retains its animated
 size and rounded-shape transition. Exact geometry and coefficients belong
 in the [Quickshell source](../hosts/nix/dotfiles/ricing/quickshell/)
 and [engineering reference](../.omp/skills/desktop-shell/references/quickshell.md).

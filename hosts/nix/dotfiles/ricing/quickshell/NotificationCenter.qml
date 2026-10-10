@@ -353,7 +353,7 @@ Scope {
                         osdTimeout.restart();
                     }
                     contentItem: Item {
-                        MaterialIcon {
+                        BoxIcon {
                             anchors.centerIn: parent
                             name: "boxicons-speaker-filled"
                             tint: muteButton.prominent ? Theme.textOnPrimary : Theme.primary
@@ -383,12 +383,12 @@ Scope {
                         root.audio.volume = value / 100;
                         osdTimeout.restart();
                     }
-                    MaterialIcon {
+                    BoxIcon {
                         parent: volumeSlider.inactiveTrack
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.top: parent.top
                         anchors.topMargin: 12
-                        name: "music_note"
+                        name: "boxicons-music-library-filled"
                         visible: parent !== null && parent.height >= 48
                     }
                 }
@@ -412,9 +412,9 @@ Scope {
                         border.color: Theme.primary
                     }
                     contentItem: Item {
-                        MaterialIcon {
+                        BoxIcon {
                             anchors.centerIn: parent
-                            name: "tune"
+                            name: "boxicons-slider-filled"
                         }
                     }
                 }

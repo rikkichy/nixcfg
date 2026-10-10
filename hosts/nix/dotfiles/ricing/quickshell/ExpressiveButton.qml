@@ -3,14 +3,13 @@ import QtQuick.Controls
 
 AbstractButton {
     id: control
-    property string glyph: ""
     property bool prominent: false
     property string description: text
     implicitWidth: Math.max(48, label.implicitWidth + 32)
     implicitHeight: 48
     hoverEnabled: true
     focusPolicy: Qt.StrongFocus
-    Accessible.name: description || text || glyph
+    Accessible.name: description || text
     opacity: enabled ? 1 : 0.38
     scale: down ? 0.96 : 1
     Behavior on scale { enabled: !Theme.reducedMotion; SpringAnimation { spring: 4; damping: 0.65; epsilon: 0.001 } }
@@ -25,24 +24,15 @@ AbstractButton {
     }
     contentItem: Text {
         id: label
-        text: (control.glyph ? control.glyph + (control.text ? "  " : "") : "") + control.text
+        text: control.text
         color: control.prominent ? Theme.textOnPrimary : control.checked ? Theme.textOnSecondaryContainer : Theme.textOnSurface
-        font.family: control.glyph && !control.text ? "DepartureMono Nerd Font" : Theme.fontFamily
-        font.styleName: control.glyph && !control.text ? "" : "Bold Rounded"
-        font.pixelSize: control.glyph && !control.text ? 24 : 15
+        font.family: Theme.fontFamily
+        font.styleName: "Bold Rounded"
+        font.pixelSize: 15
         font.weight: Font.DemiBold
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
         textFormat: Text.PlainText
-        TextMetrics {
-            id: glyphMetrics
-            font: label.font
-            text: control.glyph && !control.text ? control.glyph : ""
-        }
-        transform: Translate {
-            x: glyphMetrics.text ? (glyphMetrics.advanceWidth - glyphMetrics.tightBoundingRect.width) / 2 - glyphMetrics.tightBoundingRect.x : 0
-            y: glyphMetrics.text ? (label.height - glyphMetrics.tightBoundingRect.height) / 2 - label.baselineOffset - glyphMetrics.tightBoundingRect.y : 0
-        }
     }
 }

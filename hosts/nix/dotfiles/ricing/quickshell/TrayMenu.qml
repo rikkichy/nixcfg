@@ -44,8 +44,8 @@ Menu {
         leftPadding: 12
         hoverEnabled: true
         indicator: null
-        arrow: MaterialIcon {
-            name: "chevron_right"
+        arrow: BoxIcon {
+            name: "boxicons-chevron-right-filled"
             tint: Theme.textOnSurface
             visible: option.subMenu !== null
             x: option.width - width - 12

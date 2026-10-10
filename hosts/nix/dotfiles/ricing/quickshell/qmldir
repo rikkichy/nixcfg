@@ -2,7 +2,7 @@ singleton Theme 1.0 Theme.qml
 ExpressiveButton 1.0 ExpressiveButton.qml
 ExpressiveSlider 1.0 ExpressiveSlider.qml
 ExpressiveComboBox 1.0 ExpressiveComboBox.qml
-MaterialIcon 1.0 MaterialIcon.qml
+BoxIcon 1.0 BoxIcon.qml
 MenuStyle 1.0 MenuStyle.qml
 TrayMenu 1.0 TrayMenu.qml
 Bar 1.0 Bar.qml

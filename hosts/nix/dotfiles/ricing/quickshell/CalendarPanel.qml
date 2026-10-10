@@ -21,7 +21,7 @@ ColumnLayout {
         Layout.fillWidth: true
         ExpressiveButton {
             contentItem: Item {
-                MaterialIcon { anchors.centerIn: parent; name: "chevron_left"; tint: Theme.textOnSurface }
+                BoxIcon { anchors.centerIn: parent; name: "boxicons-chevron-left-filled"; tint: Theme.textOnSurface }
             }
             description: "Previous month"
             onClicked: calendar.displayed = new Date(calendar.displayed.getFullYear(), calendar.displayed.getMonth() - 1, 1)
@@ -37,7 +37,7 @@ ColumnLayout {
         }
         ExpressiveButton {
             contentItem: Item {
-                MaterialIcon { anchors.centerIn: parent; name: "chevron_right"; tint: Theme.textOnSurface }
+                BoxIcon { anchors.centerIn: parent; name: "boxicons-chevron-right-filled"; tint: Theme.textOnSurface }
             }
             description: "Next month"
             onClicked: calendar.displayed = new Date(calendar.displayed.getFullYear(), calendar.displayed.getMonth() + 1, 1)

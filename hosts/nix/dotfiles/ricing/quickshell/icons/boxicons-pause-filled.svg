@@ -1,0 +1,3 @@
+<!-- Boxicons, MIT; see LICENSE.Boxicons and NOTICE.
+     Modified: white fill for runtime palette tinting; paths unchanged. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><rect width="5" height="12" x="6" y="6" fill="#ffffff" rx="1" ry="1"/><rect width="5" height="12" x="13" y="6" fill="#ffffff" rx="1" ry="1"/></svg>

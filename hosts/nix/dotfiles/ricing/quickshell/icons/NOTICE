@@ -1,24 +1,3 @@
-Material Symbols Rounded and Material Icons Round by Google
-https://github.com/google/material-design-icons
-Licensed under Apache License 2.0; see LICENSE.
-
-Source assets:
-symbols/web/music_note/materialsymbolsrounded/music_note_24px.svg
-symbols/web/layers/materialsymbolsrounded/layers_24px.svg
-symbols/web/tune/materialsymbolsrounded/tune_24px.svg
-src/navigation/arrow_drop_down/materialiconsround/24px.svg
-src/navigation/expand_less/materialiconsround/24px.svg
-src/navigation/chevron_left/materialiconsround/24px.svg
-src/navigation/chevron_right/materialiconsround/24px.svg
-src/av/skip_previous/materialiconsround/24px.svg
-src/av/play_arrow/materialiconsround/24px.svg
-src/av/pause/materialiconsround/24px.svg
-src/av/skip_next/materialiconsround/24px.svg
-src/action/done_all/materialiconsround/24px.svg
-
-Paths and view boxes are unchanged. Root fill is set to white for runtime
-palette tinting in Qt Quick. No network access is used to display these icons.
-
 Boxicons by Boxicons
 https://github.com/box-icons/boxicons-core
 Licensed under MIT; see LICENSE.Boxicons.
@@ -30,6 +9,26 @@ https://api.iconify.design/boxicons/bell-slash-filled.svg
 https://api.iconify.design/boxicons/microphone-filled.svg
 https://api.iconify.design/boxicons/microphone-slash-filled.svg
 https://api.iconify.design/boxicons/speaker-filled.svg
+https://api.iconify.design/boxicons/music-library-filled.svg
+https://api.iconify.design/boxicons/chevron-left-filled.svg
+https://api.iconify.design/boxicons/chevron-right-filled.svg
+https://api.iconify.design/boxicons/chevron-up-filled.svg
+https://api.iconify.design/boxicons/chevron-down-filled.svg
+https://api.iconify.design/boxicons/layers-filled.svg
+https://api.iconify.design/boxicons/skip-previous-filled.svg
+https://api.iconify.design/boxicons/skip-next-filled.svg
+https://api.iconify.design/boxicons/play-filled.svg
+https://api.iconify.design/boxicons/pause-filled.svg
+https://api.iconify.design/boxicons/checks-filled.svg
+https://api.iconify.design/boxicons/x-filled.svg
+https://api.iconify.design/boxicons/wifi-filled.svg
+https://api.iconify.design/boxicons/wifi-slash-filled.svg
+https://api.iconify.design/boxicons/ethernet-filled.svg
+https://api.iconify.design/boxicons/bluetooth-filled.svg
+https://api.iconify.design/boxicons/slider-filled.svg
+https://api.iconify.design/boxicons/check-filled.svg
+https://api.iconify.design/boxicons/alert-triangle-filled.svg
 
 Boxicons paths and view boxes are unchanged. Fill is set to white for runtime
 palette tinting in Qt Quick; SVG width and height are explicitly 24 pixels.
+No network access is used to display these icons.

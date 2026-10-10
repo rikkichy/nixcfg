@@ -23,14 +23,14 @@ ComboBox {
         verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
     }
-    indicator: MaterialIcon {
+    indicator: BoxIcon {
         width: 24
         height: 24
         x: control.mirrored ? control.padding : control.width - width - control.padding
         y: (control.height - height) / 2
         rotation: control.popup.visible ? 180 : 0
         opacity: control.enabled ? 1 : 0.38
-        name: "arrow_drop_down"
+        name: "boxicons-chevron-down-filled"
         tint: Theme.textOnSurfaceVariant
         Behavior on rotation {
             NumberAnimation {

@@ -184,7 +184,7 @@ ShellRoot {
                             border.color: Theme.primary
                         }
                         contentItem: Item {
-                            MaterialIcon {
+                            BoxIcon {
                                 anchors.centerIn: parent
                                 name: notificationCenter.dnd ? "boxicons-bell-slash-filled" : "boxicons-bell-filled"
                                 tint: dndButton.checked ? Theme.textOnSurface : Theme.textOnSurfaceVariant
@@ -192,7 +192,13 @@ ShellRoot {
                         }
                     }
                     ExpressiveButton {
-                        text: "×"
+                        contentItem: Item {
+                            BoxIcon {
+                                anchors.centerIn: parent
+                                name: "boxicons-x-filled"
+                                tint: Theme.textOnSurface
+                            }
+                        }
                         description: "Close panel"
                         onClicked: desktop.closePanel()
                     }
