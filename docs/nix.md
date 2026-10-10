@@ -219,10 +219,12 @@ hidden; occupied ordinary and special workspaces appear beneath the clock.
 Tray icons expand vertically upward without moving the clock or overlapping
 the notification button; Escape or the toggle folds them away.
 Special workspaces use Google's official Material Symbols Rounded:
-`communication` uses `chat`, `music` uses `music_note`, and other special
+`communication` uses the rounded `chat_bubble`, `music` uses `music_note`, and other special
 workspaces use `layers`. Bundled SVGs and their Apache-2.0 license live in
 `hosts/nix/dotfiles/ricing/quickshell/icons/`. Icons follow workspace names rather than temporary IDs;
 ordinary workspaces retain their numeric labels.
+Icon-only font glyphs are centered by their visible ink bounds on both axes,
+without per-button offsets. SVG tint layers are enabled only for visible, loaded icons.
 Microphone, volume, network and Bluetooth remain at the bottom.
 Each of those buttons opens only its own controls: microphone input,
 sound output/media, internet connections, or Bluetooth devices. They use native

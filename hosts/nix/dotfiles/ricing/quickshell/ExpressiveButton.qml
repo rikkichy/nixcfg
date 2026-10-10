@@ -4,7 +4,6 @@ import QtQuick.Controls
 AbstractButton {
     id: control
     property string glyph: ""
-    property bool centerGlyphInk: false
     property bool prominent: false
     property string description: text
     implicitWidth: Math.max(48, label.implicitWidth + 32)
@@ -39,10 +38,11 @@ AbstractButton {
         TextMetrics {
             id: glyphMetrics
             font: label.font
-            text: control.centerGlyphInk ? control.glyph : ""
+            text: control.glyph && !control.text ? control.glyph : ""
         }
         transform: Translate {
-            x: control.centerGlyphInk ? (glyphMetrics.advanceWidth - glyphMetrics.tightBoundingRect.width) / 2 - glyphMetrics.tightBoundingRect.x : 0
+            x: glyphMetrics.text ? (glyphMetrics.advanceWidth - glyphMetrics.tightBoundingRect.width) / 2 - glyphMetrics.tightBoundingRect.x : 0
+            y: glyphMetrics.text ? (label.height - glyphMetrics.tightBoundingRect.height) / 2 - label.baselineOffset - glyphMetrics.tightBoundingRect.y : 0
         }
     }
 }

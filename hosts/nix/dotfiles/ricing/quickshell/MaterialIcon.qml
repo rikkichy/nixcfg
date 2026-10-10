@@ -11,7 +11,7 @@ Image {
     sourceSize.width: width
     sourceSize.height: height
     fillMode: Image.PreserveAspectFit
-    layer.enabled: true
+    layer.enabled: visible && status === Image.Ready
     layer.effect: MultiEffect {
         colorization: 1
         colorizationColor: icon.tint

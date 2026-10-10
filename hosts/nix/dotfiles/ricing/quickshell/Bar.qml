@@ -110,7 +110,7 @@ PanelWindow {
                         id: workspaceButton
                         required property var modelData
                         readonly property bool selected: modelData === bar.activeWorkspace
-                        readonly property string workspaceIcon: modelData.name === "special:communication" ? "chat" : modelData.name === "special:music" ? "music_note" : modelData.id < 0 ? "layers" : ""
+                        readonly property string workspaceIcon: modelData.name === "special:communication" ? "chat_bubble" : modelData.name === "special:music" ? "music_note" : modelData.id < 0 ? "layers" : ""
                         implicitHeight: selected ? 56 : 48
                         checked: selected
                         prominent: selected
@@ -314,7 +314,6 @@ PanelWindow {
                 anchors.bottom: clockButton.top
                 anchors.bottomMargin: 8
                 glyph: shell.notifications.dnd ? "󰂛" : "󰂚"
-                centerGlyphInk: shell.notifications.dnd
                 checked: shell.panel === "notifications" && shell.panelScreen === bar.screen
                 description: (shell.notifications.dnd ? "Do not disturb. " : "") + shell.notifications.count + " notifications"
                 onClicked: shell.togglePanel("notifications", bar.screen, notificationsButton)
@@ -390,7 +389,6 @@ PanelWindow {
                 RailButton {
                     id: networkButton
                     glyph: !bar.networkDevice ? "󰖪" : Networking.connectivity === NetworkConnectivity.Portal || Networking.connectivity === NetworkConnectivity.Limited ? "󰖫" : bar.networkDevice.type === DeviceType.Wired ? "󰈀" : "󰖩"
-                    centerGlyphInk: glyph === "󰈀"
                     description: (bar.networkDevice ? bar.networkDevice.name + ": " + NetworkConnectivity.toString(Networking.connectivity) : "Network disconnected") + ". Open network controls"
                     onClicked: shell.togglePanel("network", bar.screen, networkButton)
                 }
