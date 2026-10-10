@@ -218,14 +218,20 @@ clock/calendar, and occupied workspaces, in that order. Empty workspaces are
 hidden; occupied ordinary and special workspaces appear beneath the clock.
 Tray icons expand vertically upward without moving the clock or overlapping
 the notification button; Escape or the toggle folds them away.
-Special workspaces use Google's official Material Symbols Rounded:
-`communication` uses the rounded `chat_bubble`, `music` uses `music_note`, and other special
-workspaces use `layers`. Bundled SVGs and their Apache-2.0 license live in
-`hosts/nix/dotfiles/ricing/quickshell/icons/`. Icons follow workspace names rather than temporary IDs;
-ordinary workspaces retain their numeric labels.
+Communication uses Boxicons `message-circle-dots-2-filled`; music and other
+special workspaces use Material Symbols Rounded `music_note` and `layers`.
+Bundled SVGs and their Apache-2.0/MIT licenses live in
+`hosts/nix/dotfiles/ricing/quickshell/icons/`. Icons follow workspace names rather
+than temporary IDs; ordinary workspaces retain their numeric labels.
 Icon-only font glyphs are centered by their visible ink bounds on both axes,
 without per-button offsets. SVG tint layers are enabled only for visible, loaded icons.
 Microphone, volume, network and Bluetooth remain at the bottom.
+The rail uses filled Boxicons for microphone, sound and notifications:
+`microphone-filled` / `microphone-slash-filled` follow input mute state;
+`speaker-filled` stays fixed regardless of output volume or mute state.
+Notification history selects `bell-filled` when nonempty, `bell-check-filled`
+when empty, and `bell-slash-filled` whenever DND is enabled, regardless of count.
+The notification panel and sound OSD use the same corresponding Boxicons assets.
 Each of those buttons opens only its own controls: microphone input,
 sound output/media, internet connections, or Bluetooth devices. They use native
 PipeWire, MPRIS, NetworkManager and Bluetooth models. Network credentials use

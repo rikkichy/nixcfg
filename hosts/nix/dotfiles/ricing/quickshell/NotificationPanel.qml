@@ -24,7 +24,7 @@ Item {
                 visible: root.center.count === 0
                 MaterialIcon {
                     Layout.alignment: Qt.AlignHCenter
-                    name: "notifications_none"
+                    name: "boxicons-bell-check-filled"
                     width: 64
                     height: 64
                     tint: Theme.textOnSurfaceVariant

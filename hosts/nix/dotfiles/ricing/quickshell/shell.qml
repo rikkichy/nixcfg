@@ -186,7 +186,7 @@ ShellRoot {
                         contentItem: Item {
                             MaterialIcon {
                                 anchors.centerIn: parent
-                                name: notificationCenter.dnd ? "notifications_off" : "notifications_active"
+                                name: notificationCenter.dnd ? "boxicons-bell-slash-filled" : "boxicons-bell-filled"
                                 tint: dndButton.checked ? Theme.textOnSurface : Theme.textOnSurfaceVariant
                             }
                         }

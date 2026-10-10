@@ -75,6 +75,18 @@ PanelWindow {
         }
     }
 
+    component IconRailButton: RailButton {
+        id: iconButton
+        required property string iconName
+        contentItem: Item {
+            MaterialIcon {
+                anchors.centerIn: parent
+                name: iconButton.iconName
+                tint: iconButton.prominent ? Theme.textOnPrimary : iconButton.checked ? Theme.textOnSecondaryContainer : Theme.textOnSurface
+            }
+        }
+    }
+
     Flickable {
         id: scroll
         anchors.fill: parent
@@ -110,7 +122,7 @@ PanelWindow {
                         id: workspaceButton
                         required property var modelData
                         readonly property bool selected: modelData === bar.activeWorkspace
-                        readonly property string workspaceIcon: modelData.name === "special:communication" ? "chat_bubble" : modelData.name === "special:music" ? "music_note" : modelData.id < 0 ? "layers" : ""
+                        readonly property string workspaceIcon: modelData.name === "special:communication" ? "boxicons-message-circle-dots-2-filled" : modelData.name === "special:music" ? "music_note" : modelData.id < 0 ? "layers" : ""
                         implicitHeight: selected ? 56 : 48
                         checked: selected
                         prominent: selected
@@ -309,11 +321,11 @@ PanelWindow {
                     verticalAlignment: Text.AlignVCenter
                 }
             }
-            RailButton {
+            IconRailButton {
                 id: notificationsButton
                 anchors.bottom: clockButton.top
                 anchors.bottomMargin: 8
-                glyph: shell.notifications.dnd ? "󰂛" : "󰂚"
+                iconName: shell.notifications.dnd ? "boxicons-bell-slash-filled" : shell.notifications.count > 0 ? "boxicons-bell-filled" : "boxicons-bell-check-filled"
                 checked: shell.panel === "notifications" && shell.panelScreen === bar.screen
                 description: (shell.notifications.dnd ? "Do not disturb. " : "") + shell.notifications.count + " notifications"
                 onClicked: shell.togglePanel("notifications", bar.screen, notificationsButton)
@@ -345,9 +357,9 @@ PanelWindow {
                 anchors.bottom: parent.bottom
                 spacing: 4
 
-                RailButton {
+                IconRailButton {
                     id: microphoneButton
-                    glyph: bar.inputAudio?.muted ? "󰍭" : "󰍬"
+                    iconName: bar.inputAudio?.muted ? "boxicons-microphone-slash-filled" : "boxicons-microphone-filled"
                     checked: bar.inputAudio !== null && !bar.inputAudio.muted
                     description: bar.inputAudio ? "Microphone" + (bar.inputAudio.muted ? ", muted" : "") + ". Open input controls; right click to mute" : "Microphone controls; no input device available"
                     onClicked: shell.togglePanel("microphone", bar.screen, microphoneButton)
@@ -358,9 +370,9 @@ PanelWindow {
                     }
                 }
 
-                RailButton {
+                IconRailButton {
                     id: volumeButton
-                    glyph: !bar.outputAudio || bar.outputAudio.muted ? "󰖁" : bar.outputAudio.volume < 0.5 ? "󰕿" : "󰕾"
+                    iconName: "boxicons-speaker-filled"
                     description: bar.outputAudio ? "Volume " + Math.round(bar.outputAudio.volume * 100) + "%" + (bar.outputAudio.muted ? ", muted" : "") + ". Open sound controls; scroll to adjust; right click or M to mute" : "Sound controls; no audio output"
                     checked: shell.panel === "sound" && shell.panelTrigger === volumeButton
                     onClicked: shell.togglePanel("sound", bar.screen, volumeButton)

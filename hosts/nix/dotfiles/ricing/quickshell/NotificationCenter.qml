@@ -355,7 +355,7 @@ Scope {
                     contentItem: Item {
                         MaterialIcon {
                             anchors.centerIn: parent
-                            name: root.lastMuted ? "volume_off" : "volume_up"
+                            name: "boxicons-speaker-filled"
                             tint: muteButton.prominent ? Theme.textOnPrimary : Theme.primary
                         }
                     }
