@@ -112,9 +112,6 @@
     autoPrune.enable = true;
   };
 
-  services.printing = {
-    enable = true;
-    listenAddresses = [ "127.0.0.1:631" ];
-  };
+  services.printing.enable = false;
 
 }

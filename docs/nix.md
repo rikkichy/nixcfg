@@ -126,11 +126,10 @@ runs during NixOS activation.
 
 ## Printing
 
-`hosts/nix/modules/system/applications.nix` keeps CUPS enabled on
-`127.0.0.1:631` and its local Unix socket. The explicit IPv4 loopback listener
-matches this host's disabled IPv6 policy without exposing printing to the LAN.
-After separately approved activation, check fresh `journalctl -u cups.service`
-output for listener errors; source edits alone do not change the running daemon.
+`hosts/nix/modules/system/applications.nix` disables CUPS. The evaluated system
+has no CUPS service or socket and declares no printing listener. Source edits
+do not stop a running daemon; applying this policy requires separately approved
+activation.
 
 ## Notes and passwords
 
@@ -330,12 +329,23 @@ socket-lifetime correction required with the pinned Qt.
 `hosts/nix/lighting.nix` runs `openrgb-off` once at boot, without a GUI, tray app or
 SDK server. It sets both ENE RAM modules and the Gainward RTX 3090 to Off, and
 sends black in Direct mode to MSI Mystic Light's JAF/JARGB headers.
-Wooting and Elgato detectors are disabled; explicit device-name selectors also
-exclude the Wooting keyboard, Stream Deck and Wave XLR from lighting commands.
+Detection is limited to the package's registered `ENE SMBus DRAM`,
+`Gainward GeForce RTX 3090 Phoenix`, and `MSI Mystic Light X870` detectors.
+The complete detector settings are generated in the Nix build sandbox, not at
+boot; every other detector, including Wooting and Elgato, is disabled.
+Explicit device-name selectors limit the lighting commands to those controllers.
 Other hardware status indicators are outside OpenRGB's supported controls.
 
-After a rebuild, reapply with `sudo systemctl start openrgb-off`.
-Inspect failures with `journalctl -u openrgb-off`. The root-only service does not
+The service waits for module loading and udev triggering, then runs as `Type=exec`:
+boot targets wait for successful process execution, not RGB detection/completion.
+It has a 60-second runtime bound and reports failures in the journal. Controller
+I/O still takes time; lights can remain on briefly while login proceeds.
+Firmware/loader time is outside this service's control. No fixed delay is added.
+
+After separately approved activation, reapply with
+`sudo systemctl start --wait openrgb-off`; `--wait` waits for the lighting process
+to finish. Inspect failures with `journalctl -u openrgb-off`.
+The root-only service does not
 require user-facing OpenRGB udev permissions. If a non-libc allocator is enabled,
 its private mount namespace hides the allocator preload only for this service.
 

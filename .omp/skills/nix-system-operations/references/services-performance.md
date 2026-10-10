@@ -112,7 +112,9 @@ See [desktop-applications](../../desktop-applications/SKILL.md) for package scop
 is selected: its libusb backend uses `RTLD_DEEPBIND`, conflicting with the global
 allocator preload. `openrgb-off` then bind-mounts an empty file over the preload
 source in its private mount namespace. The bounded root-only
-oneshot has no SDK server, GUI or polling; see [RGB lighting](../../../../docs/nix.md#rgb-lighting) for devices/actions and permission boundaries.
+`Type=exec` service has no SDK server, GUI or polling and does not wait for
+lighting completion before releasing boot targets. Its detector allowlist comes
+from the package registry at build time; see [RGB lighting](../../../../docs/nix.md#rgb-lighting) for devices/actions and permission boundaries.
 
 `hosts/nix/boot.nix` uses the cached latest kernel with `vsyscall=none`,
 `slab_nomerge`, and `page_alloc.shuffle=1`; `init_on_free` is deliberately absent
