@@ -150,8 +150,8 @@ rules:
   - DOMAIN-SUFFIX,patreonusercontent.com,REJECT
   - DOMAIN-SUFFIX,noko.chat,PROXY
   - DOMAIN-SUFFIX,noko.chat,REJECT
-  - DOMAIN-SUFFIX,anime-365.ru,PROXY
-  - DOMAIN-SUFFIX,anime-365.ru,REJECT
+  - DOMAIN-SUFFIX,smotret-anime.co,PROXY
+  - DOMAIN-SUFFIX,smotret-anime.co,REJECT
   - DOMAIN-SUFFIX,6b6t.org,PROXY
   - DOMAIN-SUFFIX,6b6t.org,REJECT
   - DOMAIN-SUFFIX,enderdash.com,PROXY

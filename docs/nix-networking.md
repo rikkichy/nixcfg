@@ -28,9 +28,9 @@ authentication. Browser origins are restricted to that localhost origin.
 ### Split routing and server selection
 
 YouTube, Discord, Roblox/Sober, Instagram, Proton Mail, Spotify, Bitwarden, Pinterest,
-noko.chat, anime-365.ru, 6b6t.org, enderdash.com and cyrisia.com use the selected proxy server; other
+noko.chat, smotret-anime.co, 6b6t.org, enderdash.com and cyrisia.com use the selected proxy server; other
 destinations use `DIRECT`. The listed services use Mihomo's geosite data except
-noko.chat, anime-365.ru, 6b6t.org, enderdash.com and cyrisia.com, whose domain-suffix rules include all
+noko.chat, smotret-anime.co, 6b6t.org, enderdash.com and cyrisia.com, whose domain-suffix rules include all
 subdomains (including api.noko.chat and dl.noko.chat).
 Cachix and its `*.cachix.org` cache endpoints use `DIRECT` in scoped mode.
 Patreon's website and API use `patreon.com`; its CDN uses `patreonusercontent.com`
