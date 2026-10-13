@@ -69,8 +69,9 @@ loose, and LAN application ports are scoped to the physical interfaces. Do not
 turn those into unrestricted firewall openings to fix tunnel routing.
 The controller binds `127.0.0.1:9090`, mixed proxy has `allow-lan: false`, and
 Mihomo DNS and TUN DNS hijacking are disabled. Resolution uses the system DNS;
-domain routing relies on sniffing. The web dashboard is disabled; the controller
-API serves the picker and CLI. Controller status is not tunnel proof: inspect
+routing uses destination IPs, with process lookup and sniffing disabled.
+The web dashboard is disabled; the controller API serves the picker and CLI.
+Controller status is not tunnel proof: inspect
 `ip -br addr show mihomo` for an actual IPv4 address; `UP` with only link-local
 IPv6 is not a working tunnel.
 
@@ -78,22 +79,26 @@ All controller requests must use `--header @/run/mihomo-api.header`; never expan
 the token into command arguments or log it. Browser CORS permits only the
 localhost controller origin. See the operator guide for ownership and lifecycle.
 
-Scoped mode uses service-selective rules with `MATCH,DIRECT`; ordinary Nix
-downloads and Git pushes go direct. `vpn mode global` selects `PROXY` in `GLOBAL`
+Scoped mode uses Re:filter's `ipsum.lst` with `MATCH,DIRECT`; loopback/private LAN
+exclusions precede the list. Broad CDN ranges can proxy unrelated destinations.
+The HTTP `ipcidr`/`text` provider refreshes directly every six hours and caches
+`rules/refilter-ips.txt` in the service state directory. With no cache, first startup
+needs the publisher. Check the `refilter-ips` entry in `/providers/rules` for loaded coverage.
+Domain lists and RunetFreedom IP rules are not enabled. Hostname-addressed
+mixed-proxy requests resolve for IP matching; keep `no-resolve` off the list rules.
+`vpn mode global` selects `PROXY` in `GLOBAL`
 before changing Mihomo's mode, so global traffic uses the same subscription/server
 instead of `GLOBAL`'s default `DIRECT`. `vpn mode scoped` restores rule mode.
 Both changes close tracked connections so existing traffic follows the new policy.
 The mode is runtime-only; the template starts scoped. Do not stop Mihomo to change
 routing: that removes the tunnel. `profile.store-selected` persists server choices
 in `cache.db` under the service's state directory.
-Native Discord is matched by its `.Discord-wrapped` executable, including
-IP-addressed voice UDP. Process lookup requires `ProtectProc=default` and
-`CAP_SYS_PTRACE`/`CAP_DAC_READ_SEARCH` alongside `CAP_NET_ADMIN`; retain
-`DynamicUser` and the remaining sandbox. These are broad cross-user inspection
-privileges, not Discord-only access. Browser Discord is only domain-routed.
-`scripts/mihomo-routing-test.py` checks same-user lookup and UDP fail-closed
-behavior in isolated Mihomo; cross-user service lookup needs live verification
-after approved activation. See the operator guide for this security boundary.
+`scripts/mihomo-routing-test.py` checks IP-list selection, mixed-proxy hostname
+resolution, direct fallback, LAN precedence and UDP fail-closed behavior in
+isolated Mihomo with synthetic data. Its loopback exclusion is narrowed to exercise
+direct fallback without public traffic. The system service needs no cross-user
+process-inspection privileges. Live TUN/application paths require separate
+verification after approved activation.
 
 ## Subscription and node failure modes
 
@@ -105,9 +110,9 @@ after approved activation. See the operator guide for this security boundary.
 - Keep `proxy: DIRECT` on **both** providers. Otherwise Mihomo can fetch its
   subscription through the very tunnel it needs to repair: a bad update then
   cannot self-recover and may surface only as EOF.
-- Child selectors use `empty-fallback: REJECT`. Service proxy rules are paired
-  with rejection rules so a node without UDP support cannot fall through to
-  unrelated traffic's `MATCH,DIRECT`. Keep the target and rejection pairs aligned.
+- Child selectors use `empty-fallback: REJECT`. The IP-list proxy rule is paired
+  with a rejection rule so a node without UDP support cannot fall through to
+  unrelated traffic's `MATCH,DIRECT`. Keep the pair aligned.
 - HTTP health checks require 204 but do not test UDP relay; lazy checks can leave
   inactive-provider latency stale. Preserve manual node selection.
 - Node latency needs membership **and** health history. Top-level `PROXY`
