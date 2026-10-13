@@ -80,6 +80,7 @@
         attic-client = nixpkgs.legacyPackages.${system}.attic-client;
         install = nixpkgs.legacyPackages.${system}.callPackage ./install.nix { };
         hysteria-setup = nixpkgs.legacyPackages.${system}.callPackage ./hysteria-setup.nix { };
+        attic-setup = nixpkgs.legacyPackages.${system}.callPackage ./attic-setup.nix { };
         vts-opendeck = inputs.vts-opendeck.packages.${system}.default;
       };
       apps.${system}.install = {

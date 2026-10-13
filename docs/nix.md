@@ -414,6 +414,13 @@ expecting matching downloads. Proprietary application and full-host closures
 are not public cache targets. A binary cache moves compilation to CI; it does
 not make a new patch/input revision available before its first build finishes.
 
+After server provisioning, guided desktop setup uses
+`nix run path:/etc/nixos#attic-setup -- client`; GitHub publication credentials
+use the same command with `github`. Run both as your normal user with the SSH
+YubiKey connected. The helper verifies the saved server public key over SSH
+against the HTTPS cache and asks before trust installation, activation or
+GitHub changes. DNS and inbound server TCP 80/443 remain operator prerequisites.
+
 To avoid ordinary local compilation, inspect the build plan after updating:
 
 ```sh

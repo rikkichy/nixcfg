@@ -260,142 +260,115 @@ separate exported package is not a cache target (the desktop uses Flatpak).
 If proprietary caching becomes necessary, first establish redistribution rights
 or design a separate authenticated private cache; do not add those roots here.
 
-### Operator provisioning (not automatic)
+### Guided setup
 
-1. Point the **DNS-only A record** `cache.kror.net` at the server's public IPv4
-   address. Forward TCP 80 and 443 to this server if behind NAT; do not publish
-   an AAAA record unless IPv6 is actually reachable (the shared server policy
-   disables IPv6). Keep DNS/proxy providers from imposing an upload-size cap.
-   Public inbound reachability is a prerequisite, not something Nix activation
-   can supply. Keep LAN SSH and console recovery available.
-2. On the server, generate the JWT key in a root Bash shell, outside the checkout.
-   Use the pinned OpenSSL package; preserve any existing key instead of replacing it:
+`attic-setup.nix` packages `scripts/attic-setup.sh` and its tools. Run the server
+mode through the server console or an existing trusted SSH connection:
 
-   ```bash
-   sudo bash
-   nix shell 'path:/etc/nixos#nixosConfigurations.nixos-server.pkgs.openssl' --command bash
-   set -euo pipefail
-   umask 077
-   install -d -m 0700 /etc/attic
-   test ! -e /etc/attic/server.env
-   test ! -L /etc/attic/server.env
-   tmp=$(mktemp /etc/attic/server.env.XXXXXX)
-   trap 'rm -f "$tmp"' EXIT
-   { printf 'ATTIC_SERVER_TOKEN_RS256_SECRET_BASE64='; openssl genrsa -traditional 4096 | base64 -w0; printf '\n'; } > "$tmp"
-   install -m 0600 -o root -g root "$tmp" /etc/attic/server.env
-   rm "$tmp"
-   trap - EXIT
-   exit
-   exit
-   ```
-
-   Never print this file. Replacing the JWT key invalidates every existing token.
-   Existing key/database recovery is a restore operation, not rerunning generation.
-3. After separate activation approval, change `services.atticd.enable = false`
-   to `true` in the server module and use
-   `nh os switch path:/etc/nixos --hostname nixos-server`. Enabling accepts the
-   ACME terms; optionally set a real operator contact via
-   `security.acme.defaults.email` before activation. Check
-   `systemctl status atticd nginx` and `journalctl -u atticd -u nginx`;
-   certificate issuance also requires the external DNS/port prerequisites.
-4. Create the cache once, using a short-lived admin token scoped only to `nixcfg`.
-   The native `atticd-atticadm` helper reads the root-only environment file via
-   systemd. Tokens are written to protected runtime files, never command arguments:
-
-   ```bash
-   sudo bash
-   set -euo pipefail
-   umask 077
-   install -d -m 0700 /run/attic-bootstrap/attic
-   atticd-atticadm make-token --sub bootstrap --validity '2 hours' \
-     --pull nixcfg --push nixcfg --create-cache nixcfg \
-     --configure-cache nixcfg --configure-cache-retention nixcfg \
-     > /run/attic-bootstrap/admin-token
-   export XDG_CONFIG_HOME=/run/attic-bootstrap
-   cat > "$XDG_CONFIG_HOME/attic/config.toml" <<'EOF'
-   default-server = "kror"
-   [servers.kror]
-   endpoint = "https://cache.kror.net/"
-   token-file = "/run/attic-bootstrap/admin-token"
-   EOF
-   attic cache create kror:nixcfg --public
-   attic cache configure kror:nixcfg --retention-period '90 days'
-   attic cache info kror:nixcfg
-   curl --fail --silent --show-error --header 'Host: cache.kror.net' \
-     http://127.0.0.1:8080/nixcfg/attic-cache-info \
-     | jq -er '.public_key' > /etc/attic/nixcfg.pub
-   cat /etc/attic/nixcfg.pub
-   rm -rf /run/attic-bootstrap
-   exit
-   ```
-
-   Record that **public** key through the authenticated server console/SSH path.
-   Do not recreate an existing cache or regenerate its signing key: that changes
-   client trust. The API's public key fetched from the same unverified endpoint
-   is not an independent identity check.
-5. On the server as `ri`, start Bash and create the limited publication token:
-
-   ```bash
-   bash
-   umask 077
-   install -d -m 0700 "$HOME/.config/attic"
-   sudo atticd-atticadm make-token --sub github-nixcfg --validity '90 days' \
-     --pull nixcfg --push nixcfg > "$HOME/.config/attic/ci-token"
-   exit
-   ```
-
-   On the authenticated GitHub client, pipe it directly to the repository secret:
-
-   ```bash
-   ssh nixos-server 'cat ~/.config/attic/ci-token' \
-     | gh secret set ATTIC_TOKEN --repo rikkichy/nixcfg
-   ssh nixos-server 'sudo cat /etc/attic/nixcfg.pub' \
-     | gh variable set ATTIC_PUBLIC_KEY --repo rikkichy/nixcfg
-   ssh nixos-server 'rm ~/.config/attic/ci-token'
-   ```
-
-   Compare the variable's public key with the recorded server key before building.
-   Renew the token/secret before 90 days; it cannot configure/create/destroy caches
-   or delete paths. Individual JWT revocation is not provided by this setup;
-   expiration bounds access, while rotating the JWT key revokes **all** tokens.
-   GitHub currently has no cache secret/variable; publication fails visibly until
-   both are provisioned and the public endpoint returns the matching key.
-
-### Desktop trust and CI use
-
-Only Linux desktop `nix` includes optional root-owned `/etc/nix/attic.conf`.
-Missing file means official-cache-only behavior; no guessed key, failed endpoint,
-new trusted user or unsigned fallback is configured. After recording the authentic
-server key, run on the desktop in Bash:
-
-```bash
-read -r -p 'Paste the independently verified nixcfg public key: ' key
-[[ "$key" =~ ^nixcfg:[A-Za-z0-9+/]{43}=$ ]] || exit 1
-sudo install -d -m 0755 /etc/nix
-{ printf 'extra-substituters = https://cache.kror.net/nixcfg\n'; printf 'extra-trusted-public-keys = %s\n' "$key"; } \
-  | sudo install -m 0644 -o root -g root /dev/stdin /etc/nix/attic.conf
+```sh
+cd /etc/nixos
+git pull --ff-only
+sudo nix run path:/etc/nixos#attic-setup -- server
 ```
 
-Activate the desktop source include with separately approved `nh os switch`.
-If already activated, a separately approved `sudo systemctl restart nix-daemon`
-loads a newly provisioned include. That file contains only public trust metadata;
-never a JWT or private key. Official substituters/keys remain in place and
-`require-sigs` stays enabled. Do not use `attic use` with an upload credential to
-configure anonymous download clients. Server/Darwin trust is intentionally unchanged.
+Before approving provisioning:
+
+- Point the **DNS-only A record** `cache.kror.net` at this server's public IPv4.
+- Allow/forward inbound **TCP 80 and 443**. CGNAT requires a reachable ingress
+  arrangement; buying a domain does not provide one.
+- Do not publish AAAA unless IPv6 is reachable; the shared server configuration
+  disables IPv6. Keep LAN SSH and console recovery available.
+
+The helper asks before provisioning credentials/enabling the checkout module,
+before activation, before public-cache setup, and before generating the scoped
+GitHub upload token. An already active Attic/Nginx deployment is validated without
+another rebuild. Declining an initial activation leaves a command to run later;
+rerun the helper afterward to finish cache setup. Enabling the server accepts ACME
+terms; set `security.acme.defaults.email` separately if a contact is wanted.
+Inspect failures with `journalctl -u atticd -u nginx`.
+
+Existing JWT credentials and cache signing identity are preserved. A changed
+saved public key, unsafe permissions/path, private cache, or incompatible
+endpoint stops setup instead of silently replacing trust. A pending upload token
+is retained until credential transfer succeeds; private keys/tokens never enter the checkout,
+Nix store, command arguments or printed output. The **public** cache key is
+safe to display. Private temporary files are removed when the helper exits.
+
+The root-owned `/var/lib/attic-bootstrap` directory contains the public
+`nixcfg.pub` and a mode-0600 `ci-token` owned by `ri`. These let desktop setup
+retrieve the independently recorded public key and let GitHub setup transfer the
+upload token without remote sudo. The JWT key remains root-only in `/etc/attic`.
+
+On desktop **nix**, update the checkout, connect the SSH YubiKey and run:
+
+```sh
+cd /etc/nixos
+git pull --ff-only
+nix run path:/etc/nixos#attic-setup -- github
+```
+
+Wait for successful cache publication before approving desktop activation:
+
+```sh
+nix run path:/etc/nixos#attic-setup -- client
+```
+
+Both modes ask for the server's LAN IP/DNS name (`nixos-server.local` by
+default). Provision the existing `~/.ssh/nixos-server` FIDO handle first;
+verify the server host fingerprint through its console before accepting a new
+SSH identity. SSH agent forwarding is disabled for these transfers. The helper
+retrieves the saved public key over SSH and compares it to the HTTPS cache
+identity before installing trust or publishing credentials.
+
+`client` asks before writing root-owned `/etc/nix/attic.conf` and separately
+before desktop activation/daemon restart. An identical existing file is reused;
+a different file or symlink is refused rather than clobbered. Missing include
+means official-cache-only behavior until activation. This file contains only
+`extra-substituters` and `extra-trusted-public-keys`: no JWT or private key.
+Official caches/signature checking remain enabled; no trusted user is added.
+Server/Darwin trust is unchanged.
+
+For the first activation, the helper builds with the verified cache URL/key as
+root-only Nix invocation options, then activates that exact snapshot through
+`nh`. This permits downloads before the optional include is active, without
+rewriting immutable `nix.conf` or granting a trusted user. Uncached outputs can
+still build locally; publish matching committed inputs first.
+
+`github` requires an authenticated `gh` session and asks before setting
+`ATTIC_PUBLIC_KEY` and the scoped `ATTIC_TOKEN` on `rikkichy/nixcfg`. The token
+travels through protected files/stdin, never a pasted secret or command argument.
+It asks separately before removing the server's staged token and before starting
+publication of all targets. Failed credential transfer or cancellation retains the
+staged token for retry. Renew the 90-day token by rerunning server mode after
+consuming the staged token, then rerunning GitHub mode. It can pull/push only
+`nixcfg`, not create/configure/destroy caches or delete paths. Expiration bounds
+access; rotating the JWT key revokes **all** tokens and is not a renewal step.
+Approved remote token cleanup uses a terminal and `sudo` to remove the file from
+its root-owned directory. With agent forwarding disabled, remote sudo may
+require the server account's password fallback.
+
+The isolated safety check uses the same pinned OpenSSL and jq packages:
+
+```sh
+nix shell --no-write-lock-file \
+  'path:.#nixosConfigurations.nix.pkgs.openssl' \
+  'path:.#nixosConfigurations.nix.pkgs.jq' \
+  --command bash scripts/attic-setup-test.sh
+```
+
+### CI use and download verification
 
 `.github/workflows/package-cache.yml` publishes on relevant pushes to `main`
 and manual dispatch. It builds each selected target separately (two concurrent
 runners), keeps GC roots until upload, and uploads its runtime closure with Attic.
-CI reuses this cache using the independently provisioned `ATTIC_PUBLIC_KEY`,
-never trusting a freshly discovered remote key or disabling Nix signatures.
-The preflight checks that the upload secret exists; build steps receive no token.
-The upload step reads it from a private file and removes that file on exit.
-Actions are pinned to GitHub-verified commit revisions.
+CI uses the independently provisioned `ATTIC_PUBLIC_KEY`, never a newly discovered
+remote key or disabled signatures. The preflight checks that the upload secret
+exists; build steps receive no token. The upload step reads it from a private
+file and removes that file on exit. Actions are pinned to commit revisions.
 
-CI uses the **committed** `flake.lock` at the checked-out revision. Uncommitted
-local input updates do not match those published derivations until the operator
-intentionally commits them; do not stage unrelated local lock changes to make
-the cache appear populated. A successful evaluation is not a built/published cache.
+CI builds the **committed** `flake.lock`. Local uncommitted input updates do not
+match published derivations until deliberately committed. Wait for publication
+before expecting matching downloads; evaluation alone is not a populated cache.
 
 ```bash
 gh workflow run package-cache.yml --repo rikkichy/nixcfg -f target=fuzzel
