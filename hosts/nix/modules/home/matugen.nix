@@ -303,6 +303,32 @@ in
       Before = [ "wallpaper-restore.service" ];
     };
     Service = {
+      # User-unit mount protections require an unprivileged user namespace.
+      PrivateUsers = true;
+      ProtectSystem = "strict";
+      ProtectHome = "read-only";
+      PrivateTmp = true;
+      NoNewPrivileges = true;
+      CapabilityBoundingSet = "";
+      AmbientCapabilities = "";
+      RestrictAddressFamilies = [ "AF_UNIX" ];
+      Environment = [ "XDG_CACHE_HOME=${config.xdg.cacheHome}" ];
+      # Only this trusted mkdir runs outside the mount sandbox, before its bind paths exist.
+      ExecStartPre = "+${pkgs.coreutils}/bin/mkdir -p -- ${lib.escapeShellArg "${config.xdg.cacheHome}/awww"}";
+      ReadWritePaths = [
+        "${config.xdg.cacheHome}/awww"
+        # awww creates/removes its display-named IPC socket directly in XDG_RUNTIME_DIR.
+        "%t"
+      ];
+      InaccessiblePaths = [
+        "-${config.home.homeDirectory}/.ssh"
+        "-${config.home.homeDirectory}/.gnupg"
+        "-${config.xdg.configHome}/sops"
+        "-/run/secrets"
+        "-/run/secrets-for-users"
+        "-%t/gnupg"
+        "-%t/keyring"
+      ];
       ExecStartPost = toString (pkgs.writeShellScript "awww-ready" ''
         for attempt in $(${pkgs.coreutils}/bin/seq 1 100); do
           ${pkgs.awww}/bin/awww query >/dev/null 2>&1 && exit 0

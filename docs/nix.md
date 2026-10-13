@@ -216,6 +216,12 @@ palette files do not hide template changes or missing outputs.
 `wpp` reads `~/Pictures/Wallpapers`; a missing or empty directory applies the
 shipped gradient. Collection directories are not created by the configuration.
 
+The awww daemon runs with a read-only home/system, no capabilities or new
+privileges, and UNIX-only sockets. Its cache and user runtime directory remain
+writable for cached-image restoration and IPC. Collections must remain outside
+private `/tmp` and the hidden SSH/GPG/SOPS/keyring paths. Palette generation and
+animated playback have separate units and are not covered by this sandbox.
+
 `awpp` reads `~/Videos/Animated Wallpapers` and reports an empty collection.
 It starts mpvpaper after extracting a valid frame, then derives the desktop colours
 and cursors from that frame without holding up playback. A theme-generation
@@ -226,6 +232,15 @@ At login, animated playback does not wait for theme restoration.
 Both pickers generate missing thumbnails with at most four workers and reuse
 fresh cache entries. Cursor rendering also reuses unchanged, complete outputs;
 changing the accent or renderer, or losing a cursor file, triggers regeneration.
+
+The desktop keeps its encrypted, persistent XFS root; there is no tmpfs-root
+reset or separate preservation allowlist. Wallpaper state belongs to
+`hosts/nix/modules/home/matugen.nix`: `~/.local/state/wallpaper/{current,animated}`
+records selections, while `~/.cache/{wallpaper-picker,animated-wallpaper}` holds
+rebuildable thumbnails and frames. Back up the records together with the image
+and video collections if restoring the same selections matters. Generated
+palettes and cursors can be regenerated from their tracked templates and the
+selected wallpaper; they are not substitutes for backups of the collections.
 
 Spotify is the native Spicetify package, available from the launcher and music
 workspace keybinding. Its [shared color-only theme](shared.md#spotify-and-wallpaper-colors)
@@ -387,6 +402,17 @@ Review and commit `flake.lock` after a successful build.
 The desktop trusts the official NixOS cache. Local package patches require an
 exact matching cached build; otherwise they build locally.
 Ananicy and the NCT6687 sensor module use unmodified Nixpkgs packages.
+
+The optional signed Attic cache at `https://cache.kror.net/nixcfg` supplies
+explicit patched/custom package targets through
+`.github/workflows/package-cache.yml`. Follow the
+[server cache provisioning and desktop trust procedure](nixos-server.md#public-package-cache-attic)
+before enabling it; an absent `/etc/nix/attic.conf` keeps official-cache-only
+behavior. CI builds the committed lock file and publishes exact derivation
+outputs, so commit input updates and wait for successful publication before
+expecting matching downloads. Proprietary application and full-host closures
+are not public cache targets. A binary cache moves compilation to CI; it does
+not make a new patch/input revision available before its first build finishes.
 
 To avoid ordinary local compilation, inspect the build plan after updating:
 

@@ -32,6 +32,63 @@ Both wallpaper pickers queue only missing, empty or stale thumbnails through
 `xargs -0 -n 2 -P 4`. Filename/output pairs are NUL-delimited; four workers bound
 CPU use. Thumbnail errors remain nonfatal, and the menu opens after workers finish.
 
+#### awww daemon sandbox
+
+Only `awww.service` is sandboxed. It uses `PrivateUsers=true` so a **user**
+unit can apply `ProtectSystem=strict`, `ProtectHome=read-only` and `PrivateTmp`.
+Unprivileged user namespaces must remain enabled; a namespace setup failure
+must be fixed, not hidden by disabling the filesystem protections. The host's
+systemd 261 supports this combination. `NoNewPrivileges`, empty bounding/ambient
+capability sets and `RestrictAddressFamilies=AF_UNIX` apply to the daemon and
+readiness client. Wayland and awww IPC both use UNIX sockets.
+
+The writable allowlist is `${config.xdg.cacheHome}/awww` and `%t` (the user
+manager's runtime directory, normally `/run/user/UID`), plus private temporary
+directories. A trusted store `mkdir -p` in `ExecStartPre` uses the `+` command
+prefix to create just the cache directory before the mount sandbox exists;
+it still runs as the unprivileged user manager's owner. This avoids relying on
+the manager's `CacheDirectory` root when Home Manager customizes `xdg.cacheHome`,
+and permits restart after `awww clear-cache` removes the directory.
+The service explicitly sets `XDG_CACHE_HOME` to that configured location.
+
+[awww 0.12.1 cache ownership](https://codeberg.org/LGFae/awww/src/tag/v0.12.1/common/src/cache.rs)
+includes versioned subdirectories and deletion of previous versions: do not
+limit writes to just the current version. Keep this cache persistent across
+daemon restarts. [IPC socket ownership](https://codeberg.org/LGFae/awww/src/tag/v0.12.1/common/src/ipc/socket.rs)
+is `$XDG_RUNTIME_DIR/<basename of WAYLAND_DISPLAY>-awww-daemon.sock`; creation
+and removal require the **parent runtime directory** writable. Do not move
+the service alone to a private `XDG_RUNTIME_DIR`: every picker/readiness/restore
+client must find the same socket. The Wayland socket remains visible and usable.
+
+Home/image collections otherwise remain readable, including custom paths:
+[the daemon forks a restore client](https://codeberg.org/LGFae/awww/src/tag/v0.12.1/daemon/src/wallpaper.rs)
+which must read the original image inside the sandbox on startup/output changes.
+SSH/GnuPG/SOPS directories, `/run/secrets`, `/run/secrets-for-users` and runtime
+GnuPG/keyring directories are inaccessible when present. Do not put wallpaper
+collections in those paths or shared `/tmp`/`/var/tmp` (hidden by `PrivateTmp`).
+This is write confinement and limited secret-path hiding, **not** full home
+confidentiality or isolation from all same-user UNIX services.
+
+Do not copy this sandbox onto `theme-apply`, `wallpaper-restore` or mpvpaper.
+Palette/cursor generation intentionally writes application-owned config/data,
+wallpaper state and terminal devices; video playback has separate GPU/media
+requirements. Those user-state paths remain writable outside awww.
+
+For runtime proof use a nested compositor/private bus and a uniquely named
+transient copy of the evaluated service, never the live wallpaper service.
+Follow [compositor environment isolation](../../desktop-shell/references/quickshell.md#isolated-verification),
+override the transient cache/runtime paths to disposable directories **outside**
+shared `/tmp`/`/var/tmp`, which `PrivateTmp` hides, and pass the nested Wayland
+socket as an absolute `WAYLAND_DISPLAY`. Save the activation-environment snapshot
+outside the checkout so an interrupted smoke can still restore the live session.
+Preserve the actual `ExecStartPre`, sandbox properties and `ExecStartPost`; omit session dependencies
+and automatic restart. Prove query readiness, image display from a custom path
+with spaces, cache restoration after transient restart, socket cleanup, and
+read-only home/system plus writable cache/runtime using dummy files. Check
+secret-path denial without opening real secrets. Stop only the transient unit
+and nested compositor, restore manager/bus environments even on failure, then
+remove disposable artifacts. Evaluation alone is not runtime sandbox proof.
+
 #### Animated wallpapers
 
 `awpp` is the same picker over `~/Videos/Animated Wallpapers`, handing the

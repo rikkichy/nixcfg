@@ -10,6 +10,7 @@
     # ./modules/system/initrd-ssh.nix # Requires dedicated initrd SSH host-key provisioning.
     ./modules/system/services.nix
     ./modules/system/hysteria.nix
+    ./modules/system/attic.nix
     ./modules/system/minecraft.nix
   ];
 

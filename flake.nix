@@ -54,16 +54,30 @@
   };
 
   outputs =
-    { nixpkgs, home-manager, ... }@inputs:
+    { self, nixpkgs, home-manager, ... }@inputs:
     let
       nixcfgPath = "/etc/nixos";
       system = "x86_64-linux";
 
       commonOverlay = import ./common/pkgs/overlay.nix { inherit inputs; };
       overlay = import ./hosts/nix/pkgs/overlay.nix { inherit inputs; };
+      # Reuse the host's final package set, including both overlays and policy.
+      desktopPkgs = self.nixosConfigurations.nix.pkgs;
+      desktopHome = self.nixosConfigurations.nix.config.home-manager.users.ri;
+      cacheTargets = {
+        inherit (desktopPkgs)
+          filen-desktop fuzzel quickshell hyprland tg-ws-proxy photocraft filmcraft
+          bibata-material-cursor google-sans-rounded vpn omp;
+        spicetify-cli = desktopHome.programs.spicetify.spicetifyPackage;
+        vhelper = inputs.vhelper.packages.${system}.default;
+        openwave = inputs.openwave.packages.${system}.default;
+      };
     in
     {
-      packages.${system} = {
+      # Publicly redistributable roots only; never publish the whole host closure.
+      cacheTargets.${system} = cacheTargets;
+      packages.${system} = cacheTargets // {
+        attic-client = nixpkgs.legacyPackages.${system}.attic-client;
         install = nixpkgs.legacyPackages.${system}.callPackage ./install.nix { };
         hysteria-setup = nixpkgs.legacyPackages.${system}.callPackage ./hysteria-setup.nix { };
         vts-opendeck = inputs.vts-opendeck.packages.${system}.default;
@@ -116,6 +130,7 @@
           ./.secrets/nix/sops.nix
 
           { nixpkgs.overlays = [ commonOverlay overlay ]; }
+          { nix.extraOptions = "!include /etc/nix/attic.conf"; }
 
           home-manager.nixosModules.home-manager
           {

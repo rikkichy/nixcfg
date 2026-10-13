@@ -1,0 +1,110 @@
+name: Publish package cache
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - flake.nix
+      - flake.lock
+      - common/pkgs/**
+      - common/modules/spotify.nix
+      - hosts/nix/**
+      - .github/workflows/package-cache.yml
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "One cacheTargets name, or all"
+        required: true
+        default: all
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: package-cache-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  targets:
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.targets.outputs.matrix }}
+    steps:
+      - name: Require completed provisioning
+        env:
+          ATTIC_TOKEN: ${{ secrets.ATTIC_TOKEN }}
+          ATTIC_PUBLIC_KEY: ${{ vars.ATTIC_PUBLIC_KEY }}
+        run: |
+          test -n "$ATTIC_TOKEN" || { echo '::error::Provision the scoped ATTIC_TOKEN secret first.'; exit 1; }
+          [[ "$ATTIC_PUBLIC_KEY" =~ ^nixcfg:[A-Za-z0-9+/]{43}=$ ]] || {
+            echo '::error::Set ATTIC_PUBLIC_KEY to the authentic nixcfg cache public signing key.'; exit 1;
+          }
+          actual=$(curl --fail --silent --show-error --max-time 30 https://cache.kror.net/nixcfg/attic-cache-info)
+          jq -e --arg key "$ATTIC_PUBLIC_KEY" '.is_public == true and .public_key == $key and .substituter_endpoint == "https://cache.kror.net/nixcfg"' <<< "$actual"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            require-sigs = true
+      - name: Select explicit targets
+        id: targets
+        env:
+          TARGET: ${{ inputs.target || 'all' }}
+        run: |
+          targets=$(nix eval --json --no-write-lock-file 'path:.#cacheTargets.x86_64-linux' --apply builtins.attrNames)
+          if [ "$TARGET" != all ]; then
+            jq -e --arg target "$TARGET" 'index($target) != null' <<< "$targets"
+            targets=$(jq -cn --arg target "$TARGET" '[$target]')
+          fi
+          echo "matrix=$(jq -c '{target: .}' <<< "$targets")" >> "$GITHUB_OUTPUT"
+
+  publish:
+    needs: targets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix: ${{ fromJSON(needs.targets.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            require-sigs = true
+            extra-substituters = https://cache.kror.net/nixcfg
+            extra-trusted-public-keys = ${{ vars.ATTIC_PUBLIC_KEY }}
+            max-jobs = 2
+            cores = 2
+      - name: Build exact desktop package and Attic client
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          nix build --no-write-lock-file --out-link "$RUNNER_TEMP/attic-client" 'path:.#attic-client'
+          nix build --no-write-lock-file --out-link "$RUNNER_TEMP/cache-target" --json "path:.#cacheTargets.x86_64-linux.$TARGET" > "$RUNNER_TEMP/outputs.json"
+          jq -er '.[].outputs | to_entries[].value' "$RUNNER_TEMP/outputs.json" > "$RUNNER_TEMP/store-paths"
+          test -s "$RUNNER_TEMP/store-paths"
+      - name: Upload selected closure
+        env:
+          ATTIC_TOKEN: ${{ secrets.ATTIC_TOKEN }}
+          XDG_CONFIG_HOME: ${{ runner.temp }}/attic-config
+        run: |
+          umask 077
+          mkdir -p "$XDG_CONFIG_HOME/attic"
+          trap 'rm -rf "$XDG_CONFIG_HOME/attic"' EXIT
+          printf '%s' "$ATTIC_TOKEN" > "$XDG_CONFIG_HOME/attic/token"
+          unset ATTIC_TOKEN
+          cat > "$XDG_CONFIG_HOME/attic/config.toml" <<EOF
+          default-server = "kror"
+          [servers.kror]
+          endpoint = "https://cache.kror.net/"
+          token-file = "$XDG_CONFIG_HOME/attic/token"
+          EOF
+          "$RUNNER_TEMP/attic-client/bin/attic" push kror:nixcfg --stdin < "$RUNNER_TEMP/store-paths"
