@@ -27,36 +27,46 @@ authentication. Browser origins are restricted to that localhost origin.
 
 ### Split routing and server selection
 
-Scoped mode proxies destination IPs in
-[Re:filter's `ipsum.lst`](https://github.com/1andrevich/Re-filter-lists/blob/main/ipsum.lst)
-through the selected server; other destinations use `DIRECT`. Loopback and private
-LAN rules take precedence. There are no service, process, domain or ASN exceptions.
-Re:filter domains and RunetFreedom's blocked-IP list are not enabled.
+YouTube, Discord, Roblox/Sober, Instagram, Proton Mail, Spotify, Bitwarden, Pinterest,
+noko.chat, smotret-anime.co, 6b6t.org, enderdash.com, terraformersmc.com, meteordev.org and cyrisia.com
+use the selected proxy server; other destinations use `DIRECT`.
+The listed services use Mihomo's geosite data except these explicit domains,
+whose domain-suffix rules include all subdomains (including api.noko.chat and dl.noko.chat).
+Cachix and its `*.cachix.org` cache endpoints use `DIRECT` in scoped mode.
+Patreon's website and API use `patreon.com`; its CDN uses `patreonusercontent.com`
+(including `c10.patreonusercontent.com`).
+Minecraft port `25565` uses the proxy only at Hypixel's `172.65.197.160`
+(`mc.hypixel.net`) and 6b6t's `15.204.129.101` (`alt.6b6t.org`, the SRV target
+for `6b6t.org` and `join.6b6t.org`). IP-and-port rules do not proxy other ports
+at these addresses or other Minecraft servers. These are fixed DNS snapshots:
+refresh the addresses when endpoints change. DNS handling remains unchanged.
+Roblox's production network uses ASN data. Mihomo downloads geosite and ASN data
+from the publisher's jsDelivr mirror and checks for updates daily; first startup
+needs access to it.
+In Mihomo 1.19.31, a failed overdue GEO update during startup can stop its updater
+until a reload/restart. Check the GEO logs after a connectivity failure.
+Native Discord's `.Discord-wrapped` process uses proxy/reject rules for all
+public destinations, including IP-addressed voice UDP. Loopback and private LAN
+rules take precedence. This does not identify Discord running inside a browser;
+browser Discord retains domain routing without guaranteed voice-IP coverage.
+Process lookup uses `find-process-mode: strict`. The service retains `DynamicUser`
+and its other hardening, but uses `ProtectProc=default`, `CAP_SYS_PTRACE` and
+`CAP_DAC_READ_SEARCH` to inspect socket owners across users. These privileges
+permit broader process and file reads, not only Discord inspection. They do not
+make application-name matching a security boundary. Shared service domains can
+also include related products.
 
-The HTTP rule provider downloads the plaintext CIDR list directly every six hours
-and caches it at `rules/refilter-ips.txt` under Mihomo's state directory. First
-startup needs access to `raw.githubusercontent.com` if no cached list exists.
-Check provider download errors and the `refilter-ips` entry in `/providers/rules`
-when diagnosing missing coverage; a running tunnel does not prove the list is populated.
-
-The list includes broad company/CDN networks, including shared hosting. An
-unblocked site on a listed IP also uses the proxy. A blocked domain whose current
-IP is absent remains direct. IP matching applies to all ports and protocols,
-including IP-addressed voice/game UDP. It does not guarantee every service is
-accessible. DNS remains system-managed.
-
-`scripts/mihomo-routing-test.py` exercises listed-IP routing, hostname resolution
-for mixed-proxy requests, unlisted direct traffic, LAN precedence and UDP rejection
-against isolated Mihomo with synthetic rules, without a TUN or production
-credentials. It requires Mihomo and Python with PyYAML. The fixture narrows its
-loopback exclusion to test the final direct rule using only loopback traffic;
-live desktop routing requires separate verification after approved activation.
+`scripts/mihomo-routing-test.py` exercises real process lookup and UDP rejection
+against isolated Mihomo without a TUN or production credentials. It requires
+Mihomo and Python with PyYAML. This same-user check does not prove the system
+service's cross-user lookup; after activation, verify voice connections report
+`ProcessName` / `.Discord-wrapped` and the selected proxy in `/connections`.
 
 Empty subscriptions reject traffic instead of falling back to a direct connection.
-The IP-list proxy rule has a matching rejection rule: if the selected server
-cannot relay UDP, listed traffic fails closed while unrelated traffic stays direct.
-Keep the pair together. Use a UDP-capable server for voice and games; a successful
-HTTP health check does not prove UDP support.
+Each service's proxy rule has a matching rejection rule: if the selected server
+cannot relay UDP, that service fails closed while unrelated traffic stays direct.
+Keep these pairs together when editing the target list. Use a UDP-capable server
+for voice and games; a successful HTTP health check does not prove UDP support.
 Health checks require the endpoint's HTTP 204 response. Checks remain lazy, so
 an inactive subscription can show stale measurements.
 
@@ -68,7 +78,7 @@ it does not increase bandwidth. The TUN retains its gVisor stack.
 opens only the active subscription's live nodes, fastest first. Dismissing
 either submenu leaves the selection unchanged. **Switch to global** routes traffic
 handled by Mihomo through the selected subscription/server; **Switch to scoped**
-restores the IP-list rules. The prompt shows the current mode.
+restores the service-specific rules. The prompt shows the current mode.
 Switching closes existing Mihomo connections so applications reconnect using the
 new policy; downloads, calls and games can be interrupted. The mode is a runtime
 choice; Mihomo starts in scoped mode from the template. **Edit config** opens the public
@@ -83,7 +93,7 @@ vpn                              # show the selected server
 vpn status                       # show the selected server
 vpn mode                         # show global or scoped routing
 vpn mode global                  # proxy Mihomo traffic through the selected server
-vpn mode scoped                  # restore IP-list routing
+vpn mode scoped                  # restore service-specific routing
 vpn subscription                 # active subscription name
 vpn subscription primary         # select Primary's remembered server
 vpn subscription quattro         # select Quattro's remembered server
@@ -118,9 +128,9 @@ isolated Mihomo with loopback-only traffic. It requires Python and `mihomo` on
 PATH, and verifies global proxy selection, scoped routing and closing old flows
 without accessing production credentials or changing the desktop tunnel.
 
-For a zapret cutover, pause it rather than uninstalling it, then verify the
-applications you need, including voice and games. Confirm listed destination IPs
-select `PROXY` while an unrelated, unlisted destination selects `DIRECT`.
+For a zapret cutover, pause it rather than uninstalling it, then verify video
+playback, Discord voice/screenshare and a Sober game join. Confirm their
+connections select `PROXY` while an unrelated destination selects `DIRECT`.
 Configuration evaluation does not prove these live application paths.
 
 Edit the public template `common/dotfiles/mihomo.yaml`; [runtime rendering](../.omp/skills/nix-system-operations/references/mihomo.md#public-template-private-runtime-rendering)
@@ -145,11 +155,13 @@ proxy-node lookups use the system resolver; configure upstream DNS through
 NetworkManager, not the Mihomo template. When the system uses the LAN router,
 the router retains its ControlD DoQ connection and private endpoint.
 
-Routing uses destination IPs rather than sniffed hostnames. Mixed-proxy requests
-addressed by hostname resolve for IP-list matching; the provider rules deliberately
-omit `no-resolve`. TUN traffic uses the address selected by the application's
-resolver. DNS blocking or stale answers can therefore prevent access even when a
-service's legitimate address is listed.
+Domain rules rely on HTTP/TLS/QUIC sniffing without DNS mappings. ECH and
+unsupported traffic can prevent domain classification; those connections
+follow IP rules or the final `DIRECT` rule. Sniffing does not replace the
+destination address selected by the system resolver.
+
+After an approved rebuild disables fake-IP handling, fully restart applications
+to discard cached synthetic addresses.
 
 
 Private input provisioning and SOPS/PIV administration are in

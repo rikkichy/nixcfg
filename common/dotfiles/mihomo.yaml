@@ -2,7 +2,7 @@
 mixed-port: 7890
 allow-lan: false
 mode: rule
-find-process-mode: "off"
+find-process-mode: strict
 tcp-concurrent: true
 log-level: info
 ipv6: false
@@ -12,6 +12,13 @@ external-controller-cors:
   allow-origins:
     - http://127.0.0.1:9090
   allow-private-network: false
+
+geo-auto-update: true
+geo-update-interval: 24
+
+geox-url:
+  geosite: https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat
+  asn: https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/GeoLite2-ASN.mmdb
 
 tun:
   enable: true
@@ -23,6 +30,18 @@ tun:
 
 dns:
   enable: false
+
+sniffer:
+  enable: true
+  parse-pure-ip: true
+  override-destination: false
+  sniff:
+    HTTP:
+      ports: [80, 8080]
+    TLS:
+      ports: [443, 2053, 2083, 2087, 2096, 8443]
+    QUIC:
+      ports: [443, 8443]
 
 proxy-providers:
   primary:
@@ -93,16 +112,6 @@ proxy-groups:
 profile:
   store-selected: true
 
-rule-providers:
-  refilter-ips:
-    type: http
-    behavior: ipcidr
-    format: text
-    url: https://raw.githubusercontent.com/1andrevich/Re-filter-lists/main/ipsum.lst
-    path: ./rules/refilter-ips.txt
-    interval: 21600
-    proxy: DIRECT
-
 rules:
   # Keep loopback and private LAN destinations out of the upstream proxy.
   - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
@@ -114,8 +123,54 @@ rules:
   - IP-CIDR6,fc00::/7,DIRECT,no-resolve
   - IP-CIDR6,fe80::/10,DIRECT,no-resolve
 
-  # Reject listed UDP if the selected node cannot relay it.
-  - RULE-SET,refilter-ips,PROXY
-  - RULE-SET,refilter-ips,REJECT
+  # If the selected node cannot relay a matching flow (notably UDP),
+  # reject it instead of continuing to the default DIRECT rule.
+  # The native Nix-packaged Discord executable owns voice UDP sockets.
+  - PROCESS-NAME,.Discord-wrapped,PROXY
+  - PROCESS-NAME,.Discord-wrapped,REJECT
+  - GEOSITE,youtube,PROXY
+  - GEOSITE,youtube,REJECT
+  - GEOSITE,discord,PROXY
+  - GEOSITE,discord,REJECT
+  - GEOSITE,roblox,PROXY
+  - GEOSITE,roblox,REJECT
+  - GEOSITE,instagram,PROXY
+  - GEOSITE,instagram,REJECT
+  - GEOSITE,protonmail,PROXY
+  - GEOSITE,protonmail,REJECT
+  - GEOSITE,spotify,PROXY
+  - GEOSITE,spotify,REJECT
+  - GEOSITE,bitwarden,PROXY
+  - GEOSITE,bitwarden,REJECT
+  - GEOSITE,pinterest,PROXY
+  - GEOSITE,pinterest,REJECT
+  - DOMAIN-SUFFIX,patreon.com,PROXY
+  - DOMAIN-SUFFIX,patreon.com,REJECT
+  - DOMAIN-SUFFIX,patreonusercontent.com,PROXY
+  - DOMAIN-SUFFIX,patreonusercontent.com,REJECT
+  - DOMAIN-SUFFIX,noko.chat,PROXY
+  - DOMAIN-SUFFIX,noko.chat,REJECT
+  - DOMAIN-SUFFIX,smotret-anime.co,PROXY
+  - DOMAIN-SUFFIX,smotret-anime.co,REJECT
+  - DOMAIN-SUFFIX,6b6t.org,PROXY
+  - DOMAIN-SUFFIX,6b6t.org,REJECT
+  - DOMAIN-SUFFIX,enderdash.com,PROXY
+  - DOMAIN-SUFFIX,enderdash.com,REJECT
+  - DOMAIN-SUFFIX,terraformersmc.com,PROXY
+  - DOMAIN-SUFFIX,terraformersmc.com,REJECT
+  - DOMAIN-SUFFIX,meteordev.org,PROXY
+  - DOMAIN-SUFFIX,meteordev.org,REJECT
+  - DOMAIN-SUFFIX,cyrisia.com,PROXY
+  - DOMAIN-SUFFIX,cyrisia.com,REJECT
+
+  # ponytail: current DNS IPs; refresh after endpoint changes, DNS mapping if frequent.
+  # mc.hypixel.net and 6b6t.org's SRV target alt.6b6t.org.
+  - AND,((DST-PORT,25565),(IP-CIDR,172.65.197.160/32,no-resolve)),PROXY
+  - AND,((DST-PORT,25565),(IP-CIDR,172.65.197.160/32,no-resolve)),REJECT
+  - AND,((DST-PORT,25565),(IP-CIDR,15.204.129.101/32,no-resolve)),PROXY
+  - AND,((DST-PORT,25565),(IP-CIDR,15.204.129.101/32,no-resolve)),REJECT
+
+  - IP-ASN,22697,PROXY,no-resolve
+  - IP-ASN,22697,REJECT,no-resolve
 
   - MATCH,DIRECT
