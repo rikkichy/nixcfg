@@ -1,92 +1,74 @@
 # Dynamic Linux cursor
-Bibata, recoloured on every wallpaper change. Two upstreams meet in
-`hosts/nix/pkgs/ricing/bibata-material-cursor.nix`: `rtgiskard/bibata_cursor` is the renderer
-and the artwork, whose SVGs carry three placeholder colours that
-`config/render.json` substitutes; `SakibShahariar/material-bibata-cursor` is
-the design over it, which reads the three as an M3 Container/Primary pair plus
-a near-black disc behind the watch hand, and ships 28 triples chosen that way
-for a matugen hook to match a wallpaper against.
 
-Here the triple is computed rather than matched. `hosts/nix/pkgs/ricing/bibata-tonal.py` takes the
-accent, fixes a lightness per role and caps the chroma, which is the same
-design rule resolved against the palette instead of approximated from a table
-— so the range is unbounded rather than 28 wide. Its targets are the median of
-those 28 measured in OKLCh, and the file carries the calibration. Two
-consequences of fixing the lightnesses: body-against-outline contrast is a
-constant ~7.2:1 whatever the hue, and a low-chroma wallpaper yields a grey
-cursor, because chroma is capped rather than assigned.
+Wallpaper accents select one of the 28 dark Material Bibata palettes. The
+pinned upstream `color_match.py` uses CIEDE2000 distance with its primary/body
+weights; Classic and light variants are excluded. Selection is discrete:
+different wallpapers can choose the same palette, and neutral colours need
+not produce a strictly grey cursor. No cursor pixels or SVGs are rendered at
+wallpaper-change time.
 
-- **The three cannot be derived in a matugen template.** `set_lightness` works
-  in HSL, where a near-white colour carries a *high* saturation — `#fffbff` at
-  lightness 20 is `#660066`, so a pale wallpaper would produce a vividly
-  purple cursor. The template emits one colour and the arithmetic happens in
-  `cursor-apply`.
-- **The theme name is fixed and only its contents follow the wallpaper.** That
-  is what lets `XCURSOR_THEME` and the two gsettings keys be declared once, in
-  `hosts/nix/dotfiles/ricing/hypr/`, from `vars.cursorTheme`. A name that moved with the palette would
-  leave every one of them naming the previous rendering.
-- **`hyprctl setcursor` under an unchanged name is still a reload.**
-  `CCursorManager::changeTheme` has no early return: it constructs a fresh
-  `CHyprcursorManager` and re-reads from disk on every call, which is what
-  makes the fixed name workable. The local
-  `hosts/nix/pkgs/ricing/hyprland-refresh-cursor.patch`, applied by
-  `hosts/nix/pkgs/overlay.nix`, also reloads the displayed shape during
-  `updateTheme`; the renderer otherwise skips unchanged shape names. Preserve
-  that patch when updating Hyprland.
-- **A GTK3 app under Wayland loads the Xcursor files itself** rather than
-  taking a shape from the compositor, so a running one keeps the previous
-  colours until it is restarted. Everything Hyprland draws changes at once.
+## Source and ownership
 
-Both formats live in one directory under `~/.local/share/icons` — `manifest.hl`
-and `hyprcursors/` for Hyprland, `index.theme` and `cursors/` for everything
-reading `XCURSOR_PATH` — so it is one theme under one name rather than two to
-keep in step. That directory is searched by both: hyprcursor looks in
-`~/.local/share/icons`, `~/.icons`, `/usr/share/icons` and `XDG_DATA_DIRS`.
+- `hosts/nix/pkgs/ricing/bibata-material-cursor.nix` pins the prebuilt dark
+  archive and upstream matcher source by hash. It installs Hyprcursor,
+  Xcursor and scalable SVG assets without native compilation.
+- `hosts/nix/pkgs/ricing/bibata-material-select.py` owns the writable selection
+  and first-use migration. The package's check phase runs
+  `scripts/cursor-selection-test.py` with the pinned upstream matcher.
+- `hosts/nix/modules/home/matugen.nix` writes the accent to
+  `~/.local/state/theme/cursor.conf`, calls the selector, then refreshes the
+  compositor before advancing the wallpaper success record.
+- Upstream tooling is MIT; compiled cursor artwork is GPL-3.0-or-later.
+  Prebuilt assets are downloaded from their publisher, not republished through
+  the repository's optional package cache.
 
-**The two halves are rendered in separate passes, and the order is what decides
-whether the cursor turns over with the wallpaper.** They cost very different
-amounts and are wanted at different times:
+## Writable selector and recovery
 
-| half | cost | who reads it, and when |
-| --- | --- | --- |
-| hyprcursor | 0.25s — SVG into a zip | Hyprland, at `setcursor` |
-| X11 | 2.2s — 19 sizes of 88 cursors through rsvg | Hyprland at startup; each XWayland and GTK3 client at *its* startup |
+The public theme remains `Bibata-Material-Dynamic`, so Hyprland's startup
+configuration, `XCURSOR_THEME` and GTK settings need no per-wallpaper changes.
+`~/.local/share/icons/Bibata-Material-Dynamic` is a real writable directory,
+not a Home Manager-owned store symlink.
 
-So the hyprcursor half goes first with `setcursor` straight after it, and the
-X11 half follows once the visible cursor change has already happened.
-`CCursorManager` loads its Xcursor copy in its constructor and
-otherwise **only when hyprcursor fails**, so a `setcursor` against a valid
-hyprcursor theme never re-reads it. Rendering it before the cursor is on screen
-would buy nothing and cost two seconds. The four entries are disjoint, which is
-what lets a pass install its own half and leave the other alone — the theme
-stays complete and valid throughout.
+Its format/metadata entries point through `.selected` to an immutable packaged
+theme. Writers use the per-theme `.render.lock`; replacing `.selected` is the
+single publication step for subsequent palette changes. An unchanged complete
+selection does not rewrite the pointer. Missing packaged formats or invalid
+input fail before changing selection.
 
-The renderer reuses each format when the accent, theme name and immutable
-renderer path match and `sha256sum --check` verifies every recorded output.
-Missing or corrupt files regenerate only the affected format. Per-format checksum
-manifests are published after installation; `flock` serializes writers to the
-same theme directory so a manifest cannot describe another in-flight render.
+On first use, existing generated entries move to `.<entry>.before-prebuilt`
+before selector links are installed. Backups are never overwritten; a conflict
+fails visibly. Preserve those backups until the new cursor is verified. To
+restore generated assets after an approved configuration rollback, stop cursor
+writers, remove only the selector links, and move each saved entry back to its
+original name. Do not recursively delete the public theme directory.
 
-`hosts/nix/pkgs/ricing/bibata-parallel-render.patch` is the other half of the budget. Upstream
-runs one `rsvg-convert` per (cursor, size, frame) and waits for each, which is
-~970 processes and 10s where the same work in flight is 2.2s; the patch also
-gives the intermediate SVG a path of its own, since upstream's is a fixed
-`/tmp/.cursor.0248.svg` that two concurrent runs overwrite under each other.
-Output is byte-identical to the serial build.
+Palette restoration runs from the saved wallpaper at login. If an old store
+target has been collected, running the current wallpaper pipeline selects a
+complete theme from the current package. User wallpaper collections and their
+selection records still need their own backups.
 
-Verifying a change here has the usual problem that the quick checks lie:
+## Immediate refresh and client caches
 
-- **Hyprland's log says nothing either way.** `hyprctl setcursor` answers `ok`
-  for a theme that does not exist, and no line appears in `hyprland.log` for
-  it — so the log's silence about a real theme is not evidence that it loaded.
-- **A screenshot cannot see the cursor.** `grim -c` composites nothing while
-  the cursor is on a hardware plane, which it is by default
-  (`cursor:no_hardware_cursors` is 2). Setting it `true` makes the cursor
-  capturable, at which point the difficulty is that a live pointer moves
-  between `hyprctl cursorpos` and the capture.
+Keep `hosts/nix/pkgs/ricing/hyprland-refresh-cursor.patch`. Hyprland's
+`changeTheme()` reloads theme data even under an unchanged name, but the
+unpatched renderer skips unchanged cursor shape names. Selecting another
+prebuilt palette does not bypass that cache. The patch reinstalls the displayed
+compositor-owned shape during `updateTheme()`.
 
-What does hold up: unzip an `.hlc` from `hyprcursors/` and grep the SVG inside
-for the three colours `hosts/nix/pkgs/ricing/bibata-tonal.py` prints for the accent in
-`~/.local/state/theme/cursor.conf`. Compare renders by their contents rather
-than by the archives — `.hlc` is a zip, so two runs of identical output differ
-byte-for-byte on the embedded timestamps alone.
+A running GTK3 Wayland client can retain its own Xcursor assets until restarted;
+the compositor refresh does not invalidate that client-side cache. Cursor size
+remains configurable through the existing Hyprland/Xcursor settings.
+
+## Verification
+
+Build the package and exercise `bibata-material-select` against a temporary
+selector directory, never the user's active cursor directory. Verify that all
+format links resolve to the same selected theme and that failed selection
+preserves the previous pointer. Inspect an `.hlc` SVG and its selected palette
+to establish asset colours; this is not compositor-rendering proof.
+
+On Linux, separately verify the visible cursor after changing wallpaper,
+including a stationary pointer, animated shape and required scale/size.
+`hyprctl setcursor` returning `ok` is not proof that a theme loaded. Screenshots
+can omit a hardware-plane cursor; use an isolated compositor with software
+cursors for visual capture, not changes to the user's live pointer or session.

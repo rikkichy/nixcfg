@@ -239,8 +239,10 @@ retention before the disk fills.
 The patched desktop packages and custom wrappers/assets come from the
 **desktop's final pkgs**, not a second import with approximate overlays.
 `vhelper` and `openwave` use their exact locked input outputs consumed by the
-desktop. Filen and the Spicetify CLI use unmodified Nixpkgs packages and are
-not custom cache targets; Spotify's theme patches run during app packaging.
+desktop. Filen, Fuzzel and the Spicetify CLI use unmodified Nixpkgs packages
+and are not custom cache targets. Spotify's theme patches run during app
+packaging. Prebuilt Material Bibata assets are fetched from their publisher,
+not republished through this cache.
 
 These roots are redistributable according to their pinned package metadata:
 desktop patches preserve upstream free licenses, the custom packages are
@@ -370,10 +372,10 @@ match published derivations until deliberately committed. Wait for publication
 before expecting matching downloads; evaluation alone is not a populated cache.
 
 ```bash
-gh workflow run package-cache.yml --repo rikkichy/nixcfg -f target=fuzzel
+gh workflow run package-cache.yml --repo rikkichy/nixcfg -f target=quickshell
 gh run list --repo rikkichy/nixcfg --workflow package-cache.yml
 # After provisioning/publication, use the desktop's authenticated trust settings:
-nix build --no-link --max-jobs 0 'path:/etc/nixos#fuzzel'
+nix build --no-link --max-jobs 0 'path:/etc/nixos#quickshell'
 ```
 
 Manual `target=all` publishes every explicit target; an unknown target fails
@@ -382,7 +384,7 @@ store path is not download proof. For real acceptance, copy the published output
 to a fresh temporary local store with `nix copy --from https://cache.kror.net/nixcfg
 --to "local?root=$temporary_store" --option extra-trusted-public-keys "$key"
 "$published_store_path"`; obtain the exact path from CI's build JSON/logs or
-`nix eval --raw 'path:/etc/nixos#fuzzel.outPath'` at the same committed lock.
+`nix eval --raw 'path:/etc/nixos#quickshell.outPath'` at the same committed lock.
 Use an input-addressed output for signature-enforcement checks: content-addressed
 paths can be accepted independently of a trusted signature. Verify a narinfo
 carries the recorded `nixcfg` signature, an anonymous download succeeds, and a

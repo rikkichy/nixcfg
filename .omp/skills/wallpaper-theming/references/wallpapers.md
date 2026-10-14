@@ -7,7 +7,7 @@ Owner: `hosts/nix/modules/home/matugen.nix`. The built-in image is
 
 `wpp` is the picker: fuzzel in dmenu mode over `~/Pictures/Wallpapers`.
 It draws the still through awww, stops animated playback, then calls private
-`theme-apply`: Matugen application palettes (including Quickshell semantic roles) → terminal OSC delivery → cursor rendering, then success recording.
+`theme-apply`: Matugen application palettes (including Quickshell semantic roles) → terminal OSC delivery → prebuilt cursor selection, then success recording.
 `wallpaper-restore` also displays its image before calling that helper at login.
 Successful application records the image in `~/.local/state/wallpaper/current`.
 

@@ -7,7 +7,6 @@
 - `hosts/nix/modules/home/fuzzel.nix`: static Fuzzel settings, general desktop entries, shared `desktop-picker`, VPN/power/night-light pickers and Nix maintenance entries.
 - `hosts/nix/modules/home/matugen.nix`: wallpaper entries/pickers and theming dependencies. See [wallpaper-theming](../../wallpaper-theming/SKILL.md).
 - `hosts/nix/dotfiles/ricing/hypr/hyprland/keybinds.lua`: launcher release bindings; `hosts/nix/dotfiles/ricing/quickshell/Bar.qml`: symbolic rail launcher.
-- `hosts/nix/pkgs/overlay.nix`: native Fuzzel wheel-selection patch.
 
 `programs.fuzzel.settings` owns static `fuzzel/fuzzel.ini` under the user's config directory; Matugen writes only its included writable `colors.ini`. The launcher uses font17, 40px rows and five lines. `Papirus-Dark` is case-sensitive; icons scale with row height. Both the release binding and rail launcher use `pkill -x fuzzel || fuzzel`: dismiss-on-second-tap, not just stack prevention. Fuzzel also has its own single-instance lock.
 
@@ -19,10 +18,9 @@ Fuzzel restricts launcher theme lookup to Applications/Apps/Legacy contexts. Ent
 
 Private `desktop-picker` supplies dmenu, only-match, no-run-if-empty, font15 and 32px rows. Callers retain prompts and dimensions; wallpaper thumbnails use 64px rows. `execute-input=none` in Fuzzel settings is essential: only-match alone does not disable Shift+Enter's raw-input action.
 
-Fuzzel's discrete and continuous wheel handlers repaint after changing selection,
-without reselecting the row under a stationary cursor. The Linux overlay owns
-this behavior for both wallpaper pickers and the other Fuzzel menus; pointer
-motion retains native hover selection.
+Fuzzel uses the unmodified Nixpkgs package for official binary-cache reuse.
+Mouse and keyboard input remain enabled. Wheel/hover interaction follows
+upstream, including stationary-pointer reselection; there is no local fix.
 
 Wallpaper and VPN indexes must be canonical decimals within the row count, with length checked **before** arithmetic. VPN nodes go to `vpn select` as one exact argument, never regex-based `vpn use`. Preserve the subscription rows and their exact identifiers when adjusting the VPN picker; Mihomo command semantics belong to [nix-system-operations](../../nix-system-operations/SKILL.md).
 

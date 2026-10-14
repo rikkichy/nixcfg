@@ -48,11 +48,6 @@
       url = "github:Flowseal/tg-ws-proxy";
       flake = false;
     };
-
-    bibata-cursor = {
-      url = "github:rtgiskard/bibata_cursor";
-      flake = false;
-    };
   };
 
   outputs =
@@ -67,8 +62,8 @@
       desktopPkgs = self.nixosConfigurations.nix.pkgs;
       cacheTargets = {
         inherit (desktopPkgs)
-          fuzzel quickshell hyprland tg-ws-proxy photocraft filmcraft
-          bibata-material-cursor google-sans-rounded vpn omp;
+          quickshell hyprland tg-ws-proxy photocraft filmcraft
+          google-sans-rounded vpn omp;
         vhelper = inputs.vhelper.packages.${system}.default;
         openwave = inputs.openwave.packages.${system}.default;
       };

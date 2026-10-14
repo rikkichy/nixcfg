@@ -1,167 +1,67 @@
 {
   lib,
-  src,
+  fetchurl,
+  fetchzip,
   stdenvNoCC,
   writeShellApplication,
-  coreutils,
-  findutils,
-  librsvg,
   python3,
-  xcursorgen,
-  util-linux,
 }:
 
-
 let
-  tree = stdenvNoCC.mkDerivation {
-    pname = "bibata-cursor-tree";
-    version = "0-unstable-${builtins.substring 0 8 (src.rev or "00000000")}";
-    inherit src;
-
-    patches = [ ./bibata-parallel-render.patch ];
-
-    postPatch = ''
-      substituteInPlace config/build.toml \
-        --replace-fail \
-          'x11_sizes = [16, 20, 22, 24, 28, 32, 48, 64, 72, 84, 96]' \
-          'x11_sizes = [12, 16, 18, 20, 22, 24, 28, 30, 32, 36, 42, 48, 54, 60, 64, 66, 72, 84, 96]'
-    '';
-
+  version = "1.5.0";
+  helpers = fetchzip {
+    url = "https://github.com/SakibShahariar/material-bibata-cursor/archive/refs/tags/v${version}.tar.gz";
+    hash = "sha256-2BTYH3T+EVOoQHkQnGNA8vuGkrLwmqcUZYfS3yFssHc=";
+  };
+  themes = stdenvNoCC.mkDerivation {
+    pname = "bibata-material-themes";
+    inherit version;
+    src = fetchurl {
+      url = "https://github.com/SakibShahariar/material-bibata-cursor/releases/download/v${version}/bibata-material-dark-v${version}.tar.gz";
+      hash = "sha256-igz93WB4fGWgeM5JS1cIwdaPPldhGP3gcBlJ7bQMugQ=";
+    };
     dontConfigure = true;
     dontBuild = true;
-
     installPhase = ''
       runHook preInstall
-      mkdir -p $out
-      cp -r src svg config $out/
+      mkdir -p "$out/share/icons" "$out/share/doc/bibata-material-cursor"
+      for theme in Bibata-Material-*; do
+        [ "$theme" != Bibata-Material-Classic ] || continue
+        test -s "$theme/manifest.hl"
+        test -s "$theme/index.theme"
+        test -d "$theme/hyprcursors"
+        test -d "$theme/cursors"
+        test -d "$theme/cursors_scalable"
+        cp -r "$theme" "$out/share/icons/"
+      done
+      cp INSTALL.txt ${helpers}/LICENSE "$out/share/doc/bibata-material-cursor/"
       runHook postInstall
     '';
-
     meta = {
-      description = "Bibata cursor renderer, artwork and render config";
-      homepage = "https://github.com/rtgiskard/bibata_cursor";
-      license = lib.licenses.gpl3Plus;
-      platforms = lib.platforms.linux;
+      description = "Prebuilt dark Material Bibata cursor palettes";
+      homepage = "https://github.com/SakibShahariar/material-bibata-cursor";
+      license = with lib.licenses; [ mit gpl3Plus ];
+      platforms = lib.platforms.unix;
     };
   };
-
-  tonal = ./bibata-tonal.py;
 in
-
 writeShellApplication {
-  name = "bibata-material-render";
-
-  runtimeInputs = [
-    coreutils
-    findutils
-    util-linux
-    librsvg
-    python3
-    xcursorgen
-  ];
-
+  name = "bibata-material-select";
+  runtimeInputs = [ python3 ];
   text = ''
-    accent="''${1:?usage: bibata-material-render <accent-hex> <theme-dir> [hypr|x11]...}"
-    dest="''${2:?usage: bibata-material-render <accent-hex> <theme-dir> [hypr|x11]...}"
-    dest=$(realpath -m -- "$dest")
-    name="''${dest##*/}"
-    shift 2
-
-    formats=("$@")
-    if [ "''${#formats[@]}" -eq 0 ]; then
-      formats=(hypr x11)
-    fi
-
-    mkdir -p "$dest"
-    exec 9>"$dest/.render.lock"
-    flock 9
-    key="$accent:$name:$(readlink -f -- "$0")"
-
-    flags=()
-    for format in "''${formats[@]}"; do
-      case "$format" in
-        hypr | x11) ;;
-        *)
-          echo "bibata-material-render: unknown format '$format'" >&2
-          exit 1
-          ;;
-      esac
-      if [ -r "$dest/.$format.sha256" ] \
-        && IFS= read -r cached < "$dest/.$format.sha256" \
-        && [ "$cached" = "# $key" ] \
-        && (cd "$dest" && sha256sum --check --status ".$format.sha256" 2>/dev/null); then
-        continue
-      fi
-      flags+=("--$format")
-    done
-    [ "''${#flags[@]}" -gt 0 ] || exit 0
-
-    colours=$(python3 ${tonal} "$accent")
-    get() { printf '%s\n' "$colours" | sed -n "s/^$1=//p"; }
-
-    body=$(get body)
-    outline=$(get outline)
-    watch=$(get watch)
-
-    work=$(mktemp -d "$(dirname "$dest")/.bibata-render.XXXXXX")
-    trap 'rm -rf "$work"' EXIT
-
-    cp -r ${tree}/. "$work/"
-    chmod -R u+w "$work"
-    cd "$work"
-
-    cat > config/render.json <<EOF
-    {
-      "$name": {
-        "desc": "Bibata, coloured from the current wallpaper",
-        "dir": "svg/modern",
-        "colors": [
-          { "match": "#00FF00", "replace": "$body" },
-          { "match": "#0000FF", "replace": "$outline" },
-          { "match": "#FF0000", "replace": "$watch" }
-        ]
-      }
-    }
-    EOF
-
-    python3 ./src/cursor_utils.py \
-      "''${flags[@]}" --theme "$name" --out-dir out --log-level error
-
-    for part in manifest.hl hyprcursors index.theme cursors; do
-      [ -e "out/$name/$part" ] || continue
-
-      rm -rf "$dest/.$part.new" "$dest/.$part.old"
-      mv "out/$name/$part" "$dest/.$part.new"
-      if [ -e "$dest/$part" ]; then
-        mv "$dest/$part" "$dest/.$part.old"
-      fi
-      mv "$dest/.$part.new" "$dest/$part"
-      rm -rf "$dest/.$part.old"
-    done
-
-    for flag in "''${flags[@]}"; do
-      format="''${flag#--}"
-      case "$format" in
-        hypr) parts=(manifest.hl hyprcursors) ;;
-        x11) parts=(index.theme cursors) ;;
-      esac
-      {
-        printf '# %s\n' "$key"
-        (cd "$dest" && find -L "''${parts[@]}" -type f -print0 \
-          | sort -z | xargs -0 -r sha256sum)
-      } > "$work/$format.sha256"
-      mv -- "$work/$format.sha256" "$dest/.$format.sha256"
-    done
+    export PYTHONPATH=${helpers}/scripts
+    exec python3 ${./bibata-material-select.py} \
+      ${themes}/share/icons ${helpers}/themes.json "$@"
   '';
-
+  derivationArgs.postCheck = ''
+    PYTHONPATH=${helpers}/scripts ${python3}/bin/python3 \
+      ${../../../../scripts/cursor-selection-test.py} ${./bibata-material-select.py}
+  '';
   meta = {
-    description = "Render a Bibata cursor theme from one accent colour";
+    description = "Select a prebuilt Material Bibata cursor palette from a wallpaper accent";
     homepage = "https://github.com/SakibShahariar/material-bibata-cursor";
-    license = with lib.licenses; [
-      mit
-      gpl3Plus
-    ];
-    mainProgram = "bibata-material-render";
-    platforms = lib.platforms.linux;
+    license = with lib.licenses; [ mit gpl3Plus ];
+    mainProgram = "bibata-material-select";
+    platforms = lib.platforms.unix;
   };
 }

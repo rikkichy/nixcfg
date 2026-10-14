@@ -82,10 +82,8 @@ let
       accent=$(sed -n "s/^accent=//p" "$colours" | head -1)
       [ -n "$accent" ] || exit 0
 
-      bibata-material-render "$accent" ${cursorDir} hypr
-      hyprctl setcursor ${cursorTheme} "''${XCURSOR_SIZE:-24}" >/dev/null 2>&1 || true
-
-      bibata-material-render "$accent" ${cursorDir} x11
+      bibata-material-select "$accent" ${lib.escapeShellArg cursorDir}
+      hyprctl setcursor ${cursorTheme} "''${XCURSOR_SIZE:-24}" >/dev/null
     '';
   };
 

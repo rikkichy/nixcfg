@@ -27,13 +27,14 @@ read the applicable host or [shared operator section](../../../docs/shared.md#sp
 | --- | --- |
 | Shared palette format/math, writable outputs, terminal colors or font names | [Palettes](references/palettes.md) |
 | Linux still/animated pickers, cache, readiness, restoration or failure ordering | [Wallpapers](references/wallpapers.md) |
-| Bibata rendering, color math, cache, Hyprland reload or cursor verification | [Cursors](references/cursors.md) |
+| Bibata palette selection, prebuilt assets, Hyprland reload or cursor verification | [Cursors](references/cursors.md) |
 | Equicord static theme, QuickCSS or declarative plugin preferences | [Discord](references/discord.md) |
 
 ## Mandatory rules
 
-- Never turn generated palette/cursor outputs into Home Manager store symlinks.
-  Change their templates, not runtime outputs. Keep the live Hyprland scheme writable.
+- Keep generated palettes and cursor selection state writable, not Home Manager
+  store symlinks. Prebuilt cursor payloads are immutable; the selection is not.
+  Change templates rather than runtime outputs. Keep the live Hyprland scheme writable.
 - Display the selected wallpaper before palette/cursor work. Preserve failure
   ordering and success-record semantics; Matugen hooks cannot report critical failure.
 - Keep terminal ANSI hues distinct on low-chroma wallpapers; shared templates are

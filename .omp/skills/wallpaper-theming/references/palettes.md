@@ -12,7 +12,7 @@ when changing that format. Shared Zed uses the static captured theme under
 [shared-home](../../shared-home/SKILL.md).
 
 Darwin has an independent `wallpaper-theme` command; it does not use the Linux
-services, OSC delivery or cursor renderer. Its lifecycle and mutable Ghostty/Marta
+services, OSC delivery or cursor selection. Its lifecycle and mutable Ghostty/Marta
 outputs belong to [darwin-host](../../darwin-host/SKILL.md).
 
 ## Linux generation and write ownership

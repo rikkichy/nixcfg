@@ -25,7 +25,7 @@ This skill owns the Linux desktop shell, not host `ne`. Load only the relevant r
 
 ## Adjacent ownership
 
-- [wallpaper-theming](../wallpaper-theming/SKILL.md): Matugen templates, writable palettes, wallpaper services, fonts and cursor rendering.
+- [wallpaper-theming](../wallpaper-theming/SKILL.md): Matugen templates, writable palettes, wallpaper services, fonts and cursor selection.
 - [desktop-applications](../desktop-applications/SKILL.md): Linux application packaging, app-specific desktop entries and MIME handling.
 - [nix-system-operations](../nix-system-operations/SKILL.md): system services, privilege policy and Mihomo/VPN internals.
 - [darwin-host](../darwin-host/SKILL.md): macOS host settings; do not transplant the Linux shell there.
