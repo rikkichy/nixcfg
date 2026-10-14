@@ -3,6 +3,8 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # Keep Darwin nh on an officially cached build of the same release.
+    nixpkgs-nh.url = "github:NixOS/nixpkgs/b4fd65b198c599cbe814fcb9f42d25d021595ec9";
 
     nix-darwin = {
       url = "github:nix-darwin/nix-darwin/master";
@@ -90,7 +92,7 @@
 
       nixosConfigurations.nixos-server = nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit nixcfgPath; };
+        specialArgs = { inherit inputs nixcfgPath; };
         modules = [
           ./hosts/nixos-server
           { nixpkgs.overlays = [ commonOverlay ]; }
@@ -106,7 +108,7 @@
       };
 
       darwinConfigurations.ne = inputs.nix-darwin.lib.darwinSystem {
-        specialArgs = { inherit nixcfgPath; };
+        specialArgs = { inherit inputs nixcfgPath; };
         modules = [
           ./hosts/ne
           home-manager.darwinModules.home-manager

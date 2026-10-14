@@ -16,6 +16,12 @@ for OS commands. For an explicit checkout/host, use
 Switching activates the configuration and requires separate operator approval;
 source edits and successful verification do not grant that approval.
 
+Darwin selects `nh-unwrapped` from the dedicated `nixpkgs-nh` input, keeping its
+compiler/dependency closure on a verified official-cache build. The main
+Nixpkgs input still owns its wrapper and `nix-output-monitor`; Linux uses the
+main input for both. Retire the dedicated pin when the main input's Darwin
+output has a verified substitute.
+
 `--no-update-lock-file` rejects implicit pin changes. See the
 [desktop prebuild workflow](nix.md#updates-and-prebuilt-systems) to retain a
 built system for later activation.
