@@ -135,6 +135,34 @@ alone are insufficient. `bootctl`'s measured-UKI/OS fields are not the
 acceptance check for Limine's PCR 8/9 scheme. Actual measurements remain
 unverified until this boot check is performed.
 
+## IOMMU DMA isolation
+
+`hosts/nix/boot.nix` sets `iommu.passthrough=0` for translated DMA and
+`amd_iommu=force_isolation` to prevent the AMD IOMMU driver from selecting
+identity domains for IOMMUv2-capable devices such as the integrated GPU.
+Keep IOMMU/AMD-Vi enabled in firmware. The NVIDIA RTX 3090 remains the
+display GPU; neither its driver nor its outputs are disabled.
+
+The unused integrated GPU may optionally be disabled in firmware, with
+monitors connected to the RTX 3090. Blacklisting `amdgpu` alone does not
+disable the PCI device or remove its IOMMU passthrough exception.
+
+After separately approved activation and reboot, inspect the actual domains:
+
+```bash
+cat /proc/cmdline
+grep -H . /sys/kernel/iommu_groups/*/type
+nvidia-smi
+```
+
+Require both boot parameters, translated `DMA` or `DMA-FQ` domains rather
+than `identity`, and a working NVIDIA GPU. `DMA-FQ` uses lazy IOTLB
+invalidation; it is translated DMA, not passthrough. Verify the integrated
+GPU's group too if it remains enabled. Group numbers can change across boots.
+A virtual AMD-IOMMU boot check exercises translation, not the motherboard's
+firmware or physical GPU compatibility. Retain the known-working generation
+and [boot-menu recovery path](#limine-recovery-with-a-zero-timeout).
+
 ## Local module signing and integrity lockdown
 
 The desktop kernel enforces integrity lockdown from early boot and passes

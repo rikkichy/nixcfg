@@ -44,6 +44,8 @@ in
 
   boot.kernelParams = [
     "lockdown=integrity"
+    "amd_iommu=force_isolation"
+    "iommu.passthrough=0"
     "amd_pstate=active"
     "split_lock_detect=off"
     "vsyscall=none"
