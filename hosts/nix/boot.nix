@@ -1,4 +1,10 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
+
+let
+  signedKernel = import ./pkgs/lockdown-kernel.nix {
+    inherit (pkgs) lib applyPatches linuxPackages_latest;
+  };
+in
 
 {
   imports = [ ../../common/modules/nixos-limine.nix ];
@@ -11,9 +17,33 @@
   boot.initrd.luks.devices."cryptroot" = {
     allowDiscards = true;
   };
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+  nix.settings.experimental-features = [ "ca-derivations" ];
+  boot.kernelPackages = (pkgs.linuxPackagesFor signedKernel).extend (self: _: {
+    nct6687d = self.kernel;
+    v4l2loopback = self.kernel;
+  });
+  hardware.nvidia.package = pkgs.linuxPackages_latest.nvidiaPackages.stable.overrideAttrs (old: {
+    passthru = old.passthru // { open = config.boot.kernelPackages.kernel; };
+  });
+  system.build.lockdownTest = pkgs.callPackage ./pkgs/lockdown-test.nix {
+    kernel = config.boot.kernelPackages.kernel;
+  };
+
+  assertions = [
+    {
+      assertion = config.hardware.nvidia.open;
+      message = "The lockdown kernel includes NVIDIA's open modules; keep hardware.nvidia.open enabled.";
+    }
+    {
+      assertion = lib.all
+        (package: toString package == toString config.boot.kernelPackages.kernel)
+        config.boot.extraModulePackages;
+      message = "Lockdown requires external modules to be included in the joint kernel signing build.";
+    }
+  ];
 
   boot.kernelParams = [
+    "lockdown=integrity"
     "amd_pstate=active"
     "split_lock_detect=off"
     "vsyscall=none"

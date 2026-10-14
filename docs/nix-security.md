@@ -135,6 +135,66 @@ alone are insufficient. `bootctl`'s measured-UKI/OS fields are not the
 acceptance check for Limine's PCR 8/9 scheme. Actual measurements remain
 unverified until this boot check is performed.
 
+## Local module signing and integrity lockdown
+
+The desktop kernel enforces integrity lockdown from early boot and passes
+`lockdown=integrity` explicitly. Module-signature enforcement is also enabled.
+`hosts/nix/pkgs/lockdown-kernel.nix` builds the kernel, NVIDIA open modules,
+NCT6687 sensor driver and OBS's v4l2loopback together. Every module is signed
+with the kernel build's temporary key; its certificate is embedded in the
+kernel and exported as `module-signing.x509`. The private key stays in the
+build sandbox and is deleted after signing, never installed into the store
+or checkout. There is no persistent signing key to enroll or back up.
+
+These are content-addressed builds: a fresh signing identity produces new
+artifact paths, including dependent initrds. Nix's `ca-derivations` feature
+must be enabled in both the client and daemon. The desktop configuration
+enables it persistently. Before that configuration is activated, the
+operator-approved runtime override
+`/run/systemd/system/nix-daemon.service.d/lockdown-ca.conf` supplies
+`NIX_CONFIG=extra-experimental-features = ca-derivations` to the daemon; it
+expires at reboot. Initial build commands also need the client flag:
+
+```bash
+nix --extra-experimental-features ca-derivations build --no-link \
+  'path:.#nixosConfigurations.nix.config.system.build.lockdownTest' \
+  'path:.#nixosConfigurations.nix.config.system.build.initialRamdisk'
+```
+
+The check verifies every module's signature against the exported certificate,
+then boots the actual kernel in QEMU to require integrity lockdown and BPF
+LSM, load signed modules and the virtual camera, and reject unsigned modules
+and corrupted signatures. It does not test the physical NVIDIA GPU, sensors,
+firmware TPM measurements, or encrypted-root unlock.
+
+Kernel and driver updates require a joint local build. Additional external
+modules must join that build; a configuration assertion rejects unsigned
+standalone module packages. Keep NVIDIA's `open = true`; the proprietary
+module flavor is not part of this build.
+
+Activation and reboot require separate approval. Retain a known-working
+generation and the [boot-menu recovery path](#limine-recovery-with-a-zero-timeout).
+For initial authorized activation, pass
+`NIX_CONFIG='extra-experimental-features = ca-derivations'` to `nh os switch`.
+After the approved reboot:
+
+```bash
+cat /sys/kernel/security/lockdown
+cat /sys/kernel/security/lsm
+modinfo -F sig_id nvidia
+nvidia-smi
+```
+
+Require `[integrity]`, an active `bpf` LSM, `PKCS#7`, and a working GPU.
+Some kmod builds cannot decode signer/hash details even when `sig_id` is
+present; the cryptographic build check is the signature verification.
+Also verify NCT6687 sensors, OBS Cam and the documented disk-unlock fallback.
+Lockdown restricts interfaces such as `/dev/mem`, MSR writes and hibernation;
+root utilities relying on them may be affected.
+
+Local module signing does not sign the kernel image for UEFI, enable Secure
+Boot, or establish an organization signature accepted by anti-cheat.
+
 ## Touch-only sudo with password fallback
 
 Only PAM services `sudo` and `sudo-i` use U2F as `sufficient`, before the Unix

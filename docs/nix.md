@@ -404,7 +404,10 @@ Review and commit `flake.lock` after a successful build.
 
 The desktop trusts the official NixOS cache. Local package patches require an
 exact matching cached build; otherwise they build locally.
-Ananicy and the NCT6687 sensor module use unmodified Nixpkgs packages.
+Ananicy uses the unmodified Nixpkgs package. The desktop kernel, NVIDIA open
+modules, NCT6687 and v4l2loopback share a local
+[module-signing build](nix-security.md#local-module-signing-and-integrity-lockdown);
+kernel or driver updates rebuild that signed set together.
 
 The optional signed Attic cache at `https://cache.kror.net/nixcfg` supplies
 explicit patched/custom package targets through
