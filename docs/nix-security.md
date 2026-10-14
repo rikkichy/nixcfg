@@ -115,6 +115,29 @@ permission warnings; old boot records are not proof of the active mount policy.
 
 ## Secure Boot with Limine
 
+Run the guided helper on the installed desktop:
+
+```bash
+nix run path:/etc/nixos#secureboot-setup
+```
+
+It requests sudo, preserves existing keys/backups, and asks separately before
+key creation, activation, revocation restoration and firmware enrollment.
+Rerun the same command after each BIOS step; firmware and key state determine
+where to resume. Enrollment uses native `sbctl enroll-keys --append --microsoft
+--firmware-builtin=db,KEK`, with temporary KEK/db immutable-flag removal only
+after approval and restoration on failure. It never deletes PK, rotates keys,
+changes BIOS enforcement or reboots automatically.
+
+Use `nix run path:/etc/nixos#secureboot-setup -- --status` for read-only status
+and installed Limine verification, or `-- --help` without sudo.
+An optional positional argument selects a reviewed Git checkout instead of
+`/etc/nixos`. Setup targets this repository's `nix` host and standard sbctl
+key paths, not a live installer, other distributions or custom sbctl backends.
+Automatic factory-dbx restoration accepts checked SHA-256 revocation lists;
+other formats stop for review rather than skipping validation. The helper
+cannot verify physical firmware rejection of untrusted images.
+
 The desktop uses native Limine signing, not a different bootloader.
 `boot.loader.limine.secureBoot.enable` signs the EFI image with the local
 sbctl db key. The image authenticates the enrolled BLAKE2b configuration hash;
