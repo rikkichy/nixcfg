@@ -149,10 +149,9 @@ Limine image and its configuration hash verify successfully.
 
 The protected public backup is `/var/lib/sbctl/before-enrollment`: it contains
 the pre-enrollment EFI image/configuration, public UEFI variables and `.esl`
-database copies without efivarfs attribute headers. The initial inventory
-has PK/KEK/db and firmware defaults, but **no active dbx**; `dbxDefault` is
-present. Review restoration of revocations as part of enrollment rather
-than treating the Secure Boot status bit alone as complete protection.
+database copies without efivarfs attribute headers. The active dbx contains
+the 431 SHA-256 revocations from the verified firmware `dbxDefault`; this
+does not establish that the latest upstream revocation updates are installed.
 This public backup is not a backup of the private sbctl keys.
 
 On the MSI X870 GAMING PLUS WIFI, inspect Advanced → Security → Secure Boot
@@ -165,6 +164,13 @@ while retaining KEK/db/dbx. If not, stop and review the actual firmware UI;
 do not substitute a blind all-key reset. Prevent automatic factory-key
 reprovisioning and keep enforcement disabled while preparing enrollment.
 
+If dbx is absent during recovery, restore only a validated firmware-default
+ESL with `efi-updatevar -e -f FILE dbx` while still in Setup Mode, before
+installing PK. `FILE` must be the checked `.esl` backup, not a raw efivarfs
+file with its attribute header. Check that the installed Limine Authenticode
+digest and measured EFI images are not revoked, and verify the written dbx
+matches the intended payload before proceeding.
+
 Back in Linux, require Setup Mode enabled and compare the preserved databases
 with the backup. Only after separate enrollment approval:
 
@@ -174,10 +180,14 @@ sudo sbctl enroll-keys --append --microsoft --firmware-builtin=db,KEK
 
 `--append` retains existing KEK/db entries; the other flags supplement
 Microsoft and firmware-default trust, including NVIDIA Option ROM needs.
-This command does not restore dbx. Do not use
-`--yes-this-might-brick-my-machine` or immutable-variable bypasses.
-Enrollment is not transactional: on failure, inspect the databases rather
-than blindly repeating it.
+This command does not restore dbx. If it reports immutable KEK/db variables,
+stop and inspect the partial state. With separate approval, clear `chattr -i`
+on only the two reported paths, run the native enrollment command, and
+restore `chattr +i` on exit, including failure. Do not use
+`--ignore-immutable` or `--yes-this-might-brick-my-machine` to skip checks.
+Enrollment is not transactional: do not blindly repeat it after a failure.
+Require the local PK/KEK/db certificates, all original KEK/db entries,
+unchanged intended dbx contents, and restored filesystem protection.
 
 ### MSI enforcement and boot acceptance
 
