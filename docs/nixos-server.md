@@ -236,20 +236,19 @@ retention before the disk fills.
 ### Targets and publication boundary
 
 `flake.nix` exports `cacheTargets.x86_64-linux` and the same named `packages`.
-The four costly patches (`filen-desktop`, `fuzzel`, `quickshell`, `hyprland`) and
-custom `tg-ws-proxy`, `photocraft`, `filmcraft`, `bibata-material-cursor`,
-`google-sans-rounded`, `vpn`, and `omp` come from the **desktop's final pkgs**,
-not a second import with approximate overlays. `spicetify-cli` is the exact
-patched Home Manager `spicetifyPackage`, without Spotify. `vhelper` and
-`openwave` use their exact locked input outputs consumed by the desktop.
+The patched desktop packages and custom wrappers/assets come from the
+**desktop's final pkgs**, not a second import with approximate overlays.
+`vhelper` and `openwave` use their exact locked input outputs consumed by the
+desktop. Filen and the Spicetify CLI use unmodified Nixpkgs packages and are
+not custom cache targets; Spotify's theme patches run during app packaging.
 
 These roots are redistributable according to their pinned package metadata:
-Filen is AGPL, desktop patches preserve upstream free licenses, the custom
-packages are MIT/Apache/GPL/OFL, and Vhelper/OpenWave/OMP are GPL/MIT/MIT.
-The upload includes runtime closures, not build dependencies. Filen references
-Nixpkgs Electron/rclone; OpenWave references the free GTK/audio stack; Vhelper
-references Protontricks, whose pinned package uses `steam.run-free`, **not the
-proprietary Steam client**. Wrappers/fonts reference ordinary free tools/libraries.
+desktop patches preserve upstream free licenses, the custom packages are
+MIT/Apache/GPL/OFL, and Vhelper/OpenWave/OMP are GPL/MIT/MIT.
+The upload includes runtime closures, not build dependencies. OpenWave
+references the free GTK/audio stack; Vhelper references Protontricks, whose
+pinned package uses `steam.run-free`, **not the proprietary Steam client**.
+Wrappers/fonts reference ordinary free tools/libraries.
 Preserve this boundary when adding roots or updating runtime dependencies.
 Attic skips paths already signed by the official `cache.nixos.org-1` key.
 

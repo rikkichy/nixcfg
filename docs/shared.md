@@ -105,8 +105,10 @@ The desktop and Mac import `common/modules/spotify.nix`. The pinned
 `spicetify-nix` input patches Spotify at build time; do not install a second
 unmodified Spotify package. The Wallpaper theme replaces color variables only:
 no custom theme CSS or JavaScript, extensions, custom apps, assets, fonts or layout
-changes. Native RTL rules are retained. `common/pkgs/spicetify-bootstrap.patch`
-keeps the rewritten JavaScript modules loaded even with every add-on disabled;
+changes. Native RTL rules are retained. The theme's native Spicetify patches
+load the rewritten JavaScript modules and bootstrap metadata with every add-on
+disabled, using the unmodified Nixpkgs CLI. Package checks require exactly one
+module loader before the snapshot and one matching bootstrap configuration;
 their class names must match Spicetify's rewritten stylesheets.
 
 Both hosts render `common/dotfiles/matugen/templates/spotify-palette.css` into

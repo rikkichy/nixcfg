@@ -63,12 +63,10 @@
       overlay = import ./hosts/nix/pkgs/overlay.nix { inherit inputs; };
       # Reuse the host's final package set, including both overlays and policy.
       desktopPkgs = self.nixosConfigurations.nix.pkgs;
-      desktopHome = self.nixosConfigurations.nix.config.home-manager.users.ri;
       cacheTargets = {
         inherit (desktopPkgs)
-          filen-desktop fuzzel quickshell hyprland tg-ws-proxy photocraft filmcraft
+          fuzzel quickshell hyprland tg-ws-proxy photocraft filmcraft
           bibata-material-cursor google-sans-rounded vpn omp;
-        spicetify-cli = desktopHome.programs.spicetify.spicetifyPackage;
         vhelper = inputs.vhelper.packages.${system}.default;
         openwave = inputs.openwave.packages.${system}.default;
       };

@@ -7,7 +7,6 @@ on:
       - flake.nix
       - flake.lock
       - common/pkgs/**
-      - common/modules/spotify.nix
       - hosts/nix/**
       - .github/workflows/package-cache.yml
   workflow_dispatch:

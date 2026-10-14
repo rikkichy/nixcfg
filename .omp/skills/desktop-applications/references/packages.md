@@ -39,9 +39,8 @@ is what fails.
 
 ## Filen
 
-The overlay patches Canvas's missing `<cstdint>` includes between npm dependency
-installation and native rebuild. Keep `npm rebuild` enabled after patching;
-`--ignore-scripts` only defers the npm hook's early rebuild.
+Filen uses the unmodified Nixpkgs package so official binary substitutes remain
+usable. Nixpkgs owns the Canvas header fix and native npm rebuild ordering.
 
 ## Telegram proxy
 
