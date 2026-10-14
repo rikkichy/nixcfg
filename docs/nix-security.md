@@ -174,8 +174,19 @@ module flavor is not part of this build.
 
 Activation and reboot require separate approval. Retain a known-working
 generation and the [boot-menu recovery path](#limine-recovery-with-a-zero-timeout).
-For initial authorized activation, pass
-`NIX_CONFIG='extra-experimental-features = ca-derivations'` to `nh os switch`.
+For initial authorized activation, pass the feature directly to Nix through
+`nh`'s argument separator:
+
+```bash
+nh os switch --no-nom path:/etc/nixos -- --extra-experimental-features ca-derivations
+```
+
+Use `nh os build` with the same arguments for a build without activation.
+`--no-nom` uses Nix's native output: the installed nix-output-monitor cannot
+parse content-addressed derivations. Keep that flag on desktop rebuilds.
+After activation the feature is persistent, so the trailing
+`-- --extra-experimental-features ca-derivations` is no longer needed.
+
 After the approved reboot:
 
 ```bash
