@@ -75,7 +75,7 @@ generation or remove fallback slots until all paths work.
 ### Limine recovery with a zero timeout
 
 `boot.loader.timeout = 0` means immediate boot without a visible menu. The
-locked [Limine 12.9.0 documentation](https://github.com/limine-bootloader/limine/blob/v12.9.0/CONFIG.md)
+locked [Limine 12.9.3 documentation](https://github.com/limine-bootloader/limine/blob/v12.9.3/CONFIG.md)
 documents UEFI one-shot timeout override. When the installed bootloader supports
 it, an operator-approved `sudo systemctl reboot --boot-loader-menu=30s` requests
 a menu on that next reboot; select the known-working generation there. Do not
@@ -84,14 +84,14 @@ means the installed EFI binary was updated.
 
 For a controlled boot experiment, an alternative is temporarily setting
 `boot.loader.timeout = 10`, rebuilding the boot configuration, and verifying the
-generated timeout before reboot. If the machine cannot boot or the one-shot
-request is unsupported, use the firmware boot menu to start the recovery ISO.
-Identify and mount the installed ESP (this machine:
-`/dev/disk/by-uuid/612D-84DE`), back up its active `limine/limine.conf`, then edit
-its global `timeout: 0` to `timeout: no`. Verify no earlier config candidate
-shadows it, following the linked Limine search order. Reboot to the disk and
-select the known-working generation. This emergency ESP edit is overwritten
-by bootloader regeneration; put any lasting timeout change in Nix.
+generated timeout and signed bootloader before reboot. If the machine cannot
+boot or the one-shot request is unsupported, use the firmware boot menu to
+start the recovery ISO; disable Secure Boot first if the ISO is not trusted.
+The installed ESP is `/dev/disk/by-uuid/612D-84DE`. Do not edit an enrolled
+`limine.conf` in place: its hash is authenticated by the EFI image. Repair
+through the checkout and regenerate/sign the bootloader, or restore the
+matching EFI image and configuration from the protected backup with Secure
+Boot disabled. Preserve the kernel/initrd files referenced by that backup.
 
 If no generation unlocks root, the ISO can open the verified backing partition
 with its retained passphrase as `cryptroot`; mount root and ESP, enter via
@@ -112,6 +112,91 @@ After separately approved activation and remount or reboot, check
 Require both masks to be `0077`, root ownership and no group/other permissions.
 Check fresh `journalctl -b -u systemd-boot-random-seed.service` output for
 permission warnings; old boot records are not proof of the active mount policy.
+
+## Secure Boot with Limine
+
+The desktop uses native Limine signing, not a different bootloader.
+`boot.loader.limine.secureBoot.enable` signs the EFI image with the local
+sbctl db key. The image authenticates the enrolled BLAKE2b configuration hash;
+the configuration authenticates its kernel and initrd paths by their hashes.
+The editor is disabled and checksum mismatches stop boot. This does not
+add a separate PE signature to the kernel or make the local signer
+organization-approved for anti-cheat.
+
+Automatic key creation and firmware enrollment are disabled. Private
+PK/KEK/db keys belong under root-only `/var/lib/sbctl`, outside the repository
+and Nix store. Retain an encrypted offline backup before changing firmware
+trust. `sbctl --microsoft` includes Microsoft's **public** certificates during
+enrollment; it cannot sign our images with Microsoft's private keys.
+
+The native installer can overlook a signing/enrollment subprocess failure.
+`verify-limine-secureboot.py` checks the installed configuration hash and
+verifies the EFI signature against `/var/lib/sbctl/keys/db/db.pem` after each
+bootloader installation. A failed check aborts the operation; installation
+is not transactional, so repair before rebooting. The isolated regression
+check rejects unsigned images, changed configurations, signed images without
+config enrollment, and images modified after signing:
+
+```bash
+nix build --no-link 'path:.#nixosConfigurations.nix.config.system.build.secureBootTest'
+```
+
+### Firmware enrollment checkpoint
+
+Key provisioning, `nh os switch`, firmware enrollment and reboot each require
+their own approval. Do not enable firmware enforcement before the installed
+Limine image and its configuration hash verify successfully.
+
+The protected public backup is `/var/lib/sbctl/before-enrollment`: it contains
+the pre-enrollment EFI image/configuration, public UEFI variables and `.esl`
+database copies without efivarfs attribute headers. The initial inventory
+has PK/KEK/db and firmware defaults, but **no active dbx**; `dbxDefault` is
+present. Review restoration of revocations as part of enrollment rather
+than treating the Secure Boot status bit alone as complete protection.
+This public backup is not a backup of the private sbctl keys.
+
+On the MSI X870 GAMING PLUS WIFI, inspect Advanced → Security → Secure Boot
+and its Custom-mode key management at the physical console. The
+[AMD 800-series BIOS manual](https://download.msi.com/archive/mnu_exe/mb/AMDAM5800BIOS_English.pdf)
+says **Reset To Setup Mode deletes all Secure Boot keys**. Do not use it as
+a PK-only reset. If the individual PK submenu offers an unambiguous
+PK-only deletion, that separately approved operation can enter Setup Mode
+while retaining KEK/db/dbx. If not, stop and review the actual firmware UI;
+do not substitute a blind all-key reset. Prevent automatic factory-key
+reprovisioning and keep enforcement disabled while preparing enrollment.
+
+Back in Linux, require Setup Mode enabled and compare the preserved databases
+with the backup. Only after separate enrollment approval:
+
+```bash
+sudo sbctl enroll-keys --append --microsoft --firmware-builtin=db,KEK
+```
+
+`--append` retains existing KEK/db entries; the other flags supplement
+Microsoft and firmware-default trust, including NVIDIA Option ROM needs.
+This command does not restore dbx. Do not use
+`--yes-this-might-brick-my-machine` or immutable-variable bypasses.
+Enrollment is not transactional: on failure, inspect the databases rather
+than blindly repeating it.
+
+### MSI enforcement and boot acceptance
+
+sbctl flags this board for [FQ0001](https://github.com/Foxboron/sbctl/wiki/FQ0001).
+Inspect the actual firmware policy: select **Maximum Security** under
+Secure Boot Preset, or set **Option ROM, Removable Media and Fixed Media**
+to **Deny Execute** under Image Execution Policy. **Always Execute** can
+permit untrusted images even while Secure Boot reports enabled.
+
+After the approved enrollment, enable Secure Boot without replacing the
+custom keys with factory defaults, then perform the approved boot check.
+Require `sudo sbctl status` and `bootctl status` to report enabled with
+Setup Mode disabled, working NVIDIA graphics, integrity lockdown, and valid
+TPM measurements. Physical firmware rejection of an untrusted image remains
+an operator-only check; isolated signing tests do not prove it.
+
+For recovery, first disable enforcement in firmware while preserving its
+databases. Keep a usable console, LUKS passphrase, recovery ISO and known-good
+generation. A Nix rollback does not restore firmware keys.
 
 ## Measured boot
 
