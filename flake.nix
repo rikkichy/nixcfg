@@ -65,7 +65,7 @@
           quickshell hyprland tg-ws-proxy photocraft filmcraft
           google-sans-rounded vpn omp;
         vhelper = inputs.vhelper.packages.${system}.default;
-        openwave = inputs.openwave.packages.${system}.default;
+        openwave = inputs.openwave.packages.${system}.openwave-bin;
       };
     in
     {

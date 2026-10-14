@@ -239,7 +239,10 @@ retention before the disk fills.
 The desktop packages and custom wrappers/assets come from the
 **desktop's final pkgs**, not a second import with approximate overlays.
 `vhelper` and `openwave` use their exact locked input outputs consumed by the
-desktop. Filen, Fuzzel and the Spicetify CLI use unmodified Nixpkgs packages
+desktop. OpenWave selects `openwave-bin` for the application, udev rules and
+cache target; it repackages a pinned published release without compiling Rust.
+The OpenWave input owns that release pin independently of its development
+version. Filen, Fuzzel and the Spicetify CLI use unmodified Nixpkgs packages
 and are not custom cache targets. Spotify's theme patches run during app
 packaging. Prebuilt Material Bibata assets are fetched from their publisher,
 not republished through this cache.

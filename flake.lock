@@ -101,11 +101,11 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1790679061,
-        "narHash": "sha256-SdSdZMqOo4ROZEMyGLsxtXSnKBFa4SbBezOH9+aMq2A=",
+        "lastModified": 1791979849,
+        "narHash": "sha256-6zmGcF15MSqC86jLo4FXbajp7VmItlJDlnzTOP0HB+s=",
         "owner": "rikkichy",
         "repo": "openwave",
-        "rev": "4172c71db3e0b929571d02c06bbcb3456726e5e2",
+        "rev": "d7303f1521c4ec1c066ddd733b4558a9236ad46a",
         "type": "github"
       },
       "original": {

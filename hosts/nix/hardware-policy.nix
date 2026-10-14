@@ -35,7 +35,7 @@
   services.udev.packages = [
     pkgs.yubikey-personalization
 
-    inputs.openwave.packages.${pkgs.stdenv.hostPlatform.system}.default
+    inputs.openwave.packages.${pkgs.stdenv.hostPlatform.system}.openwave-bin
 
     (pkgs.writeTextDir "lib/udev/rules.d/70-lc87.rules" ''
       KERNEL=="hidraw*", ATTRS{idVendor}=="056a", TAG+="uaccess"
