@@ -24,11 +24,10 @@ Recovery: [Spotify update-cache protection](#spotify-and-spicetify) ·
 
 ## Ownership
 
-The separate host lives in `hosts/ne/default.nix`. It manages Nix with Lix,
-installs `nh`, and enables Fish as the login shell. `hosts/ne/home.nix` imports
-the shared `common/modules/shell.nix` configuration described below.
-Lix's Darwin package omits the ELF-only `-z,noexecstack` linker flag. Mach-O
-retains its default non-executable stack.
+The separate host lives in `hosts/ne/default.nix`. It uses nix-darwin's default
+upstream Nix package, installs `nh`, and enables Fish as the login shell.
+`hosts/ne/home.nix` imports the shared `common/modules/shell.nix` configuration described below.
+Content-addressed derivations are enabled so this host can evaluate the desktop's signed kernel during pre-push validation.
 The host does not import the Linux desktop, secrets, or overlays. The Darwin host
 declares Brew-owned formulae, casks, and taps in `hosts/ne/modules/system/homebrew.nix`.
 Activation neither upgrades nor removes packages. Applications installed outside
@@ -70,10 +69,10 @@ This configuration targets the existing `rii` account. Homebrew must be installe
 at `/opt/homebrew`. nix-darwin manages its inventory, not the Homebrew installation.
 Ghostty and Zed must be installed separately.
 
-Install [Lix](https://lix.systems/install/) in an interactive terminal:
+Install [Nix](https://nixos.org/download/) in an interactive terminal:
 
 ```sh
-curl -sSfL https://install.lix.systems/lix | sh -s -- install
+curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install | sh
 ```
 
 Open a new terminal. If the initial checkout is at `~/nixcfg`, move it once
