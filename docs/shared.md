@@ -20,6 +20,10 @@ source edits and successful verification do not grant that approval.
 [desktop prebuild workflow](nix.md#updates-and-prebuilt-systems) to retain a
 built system for later activation.
 
+All three hosts prefer the Yandex NixOS binary mirror with explicit priority 10;
+`cache.nixos.org` is second with its advertised priority 40 (lower wins).
+Official NixOS signature verification remains enabled with the existing trusted key.
+
 ## Shared shell and editor
 
 All three hosts import `common/modules/shell.nix` through Home Manager for their

@@ -1,6 +1,10 @@
 {
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
+    substituters = [
+      "https://mirror.yandex.ru/nixos/?priority=10"
+      "https://cache.nixos.org/"
+    ];
     max-jobs = 2;
     cores = 8;
 
