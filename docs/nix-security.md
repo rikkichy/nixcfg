@@ -113,6 +113,28 @@ Require both masks to be `0077`, root ownership and no group/other permissions.
 Check fresh `journalctl -b -u systemd-boot-random-seed.service` output for
 permission warnings; old boot records are not proof of the active mount policy.
 
+## Measured boot
+
+`hosts/nix/boot.nix` enables Limine's `measured_boot: yes`. Limine 12.9.3
+requires the firmware's TPM 2.0 measurement interface: PCR 8 records the
+kernel command line and artifact paths; PCR 9 records the configuration,
+kernel and initrd contents. See the
+[Limine measurement contract](https://github.com/limine-bootloader/limine/blob/v12.9.3/USAGE.md#measured-boot).
+Measurement does not authenticate the artifacts or enable Secure Boot.
+
+After separately approved activation and reboot, inspect the TPM event log:
+
+```bash
+sudo nix shell nixpkgs#tpm2-tools --command \
+  tpm2_eventlog /sys/kernel/security/tpm0/binary_bios_measurements
+```
+
+Require PCR 8 and PCR 9 `EV_IPL` events for the selected entry's command
+line, kernel and initrd, plus a PCR 9 `limine_cfg` event. Firmware events
+alone are insufficient. `bootctl`'s measured-UKI/OS fields are not the
+acceptance check for Limine's PCR 8/9 scheme. Actual measurements remain
+unverified until this boot check is performed.
+
 ## Touch-only sudo with password fallback
 
 Only PAM services `sudo` and `sudo-i` use U2F as `sufficient`, before the Unix

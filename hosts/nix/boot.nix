@@ -4,6 +4,9 @@
   imports = [ ../../common/modules/nixos-limine.nix ];
 
   boot.loader.timeout = 0;
+  boot.loader.limine.extraConfig = ''
+    measured_boot: yes
+  '';
 
   boot.initrd.luks.devices."cryptroot" = {
     allowDiscards = true;
