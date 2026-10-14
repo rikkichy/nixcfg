@@ -4,7 +4,7 @@ Sources: `hosts/nix/boot.nix`, `hosts/nix/hardware-policy.nix`,
 `hosts/nix/lighting.nix`, `hosts/nix/storage.nix`, and
 `hosts/nix/modules/system/{nix,security,session,gaming,flatpak}.nix`.
 Operator procedures: [docs/nix.md](../../../../docs/nix.md). For validation use
-[nixcfg-validation](../../nixcfg-validation/SKILL.md); any activation or disruptive
+[nixcfg-validation](../../nixcfg-validation/SKILL.md). Any activation or disruptive
 runtime experiment needs operator approval.
 
 ## Polkit subjects under UWSM
@@ -12,8 +12,8 @@ runtime experiment needs operator approval.
 `hosts/nix/modules/system/session.nix` starts Hyprland through greetd/UWSM.
 The compositor and its children run under the user manager, not greetd's logind
 session scope. For those sessionless subjects, an `allow_active` polkit grant
-does not apply: login1 falls back to `auth_admin_keep`, and an authentication
-agent registered to a session cannot answer on their behalf. A power picker
+does not apply. Login1 falls back to `auth_admin_keep`.
+An authentication agent registered to a session cannot answer on their behalf. A power picker
 can close while `systemctl poweroff`, `reboot`, or `suspend` fails with
 “Interactive authentication required.” `uwsm stop` is a user-manager logout
 operation and is not this authorization path.
@@ -22,20 +22,20 @@ operation and is not this authorization path.
 and PC/SC action IDs to `ri`. Do not replace this with a broad authorization
 rule. To distinguish policy failure from a broken picker, run
 `pkcheck --action-id org.freedesktop.login1.power-off --process PID` against the
-actual caller and inspect its unit/session. From the same context, `busctl call
+actual caller. Inspect its unit/session. From the same context, `busctl call
 org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager
 CanPowerOff` should report `yes`, not `challenge`, when the rule applies.
 
 PC/SC uses the polkit-enabled pcsclite package when polkit is enabled. Both
 `org.debian.pcsc-lite.access_pcsc` (context) and
 `org.debian.pcsc-lite.access_card` (card) are in the same narrow rule. A refused
-client is disconnected: Yubico Authenticator can say the daemon is missing
+client is disconnected: Yubico Authenticator can say that the daemon is missing
 while pcscd is running. Check the pcscd journal for “Rejected unauthorized
 PC/SC client” rather than reinstalling it or changing token credentials.
 
 ## Crash resilience
 
-Root is XFS: metadata journaling does not guarantee unflushed file contents
+Root is XFS: metadata journaling does not guarantee that unflushed file contents
 survive an unclean stop. An apparently valid store path can contain a zero-length
 or damaged file. Preserve the paired settings in
 `hosts/nix/modules/system/nix.nix`:
@@ -45,40 +45,40 @@ or damaged file. Preserve the paired settings in
   in `/nix/store/.links`, where one corrupt shared file affects multiple paths.
 
 `nix-store --verify --check-contents` detects corrupt contents. A source with no
-substituter cannot be repaired by downloading it; it must be re-imported after
-safe removal. Do not casually delete referenced store paths or recovery
-closures. `hosts/nix/storage.nix` enables XFS scrub timers and error reporting;
-scrubbing metadata is not a backup of file contents.
+substituter cannot be repaired by downloading it. It must be re-imported after
+safe removal. Do not delete referenced store paths or recovery
+closures without checking the consequences. `hosts/nix/storage.nix` enables XFS scrub timers and error reporting.
+Scrubbing metadata is not a backup of file contents.
 
 `hosts/nix/boot.nix` syncs journald every 30 seconds, enables a 30-second runtime
 watchdog and a three-minute reboot watchdog. Watchdog evidence helps distinguish
-a hang from power loss; absence of a final log is not proof of an application
+a hang from power loss. Absence of a final log is not proof of an application
 fault. `split_lock_detect=off` avoids system-wide stalls caused by frequent
 split-lock traps from affected Steam workloads.
 
 ## Scheduling and asymmetric CCDs
 
-`hosts/nix/modules/system/gaming.nix` uses ananicy-cpp with CachyOS rules;
-there is no configured sched_ext service. Priority rules are not CPU affinity:
+`hosts/nix/modules/system/gaming.nix` uses ananicy-cpp with CachyOS rules.
+There is no configured sched_ext service. Priority rules are not CPU affinity:
 the CachyOS `cpuNN` cgroups are quotas used only by rules explicitly naming them.
 Do not infer game placement from a `Game` priority rule.
 
 The 9950X3D CCDs are asymmetric: cores 0–7 have 96 MB L3 and cores 8–15 have
 32 MB. CPPC performance rankings alone do not distinguish the cache-rich half.
 `hosts/nix/hardware-policy.nix` sets `amd_x3d_mode=cache` through udev with
-`DRIVER=="amd_3d_vcache"`. The attribute appears only after driver binding;
-keying on the driver waits for that event, unlike a racing tmpfiles/boot write.
-Read `amd_x3d_mode` back for confirmation; there is no scheduler log confirming
+`DRIVER=="amd_3d_vcache"`. The attribute appears only after driver binding.
+Keying on the driver waits for that event, unlike a racing tmpfiles/boot write.
+Read `amd_x3d_mode` to confirm the preference. There is no scheduler log confirming
 the preference.
 
 With `amd_pstate=active`, EPP is the bias, not the governor. amd-pstate-epp's
 `powersave` governor is dynamic mode, not a fixed low-power mode. The udev rule
 sets `cpufreq/energy_performance_preference=performance` on CPU devices. The
 `performance` governor instead pins minimum performance at the maximum and
-makes EPP inert; do not conflate the two.
+makes EPP inert. Do not conflate the two.
 
 Do not re-enable scx_lavd as a generic performance tweak. A runnable-task stall
-can freeze the whole desktop until the sched_ext watchdog ejects the scheduler;
+can freeze the whole desktop until the sched_ext watchdog ejects the scheduler.
 `Restart=` can repeat that cycle. The named victim may be a game worker,
 Vulkan submission, or Chromium thread, not the cause. Diagnose with
 `journalctl -b -g 'EXIT:'`, the scheduler service restart count, and samples of
@@ -86,7 +86,7 @@ process CPU ticks and `/proc/pressure/{cpu,io,memory}`. Zero victim CPU ticks,
 high CPU pressure, low I/O/memory pressure, and no `D` state point toward
 starvation rather than a blocked application or busy GPU. Any proposed
 sched_ext change needs matched kernel/userspace BPF interfaces and real workload
-proof; missing struct_ops members or deprecated direct task-field writes are
+proof. Missing struct_ops members or deprecated direct task-field writes are
 compatibility warnings, not evidence that restarting will fix it.
 
 ## Allocator and kernel hardening boundaries
@@ -95,50 +95,50 @@ The host uses the default `libc` allocator. The `graphene-hardened-light`
 selection in `hosts/nix/modules/system/security.nix` is commented out because
 Spotify's CEF aborts during startup with the allocator preload. The same
 Spicetify package opens on native Wayland when `/etc/ld-nix.so.preload` is
-hidden in a process-local mount namespace, without changing its profile or theme.
+hidden in a process-local mount namespace. Its profile and theme remain unchanged.
 Re-enabling the hardened allocator requires a successful Spotify startup check.
 
-Only processes started after activation see the new allocator; a running
+Only processes started after activation see the new allocator. A running
 session is mixed until restarted. Use a **verified** known-working generation
 for recovery, not an assumption that every older generation used libc.
 
 AppImages wrapped by `appimageTools` run under bwrap with `--tmpfs /etc` and
 only the FHS environment's own files bound back. The host preload file is
 absent there. A host allocator-provider bisect therefore cannot diagnose those
-payloads; inspect the actual wrapper before attributing their crashes to it.
+payloads. Inspect the actual wrapper before attributing their crashes to it.
 See [desktop-applications](../../desktop-applications/SKILL.md) for package scope.
 
 `hosts/nix/lighting.nix` conditionally isolates OpenRGB when a non-libc allocator
 is selected: its libusb backend uses `RTLD_DEEPBIND`, conflicting with the global
 allocator preload. `openrgb-off` then bind-mounts an empty file over the preload
 source in its private mount namespace. The bounded root-only
-`Type=exec` service has no SDK server, GUI or polling and does not wait for
-lighting completion before releasing boot targets. Its detector allowlist comes
-from the package registry at build time; see [RGB lighting](../../../../docs/nix.md#rgb-lighting) for devices/actions and permission boundaries.
+`Type=exec` service has no SDK server, GUI or polling.
+It releases boot targets without waiting for lighting completion. Its detector allowlist comes
+from the package registry at build time. See [RGB lighting](../../../../docs/nix.md#rgb-lighting) for devices/actions and permission boundaries.
 
 `hosts/nix/boot.nix` uses the cached latest kernel with `vsyscall=none`,
-`slab_nomerge`, and `page_alloc.shuffle=1`; `init_on_free` is deliberately absent
-because of its gaming cost. Do not assume a maintained hardened-kernel/profile
+`slab_nomerge`, and `page_alloc.shuffle=1`. `init_on_free` is deliberately absent
+because of its gaming cost. Do not assume that a maintained hardened-kernel/profile
 option exists in the locked Nixpkgs. A custom kernel configuration loses cache
 coverage and can make input updates build the kernel and out-of-tree NVIDIA
 module. Check actual kernel/module compatibility before proposing RANDSTRUCT,
-CFI, lockdown, or signing changes; they are not free hardening toggles for this
+CFI, lockdown, or signing changes. They are not free hardening toggles for this
 GPU stack.
 
 ## systemd startup and staged updates
 
 Do not put slow **oneshot installation/update work** in `default.target`'s
-login path: a blocking job can wedge `nixos-rebuild switch` at user-unit reload.
+login path. A blocking job can stall `nixos-rebuild switch` at user-unit reload.
 Use timers, bounded `TimeoutStartSec`, and visible failures rather than
 `|| true`. `hosts/nix/modules/system/flatpak.nix` starts bootstrap from a timer
-with a ten-minute timeout. Use `dl.flathub.org`, not `flathub.org`, for the remote;
-unreachable remote setup can hang instead of failing promptly. This timer rule
-is not a blanket ban on ordinary session daemons: the local Telegram proxy in
-`hosts/nix/modules/home/applications.nix` is a `default.target` service.
+with a ten-minute timeout. Use `dl.flathub.org`, not `flathub.org`, for the remote.
+Unreachable remote setup can hang instead of failing promptly.
+This timer rule is not a blanket ban on ordinary session daemons.
+The local Telegram proxy in `hosts/nix/modules/home/applications.nix` is a `default.target` service.
 
 Prefer package-shipped units using `systemd.packages` and an explicit
-`wantedBy`: NixOS does not act on a packaged unit's `[Install]`. Inspect package
-outputs before inventing `ExecStart`; hyprpolkitagent lives in `libexec`, not
+`wantedBy`. NixOS does not act on a packaged unit's `[Install]`. Inspect package
+outputs before inventing `ExecStart`. Hyprpolkitagent lives in `libexec`, not
 `bin`. `Restart=on-failure` can hide an endless `203/EXEC` loop rather than fix
 it. `hosts/nix/modules/system/session.nix` uses the packaged hyprpolkitagent and
 hyprsunset units, targeted to `graphical-session.target`.

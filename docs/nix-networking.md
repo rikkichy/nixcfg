@@ -5,7 +5,7 @@
 Host `nix` only: the Ryzen/NVIDIA desktop, user `ri`, checkout `/etc/nixos`.
 Run repository commands there. The server and macOS host do not use these
 VPN services. Source edits do not authorize activation, service restarts,
-subscription changes or live application/network tests; obtain operator approval.
+subscription changes or live application/network tests. Obtain operator approval.
 
 For missing private inputs, use
 [first provisioning](nix-security.md#private-inputs-and-first-provisioning)
@@ -16,11 +16,11 @@ or [replacement and rollback](nix-security.md#reinstall-replacement-revocation-a
 VBridger receives iFacialMocap tracking on UDP `49983`. The firewall permits
 that port on `enp11s0` and `wlp8s0` only, alongside the existing LAN application
 ports in `hosts/nix/modules/system/networking.nix`. Activate the configuration
-before reconnecting the phone; source edits alone do not change the live firewall.
+before reconnecting the phone. Source edits alone do not change the live firewall.
 
 ## VPN (mihomo)
 
-`services.mihomo` runs the tunnel as a system service and starts at boot; there
+`services.mihomo` runs the tunnel as a system service and starts at boot. There
 is no app to launch. The web dashboard is disabled. The localhost controller at
 `127.0.0.1:9090` remains available to the VPN picker and CLI with bearer-token
 authentication. Browser origins are restricted to that localhost origin.
@@ -29,11 +29,11 @@ authentication. Browser origins are restricted to that localhost origin.
 
 YouTube, Discord, Roblox/Sober, Instagram, Proton Mail, Spotify, Bitwarden, Pinterest,
 noko.chat, smotret-anime.co, 6b6t.org, enderdash.com, terraformersmc.com, meteordev.org and cyrisia.com
-use the selected proxy server; other destinations use `DIRECT`.
+use the selected proxy server. Other destinations use `DIRECT`.
 The listed services use Mihomo's geosite data except these explicit domains,
 whose domain-suffix rules include all subdomains (including api.noko.chat and dl.noko.chat).
 Cachix and its `*.cachix.org` cache endpoints use `DIRECT` in scoped mode.
-Patreon's website and API use `patreon.com`; its CDN uses `patreonusercontent.com`
+Patreon's website and API use `patreon.com`. Its CDN uses `patreonusercontent.com`
 (including `c10.patreonusercontent.com`).
 Minecraft port `25565` uses the proxy only at Hypixel's `172.65.197.160`
 (`mc.hypixel.net`) and 6b6t's `15.204.129.101` (`alt.6b6t.org`, the SRV target
@@ -41,14 +41,14 @@ for `6b6t.org` and `join.6b6t.org`). IP-and-port rules do not proxy other ports
 at these addresses or other Minecraft servers. These are fixed DNS snapshots:
 refresh the addresses when endpoints change. DNS handling remains unchanged.
 Roblox's production network uses ASN data. Mihomo downloads geosite and ASN data
-from the publisher's jsDelivr mirror and checks for updates daily; first startup
+from the publisher's jsDelivr mirror and checks for updates daily. First startup
 needs access to it.
 In Mihomo 1.19.31, a failed overdue GEO update during startup can stop its updater
 until a reload/restart. Check the GEO logs after a connectivity failure.
 Native Discord's `.Discord-wrapped` process uses proxy/reject rules for all
 public destinations, including IP-addressed voice UDP. Loopback and private LAN
-rules take precedence. This does not identify Discord running inside a browser;
-browser Discord retains domain routing without guaranteed voice-IP coverage.
+rules take precedence. This does not identify Discord running inside a browser.
+Browser Discord retains domain routing without guaranteed voice-IP coverage.
 Process lookup uses `find-process-mode: strict`. The service retains `DynamicUser`
 and its other hardening, but uses `ProtectProc=default`, `CAP_SYS_PTRACE` and
 `CAP_DAC_READ_SEARCH` to inspect socket owners across users. These privileges
@@ -59,31 +59,31 @@ also include related products.
 `scripts/mihomo-routing-test.py` exercises real process lookup and UDP rejection
 against isolated Mihomo without a TUN or production credentials. It requires
 Mihomo and Python with PyYAML. This same-user check does not prove the system
-service's cross-user lookup; after activation, verify voice connections report
+service's cross-user lookup. After activation, verify that voice connections report
 `ProcessName` / `.Discord-wrapped` and the selected proxy in `/connections`.
 
 Empty subscriptions reject traffic instead of falling back to a direct connection.
 Each service's proxy rule has a matching rejection rule: if the selected server
 cannot relay UDP, that service fails closed while unrelated traffic stays direct.
 Keep these pairs together when editing the target list. Use a UDP-capable server
-for voice and games; a successful HTTP health check does not prove UDP support.
+for voice and games. A successful HTTP health check does not prove UDP support.
 Health checks require the endpoint's HTTP 204 response. Checks remain lazy, so
 an inactive subscription can show stale measurements.
 
-TCP concurrency races multiple resolved addresses for faster connection setup;
-it does not increase bandwidth. The TUN retains its gVisor stack.
+TCP concurrency races multiple resolved addresses for faster connection setup.
+It does not increase bandwidth. The TUN retains its gVisor stack.
 
 **`SUPER + SHIFT + V`** opens the VPN picker. **Switch subscription** opens
 **Primary** and **Quattro**, each retaining its selected server. **Choose server**
 opens only the active subscription's live nodes, fastest first. Dismissing
 either submenu leaves the selection unchanged. **Switch to global** routes traffic
-handled by Mihomo through the selected subscription/server; **Switch to scoped**
+handled by Mihomo through the selected subscription/server. **Switch to scoped**
 restores the service-specific rules. The prompt shows the current mode.
 Switching closes existing Mihomo connections so applications reconnect using the
-new policy; downloads, calls and games can be interrupted. The mode is a runtime
-choice; Mihomo starts in scoped mode from the template. **Edit config** opens the public
-`common/dotfiles/mihomo.yaml` template in Zed (`zeditor`), including when Mihomo
-is unavailable; it never opens the private rendered configuration. Saving edits
+new policy. Downloads, calls and games can be interrupted. The mode is a runtime
+choice. Mihomo starts in scoped mode from the template.
+**Edit config** opens the public `common/dotfiles/mihomo.yaml` template in Zed (`zeditor`), including when Mihomo
+is unavailable. It never opens the private rendered configuration. Saving edits
 does not activate them: apply them with an approved NixOS rebuild.
 There are no DIRECT, AUTO or on/off controls. The picker is also available as
 `vpnp` and as **VPN server** in desktop tools:
@@ -107,8 +107,8 @@ Selection persists in Mihomo's cache. `vpn use` is a one-time manual choice,
 not continuous automatic selection.
 
 `vpn use` takes a case-insensitive regex, not a node name — `vpn use швец`
-picks the fastest Swedish node. **Match on the flag emoji** (`vpn use 🇸🇪`) when
-you want something durable: node names carry numbering, `WlFl`/`LTE` suffixes
+picks the fastest Swedish node. **Match on the flag emoji** (`vpn use 🇸🇪`) for
+more stable matching. Node names carry numbering, `WlFl`/`LTE` suffixes
 and trailing spaces that providers change without notice.
 
 The proxy-group hierarchy is **PROXY** choosing **PRIMARY** or
@@ -119,23 +119,23 @@ the first available member. Runtime state does not need to be deleted.
 
 Changing servers does not change routing policy. Direct destinations still
 pass through the TUN, but Mihomo connects through the physical interface.
-Stopping Mihomo removes the tunnel; it is not a routing toggle.
+Stopping Mihomo removes the tunnel. It is not a routing toggle.
 External shortcuts can invoke `vpnp`, `vpn mode global`, `vpn mode scoped`,
 or `vpn select <name>`.
 
 `scripts/vpn-mode-test.py /nix/store/...-vpn/bin/vpn` checks a built CLI against
 isolated Mihomo with loopback-only traffic. It requires Python and `mihomo` on
-PATH, and verifies global proxy selection, scoped routing and closing old flows
-without accessing production credentials or changing the desktop tunnel.
+PATH. It verifies global proxy selection, scoped routing and closing old flows.
+It does not access production credentials or change the desktop tunnel.
 
-For a zapret cutover, pause it rather than uninstalling it, then verify video
-playback, Discord voice/screenshare and a Sober game join. Confirm their
-connections select `PROXY` while an unrelated destination selects `DIRECT`.
+For a zapret cutover, pause it rather than uninstalling it.
+Then verify video playback, Discord voice/screenshare and a Sober game join.
+Confirm that their connections select `PROXY` while an unrelated destination selects `DIRECT`.
 Configuration evaluation does not prove these live application paths.
 
-Edit the public template `common/dotfiles/mihomo.yaml`; [runtime rendering](../.omp/skills/nix-system-operations/references/mihomo.md#public-template-private-runtime-rendering)
+Edit the public template `common/dotfiles/mihomo.yaml`. [Runtime rendering](../.omp/skills/nix-system-operations/references/mihomo.md#public-template-private-runtime-rendering)
 supplies private strings outside Nix evaluation/build inputs. Never put credentials
-in the template; Mihomo's private provider/state files must also stay outside Git.
+in the template. Mihomo's private provider/state files must also stay outside Git.
 
 The renderer also generates a fresh controller token on each service start.
 It publishes `/run/mihomo-api.header` atomically, owned by desktop user `ri`
@@ -151,12 +151,12 @@ directly from its sandbox. The template is not a standalone runnable config:
 the runtime renderer supplies authentication and subscription credentials.
 
 Mihomo's DNS server and TUN DNS hijacking are disabled. Applications and
-proxy-node lookups use the system resolver; configure upstream DNS through
+proxy-node lookups use the system resolver. Configure upstream DNS through
 NetworkManager, not the Mihomo template. When the system uses the LAN router,
 the router retains its ControlD DoQ connection and private endpoint.
 
 Domain rules rely on HTTP/TLS/QUIC sniffing without DNS mappings. ECH and
-unsupported traffic can prevent domain classification; those connections
+unsupported traffic can prevent domain classification. Those connections
 follow IP rules or the final `DIRECT` rule. Sniffing does not replace the
 destination address selected by the system resolver.
 
@@ -171,15 +171,14 @@ Private input provisioning and SOPS/PIV administration are in
 
 When renaming the TUN, preserve the [three-way device-name invariant](../.omp/skills/nix-system-operations/references/mihomo.md#tunnel-and-local-control-boundaries).
 
-If the VPN looks connected but traffic is not tunnelled, do not trust the
-controller status — check that the interface actually has its IPv4 address:
+If the VPN appears connected but traffic is not tunnelled, do not trust the
+controller status. Check that the interface has its IPv4 address:
 
 ```
 ip -br addr show mihomo
 ```
 
-A link that is `UP` with only a link-local v6 address is a tunnel that is not
-carrying anything.
+A link that is `UP` with only a link-local v6 address is not carrying tunnel traffic.
 
 ## Telegram proxy (tg-ws-proxy)
 
@@ -192,11 +191,10 @@ After updating the pin, check upstream runtime dependencies and build
 `nix build --no-link 'path:.#nixosConfigurations.nix.pkgs.tg-ws-proxy'`
 before activation.
 
-A systemd **user** service runs it headless on `127.0.0.1:1443`. The secret is
-generated once on first start and kept in
-`~/.local/state/tg-ws-proxy/secret` (mode 600) — deliberately *not* in this
-repo, which is public, and persisted so the value stays stable across restarts
-instead of changing every time the service comes up.
+A systemd **user** service runs it headless on `127.0.0.1:1443`.
+The secret is generated once on first start and kept in
+`~/.local/state/tg-ws-proxy/secret` (mode 600), outside this public repository.
+The persisted value stays stable across service restarts.
 
 Read it with:
 
@@ -205,9 +203,9 @@ cat ~/.local/state/tg-ws-proxy/secret
 systemctl --user status tg-ws-proxy
 ```
 
-Then in Telegram Desktop: **Settings → Advanced → Connection type → Proxy**,
-add an **MTProto** proxy, server `127.0.0.1`, port `1443`, and paste that
-secret.
+In Telegram Desktop, open **Settings → Advanced → Connection type → Proxy**.
+Add an **MTProto** proxy with server `127.0.0.1` and port `1443`.
+Paste the secret.
 
-The GUI tray version is also on PATH as `tg-ws-proxy-tray-linux` if you prefer
-it; stop the user service first so the two do not both bind 1443.
+The GUI tray version is also on PATH as `tg-ws-proxy-tray-linux` if you prefer it.
+Stop the user service first so the two do not both bind 1443.

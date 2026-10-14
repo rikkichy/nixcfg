@@ -3,7 +3,7 @@
 [Installation](install.md) · [Security and recovery](nix-security.md) · [Networking](nix-networking.md) · [Shared operations](shared.md)
 
 Ryzen 9950X3D / RTX 3090 / LUKS / Hyprland + Quickshell, user `ri`.
-Source paths below are relative to `/etc/nixos`; run repository commands there
+Source paths below are relative to `/etc/nixos`. Run repository commands there
 unless an installation step specifies otherwise.
 
 Recovery: [disk unlock](nix-security.md#touch-only-disk-unlock),
@@ -35,22 +35,23 @@ YubiKey enrollment. It leaves an `ri`-owned Git checkout for normal maintenance.
 Use [checkout adoption](install.md#adopt-the-installed-snapshot) only to
 recover an installed configuration that has no Git metadata.
 The [manual alternative](install.md#manual-installation--recovery-reference)
-is desktop-only; fresh-install disk erasure is never an existing-system recovery step.
+is desktop-only. Fresh-install disk erasure is never an existing-system recovery step.
 
 
 ## Rebuilds and desktop tools
 
 After separate activation approval, apply configuration changes with
-`nh os switch --no-update-lock-file`; see [shared rebuild behavior](shared.md#rebuild-commands)
+`nh os switch --no-update-lock-file`. See [shared rebuild behavior](shared.md#rebuild-commands)
 for checkout selection, environment precedence and elevation.
-META+ALT exposes three Nix commands in held terminals: **nh os switch**,
-**nh os switch --update** (update all inputs, rebuild and switch), and
-**Garbage collection — nh clean all**.
+META+ALT exposes three Nix commands in held terminals:
+- **nh os switch**
+- **nh os switch --update** (update all inputs, rebuild and switch)
+- **Garbage collection — nh clean all**
 
 The live `~/.config/hypr` symlink targets `hosts/nix/dotfiles/ricing/hypr/`.
 If it points elsewhere, switch the host configuration before reloading Hyprland.
-Keep the locally generated `scheme/current.lua` in that directory; it is ignored
-by Git and must remain writable.
+Keep the locally generated `scheme/current.lua` in that directory. Git ignores it,
+and it must remain writable.
 
 Wallpaper, animated wallpaper, emoji, blue-light filter, VPN and session tools
 are available through META+ALT.
@@ -61,18 +62,18 @@ native actions. Search starts empty and matches tool names normally. Press the
 chord again to dismiss it. Tools and desktop actions stay hidden from the main
 launcher using native desktop-entry visibility.
 
-Hyprland has no global audio or media hotkeys; use the sound panel (**META + K**)
+Hyprland has no global audio or media hotkeys. Use the sound panel (**META + K**)
 or application controls. Manual window resizing uses **META + right mouse drag**
 only. **META + ALT + \\** remains the picture-in-picture shortcut.
 
 **META + D** toggles the communication workspace and launches missing Discord
-and Telegram windows. This workspace alone uses the master layout: Discord on
-the left at approximately 81% width, Telegram on the right at 19%, both full-height.
-Opening either app restores this arrangement; toggling the workspace preserves
+and Telegram windows. This workspace alone uses the master layout.
+Discord occupies approximately 81% of the width on the left, and Telegram occupies 19% on the right. Both windows are full-height.
+Opening either app restores this arrangement. Toggling the workspace preserves
 manual resizing. Other workspaces retain dwindle.
 Telegram activation requests do not steal focus or reveal its workspace.
-Use **META + D** to bring it forward; notification clicks that request application
-activation are subject to the same focus policy.
+Use **META + D** to reveal it. Notification clicks that request application
+activation follow the same focus policy.
 The launch decision regression check runs from the repository root with
 `Hyprland --verify-config --config "$PWD/scripts/communication-workspace-test.lua"`.
 
@@ -82,23 +83,23 @@ HTML files and web links. Its profile remains application-owned under
 
 PhotoCraft and FilmCraft are pinned upstream AppImages packaged in
 `hosts/nix/pkgs/{photocraft,filmcraft}.nix` and installed as `photocraft` and
-`filmcraft`. Nix owns their launcher entries, icons and MIME definitions;
-existing default file associations remain unchanged. Update each package's
-version and hash together. Both editors are experimental; keep backups of
+`filmcraft`. Nix owns their launcher entries, icons and MIME definitions.
+Existing default file associations remain unchanged. Update each package's
+version and hash together. Both editors are experimental. Keep backups of
 documents and projects. FilmCraft has no Linux hardware video decoding path.
 
 OBS Studio uses the NixOS virtual-camera integration: `v4l2loopback` provides
 `/dev/video1` as **OBS Cam**, with exclusive capture capabilities for browser
-compatibility. The `ri` user belongs to `video` for camera-device access;
-this permits access to other video devices too. After separately approved
+compatibility. The `ri` user belongs to `video` for camera-device access.
+This permits access to other video devices too. After separately approved
 activation, start a fresh login session for group membership. A separately
 approved reboot loads the configured module with the matching kernel.
 In OBS, select **Start Virtual Camera**, then choose **OBS Cam** in the receiving app.
 
 VTube Studio and Shoost share `steam_app_1325860` when launched in the VTube Studio
-Proton prefix; VBridger uses `steam_app_1898830`. Hyprland's `hyprland/rules.lua`
+Proton prefix. VBridger uses `steam_app_1898830`. Hyprland's `hyprland/rules.lua`
 enables `render_unfocused` for both classes so hidden windows keep receiving
-render callbacks; `hyprland/misc.lua` sets their shared limit to 60 FPS. Application and
+render callbacks. `hyprland/misc.lua` sets their shared limit to 60 FPS. Application and
 Spout/OBS frame-rate settings remain independent.
 
 ### OpenDeck: VTube Studio Native
@@ -109,7 +110,7 @@ Rust plugin, property inspector, tests, and static Linux packaging. Edit the
 plugin in that repository, not this checkout. The package needs neither Wine
 nor a host runtime inside OpenDeck's Flatpak.
 
-Build without activating the system, then copy the archive out of the Nix store
+Build without activating the system. Then copy the archive out of the Nix store
 so the Flatpak file picker can access it:
 
 ```sh
@@ -121,50 +122,50 @@ install -m644 /tmp/vts-opendeck-result/share/com.rikkichy.vtubestudio.streamDeck
 Install the local archive from OpenDeck's Plugins page. Follow the upstream
 [README](https://github.com/rikkichy/vts-opendeck#configure) for API authorization,
 model/hotkey setup, credential locations, and troubleshooting. Existing
-plugins and profiles remain application-owned; no installation or migration
+plugins and profiles remain application-owned. No installation or migration
 runs during NixOS activation.
 
 ## Printing
 
 `hosts/nix/modules/system/applications.nix` disables CUPS. The evaluated system
 has no CUPS service or socket and declares no printing listener. Source edits
-do not stop a running daemon; applying this policy requires separately approved
+do not stop a running daemon. Applying this policy requires separately approved
 activation.
 
 ## Desktop service policy
 
 Docker retains its CLI, group access and socket activation, with
 `virtualisation.docker.enableOnBoot = false` in the desktop applications module.
-The first client starts the daemon; restart-policy containers do not start merely
+The first client starts the daemon. Restart-policy containers do not start merely
 because the machine boots. Weekly automatic pruning can also start Docker, and
 the daemon does not automatically exit when idle.
 
 The desktop session disables Speech Dispatcher, including its user socket,
 and desktop networking disables ModemManager. Speech Dispatcher-based screen
 readers/text-to-speech and ModemManager-managed cellular/WWAN or modem GPS are
-not supported by this policy; ordinary Ethernet and Wi-Fi remain managed by
+not supported by this policy. Ordinary Ethernet and Wi-Fi remain managed by
 NetworkManager.
 
 Blueman stays installed and on the Quickshell service PATH. Home Manager's
 `~/.config/autostart/blueman.desktop` sets `Hidden=true`, suppressing only its
 login applet/tray through XDG autostart precedence. The Bluetooth control center
-opens `blueman-manager` for discovery and pairing; its native D-Bus activation
+opens `blueman-manager` for discovery and pairing. Its native D-Bus activation
 can start the applet when needed. Unattended incoming pairing, file-transfer
 approval and other applet background features require the applet to be running.
 BlueZ, OBEX and the Bluetooth MPRIS bridge remain available.
 
-GVFS and fwupd retain UDisks; Hyprland retains the GTK portal with the explicit
+GVFS and fwupd retain UDisks. Hyprland retains the GTK portal with the explicit
 `[ "hyprland" "gtk" ]` default preference. Avahi, Flatpak maintenance,
 PipeWire/WirePlumber/RTKit, keyring/GCR/PCSC, firmware updates, gaming helpers and
 desktop shell/wallpaper/night-light services retain their configured consumers.
-Source publication does not stop live services; activation and actual
+Source publication does not stop live services. Activation and actual
 first-client/pairing acceptance require separate operator approval.
 
 ## Notes and passwords
 
 Obsidian and Bitwarden are native desktop packages in
 `hosts/nix/modules/system/applications.nix`, with their packaged launcher entries.
-Bitwarden uses normal window placement; Hyprland does not force its size or floating state.
+Bitwarden uses normal window placement. Hyprland does not force its size or floating state.
 Application data and vault settings remain user-owned. No Obsidian vault is created
 by the configuration, and existing Anytype data is left untouched.
 
@@ -186,12 +187,12 @@ ln -s "${XDG_CONFIG_HOME:-$HOME/.config}/obsidian/matugen.css" \
 ```
 
 In **Settings → Appearance → CSS snippets**, refresh the list and enable
-**matugen**. Repeat for each vault; use its actual configuration-folder name if
+**matugen**. Repeat for each vault. Use its actual configuration-folder name if
 it differs from `.obsidian`. The link command deliberately does not overwrite an
 existing snippet.
 
 Obsidian loads the symlink but does not detect changes written to its external
-target. Reload Obsidian after wallpaper changes to pick up the new palette.
+target. Reload Obsidian after wallpaper changes to load the new palette.
 The generated target must remain writable, not a Home Manager store symlink.
 See [Obsidian's CSS snippet guide](https://help.obsidian.md/snippets) for native
 snippet controls.
@@ -203,17 +204,16 @@ Runtime palettes are generated from a wallpaper: `fuzzel/colors.ini`, both
 Their templates are tracked, but generated destinations must remain writable.
 Fuzzel's static `fuzzel.ini` is managed separately and includes its palette.
 
-So a fresh install themes itself once, from a gradient shipped in
-`hosts/nix/dotfiles/ricing/`, and you get a coloured desktop without doing anything. The
-`wallpaper-restore` user unit does this, and from then on it is what puts your
-wallpaper back at every login — the shell itself remembers nothing, so without
-it you would log in to a blank desktop. It reads
-`~/.local/state/wallpaper/current`, which the wallpaper pipeline writes.
+A fresh installation generates its initial theme from a gradient in
+`hosts/nix/dotfiles/ricing/`. The `wallpaper-restore` user unit applies this theme
+automatically and restores the selected wallpaper at each subsequent login.
+The shell does not remember wallpaper selections. Without this unit, login would show a blank desktop.
+The unit reads `~/.local/state/wallpaper/current`, which the wallpaper pipeline writes.
 Restoration regenerates every palette from the recorded image, so existing
 palette files do not hide template changes or missing outputs.
 
 **Wallpaper collections are user data — restore them from a backup.**
-`wpp` reads `~/Pictures/Wallpapers`; a missing or empty directory applies the
+`wpp` reads `~/Pictures/Wallpapers`. A missing or empty directory applies the
 shipped gradient. Collection directories are not created by the configuration.
 
 The awww daemon runs with a read-only home/system, no capabilities or new
@@ -223,39 +223,39 @@ private `/tmp` and the hidden SSH/GPG/SOPS/keyring paths. Palette generation and
 animated playback have separate units and are not covered by this sandbox.
 
 `awpp` reads `~/Videos/Animated Wallpapers` and reports an empty collection.
-It starts mpvpaper after extracting a valid frame, then derives desktop colours
-and selects a cursor palette from that frame without holding up playback. A
-theme-generation failure is reported but does not stop the selected video.
+It starts mpvpaper after extracting a valid frame.
+It then derives desktop colours and selects a cursor palette from that frame without delaying playback.
+A theme-generation failure is reported but does not stop the selected video.
 Picking a still with `wpp` displays the image and stops the video before theming.
 At login, animated playback does not wait for theme restoration.
 
 Both pickers generate missing thumbnails with at most four workers and reuse
 fresh cache entries. Cursors select the nearest of 28 prebuilt dark Material
-Bibata palettes; no cursor images are rendered during wallpaper changes.
+Bibata palettes. No cursor images are rendered during wallpaper changes.
 Different wallpapers can select identical cursor colours. See the
 [cursor selection contract](../.omp/skills/wallpaper-theming/references/cursors.md)
 for persistent selection, first-use backups and compositor refresh.
 
-The desktop keeps its encrypted, persistent XFS root; there is no tmpfs-root
+The desktop keeps its encrypted, persistent XFS root. There is no tmpfs-root
 reset or separate preservation allowlist. Wallpaper state belongs to
 `hosts/nix/modules/home/matugen.nix`: `~/.local/state/wallpaper/{current,animated}`
 records selections, while `~/.cache/{wallpaper-picker,animated-wallpaper}` holds
 rebuildable thumbnails and frames. Back up the records together with the image
 and video collections if restoring the same selections matters. Generated
 palettes and cursor selection can be reconstructed from their tracked inputs
-and the selected wallpaper; they are not substitutes for collection backups.
+and the selected wallpaper. They are not substitutes for collection backups.
 
 Spotify is the native Spicetify package, available from the launcher and music
 workspace keybinding. Its [shared color-only theme](shared.md#spotify-and-wallpaper-colors)
-follows Matugen; restart Spotify after generating a new palette.
+follows Matugen. Restart Spotify after generating a new palette.
 
 ## Two rules that are easy to break
 
 **Runtime colour outputs must stay writable**, not Home Manager store symlinks.
-Do not put them under `xdg.configFile` or enable Home Manager's `gtk` module,
-which also owns `gtk-4.0/gtk.css`; see [palette ownership](../.omp/skills/wallpaper-theming/references/palettes.md#linux-generation-and-write-ownership).
+Do not put them under `xdg.configFile` or enable Home Manager's `gtk` module.
+That module also owns `gtk-4.0/gtk.css`. See [palette ownership](../.omp/skills/wallpaper-theming/references/palettes.md#linux-generation-and-write-ownership).
 **Edit templates, not generated files**, which are replaced at the next wallpaper.
-Shared templates live in `common/dotfiles/matugen/templates/`; Linux-only ones
+Shared templates live in `common/dotfiles/matugen/templates/`. Linux-only ones
 live in `hosts/nix/dotfiles/ricing/matugen/templates/`.
 Use `wpp`/`awpp` after editing: bare Matugen renders palettes, not the complete
 wallpaper, terminal, cursor and wallpaper-record application.
@@ -265,25 +265,25 @@ wallpaper, terminal, cursor and wallpaper-record application.
 `quickshell.service` runs the pinned Quickshell package with
 `hosts/nix/dotfiles/ricing/quickshell/`. The unit's restart trigger includes the QML store path,
 so a configuration rebuild updates the unit as well as its files. After separate
-activation approval, apply with `nh os switch`; no manual notification daemon
+activation approval, apply with `nh os switch`. No manual notification daemon
 or wallpaper daemon should run alongside the managed ones.
 
 The left rail groups a folded tray toggle, notifications, the centered
 clock/calendar, and occupied workspaces, in that order. Empty workspaces are
-hidden; occupied ordinary and special workspaces appear beneath the clock.
+hidden. Occupied ordinary and special workspaces appear beneath the clock.
 Tray icons expand vertically upward without moving the clock or overlapping
-the notification button; Escape or the toggle folds them away.
+the notification button. Escape or the toggle collapses them.
 All shell-owned icons use bundled filled Boxicons SVGs through `BoxIcon.qml`.
-Communication uses `message-circle-dots-2-filled`; music uses `music-library-filled`,
-including missing-artwork placeholders and the sound OSD; other special workspaces
-use `layers-filled`. Icons follow workspace names rather than temporary IDs;
-ordinary workspaces retain their numeric labels.
+Communication uses `message-circle-dots-2-filled`. Music uses `music-library-filled`,
+including missing-artwork placeholders and the sound OSD. Other special workspaces
+use `layers-filled`. Icons follow workspace names rather than temporary IDs.
+Ordinary workspaces retain their numeric labels.
 SVGs, source attribution and the MIT license live in
 `hosts/nix/dotfiles/ricing/quickshell/icons/`. Tint layers are enabled only for
 visible, loaded icons. App-provided tray, menu and notification icons remain app-owned.
 Microphone, volume, network and Bluetooth remain at the bottom.
 The rail uses filled Boxicons for microphone, sound and notifications:
-`microphone-filled` / `microphone-slash-filled` follow input mute state;
+`microphone-filled` / `microphone-slash-filled` follow input mute state.
 `speaker-filled` stays fixed regardless of output volume or mute state.
 Notification history selects `bell-filled` when nonempty, `bell-check-filled`
 when empty, and `bell-slash-filled` whenever DND is enabled, regardless of count.
@@ -297,11 +297,11 @@ Each of those buttons opens only its own controls: microphone input,
 sound output/media, internet connections, or Bluetooth devices. They use native
 PipeWire, MPRIS, NetworkManager and Bluetooth models. Network credentials use
 `nmtui`, pairing uses Blueman, and detailed audio routing uses Pavucontrol.
-Right-clicking microphone or sound toggles mute; Super+K opens Sound.
+Right-clicking microphone or sound toggles mute. Super+K opens Sound.
 Audio popovers place the device dropdown beside the mute switch in the header,
-above a full-width slider. On means unmuted; long device names elide.
+above a full-width slider. On means unmuted. Long device names are truncated.
 Wallpaper, night-light and power remain available through the launcher tools
-`wpp`, `awpp`, `sunp` and `powermenu`; DND lives in notification history.
+`wpp`, `awpp`, `sunp` and `powermenu`. DND is available in notification history.
 
 ```sh
 quickshell -c expressive ipc call desktop toggle microphone
@@ -322,22 +322,22 @@ IPC selects the same configuration as the service. `reveal` avoids the CLI's
 reserved `show` subcommand. Escape and clicking outside dismiss panels.
 Calendar, notifications and device controls are compact popovers next to their
 trigger, centered vertically on it where screen bounds allow. Hyprland handles
-their pop-in and fade, reversed on close; QML keeps a fixed size.
-Calendar height follows its contents; notification history and device controls
+their pop-in and fade, reversed on close. QML keeps a fixed size.
+Calendar height follows its contents. Notification history and device controls
 scroll within capped heights. Keyboard IPC uses the corresponding rail button
 on the focused monitor as its origin. No full-screen overlay is created.
 Reduced-motion mode disables this compositor animation as well.
-Notification bodies are plain text; DND suppresses popups, not history.
+Notification bodies are plain text. DND suppresses popups, not history.
 History is memory-only, bounded to 100 entries, and clears on shell restart
 or QML reload. Expired notifications remain readable but their actions are
-disabled; transient notifications do not enter history. Critical and explicit
+disabled. Transient notifications do not enter history. Critical and explicit
 zero-timeout notifications remain until closed. An identical replacement
 notification cannot restart its timeout because Quickshell 0.3.1 exposes no
 update signal when every field is unchanged.
 
-`awww.service` owns still wallpapers independently of the shell;
+`awww.service` owns still wallpapers independently of the shell.
 `wallpaper-restore.service` waits for its socket and restores the recorded
-image. Matugen renders writable `quickshell/colors.json`; Quickshell watches it
+image. Matugen renders writable `quickshell/colors.json`. Quickshell watches it
 and keeps the last valid palette on malformed writes. Missing colors use a
 complete dark fallback. Set `QS_REDUCED_MOTION=1` in the user service environment
 to disable shell animations.
@@ -358,10 +358,10 @@ pixel-identical Android tokens. The shell uses relevant components rather than
 inserting every FAB/loading shape into a desktop that has no use for it.
 
 Tray motion adapts Material's [Expressive spring tokens](https://raw.githubusercontent.com/androidx/androidx/androidx-main/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/ExpressiveMotionTokens.kt)
-to Qt's native spring integrator: default spatial for expansion/shape,
+to Qt's native spring integrator. It uses default spatial for expansion/shape,
 default effects for opacity, and fast spatial for icon rotation. Geometry
 and opacity remain separate so transparency does not bounce. The toggle
-uses the bundled `chevron-up-filled` icon; workspace selection retains its animated
+uses the bundled `chevron-up-filled` icon. Workspace selection retains its animated
 size and rounded-shape transition. Exact geometry and coefficients belong
 in the [Quickshell source](../hosts/nix/dotfiles/ricing/quickshell/)
 and [engineering reference](../.omp/skills/desktop-shell/references/quickshell.md).
@@ -379,18 +379,18 @@ sends black in Direct mode to MSI Mystic Light's JAF/JARGB headers.
 Detection is limited to the package's registered `ENE SMBus DRAM`,
 `Gainward GeForce RTX 3090 Phoenix`, and `MSI Mystic Light X870` detectors.
 The complete detector settings are generated in the Nix build sandbox, not at
-boot; every other detector, including Wooting and Elgato, is disabled.
+boot. Every other detector, including Wooting and Elgato, is disabled.
 Explicit device-name selectors limit the lighting commands to those controllers.
 Other hardware status indicators are outside OpenRGB's supported controls.
 
 The service waits for module loading and udev triggering, then runs as `Type=exec`:
 boot targets wait for successful process execution, not RGB detection/completion.
 It has a 60-second runtime bound and reports failures in the journal. Controller
-I/O still takes time; lights can remain on briefly while login proceeds.
+I/O still takes time. Lights can remain on briefly while login proceeds.
 Firmware/loader time is outside this service's control. No fixed delay is added.
 
 After separately approved activation, reapply with
-`sudo systemctl start --wait openrgb-off`; `--wait` waits for the lighting process
+`sudo systemctl start --wait openrgb-off`. `--wait` waits for the lighting process
 to finish. Inspect failures with `journalctl -u openrgb-off`.
 The root-only service does not
 require user-facing OpenRGB udev permissions. If a non-libc allocator is enabled,
@@ -403,25 +403,25 @@ Update selected pins with `nix flake update nixpkgs home-manager --flake /etc/ni
 Review and commit `flake.lock` after a successful build.
 
 The desktop trusts the official NixOS cache. Local package patches require an
-exact matching cached build; otherwise they build locally.
+exact matching cached build. Otherwise they build locally.
 Ananicy uses the unmodified Nixpkgs package. The desktop kernel, NVIDIA open
 modules, NCT6687 and v4l2loopback share a local
-[module-signing build](nix-security.md#local-module-signing-and-integrity-lockdown);
-kernel or driver updates rebuild that signed set together.
+[module-signing build](nix-security.md#local-module-signing-and-integrity-lockdown).
+Kernel or driver updates rebuild that signed set together.
 
 The optional signed Attic cache at `https://cache.kror.net/nixcfg` supplies
 explicit patched/custom package targets through
 `.github/workflows/package-cache.yml`. Follow the
 [server cache provisioning and desktop trust procedure](nixos-server.md#public-package-cache-attic)
-before enabling it; an absent `/etc/nix/attic.conf` keeps official-cache-only
-behavior. CI builds the committed lock file and publishes exact derivation
-outputs, so commit input updates and wait for successful publication before
-expecting matching downloads. Proprietary application and full-host closures
-are not public cache targets. A binary cache moves compilation to CI; it does
+before enabling it. An absent `/etc/nix/attic.conf` keeps official-cache-only
+behavior. CI builds the committed lock file and publishes exact derivation outputs.
+Commit input updates and wait for successful publication before expecting matching downloads.
+Proprietary application and full-host closures are not public cache targets.
+A binary cache moves compilation to CI. It does
 not make a new patch/input revision available before its first build finishes.
 
 After server provisioning, guided desktop setup uses
-`nix run path:/etc/nixos#attic-setup -- client`; GitHub publication credentials
+`nix run path:/etc/nixos#attic-setup -- client`. GitHub publication credentials
 use the same command with `github`. Run both as your normal user with the SSH
 YubiKey connected. The helper verifies the saved server public key over SSH
 against the HTTPS cache and asks before trust installation, activation or
@@ -462,11 +462,11 @@ The link is a snapshot: later edits are excluded, and a failed build can leave
 an older result. For next-boot staging, use
 `nh os boot /etc/nixos --hostname nix --no-update-lock-file`.
 Keep known-good generations for
-[Limine recovery](nix-security.md#limine-recovery-with-a-zero-timeout);
+[Limine recovery](nix-security.md#limine-recovery-with-a-zero-timeout).
 **Garbage collection — nh clean all** removes older generations, keeping one per profile.
 
 `nh`'s default `/etc/nixos` and the maintenance rebuild actions read the tree
-through Git. Tracked modifications are visible without committing; new source
+through Git. Tracked modifications are visible without committing. New source
 files need `git add` (or `git add -N` to mark intent without staging their contents).
 For approved activation with untracked source files, use
 `nh os switch path:/etc/nixos --hostname nix --no-update-lock-file`.

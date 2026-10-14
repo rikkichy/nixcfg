@@ -8,12 +8,12 @@ description: Linux-only safety and operations for NixOS hosts nix and nixos-serv
 Owns **NixOS hosts `nix` and `nixos-server`**: their system modules and
 package/runtime dependencies, including shared Linux modules and packages in
 `common/`. Host-specific hardware and desktop policy stay in their host.
-Desktop VPN secret wiring lives in `.secrets/nix/sops.nix`; the server has no
-VPN or SOPS import. Private material is not an exploration source. Security
-procedures are in [docs/nix-security.md](../../../docs/nix-security.md),
-networking in [docs/nix-networking.md](../../../docs/nix-networking.md), desktop
-and maintenance in [docs/nix.md](../../../docs/nix.md), and server services in
-[server guide](../../../docs/nixos-server.md#server-services-and-private-provisioning).
+Desktop VPN secret wiring lives in `.secrets/nix/sops.nix`. The server has no
+VPN or SOPS import. Private material is not an exploration source.
+See [docs/nix-security.md](../../../docs/nix-security.md) for security procedures
+and [docs/nix-networking.md](../../../docs/nix-networking.md) for networking.
+See [docs/nix.md](../../../docs/nix.md) for desktop and maintenance procedures.
+See the [server guide](../../../docs/nixos-server.md#server-services-and-private-provisioning) for server services.
 
 ## Read only the relevant reference
 
@@ -25,23 +25,23 @@ and maintenance in [docs/nix.md](../../../docs/nix.md), and server services in
 - [Mihomo networking](references/mihomo.md): runtime secret rendering, tunnel
   dependencies, subscription selection, and network failure diagnosis.
 
-Read the applicable operator section before consequential action; links do not
+Read the applicable operator section before consequential action. Links do not
 load runbooks or authorize their procedures.
 
 ## Mandatory boundaries
 
 - Source edits do not authorize activation, reboot, enrollment, token/keyslot
-  retirement, key replacement, or secret changes. Obtain operator approval;
-  preserve a tested root/password recovery path and known-working generations.
-- Never print or put private keys, decrypted SOPS values, provider URLs, or HWID
-  into the checkout, store, arguments, logs, or documentation. A Nix rollback
-  does not restore token enrollment, private keys, or out-of-store mappings.
-- Use the single smallest check proving the changed behavior; the
-  [pre-push gate](../nixcfg-validation/SKILL.md#pre-push-gate) owns repository-wide evaluation.
+  retirement, key replacement, or secret changes. Obtain operator approval.
+  Preserve a tested root/password recovery path and known-working generations.
+- Never print private keys, decrypted SOPS values, provider URLs, or HWID.
+  Never put them into the checkout, store, arguments, logs, or documentation.
+  A Nix rollback does not restore token enrollment, private keys, or out-of-store mappings.
+- Use the single smallest check proving the changed behavior.
+  The [pre-push gate](../nixcfg-validation/SKILL.md#pre-push-gate) owns repository-wide evaluation.
   Evaluation/build/switch success is not boot or authentication proof. Retain
   relevant [security acceptance evidence](../nixcfg-validation/references/security.md)
   and record operator-only checks as pending until separately approved and performed.
-- Route macOS `ne` work to [darwin-host](../darwin-host/SKILL.md), shared shell
-  and Zed work to [shared-home](../shared-home/SKILL.md), Linux desktop/session
-  UI to [desktop-shell](../desktop-shell/SKILL.md), and application packaging to
-  [desktop-applications](../desktop-applications/SKILL.md).
+- Route macOS `ne` work to [darwin-host](../darwin-host/SKILL.md).
+  Route shared shell and Zed work to [shared-home](../shared-home/SKILL.md).
+  Route Linux desktop/session UI to [desktop-shell](../desktop-shell/SKILL.md).
+  Route application packaging to [desktop-applications](../desktop-applications/SKILL.md).

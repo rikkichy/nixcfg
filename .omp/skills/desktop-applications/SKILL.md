@@ -6,18 +6,18 @@ description: Linux host nix desktop application packaging and runtime integratio
 # Desktop Applications — host `nix`
 
 This skill owns Linux application integration, not macOS app installation or
-project development environments. Load only the relevant reference below;
-read the applicable [host operator section](../../../docs/nix.md) before consequential action.
+project development environments. Load only the relevant reference below.
+Read the applicable [host operator section](../../../docs/nix.md) before consequential action.
 
 ## Ownership and routing
 
 - `hosts/nix/modules/system/applications.nix`: package inventory and app services.
 - `hosts/nix/modules/home/applications.nix`: browser MIME defaults, Thunar and absent-only osu! seeds.
 - `common/modules/discord.nix`: writable Equicord settings and static theme for Linux and Darwin.
-- `hosts/nix/modules/home/fuzzel.nix`: desktop entries; [desktop-shell](../desktop-shell/SKILL.md) owns launcher/keybind behavior.
+- `hosts/nix/modules/home/fuzzel.nix`: desktop entries. [desktop-shell](../desktop-shell/SKILL.md) owns launcher/keybind behavior.
 - `hosts/nix/modules/system/{gaming,flatpak}.nix`: gaming integration and user Flatpak lifecycle.
 - `hosts/nix/pkgs/overlay.nix`: local wiring for `ricing/` and `bypasses/` under `hosts/nix/pkgs/`.
-- [darwin-host](../darwin-host/SKILL.md): macOS apps; [shared-home](../shared-home/SKILL.md): common Zed, shell and toolchains.
+- [darwin-host](../darwin-host/SKILL.md): macOS apps. [shared-home](../shared-home/SKILL.md): common Zed, shell and toolchains.
 - [wallpaper-theming](../wallpaper-theming/SKILL.md): generated styles and Equicord CSS.
 
 ## Load when relevant
@@ -32,14 +32,14 @@ read the applicable [host operator section](../../../docs/nix.md) before consequ
 
 ## Mandatory rules
 
-- Preserve application-owned mutable settings; do not replace them with store
+- Preserve application-owned mutable settings. Do not replace them with store
   symlinks. Seed only when absent except for explicitly managed Equicord plugin
-  preferences; preserve its private and runtime state when merging declarations.
+  preferences. Preserve its private and runtime state when merging declarations.
   Never commit credentials or account data.
-- Separate launcher icon resolution from a running window's `StartupWMClass`;
-  measure the real window class and activation path before changing integration.
-- Do not mistake sandbox visibility for host visibility or a working JVM for a
-  complete AppImage runtime. Follow the relevant package reference.
-- Use one focused check of the changed application behavior; the
+- Separate launcher icon resolution from a running window's `StartupWMClass`.
+  Measure the real window class and activation path before changing integration.
+- Do not mistake sandbox visibility for host visibility.
+  A working JVM does not prove a complete AppImage runtime. Follow the relevant package reference.
+- Use one focused check of the changed application behavior. The
   [pre-push gate](../nixcfg-validation/SKILL.md#pre-push-gate) owns repository-wide
   evaluation. Evaluation alone does not prove app startup, media playback or IPC connectivity.

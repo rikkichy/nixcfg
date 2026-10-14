@@ -10,9 +10,9 @@ Host `nix` only: the Ryzen/NVIDIA desktop, user `ri`, checkout `/etc/nixos`.
 Run repository commands there. Hardware UUIDs and `pam://nix` below belong to
 this host, not the server or macOS. Source edits do not authorize activation,
 reboot, enrollment, key replacement, revocation or secret changes. Obtain
-operator approval for those actions; acceptance checks remain pending until
+operator approval for those actions. Acceptance checks remain pending until
 actually performed. Boot/sudo FIDO2 credentials and SOPS/PIV identities are
-independent; a Nix rollback does not restore out-of-store keys or registrations.
+independent. A Nix rollback does not restore out-of-store keys or registrations.
 
 [Desktop operations](nix.md) · [Networking](nix-networking.md) · [Installation](install.md)
 
@@ -25,7 +25,7 @@ Never delete/reformat a volume or wipe existing keyslots to add touch support.
 
 For this installed machine the encrypted backing partition is
 `/dev/disk/by-uuid/7f0ee47d-3794-4ec0-a006-f8eea8fc471a`, from
-`hosts/nix/hardware.nix`; `/dev/mapper/cryptroot` is the **opened** mapping,
+`hosts/nix/hardware.nix`. `/dev/mapper/cryptroot` is the **opened** mapping,
 not the enrollment target. On another machine use its verified backing UUID.
 In an authenticated root shell, after approving enrollment:
 
@@ -48,27 +48,27 @@ systemd-cryptenroll "$disk" --fido2-device=/dev/hidrawN \
   --fido2-with-user-verification=no
 ```
 
-`/dev/hidrawN` is a placeholder for the freshly verified device; its number can
+`/dev/hidrawN` is a placeholder for the freshly verified device. Its number can
 change. No `--wipe-slot` belongs in initial enrollment. Hardware restrictions
-may refuse these policies; do not clear a device PIN to work around them.
+may refuse these policies. Do not clear a device PIN to bypass them.
 Inspect token metadata afterward: UP required, client PIN/UV not required.
-If an existing enrollment requires a PIN, plan a replacement enrollment and
-test it before targeted retirement; editing its JSON is not re-enrollment.
+If an existing enrollment requires a PIN, plan a replacement enrollment.
+Test it before targeted retirement. Editing its JSON is not re-enrollment.
 
 The systemd initrd enables FIDO2 support and extends only `cryptroot` with
 `fido2-device=auto,token-timeout=10s`, retaining discard support. That timeout
 bounds token discovery, **not all touch interactions**. Password fallback stays
-available; do not enable `headless`. Root unlock cannot depend on a SOPS key
+available. Do not enable `headless`. Root unlock cannot depend on a SOPS key
 inside the still-locked root filesystem.
 
-Before an approved reboot, inspect the built initrd's crypttab (one root mapping
-named `cryptroot`), FIDO2 library/udev support, and USB/HID modules. Inspect
-`/boot/limine/limine.conf` to associate the intended generation with its actual
-initrd; `readlink /nix/var/nix/profiles/system` identifies the selected system
+Before an approved reboot, inspect the built initrd's crypttab for one root mapping named `cryptroot`.
+Inspect FIDO2 library/udev support and USB/HID modules.
+Inspect `/boot/limine/limine.conf` to associate the intended generation with its actual
+initrd. `readlink /nix/var/nix/profiles/system` identifies the selected system
 profile. A successful evaluation/build/switch is not a successful unlock.
 
-At the console, separately test cold boot with token + touch/no PIN, boot
-without the token using the retained passphrase, and no-touch/wrong-token
+At the console, separately test cold boot with token + touch/no PIN.
+Test boot without the token using the retained passphrase. Test no-touch/wrong-token
 fallback. Record waits and results. Do not garbage-collect the recovery
 generation or remove fallback slots until all paths work.
 
@@ -76,26 +76,25 @@ generation or remove fallback slots until all paths work.
 
 `boot.loader.timeout = 0` means immediate boot without a visible menu. The
 locked [Limine 12.9.3 documentation](https://github.com/limine-bootloader/limine/blob/v12.9.3/CONFIG.md)
-documents UEFI one-shot timeout override. When the installed bootloader supports
-it, an operator-approved `sudo systemctl reboot --boot-loader-menu=30s` requests
-a menu on that next reboot; select the known-working generation there. Do not
-assume holding Shift/Escape works at timeout zero, or assume a newer checkout
-means the installed EFI binary was updated.
+documents UEFI one-shot timeout override.
+When the installed bootloader supports it, an operator-approved `sudo systemctl reboot --boot-loader-menu=30s` requests a menu on that next reboot.
+Select the known-working generation there.
+Do not assume that holding Shift/Escape works at timeout zero.
+Do not assume that a newer checkout means the installed EFI binary was updated.
 
-For a controlled boot experiment, an alternative is temporarily setting
-`boot.loader.timeout = 10`, rebuilding the boot configuration, and verifying the
-generated timeout and signed bootloader before reboot. If the machine cannot
-boot or the one-shot request is unsupported, use the firmware boot menu to
-start the recovery ISO; disable Secure Boot first if the ISO is not trusted.
+For a controlled boot experiment, temporarily set `boot.loader.timeout = 10` and rebuild the boot configuration.
+Verify the generated timeout and signed bootloader before reboot.
+If the machine cannot boot or the one-shot request is unsupported, start the recovery ISO through the firmware boot menu.
+Disable Secure Boot first if the ISO is not trusted.
 The installed ESP is `/dev/disk/by-uuid/612D-84DE`. Do not edit an enrolled
 `limine.conf` in place: its hash is authenticated by the EFI image. Repair
-through the checkout and regenerate/sign the bootloader, or restore the
-matching EFI image and configuration from the protected backup with Secure
-Boot disabled. Preserve the kernel/initrd files referenced by that backup.
+through the checkout and regenerate/sign the bootloader.
+Alternatively, restore the matching EFI image and configuration from the protected backup with Secure Boot disabled.
+Preserve the kernel/initrd files referenced by that backup.
 
-If no generation unlocks root, the ISO can open the verified backing partition
-with its retained passphrase as `cryptroot`; mount root and ESP, enter via
-`nixos-enter`, and repair the configuration. Do not format anything. A NixOS
+If no generation unlocks root, use the ISO to open the verified backing partition with its retained passphrase as `cryptroot`.
+Mount root and ESP, enter via `nixos-enter`, and repair the configuration.
+Do not format anything. A NixOS
 rollback changes boot configuration, not LUKS enrollment or keyslots.
 
 ## EFI partition permissions
@@ -103,15 +102,15 @@ rollback changes boot configuration, not LUKS enrollment or keyslots.
 `hosts/nix/hardware.nix` mounts the FAT EFI partition at `/boot` with
 `fmask=0077,dmask=0077`, restricting its files and directories to root.
 This protects the boot random seed from ordinary local users. FAT permissions
-come from mount masks; changing a file's mode does not fix a permissive mount.
+come from mount masks. Changing a file's mode does not fix a permissive mount.
 The ESP remains unencrypted, so these masks do not prevent offline access.
 
 After separately approved activation and remount or reboot, check
-`findmnt /boot -o TARGET,FSTYPE,OPTIONS` and
-`stat -c '%a %U:%G %n' /boot /boot/loader/random-seed` without reading the seed.
+`findmnt /boot -o TARGET,FSTYPE,OPTIONS`.
+Check `stat -c '%a %U:%G %n' /boot /boot/loader/random-seed` without reading the seed.
 Require both masks to be `0077`, root ownership and no group/other permissions.
 Check fresh `journalctl -b -u systemd-boot-random-seed.service` output for
-permission warnings; old boot records are not proof of the active mount policy.
+permission warnings. Old boot records are not proof of the active mount policy.
 
 ## Secure Boot with Limine
 
@@ -123,10 +122,10 @@ nix run path:/etc/nixos#secureboot-setup
 
 It requests sudo, preserves existing keys/backups, and asks separately before
 key creation, activation, revocation restoration and firmware enrollment.
-Rerun the same command after each BIOS step; firmware and key state determine
+Rerun the same command after each BIOS step. Firmware and key state determine
 where to resume. Enrollment uses native `sbctl enroll-keys --append --microsoft
---firmware-builtin=db,KEK`, with temporary KEK/db immutable-flag removal only
-after approval and restoration on failure. It never deletes PK, rotates keys,
+--firmware-builtin=db,KEK`. It temporarily removes KEK/db immutable flags only
+after approval and restores them on failure. It never deletes PK, rotates keys,
 changes BIOS enforcement or reboots automatically.
 
 Use `nix run path:/etc/nixos#secureboot-setup -- --status` for read-only status
@@ -134,14 +133,14 @@ and installed Limine verification, or `-- --help` without sudo.
 An optional positional argument selects a reviewed Git checkout instead of
 `/etc/nixos`. Setup targets this repository's `nix` host and standard sbctl
 key paths, not a live installer, other distributions or custom sbctl backends.
-Automatic factory-dbx restoration accepts checked SHA-256 revocation lists;
-other formats stop for review rather than skipping validation. The helper
+Automatic factory-dbx restoration accepts checked SHA-256 revocation lists.
+Other formats stop for review rather than skipping validation. The helper
 cannot verify physical firmware rejection of untrusted images.
 
 The desktop uses native Limine signing, not a different bootloader.
 `boot.loader.limine.secureBoot.enable` signs the EFI image with the local
-sbctl db key. The image authenticates the enrolled BLAKE2b configuration hash;
-the configuration authenticates its kernel and initrd paths by their hashes.
+sbctl db key. The image authenticates the enrolled BLAKE2b configuration hash.
+The configuration authenticates its kernel and initrd paths by their hashes.
 The editor is disabled and checksum mismatches stop boot. This does not
 add a separate PE signature to the kernel or make the local signer
 organization-approved for anti-cheat.
@@ -150,12 +149,12 @@ Automatic key creation and firmware enrollment are disabled. Private
 PK/KEK/db keys belong under root-only `/var/lib/sbctl`, outside the repository
 and Nix store. Retain an encrypted offline backup before changing firmware
 trust. `sbctl --microsoft` includes Microsoft's **public** certificates during
-enrollment; it cannot sign our images with Microsoft's private keys.
+enrollment. It cannot sign our images with Microsoft's private keys.
 
 The native installer can overlook a signing/enrollment subprocess failure.
 `verify-limine-secureboot.py` checks the installed configuration hash and
 verifies the EFI signature against `/var/lib/sbctl/keys/db/db.pem` after each
-bootloader installation. A failed check aborts the operation; installation
+bootloader installation. A failed check aborts the operation. Installation
 is not transactional, so repair before rebooting. The isolated regression
 check rejects unsigned images, changed configurations, signed images without
 config enrollment, and images modified after signing:
@@ -173,26 +172,26 @@ Limine image and its configuration hash verify successfully.
 The protected public backup is `/var/lib/sbctl/before-enrollment`: it contains
 the pre-enrollment EFI image/configuration, public UEFI variables and `.esl`
 database copies without efivarfs attribute headers. The active dbx contains
-the 431 SHA-256 revocations from the verified firmware `dbxDefault`; this
+the 431 SHA-256 revocations from the verified firmware `dbxDefault`. This
 does not establish that the latest upstream revocation updates are installed.
 This public backup is not a backup of the private sbctl keys.
 
-On the MSI X870 GAMING PLUS WIFI, inspect Advanced → Security → Secure Boot
-and its Custom-mode key management at the physical console. The
+On the MSI X870 GAMING PLUS WIFI, inspect Advanced → Security → Secure Boot at the physical console.
+Inspect its Custom-mode key management. The
 [AMD 800-series BIOS manual](https://download.msi.com/archive/mnu_exe/mb/AMDAM5800BIOS_English.pdf)
 says **Reset To Setup Mode deletes all Secure Boot keys**. Do not use it as
 a PK-only reset. If the individual PK submenu offers an unambiguous
 PK-only deletion, that separately approved operation can enter Setup Mode
-while retaining KEK/db/dbx. If not, stop and review the actual firmware UI;
-do not substitute a blind all-key reset. Prevent automatic factory-key
+while retaining KEK/db/dbx. If not, stop and review the actual firmware UI.
+Do not substitute a blind all-key reset. Prevent automatic factory-key
 reprovisioning and keep enforcement disabled while preparing enrollment.
 
 If dbx is absent during recovery, restore only a validated firmware-default
-ESL with `efi-updatevar -e -f FILE dbx` while still in Setup Mode, before
+ESL with `efi-updatevar -e -f FILE dbx`. Do this in Setup Mode, before
 installing PK. `FILE` must be the checked `.esl` backup, not a raw efivarfs
 file with its attribute header. Check that the installed Limine Authenticode
-digest and measured EFI images are not revoked, and verify the written dbx
-matches the intended payload before proceeding.
+digest and measured EFI images are not revoked.
+Verify that the written dbx matches the intended payload before proceeding.
 
 Back in Linux, require Setup Mode enabled and compare the preserved databases
 with the backup. Only after separate enrollment approval:
@@ -201,12 +200,12 @@ with the backup. Only after separate enrollment approval:
 sudo sbctl enroll-keys --append --microsoft --firmware-builtin=db,KEK
 ```
 
-`--append` retains existing KEK/db entries; the other flags supplement
+`--append` retains existing KEK/db entries. The other flags supplement
 Microsoft and firmware-default trust, including NVIDIA Option ROM needs.
 This command does not restore dbx. If it reports immutable KEK/db variables,
 stop and inspect the partial state. With separate approval, clear `chattr -i`
-on only the two reported paths, run the native enrollment command, and
-restore `chattr +i` on exit, including failure. Do not use
+on only the two reported paths. Run the native enrollment command.
+Restore `chattr +i` on exit, including failure. Do not use
 `--ignore-immutable` or `--yes-this-might-brick-my-machine` to skip checks.
 Enrollment is not transactional: do not blindly repeat it after a failure.
 Require the local PK/KEK/db certificates, all original KEK/db entries,
@@ -215,17 +214,17 @@ unchanged intended dbx contents, and restored filesystem protection.
 ### MSI enforcement and boot acceptance
 
 sbctl flags this board for [FQ0001](https://github.com/Foxboron/sbctl/wiki/FQ0001).
-Inspect the actual firmware policy: select **Maximum Security** under
-Secure Boot Preset, or set **Option ROM, Removable Media and Fixed Media**
+Inspect the actual firmware policy. Select **Maximum Security** under
+Secure Boot Preset. Alternatively, set **Option ROM, Removable Media and Fixed Media**
 to **Deny Execute** under Image Execution Policy. **Always Execute** can
 permit untrusted images even while Secure Boot reports enabled.
 
 After the approved enrollment, enable Secure Boot without replacing the
-custom keys with factory defaults, then perform the approved boot check.
+custom keys with factory defaults. Then perform the approved boot check.
 Require `sudo sbctl status` and `bootctl status` to report enabled with
-Setup Mode disabled, working NVIDIA graphics, integrity lockdown, and valid
+Setup Mode disabled. Require working NVIDIA graphics, integrity lockdown, and valid
 TPM measurements. Physical firmware rejection of an untrusted image remains
-an operator-only check; isolated signing tests do not prove it.
+an operator-only check. Isolated signing tests do not prove it.
 
 For recovery, first disable enforcement in firmware while preserving its
 databases. Keep a usable console, LUKS passphrase, recovery ISO and known-good
@@ -235,7 +234,7 @@ generation. A Nix rollback does not restore firmware keys.
 
 `hosts/nix/boot.nix` enables Limine's `measured_boot: yes`. Limine 12.9.3
 requires the firmware's TPM 2.0 measurement interface: PCR 8 records the
-kernel command line and artifact paths; PCR 9 records the configuration,
+kernel command line and artifact paths. PCR 9 records the configuration,
 kernel and initrd contents. See the
 [Limine measurement contract](https://github.com/limine-bootloader/limine/blob/v12.9.3/USAGE.md#measured-boot).
 Measurement does not authenticate the artifacts or enable Secure Boot.
@@ -248,18 +247,18 @@ sudo nix shell nixpkgs#tpm2-tools --command \
 ```
 
 Require PCR 8 and PCR 9 `EV_IPL` events for the selected entry's command
-line, kernel and initrd, plus a PCR 9 `limine_cfg` event. Firmware events
+line, kernel and initrd. Also require a PCR 9 `limine_cfg` event. Firmware events
 alone are insufficient. `bootctl`'s measured-UKI/OS fields are not the
 acceptance check for Limine's PCR 8/9 scheme. Actual measurements remain
 unverified until this boot check is performed.
 
 ## IOMMU DMA isolation
 
-`hosts/nix/boot.nix` sets `iommu.passthrough=0` for translated DMA and
-`amd_iommu=force_isolation` to prevent the AMD IOMMU driver from selecting
+`hosts/nix/boot.nix` sets `iommu.passthrough=0` for translated DMA.
+It sets `amd_iommu=force_isolation` to prevent the AMD IOMMU driver from selecting
 identity domains for IOMMUv2-capable devices such as the integrated GPU.
 Keep IOMMU/AMD-Vi enabled in firmware. The NVIDIA RTX 3090 remains the
-display GPU; neither its driver nor its outputs are disabled.
+display GPU. Neither its driver nor its outputs are disabled.
 
 The unused integrated GPU may optionally be disabled in firmware, with
 monitors connected to the RTX 3090. Blacklisting `amdgpu` alone does not
@@ -275,7 +274,7 @@ nvidia-smi
 
 Require both boot parameters, translated `DMA` or `DMA-FQ` domains rather
 than `identity`, and a working NVIDIA GPU. `DMA-FQ` uses lazy IOTLB
-invalidation; it is translated DMA, not passthrough. Verify the integrated
+invalidation. It is translated DMA, not passthrough. Verify the integrated
 GPU's group too if it remains enabled. Group numbers can change across boots.
 A virtual AMD-IOMMU boot check exercises translation, not the motherboard's
 firmware or physical GPU compatibility. Retain the known-working generation
@@ -287,7 +286,7 @@ The desktop kernel enforces integrity lockdown from early boot and passes
 `lockdown=integrity` explicitly. Module-signature enforcement is also enabled.
 `hosts/nix/pkgs/lockdown-kernel.nix` builds the kernel, NVIDIA open modules,
 NCT6687 sensor driver and OBS's v4l2loopback together. Every module is signed
-with the kernel build's temporary key; its certificate is embedded in the
+with the kernel build's temporary key. Its certificate is embedded in the
 kernel and exported as `module-signing.x509`. The private key stays in the
 build sandbox and is deleted after signing, never installed into the store
 or checkout. There is no persistent signing key to enroll or back up.
@@ -298,7 +297,7 @@ must be enabled in both the client and daemon. The desktop configuration
 enables it persistently. Before that configuration is activated, the
 operator-approved runtime override
 `/run/systemd/system/nix-daemon.service.d/lockdown-ca.conf` supplies
-`NIX_CONFIG=extra-experimental-features = ca-derivations` to the daemon; it
+`NIX_CONFIG=extra-experimental-features = ca-derivations` to the daemon. It
 expires at reboot. Initial build commands also need the client flag:
 
 ```bash
@@ -307,15 +306,15 @@ nix --extra-experimental-features ca-derivations build --no-link \
   'path:.#nixosConfigurations.nix.config.system.build.initialRamdisk'
 ```
 
-The check verifies every module's signature against the exported certificate,
-then boots the actual kernel in QEMU to require integrity lockdown and BPF
-LSM, load signed modules and the virtual camera, and reject unsigned modules
+The check verifies every module's signature against the exported certificate.
+It then boots the actual kernel in QEMU to require integrity lockdown and BPF
+LSM. It loads signed modules and the virtual camera, and rejects unsigned modules
 and corrupted signatures. It does not test the physical NVIDIA GPU, sensors,
 firmware TPM measurements, or encrypted-root unlock.
 
 Kernel and driver updates require a joint local build. Additional external
-modules must join that build; a configuration assertion rejects unsigned
-standalone module packages. Keep NVIDIA's `open = true`; the proprietary
+modules must join that build. A configuration assertion rejects unsigned
+standalone module packages. Keep NVIDIA's `open = true`. The proprietary
 module flavor is not part of this build.
 
 Activation and reboot require separate approval. Retain a known-working
@@ -344,10 +343,10 @@ nvidia-smi
 
 Require `[integrity]`, an active `bpf` LSM, `PKCS#7`, and a working GPU.
 Some kmod builds cannot decode signer/hash details even when `sig_id` is
-present; the cryptographic build check is the signature verification.
+present. The cryptographic build check is the signature verification.
 Also verify NCT6687 sensors, OBS Cam and the documented disk-unlock fallback.
-Lockdown restricts interfaces such as `/dev/mem`, MSR writes and hibernation;
-root utilities relying on them may be affected.
+Lockdown restricts interfaces such as `/dev/mem`, MSR writes and hibernation.
+Root utilities relying on them may be affected.
 
 Local module signing does not sign the kernel image for UEFI, enable Secure
 Boot, or establish an organization signature accepted by anti-cheat.
@@ -355,8 +354,8 @@ Boot, or establish an organization signature accepted by anti-cheat.
 ## Touch-only sudo with password fallback
 
 Only PAM services `sudo` and `sudo-i` use U2F as `sufficient`, before the Unix
-password path. sudo-rs authorization and `wheelNeedsPassword = true` remain;
-this is not a NOPASSWD grant. Touch is requested with `userpresence=1`,
+password path. sudo-rs authorization and `wheelNeedsPassword = true` remain.
+This is not a NOPASSWD grant. Touch is requested with `userpresence=1`,
 `pinverification=0`, `userverification=0`, and a cue. The central mapping is
 `/etc/u2f-mappings`, root-controlled, with origin **and** appid `pam://nix`.
 It contains public registration metadata, not an exported private key, and
@@ -364,9 +363,9 @@ does not depend on SOPS. Desktop login, autologin, locker, keyring, and polkit
 authentication are not part of this setup.
 
 Keep a working authenticated root shell open throughout registration and
-testing. As `ri`, check `pamu2fcfg --help`, then register the inspected key to a
-protected temporary file outside the checkout, using ordinary non-resident
-credentials:
+testing. As `ri`, check `pamu2fcfg --help`.
+Then register the inspected key to a protected temporary file outside the checkout,
+using ordinary non-resident credentials:
 
 ```bash
 umask 077
@@ -375,39 +374,39 @@ pamu2fcfg --username=ri --origin=pam://nix --appid=pam://nix > "$mapping"
 ```
 
 Do not add `--resident`, `--pin-verification`, `--user-verification`, or
-`--no-user-presence`. In the retained root shell, inspect the result privately
-and, for **first enrollment only**, install it with
+`--no-user-presence`. In the retained root shell, inspect the result privately.
+For **first enrollment only**, install it with
 `install -o root -g root -m 0600 /the/verified/temporary/file /etc/u2f-mappings`.
-If the file already exists, back it up and merge the new registration into
-`ri`'s existing colon-separated entry, preserving every other user/key; do not
-overwrite it. Remove the temporary file afterward. Do not reset FIDO or clear
+If the file already exists, back it up.
+Merge the new registration into `ri`'s existing colon-separated entry, preserving every other user/key.
+Do not overwrite it. Remove the temporary file afterward. Do not reset FIDO or clear
 its existing PIN. The [pamu2fcfg manual](https://developers.yubico.com/pam-u2f/Manuals/pamu2fcfg.1.html)
 describes registration flags.
 
-Inspect generated `/etc/pam.d/sudo` and `/etc/pam.d/sudo-i`: numeric `=0`
-arguments must actually be present, U2F must be `sufficient`, the normal password
-and account/session checks must remain, and `nouserok`/`alwaysok` must be absent.
+Inspect generated `/etc/pam.d/sudo` and `/etc/pam.d/sudo-i`.
+Numeric `=0` arguments must actually be present, and U2F must be `sufficient`.
+The normal password and account/session checks must remain. `nouserok`/`alwaysok` must be absent.
 Do not change global PAM enablement or timestamp policy.
 
 After approved activation, run each fresh attempt from a separate **`ri`**
-terminal, never from the root shell: `sudo -k; sudo true`, and separately
-`sudo -k; sudo -i` (then `exit` the acquired shell). For **both** commands test:
+terminal, never from the root shell.
+Run `sudo -k; sudo true`, and separately `sudo -k; sudo -i` (then `exit` the acquired shell). For **both** commands test:
 
 - Enrolled key + touch: succeeds without a PIN.
-- Enrolled key without touch: no hardware success; it may wait and fall back
-  to a password. Record the wait; do not mistake cached authorization for touch.
+- Enrolled key without touch: no hardware success. It may wait and fall back
+  to a password. Record the wait. Do not mistake cached authorization for touch.
 - No key + correct account password: succeeds.
 - No key + wrong password: fails.
 - Unregistered key, and controlled missing/malformed mapping: no
-  unconditional success; password fallback still works.
+  unconditional success. Password fallback still works.
 
-Keep the root shell until the good-password and negative tests pass. If PAM
-fails, use it to restore the saved mapping and switch to the known-working
-configuration (`nixos-rebuild switch --rollback` when that previous generation
-is the intended one); repeat fresh password tests before closing the shell.
+Keep the root shell until the good-password and negative tests pass.
+If PAM fails, use it to restore the saved mapping and switch to the known-working configuration.
+Use `nixos-rebuild switch --rollback` when that previous generation is the intended one.
+Repeat fresh password tests before closing the shell.
 Mapping edits are outside Nix generations and need their own restoration.
 For a lost token, remove only its reviewed registration after replacement/
-fallback tests; separately revoke its SOPS and disk access.
+fallback tests. Separately revoke its SOPS and disk access.
 
 
 ## SOPS / PIV administration
@@ -422,9 +421,9 @@ authorizes the administrator YubiKey and host key. SOPS supplies the active
 runtime inputs. Keep `/etc/mihomo/subscription.url`, `/etc/mihomo/quattro.url`,
 and `/etc/mihomo/hwid` for rollback. On an unprovisioned checkout without
 ciphertext these are the inputs instead. All three must exist, be nonempty, and be
-root-owned mode `0600`; HWID is not generated automatically. Restore them from
-the installed system or a protected backup, using an editor/file transfer that
-does not expose values in terminal output, command arguments, or shell history.
+root-owned mode `0600`. HWID is not generated automatically.
+Restore them from the installed system or a protected backup.
+Use an editor/file transfer that does not expose values in terminal output, command arguments, or shell history.
 For a genuinely new subscription, obtain its intended device identity from the
 operator/provider rather than inventing a migration value.
 
@@ -439,8 +438,8 @@ operator/provider rather than inventing a migration value.
 | `/run/mihomo/config.yaml` | Root-only serialized runtime configuration |
 
 The administrator YubiKey and host recipients are **alternatives in one
-recipient group**, not a threshold scheme. The host decrypts unattended;
-the administrator uses a PIV YubiKey touch. There is deliberately no independent
+recipient group**, not a threshold scheme. The host decrypts unattended.
+The administrator uses a PIV YubiKey touch. There is deliberately no independent
 recovery recipient: losing both private keys loses access to the ciphertext.
 The operator accepts this risk. Neither the account password nor the LUKS
 passphrase automatically decrypts SOPS.
@@ -449,10 +448,10 @@ First provisioning is an operator procedure, not something a rebuild does:
 
 1. Establish the [administrator PIV identity](#piv-touch-only-administration-and-nested-sops-commands) and obtain its
    public recipient. Keep its identity descriptor outside the checkout.
-2. Retain an existing host key. Only if none exists, create one in a root shell
-   with `umask 077`, a root-owned `0700` `/var/lib/sops-nix` directory, and
-   `age-keygen -o /var/lib/sops-nix/key.txt`. Never overwrite an established key.
-   Keep it `root:root`, mode `0600`; obtain only its public recipient with
+2. Retain an existing host key. Only if none exists, create one in a root shell.
+   Use `umask 077` and a root-owned `0700` `/var/lib/sops-nix` directory.
+   Run `age-keygen -o /var/lib/sops-nix/key.txt`. Never overwrite an established key.
+   Keep it `root:root`, mode `0600`. Obtain only its public recipient with
    `age-keygen -y /var/lib/sops-nix/key.txt`. Automatic key generation is disabled.
 3. Set the policy rule's `age` value to the two real public recipients
    (administrator and host), comma-separated. Do not copy example keys or
@@ -461,15 +460,15 @@ First provisioning is an operator procedure, not something a rebuild does:
    keys `primary_url`, `quattro_url`, and `hwid`. Import the existing effective
    values without displaying them. In particular preserve the **exact meaningful
    HWID**, not this installation's machine-id. The legacy renderer removed
-   whitespace; distinguish file framing from the actual established value and
-   privately compare the imported value with the working device identity.
+   whitespace. Distinguish file framing from the actual established value.
+   Privately compare the imported value with the working device identity.
    Do not perform blind whitespace replacement on the SOPS strings.
 5. Encrypt using the nested policy, writing only ciphertext into the checkout.
    For `sops edit`, set `TMPDIR` to a private `0700` directory outside the
-   checkout, preferably tmpfs, and disable editor swap, backup, and persistent
+   checkout, preferably tmpfs. Disable editor swap, backup, and persistent
    undo files. Never create an unencrypted `personal.yaml` in the repo first.
-   Use the [nested SOPS commands](#piv-touch-only-administration-and-nested-sops-commands) to create/edit the encrypted document; enter secrets
-   only in the protected editor, not in command arguments.
+   Use the [nested SOPS commands](#piv-touch-only-administration-and-nested-sops-commands) to create/edit the encrypted document.
+   Enter secrets only in the protected editor, not in command arguments.
 6. Independently test administrator and host decryption without
    printing plaintext. Privately compare all imported values, especially HWID.
    Merely adding `personal.yaml` selects SOPS at the next evaluation: finish
@@ -481,26 +480,26 @@ First provisioning is an operator procedure, not something a rebuild does:
    and rollback have been exercised.
 
 After repairing inputs, an approved `sudo systemctl restart mihomo` rerenders them.
-Source changes do not update a running credential without restart; see [unit ordering](../.omp/skills/nix-system-operations/references/mihomo.md#public-template-private-runtime-rendering).
+Source changes do not update a running credential without restart. See [unit ordering](../.omp/skills/nix-system-operations/references/mihomo.md#public-template-private-runtime-rendering).
 Check service state without dumping configuration or provider URLs to logs.
 
 ### PIV touch-only administration and nested SOPS commands
 
 PIV via `age-plugin-yubikey` is separate from the FIDO credentials used by boot
 and sudo. Inspect the model, firmware, management setup, and occupied compatible
-PIV slots first; absence of a certificate alone does not prove a slot unused.
+PIV slots first. Absence of a certificate alone does not prove a slot unused.
 Check installed `age-plugin-yubikey --help`. For an approved **new key** in a
 confirmed-unused slot, request `--generate --serial SERIAL --slot SLOT
---pin-policy never --touch-policy always` and save its output only to
+--pin-policy never --touch-policy always`. Save its output only to
 `~/.config/sops/age/yubikey.txt` with restrictive permissions. `SERIAL` and
 `SLOT` mean the inspected device and slot, not literal values to copy.
 
 Generation may require management authorization or a PIN. The plugin may also
 change default PIN/PUK/management settings during setup: review that behavior
 before authorizing it. Never reset an applet, clear a FIDO PIN, or weaken other
-credentials. PIN/touch policy is fixed at generation/import; an existing
+credentials. PIN/touch policy is fixed at generation/import. An existing
 PIN-requiring PIV key needs a separately authorized replacement, not an edited
-descriptor. FIPS policies can prohibit `never`; report incompatibility rather
+descriptor. FIPS policies can prohibit `never`. Report incompatibility rather
 than silently choosing `once` or cached touch. See the
 [plugin documentation](https://github.com/str4d/age-plugin-yubikey#configuration)
 and [Yubico policy restrictions](https://docs.yubico.com/yesdk/users-manual/application-piv/pin-touch-policies.html).
@@ -517,58 +516,58 @@ sops --config .secrets/.sops.yaml edit .secrets/nix/personal.yaml
 
 Remove the private temporary directory after the editor
 has exited and no recovery files are needed. SOPS searches for config upward,
-never downward from the repository root; do not rely on it finding the child
-policy. Changing policy alone does not update ciphertext; use the reviewed [replacement/updatekeys procedure](#reinstall-replacement-revocation-and-rollback).
+never downward from the repository root. Do not rely on it finding the child
+policy. Changing policy alone does not update ciphertext. Use the reviewed [replacement/updatekeys procedure](#reinstall-replacement-revocation-and-rollback).
 
-For an independent decryption test use a clean test environment with no other
-age identities, SOPS key environment variables/commands, SSH keys, or GPG
-keyring; an explicit `SOPS_AGE_KEY_FILE` alone is not proof of isolation.
-Leave unused identity variables/commands unset, not empty. In that isolated
-environment, use `sops --config .secrets/.sops.yaml decrypt
-.secrets/nix/personal.yaml > /dev/null` from the repository root, not a command that
-prints plaintext. Replug the YubiKey before the
+For an independent decryption test, use a clean test environment with no other
+age identities or SOPS key environment variables/commands.
+Exclude SSH keys and the GPG keyring. An explicit `SOPS_AGE_KEY_FILE` alone is not proof of isolation.
+Leave unused identity variables/commands unset, not empty.
+In that isolated environment, use `sops --config .secrets/.sops.yaml decrypt
+.secrets/nix/personal.yaml > /dev/null` from the repository root.
+Do not use a command that prints plaintext. Reconnect the YubiKey before the
 administrator-only test: no routine PIN, touch required, no-touch must not
-complete decryption. Repeat with only the root host key and no token. Do not
-record these checks as passed until actually performed. Touch proves presence, not identity;
-the host and any compromised secret-consuming process can access plaintext.
+complete decryption. Repeat with only the root host key and no token.
+Do not record these checks as passed until actually performed. Touch proves presence, not identity.
+The host and any compromised secret-consuming process can access plaintext.
 
 ### Reinstall, replacement, revocation, and rollback
 
 On a replacement machine, restore or reconstruct the **existing** PIV descriptor
-with `age-plugin-yubikey --identity --serial SERIAL --slot SLOT`; do not run
-`--generate` as recovery. Create a new root-only native host age key, add its
-public recipient alongside the administrator in the policy, then use an
-already-authorized identity to run:
+with `age-plugin-yubikey --identity --serial SERIAL --slot SLOT`. Do not run
+`--generate` as recovery. Create a new root-only native host age key.
+Add its public recipient alongside the administrator in the policy.
+Then use an already-authorized identity to run:
 
 ```bash
 sops --config .secrets/.sops.yaml updatekeys .secrets/nix/personal.yaml
 ```
 
 Test the new host alone, with the YubiKey removed and all other identities
-excluded, before unattended provisioning. Restore the same URLs and HWID; do
-not regenerate HWID from the new machine-id. Successful decryption does not
+excluded, before unattended provisioning. Restore the same URLs and HWID.
+Do not regenerate HWID from the new machine-id. Successful decryption does not
 guarantee provider acceptance or simultaneous-device limits. Generate/verify
 the new machine's hardware configuration. Its disk enrollment and sudo mapping
 are separate procedures. Keep the old host recipient until explicit retirement.
 
 If the host age key is lost, use the administrator YubiKey to authorize a
-replacement host key; a rebuild cannot regenerate access to existing ciphertext.
+replacement host key. A rebuild cannot regenerate access to existing ciphertext.
 If the YubiKey is lost, use an authorized host to add/test a replacement
 administrator recipient. There is no third decryption route if both are lost.
 
 Recipient removal with `updatekeys` changes who can unwrap the current SOPS
-data key; it is not data-key rotation (`sops rotate --in-place`) or revocation
-of subscription credentials at the provider. For compromise, review all three:
-remove the compromised recipient and update ciphertext, rotate its data key with
-the remaining recipients, and replace exposed application credentials. Old Git
+data key. It is not data-key rotation (`sops rotate --in-place`) or revocation
+of subscription credentials at the provider. For compromise, review all three.
+Remove the compromised recipient and update ciphertext. Rotate its data key with
+the remaining recipients. Replace exposed application credentials. Old Git
 revisions remain decryptable by old authorized recipients. A lost token also
 needs separate removal of its exact sudo registration and LUKS token/keyslot,
-after fallback/replacement tests; never wipe all slots or an entire applet.
+after fallback/replacement tests. Never wipe all slots or an entire applet.
 
 For SOPS cutover rollback, use a known-working system generation with retained
 `/etc/mihomo` inputs. For source rollback, restore the matched module,
-policy/ciphertext, renderer, and imports from the chosen revision; preserve host
-private keys. Removing ciphertext alone is not a revocation procedure. A pure
-layout move preserves ciphertext bytes/metadata and runtime identities: compare
-checksums, adapt relative paths/rules/imports, and do not rotate or reenroll
-hardware merely because a file moved.
+policy/ciphertext, renderer, and imports from the chosen revision. Preserve host
+private keys. Removing ciphertext alone is not a revocation procedure.
+A pure layout move preserves ciphertext bytes/metadata and runtime identities.
+Compare checksums and adapt relative paths/rules/imports.
+Do not rotate or reenroll hardware merely because a file moved.

@@ -11,6 +11,6 @@ Return:
 2. The files that would change and why.
 3. A numbered implementation plan.
 4. Risks and silent failure modes from the project documentation.
-5. The smallest focused check proving the changed behavior, relevant native runtime/hardware safety evidence, and any limits. Link to `nixcfg-validation` for the pre-push repository gate; do not plan a duplicate quick/full matrix.
+5. The smallest focused check proving the changed behavior, relevant native runtime/hardware safety evidence, and any limits. Link to `nixcfg-validation` for the pre-push repository gate. Do not plan a duplicate quick/full matrix.
 
 Do not edit files, apply the system, restart services, commit, or push.

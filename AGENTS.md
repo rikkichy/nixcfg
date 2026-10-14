@@ -5,20 +5,20 @@ Host-oriented Nix config for:
 1. Gaming+streaming `nix`
 2. Headless server `nixos-server`
 3. Silicon M5 Pro macOS `ne`.
-   `docs/` contain task-loaded operating procedures
+   `docs/` contains task-loaded operating procedures.
    `.omp/skills/` owns engineering constraints.
 
 ## Working rules
 
 - Check git before task completion. This repository is frequently edited and may be dirty before you start working.
-- The repository is public. Plaintext secrets, private keys, identity descriptors,
-  tokens, and private subscription URLs must never enter it, even in ignored
-  files: `path:` flakes include them. Encrypted SOPS documents and public
+- The repository is public. Never add plaintext secrets, private keys, identity
+  descriptors, tokens, or private subscription URLs, even in ignored files.
+  `path:` flakes include ignored files. Encrypted SOPS documents and public
   recipient rules under `.secrets/` are permitted. `hosts/nix/hardware.nix`
   is intentionally tracked but machine-specific.
 - Describe the current design, never its history. Documentation states what is
-  true and why; changelog language such as "now", "used to", "replaced", and
-  descriptions of failed prior approaches belongs in the commit message.
+  true and why. Put changelog language such as "now", "used to", and "replaced"
+  in the commit message. Descriptions of failed prior approaches also belong there.
 - Before changing a subsystem, load the matching project skill. Its constraints
   and verification methods are part of the implementation, not optional notes.
 - Keep changes focused. Do not rewrite generated or application-owned state when
@@ -29,17 +29,17 @@ Host-oriented Nix config for:
 
 ## Commands and validation
 
-Run only the smallest check proving the changed behavior; reuse user verification.
+Run only the smallest check proving the changed behavior. Reuse user verification.
 Load `nixcfg-validation` for the native pre-push gate and explicit diagnostics.
 Do not run automatic quick/full matrices or duplicate the gate before pushing.
-Use explicit `path:` references while iterating; Git flakes omit new files.
+Use explicit `path:` references while iterating. Git flakes omit new files.
 Host guides own operator procedures. Separately authorized activation uses
 `nh os switch` on Linux and `nh darwin switch` on macOS.
 
 ## Completion and publication
 
 Always commit and push task-owned changes confirmation, explicitly requested.
-Preserve unrelated working-tree and staged changes; stage only owned hunks in
+Preserve unrelated working-tree and staged changes. Stage only owned hunks in
 overlapping files, never a blanket add. Do not force-push or bypass the pre-push
 hook. Read-only reviews/proposals do not create commits. Publication does not
 authorize activation, restarts, secret changes, enrollment or reboot.
@@ -47,11 +47,11 @@ authorize activation, restarts, secret changes, enrollment or reboot.
 ## Architecture
 
 `flake.nix` exposes the three host configurations. Each host owns explicit system
-and Home Manager imports; `common/` owns only genuinely shared configuration.
+and Home Manager imports. `common/` owns only genuinely shared configuration.
 Darwin does not import the Linux overlay or system modules. `nixcfgPath` carries
 the runtime checkout `/etc/nixos` independently of evaluation or a Nix store path.
 Keep host architecture, users, state versions, boot, disks, networking and workloads
-explicit; do not reuse desktop hardware, PAM enrollment or secret recipients by default.
+explicit. Do not reuse desktop hardware, PAM enrollment or secret recipients by default.
 
 | Path                                             | Ownership                                                                        |
 | ------------------------------------------------ | -------------------------------------------------------------------------------- |
@@ -61,21 +61,21 @@ explicit; do not reuse desktop hardware, PAM enrollment or secret recipients by 
 | `hosts/<host>/{pkgs,dotfiles}/`                  | host-specific packages and assets                                                |
 | `hosts/nix/{hardware,boot,lighting,storage}.nix` | desktop hardware, boot, lighting and storage                                     |
 | `hosts/nix/dotfiles/ricing/{hypr,quickshell}/`   | live Hyprland configuration and store-deployed Quickshell                        |
-| `common/{modules,pkgs,dotfiles}/`                | genuinely shared policy, packages and assets; Linux-only modules stay Linux-only |
+| `common/{modules,pkgs,dotfiles}/`                | genuinely shared policy, packages and assets. Linux-only modules stay Linux-only |
 | `install.nix`, `scripts/install.sh`              | guided Linux installer and runtime dependencies                                  |
 | `.secrets/.sops.yaml`, `.secrets/<host>/`        | public recipient policy, secret declarations and encrypted ciphertext            |
 
 Task-specific skills identify precise source owners and runtime pitfalls. Portable
-shell configuration belongs in `common/`; Linux themes, Foot and systemd user
-services stay host-owned. External projects own their development toolchains:
-Nokochat uses its project flake; `vhelper` and `openwave` are edited in
+shell configuration belongs in `common/`. Linux themes, Foot and systemd user
+services stay host-owned. External projects own their development toolchains.
+Nokochat uses its project flake. Edit `vhelper` and `openwave` in
 `rikkichy/vhelper` and `rikkichy/openwave`, not this checkout.
-The native VTube Studio OpenDeck plugin is edited in `rikkichy/vts-opendeck`;
-this checkout only pins and exposes its package.
+Edit the native VTube Studio OpenDeck plugin in `rikkichy/vts-opendeck`.
+This checkout only pins and exposes its package.
 
 ## Operating procedures
 
-Read only the section needed for the task; these procedures do not authorize
+Read only the section needed for the task. These procedures do not authorize
 activation, restarts, enrollment, provisioning or reboot.
 
 | Task                                                                              | Runbook                                       |
@@ -92,7 +92,7 @@ activation, restarts, enrollment, provisioning or reboot.
 ## Project skills
 
 OMP advertises skill names/descriptions and loads bodies on demand. Load the
-matching skill and only its relevant references; read the applicable operator
+matching skill and only its relevant references. Read the applicable operator
 procedure before consequential actions. Do not import whole runbooks into context.
 Review `.omp/` and `AGENTS.md` as tracked resources, including reference targets.
 Commands in `.omp/commands/`: `/plan`, `/review`,
@@ -100,16 +100,16 @@ Commands in `.omp/commands/`: `/plan`, `/review`,
 
 ## Validation policy
 
-- Inspect the scoped final diff; the pre-push gate owns whitespace, syntax and
+- Inspect the scoped final diff. The pre-push gate owns whitespace, syntax and
   all three host evaluations. Do not repeat that matrix during ordinary work.
 - Evaluation is not compilation, activation, authentication or boot proof.
   Native build/runtime checks require the applicable platform and changed surface.
-- `hosts/nix/dotfiles/ricing/hypr/` changes require `Hyprland --verify-config`; reload logs and
+- `hosts/nix/dotfiles/ricing/hypr/` changes require `Hyprland --verify-config`. Reload logs and
   `hyprctl configerrors` are not reliable validation.
 - Never treat a successful `nh os switch` as proof that an initrd change
   will boot. Load `nix-system-operations` and inspect the generated boot inputs.
 - For SOPS/PAM/FIDO work, use the enrollment and recovery checklist in
   `docs/nix-security.md`. Dummy-data tests, evaluation, activation, and actual hardware
-  checks are separate evidence; never report the latter from configuration alone.
+  checks are separate evidence. Never report hardware checks from configuration alone.
 - Report checks that were not run and why. Do not silently substitute a weaker
   check for the documented one.

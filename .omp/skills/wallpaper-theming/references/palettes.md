@@ -4,14 +4,14 @@
 
 `common/dotfiles/matugen/templates/terminal-colors.conf` and
 `common/dotfiles/matugen/templates/btop.theme` are shared by both hosts.
-The terminal template is an assignment format: Linux consumes it as OSC data;
+The terminal template is an assignment format. Linux consumes it as OSC data.
 `hosts/ne/modules/home/matugen.nix` translates its keys into Ghostty syntax.
 Preserve colors 0–18, including Fastfetch accents 16–18, and inspect both consumers
 when changing that format. Shared Zed uses the static captured theme under
-`common/dotfiles/zed/`, not a wallpaper-generated output; see
+`common/dotfiles/zed/`, not a wallpaper-generated output. See
 [shared-home](../../shared-home/SKILL.md).
 
-Darwin has an independent `wallpaper-theme` command; it does not use the Linux
+Darwin has an independent `wallpaper-theme` command. It does not use the Linux
 services, OSC delivery or cursor selection. Its lifecycle and mutable Ghostty/Marta
 outputs belong to [darwin-host](../../darwin-host/SKILL.md).
 
@@ -21,7 +21,7 @@ outputs belong to [darwin-host](../../darwin-host/SKILL.md).
 `hosts/nix/dotfiles/ricing/matugen/templates/` and the shared terminal/btop templates.
 `hosts/nix/modules/home/matugen.nix` declares each template and destination with
 `pkgs.formats.toml`, installed at `~/.config/matugen/config.toml`.
-Palettes are generated only after display acceptance; see the canonical
+Palettes are generated only after display acceptance. See the canonical
 [wallpaper state machine](wallpapers.md) for apply ordering, failures and success-record semantics.
 Matugen writes `hypr/scheme/current.lua`,
 `quickshell/colors.json`, `fuzzel/colors.ini`, both GTK and Thunar styles,
@@ -30,75 +30,78 @@ GTK3/GTK4 outputs remain separate entries: this matugen pin loses earlier paths
 in multi-output templates.
 Consequences:
 
-- **Never put those paths under `xdg.configFile`.** Home-manager files are
-  read-only store symlinks; every colour change would start failing.
-  Home-manager's `gtk` module is unused for the same reason. The cost of this
-  is that they do not exist until something has themed the machine once —
-  which is what `wallpaper-restore` is for.
+- **Never put those paths under `xdg.configFile`.** Home Manager files are
+  read-only store symlinks, which would prevent every colour change.
+  Home Manager's `gtk` module is unused for the same reason.
+  These outputs do not exist until the first theme application.
+  `wallpaper-restore` generates them.
 - `hosts/nix/modules/home/quickshell.nix` maps `~/.config/hypr` to
-  `hosts/nix/dotfiles/ricing/hypr/` with `mkOutOfStoreSymlink`, not a store copy, specifically so
-  `scheme/current.lua` stays writable. That in turn requires the repo to be
-  owned by `ri` — the installer clones as root, so `hosts/nix/storage.nix` carries a
-  `systemd.tmpfiles` `Z` rule reasserting `ri:users` before greetd.
+  `hosts/nix/dotfiles/ricing/hypr/` with `mkOutOfStoreSymlink`, not a store copy.
+  This keeps `scheme/current.lua` writable and requires `ri` to own the repository.
+  The installer clones as root. Thus, `hosts/nix/storage.nix` carries a
+  `systemd.tmpfiles` `Z` rule that reasserts `ri:users` before greetd.
 - **`config.source_color_index = 0` keeps selection noninteractive.** An image
-  usually yields several candidate source colours; without a preference matugen
-  asks, then fails when no terminal is available. `0` selects the most dominant.
-- **matugen's `base16` is a lightness ramp, not a set of accents.** `base08`
-  through `base0f` are ordered by brightness rather than hue, so a low-chroma
-  wallpaper collapses them into near-blacks — measured at `#1d1e32` for
-  "green" and `#060a16` for "blue". Routing fixed ANSI colours through
-  `custom_colors` does not rescue it either: they are tone-mapped into the
-  scheme whether or not `blend` is set, and yellow lands on `#ffffff` both
-  ways. So the terminal templates take **greys from the palette and hues from
-  literals**, which is why a wallpaper can retint the terminal but can no
-  longer make red and green the same colour.
+  usually yields several candidate source colours. Without a preference, matugen
+  asks for a selection and fails when no terminal is available.
+  `0` selects the most dominant colour.
+- **matugen's `base16` is a lightness ramp, not a set of accents.**
+  `base08` through `base0f` are ordered by brightness rather than hue.
+  A low-chroma wallpaper collapses them into near-blacks.
+  Measurements showed `#1d1e32` for "green" and `#060a16` for "blue".
+  Fixed ANSI colours routed through `custom_colors` are also tone-mapped into
+  the scheme, whether or not `blend` is set. Yellow becomes `#ffffff` both ways.
+  The terminal templates therefore take **greys from the palette and hues from
+  literals**. A wallpaper can retint the terminal but cannot make red and green
+  the same colour.
 - `base16` is its own template namespace. `{{colors.base00…}}` does not
   resolve, and the error names the whole expression rather than the namespace.
-- **The two filters worth knowing are narrower than they look.**
-  `set_lightness` takes a lightness rather than a delta, so `-5` is not five
-  percent darker but black, and there is no filter that walks a ramp down from
-  whatever the wallpaper produced — a template that needs one derives it in
-  the consuming language instead. `set_alpha` refuses any format without an
-  alpha channel, and says so naming the four that have one; `hex_alpha` is the
-  one to reach for.
+- **The two filters have specific limits.**
+  `set_lightness` takes an absolute lightness, not a delta.
+  Thus, `-5` produces black, not a colour that is five percent darker.
+  No filter decreases lightness relative to the wallpaper's output.
+  Templates that need this must derive it in the consuming language.
+  `set_alpha` rejects formats without an alpha channel and names the four
+  supported formats. Use `hex_alpha` for hexadecimal output with alpha.
 
 **foot carries no palette of its own.** Its colours arrive as OSC escape
-sequences, which is a two-part arrangement worth knowing before concluding the
-terminal is unthemed: `term-sequences` writes
-`~/.local/state/theme/sequences.txt` and pushes it at every pty already open,
-and Linux Fish initialization in `hosts/nix/modules/home/foot.nix`
-`cat`s the same file for shells started later. Miss either half and
-the terminal is the one thing that does not follow the wallpaper.
+sequences through two paths:
 
-The parser reads assignments once as data, accepts only known keys with six hex
-digits, preserves the first duplicate, and validates before writing any output.
+- `term-sequences` writes `~/.local/state/theme/sequences.txt` and sends it to
+  every open pty.
+- Linux Fish initialization in `hosts/nix/modules/home/foot.nix`
+  `cat`s the same file for shells started later.
+
+Both paths are required for terminals to follow the wallpaper.
+
+The parser reads assignments once as data and accepts only known keys with six
+hex digits. It preserves the first duplicate and validates before writing any output.
 Foot palette includes and SIGUSR1/SIGUSR2 do not reload arbitrary palette files.
 `theme-apply`, `awp-apply`, `term-sequences`, `desktop-picker` and
-`wallpaper-frame` are private runtime dependencies; use public `wpp`/`awpp`.
+`wallpaper-frame` are private runtime dependencies. Use public `wpp`/`awpp`.
 
 Two more things the pipeline depends on:
 
 - The btop template's nonfatal post-hook sends SIGUSR2 after its file is written.
   Do not move success-critical steps into hooks: matugen logs hook failures but
-  returns success. GTK watches files; Fuzzel reads its palette on launch.
+  returns success. GTK watches files. Fuzzel reads its palette on launch.
 - Preserve [Hyprland override creation and Lua-load ordering](../../desktop-shell/references/hyprland.md#source-and-live-configuration).
 
 ## Fonts
 
 `hosts/nix/pkgs/ricing/google-sans-rounded.nix` provides the Linux proportional UI face, `nerd-fonts.departure-mono`
-the terminal. `common/modules/shell.nix` owns the shared terminal font package;
+the terminal. `common/modules/shell.nix` owns the shared terminal font package.
 `hosts/nix/modules/system/session.nix` owns Linux UI font installation.
-Both faces are addressed by names that are not the names on the box,
-and a family that matches nothing falls back to a default without a word:
+Both faces use family names that differ from their advertised names.
+An unmatched family silently falls back to a default:
 
-- The rounded face is family **`Google Sans Flex`**, with the roundness in the
-  style (`Rounded`, `Bold Rounded`); `Google Sans Flex Rounded` resolves to the
+- The rounded face is family **`Google Sans Flex`**, with roundness in the
+  style (`Rounded`, `Bold Rounded`). `Google Sans Flex Rounded` resolves to the
   regular weight.
 - The Nerd Font build renames its family to **`DepartureMono Nerd Font`**, one
   word, so the upstream `Departure Mono` matches nothing.
-- `fc-match -f '%{family[0]} %{spacing}\n'` is the check that matters before
-  putting anything in a terminal: **100 is monospace**, empty is proportional.
-  foot warns outright when given a proportional face, but every cell takes one
-  width and narrow glyphs rattle inside it.
-- `nerd-fonts.*` packages may ship `.otf` rather than `.ttf`; a lookup for
-  `*.ttf` comes back empty and makes a working package look broken.
+- Before selecting a terminal font, check it with `fc-match -f '%{family[0]} %{spacing}\n'`.
+  **100 is monospace**, empty is proportional.
+  foot warns when given a proportional face. Every cell still has one width,
+  leaving extra space around narrow glyphs.
+- `nerd-fonts.*` packages may ship `.otf` rather than `.ttf`.
+  A lookup for `*.ttf` returns nothing and makes a working package appear broken.

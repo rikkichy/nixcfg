@@ -11,31 +11,30 @@ Account for symlinked package directories when locating an installed entry.
 
 `hosts/nix/pkgs/nokochat.nix` wraps the vendor's AppImage with `appimageTools.wrapType2`.
 The packaged binary is pinned to its vendor CDN URL and hash, not a flake
-input; a version bump changes both the version and the hash.
+input. A version bump changes both the version and the hash.
 
-Underneath the image is a Compose Multiplatform app that jpackage bundled with
-its own JRE, which shapes two things:
+The image contains a Compose Multiplatform app that jpackage bundled with
+its own JRE. This has two consequences:
 
-- The bundled runtime ships **no `bin/java`** — the launcher loads `libjvm`
-  directly — so the app's own classpath cannot be exercised with the runtime
-  that is sitting right there. A probe against those jars needs a separate JDK.
+- The bundled runtime ships **no `bin/java`**. The launcher loads `libjvm`
+  directly, so that runtime cannot exercise the app's classpath.
+  A probe against those jars needs a separate JDK.
 - Skiko draws the UI and links `libGL`/`libX11` directly, reaching Wayland only
-  through XWayland. Those are absent from the default FHS environment and are
-  added via `extraPkgs`; without them the launcher starts the JVM successfully
-  and only then dies on `UnsatisfiedLinkError`, so the failure looks like a
-  crash rather than a missing dependency.
+  through XWayland. The default FHS environment lacks these libraries.
+  `extraPkgs` adds them. Without them, the launcher starts the JVM but then
+  fails with `UnsatisfiedLinkError`. This resembles a crash rather than a
+  missing dependency.
 
-`appimageTools.extract` is what makes the desktop entry and icon available at
-build time — `wrapType2` mounts the image at runtime and exposes nothing to
-`extraInstallCommands`. The vendor's entry carries a correct `StartupWMClass`
-already; only its `Exec=NokoChat` needs rewriting, since the wrapper is named
-after `pname`.
+`appimageTools.extract` makes the desktop entry and icon available at
+build time. `wrapType2` mounts the image at runtime and exposes nothing to
+`extraInstallCommands`. The vendor's entry already has a correct `StartupWMClass`.
+Only its `Exec=NokoChat` needs rewriting, since the wrapper is named after `pname`.
 
-On startup it logs that the OS keyring is unavailable and that the seal key
-falls back to a 0600 properties file. This is not the sandbox: `busctl --user`
-from inside the same FHS environment finds `org.freedesktop.secrets`, so
-gnome-keyring is reachable and the app's own `java-keyring` backend detection
-is what fails.
+On startup, the app logs that the OS keyring is unavailable.
+It also reports that the seal key falls back to a 0600 properties file.
+The sandbox does not cause this failure. Within the same FHS environment,
+`busctl --user` finds `org.freedesktop.secrets`, so gnome-keyring is reachable.
+The app's own `java-keyring` backend detection fails.
 
 ## Filen
 
@@ -46,7 +45,7 @@ usable. Nixpkgs owns the Canvas header fix and native npm rebuild ordering.
 
 `hosts/nix/pkgs/bypasses/tg-ws-proxy.nix` packages only the headless
 `tg-ws-proxy` server. Its runtime dependencies are certifi, cryptography, HTTPX
-and HTTP/2; wheel metadata excludes tray-only requirements. No platform tray
+and HTTP/2. Wheel metadata excludes tray-only requirements. No platform tray
 entry points, UI modules or updater are shipped. The optional `--log-file`
 path retains `utils.logging_setup`.
 
