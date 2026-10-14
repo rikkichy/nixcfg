@@ -11,7 +11,7 @@ This skill owns the Linux desktop shell, not host `ne`. Load only the relevant r
 
 | Change | Reference | Source ownership |
 | --- | --- | --- |
-| Rail, popovers, workspaces, audio, notifications, tray, QML controls and preview isolation | [Quickshell](references/quickshell.md) | `hosts/nix/modules/home/quickshell.nix`; `hosts/nix/dotfiles/ricing/quickshell/`; native socket patch in `hosts/nix/pkgs/overlay.nix` |
+| Rail, popovers, workspaces, audio, notifications, tray, QML controls and preview isolation | [Quickshell](references/quickshell.md) | `hosts/nix/modules/home/quickshell.nix`; `hosts/nix/dotfiles/ricing/quickshell/`; commented socket workaround in `hosts/nix/pkgs/overlay.nix` |
 | Fuzzel, desktop tools, clipboard, VPN/power pickers and maintenance actions | [Launchers](references/launchers.md) | `hosts/nix/modules/home/fuzzel.nix`; wallpaper pickers in `hosts/nix/modules/home/matugen.nix` |
 | Lua config, keybindings, monitors, tearing, screenshots and hyprsunset | [Hyprland](references/hyprland.md) | `hosts/nix/dotfiles/ricing/hypr/`; session services in `hosts/nix/modules/system/session.nix`; screenshot package in `hosts/nix/home.nix` |
 

@@ -236,7 +236,7 @@ retention before the disk fills.
 ### Targets and publication boundary
 
 `flake.nix` exports `cacheTargets.x86_64-linux` and the same named `packages`.
-The patched desktop packages and custom wrappers/assets come from the
+The desktop packages and custom wrappers/assets come from the
 **desktop's final pkgs**, not a second import with approximate overlays.
 `vhelper` and `openwave` use their exact locked input outputs consumed by the
 desktop. Filen, Fuzzel and the Spicetify CLI use unmodified Nixpkgs packages
@@ -245,7 +245,7 @@ packaging. Prebuilt Material Bibata assets are fetched from their publisher,
 not republished through this cache.
 
 These roots are redistributable according to their pinned package metadata:
-desktop patches preserve upstream free licenses, the custom packages are
+desktop packages retain upstream free licenses, the custom packages are
 MIT/Apache/GPL/OFL, and Vhelper/OpenWave/OMP are GPL/MIT/MIT.
 The upload includes runtime closures, not build dependencies. OpenWave
 references the free GTK/audio stack; Vhelper references Protontricks, whose

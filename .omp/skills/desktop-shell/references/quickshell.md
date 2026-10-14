@@ -52,7 +52,10 @@ Use Qt Controls' `visualFocus`, not `activeFocus`, for outlines: mouse clicks re
 
 Colour properties use `textOn*`, avoiding QML's `on*` handler-name interpretation. Icon-only buttons use a centered `BoxIcon` content item and an accessible description; `AbstractButton.icon` is a final native property. Font family is `Google Sans Flex`; emphasized text uses `Bold Rounded`, not `Rounded` plus a weight that the named style overrides.
 
-`hosts/nix/pkgs/overlay.nix` patches native Hyprland request sockets to `deleteLater()`: deleting during `readyRead` lets Qt access its freed sender during `channelReadyRead`. Preserve this lifetime fix when changing package overrides.
+`hosts/nix/pkgs/overlay.nix` retains the native socket `deleteLater()` workaround
+as commented code; the active package is unmodified Nixpkgs Quickshell for
+binary-cache reuse. Deleting during `readyRead` can let Qt access its freed
+sender during `channelReadyRead`, so the stock package retains that crash risk.
 
 ## Isolated verification
 

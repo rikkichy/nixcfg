@@ -49,11 +49,14 @@ selection records still need their own backups.
 
 ## Immediate refresh and client caches
 
-Keep `hosts/nix/pkgs/ricing/hyprland-refresh-cursor.patch`. Hyprland's
-`changeTheme()` reloads theme data even under an unchanged name, but the
-unpatched renderer skips unchanged cursor shape names. Selecting another
-prebuilt palette does not bypass that cache. The patch reinstalls the displayed
-compositor-owned shape during `updateTheme()`.
+`hosts/nix/pkgs/ricing/hyprland-refresh-cursor.patch` is retained, but its
+overlay application is commented out for stock binary-cache reuse. Hyprland's
+`changeTheme()` reloads theme data, while the stock renderer can skip unchanged
+cursor shape names. Palette selection therefore need not immediately update
+the displayed cursor: a shape change or hide/show transition may be needed.
+Selecting another prebuilt palette does not bypass that cache. The retained
+patch can be re-enabled to reinstall the compositor-owned shape during
+`updateTheme()`.
 
 A running GTK3 Wayland client can retain its own Xcursor assets until restarted;
 the compositor refresh does not invalidate that client-side cache. Cursor size

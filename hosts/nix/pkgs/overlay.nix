@@ -1,6 +1,8 @@
 { inputs }:
 
 final: prev: {
+  # Disabled for stock binary-cache reuse; keep both workarounds available.
+  /*
   quickshell = prev.quickshell.overrideAttrs (old: {
     postPatch = (old.postPatch or "") + ''
       substituteInPlace src/wayland/hyprland/ipc/connection.cpp \
@@ -11,6 +13,7 @@ final: prev: {
   hyprland = prev.hyprland.overrideAttrs (old: {
     patches = (old.patches or [ ]) ++ [ ./ricing/hyprland-refresh-cursor.patch ];
   });
+  */
 
   tg-ws-proxy = final.callPackage ./bypasses/tg-ws-proxy.nix {
     src = inputs.tg-ws-proxy;
