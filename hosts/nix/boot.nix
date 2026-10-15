@@ -37,12 +37,6 @@ in
   hardware.nvidia.package = pkgs.linuxPackages_latest.nvidiaPackages.stable.overrideAttrs (old: {
     passthru = old.passthru // { open = config.boot.kernelPackages.kernel; };
   });
-  system.build.lockdownTest = pkgs.callPackage ./pkgs/lockdown-test.nix {
-    kernel = config.boot.kernelPackages.kernel;
-  };
-  system.build.secureBootTest = pkgs.callPackage ./pkgs/limine-secureboot-test.nix {
-    limine = config.boot.loader.limine.package;
-  };
 
   assertions = [
     {

@@ -32,8 +32,10 @@ Three flat desktop entries open held Foot terminals: `nh os switch`,
 `nh os switch --update`, and `nh clean all`. `terminalEntry` takes trusted Desktop
 Exec fragments, not runtime user input.
 
-Rebuilds use `nh` and the Git-aware checkout. Plain switching uses
-`--no-update-lock-file`. The update entry updates all inputs before rebuilding
+Rebuilds use `nh os switch --no-nom` and the Git-aware checkout. Native Nix output
+avoids nix-output-monitor's
+[content-addressed derivation limitation](../../../../docs/nix-security.md#local-module-signing-and-integrity-lockdown).
+Plain switching uses `--no-update-lock-file`. The update entry updates all inputs before rebuilding
 and switching. See [source inclusion and prebuilds](../../../../docs/nix.md#updates-and-prebuilt-systems).
 `nh clean all` cleans all profiles and runs garbage collection, keeping one
 generation per profile by default.

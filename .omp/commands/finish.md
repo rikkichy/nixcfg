@@ -13,6 +13,6 @@ Finish the current task end-to-end without expanding its scope.
 7. Push without asking for confirmation. The native pre-push hook owns repository-wide validation. Do not duplicate its gate, bypass it with `--no-verify`, or force-push. Report a failed gate or unavailable push accurately.
 8. Summarize changes, focused proof, commit/push results and anything not validated.
 
-Source edits and publication do not authorize activation, Homebrew inventory changes, service restarts, secret access/provisioning, hardware enrollment or reboot. These require separate explicit approval. Approved activation uses `nh os switch` or `nh darwin switch` as appropriate.
+Source edits and publication do not authorize activation, Homebrew inventory changes, service restarts, secret access/provisioning, hardware enrollment or reboot. These require separate explicit approval. Approved activation follows the [host-specific rebuild commands](../../docs/shared.md#rebuild-commands).
 
 Additional requirements (if supplied): $ARGUMENTS

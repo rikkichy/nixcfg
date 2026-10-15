@@ -44,6 +44,21 @@ validation. Changed Hyprland configuration must therefore be checked on Linux.
 Keep errors visible, fix task-owned failures, and push again without bypassing the
 hook. Do not reset unrelated user work to make the gate pass.
 
+## CI and dependency updates
+
+`.github/workflows/validate.yml` runs the same full runner on Linux for pull
+requests and main pushes. It uses read-only repository permissions and no
+cache-upload credentials. Changed Hyprland configuration uses the pinned parser.
+CI evaluation does not prove native Darwin builds or hardware behavior.
+
+`renovate.json` configures review-only action/input updates and weekly lock
+maintenance. The cache-compatible `nixpkgs-nh` input remains pinned. Renovate
+requires an operator to grant the [Renovate GitHub App](https://github.com/apps/renovate)
+access to this repository. Configuration alone does not install the app.
+Set `validate` as a required pull-request status check in repository branch
+protection before relying on CI to prevent merges. These GitHub settings are
+outside the Nix configuration; automerge is disabled.
+
 ## Explicit diagnostics
 
 Run from the repository root. Elsewhere use the runner's absolute path:
@@ -96,16 +111,6 @@ on a private compositor and session bus. Never displace the running notification
 daemon or change live audio/network state merely for validation. Report PASS,
 FAIL or NOT RUN for relevant evidence, including platform and operator-only gaps.
 
-For runner or hook changes, run the existing isolated check once:
-
-```sh
-bash .omp/skills/nixcfg-validation/scripts/test.sh
-```
-
-It exercises runner routing and real Git pushes to a disposable local remote,
-including committed-state isolation, rejection and deletion. Nix/Hyprland are
-stubbed. It is not a host evaluation or hardware proof. OMP documentation changes
-must retain valid reference targets and skill frontmatter.
 
 Commit/push does not authorize activation, service/app restarts, account changes,
 Homebrew cleanup, secret access, enrollment, recipient/keyslot changes, token resets

@@ -12,6 +12,12 @@ The entry point creates `hypr-vars.lua` and `hypr-user.lua` on first start and l
 
 `io.open(…, "w")` cannot create a missing directory. Preserve `maybe_create`'s `mkdir -p` before the Lua `require`. Without it, a raw Lua error aborts subsequent configuration without a log line.
 
+`env.lua` retains `ELECTRON_OZONE_PLATFORM_HINT=auto` for older bundled Electron
+runtimes. [Electron 38 removed it and defaults to Wayland in Wayland sessions](https://www.electronjs.org/docs/latest/breaking-changes#removed-electron_ozone_platform_hint-environment-variable).
+Nixpkgs' current Electron version does not establish the version bundled by
+every application, including Discord. Remove the hint only after checking all
+retained bundled runtimes and their Wayland launch behavior.
+
 ## Lua and monitor pitfalls
 
 A raw Lua error aborts the rest of a file without a log line. Bad `hl.*` arguments log and continue. `--verify-config` is the reliable parser check. `hyprctl configerrors` can be empty even after a broken reload.

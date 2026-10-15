@@ -56,10 +56,7 @@ permit broader process and file reads, not only Discord inspection. They do not
 make application-name matching a security boundary. Shared service domains can
 also include related products.
 
-`scripts/mihomo-routing-test.py` exercises real process lookup and UDP rejection
-against isolated Mihomo without a TUN or production credentials. It requires
-Mihomo and Python with PyYAML. This same-user check does not prove the system
-service's cross-user lookup. After activation, verify that voice connections report
+After approved activation, verify that voice connections report
 `ProcessName` / `.Discord-wrapped` and the selected proxy in `/connections`.
 
 Empty subscriptions reject traffic instead of falling back to a direct connection.
@@ -122,11 +119,6 @@ pass through the TUN, but Mihomo connects through the physical interface.
 Stopping Mihomo removes the tunnel. It is not a routing toggle.
 External shortcuts can invoke `vpnp`, `vpn mode global`, `vpn mode scoped`,
 or `vpn select <name>`.
-
-`scripts/vpn-mode-test.py /nix/store/...-vpn/bin/vpn` checks a built CLI against
-isolated Mihomo with loopback-only traffic. It requires Python and `mihomo` on
-PATH. It verifies global proxy selection, scoped routing and closing old flows.
-It does not access production credentials or change the desktop tunnel.
 
 For a zapret cutover, pause it rather than uninstalling it.
 Then verify video playback, Discord voice/screenshare and a Sober game join.
@@ -207,5 +199,5 @@ In Telegram Desktop, open **Settings → Advanced → Connection type → Proxy*
 Add an **MTProto** proxy with server `127.0.0.1` and port `1443`.
 Paste the secret.
 
-The GUI tray version is also on PATH as `tg-ws-proxy-tray-linux` if you prefer it.
-Stop the user service first so the two do not both bind 1443.
+The package ships only the headless server. Tray entry points and GUI
+dependencies are removed during packaging.

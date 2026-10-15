@@ -49,6 +49,16 @@ and HTTP/2. Wheel metadata excludes tray-only requirements. No platform tray
 entry points, UI modules or updater are shipped. The optional `--log-file`
 path retains `utils.logging_setup`.
 
+## Kotlin language server
+
+`hosts/nix/pkgs/kotlin-lsp.nix` uses the standalone Linux x64 archive from the
+[official releases](https://github.com/Kotlin/kotlin-lsp/releases).
+Use the publisher's download URL and compare the downloaded archive's hash
+with its published SHA-256 before updating the pin.
+Preserve `autoPatchelfHook`, the native runtime libraries and the
+`bin/intellij-server` wrapper: this archive contains Linux ELF binaries, not
+only portable JVM bytecode.
+
 ## Project and editor ownership
 
 NokoChat development belongs to the external project checkout, not this

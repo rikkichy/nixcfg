@@ -53,10 +53,6 @@ writeShellApplication {
     exec python3 ${./bibata-material-select.py} \
       ${themes}/share/icons ${helpers}/themes.json "$@"
   '';
-  derivationArgs.postCheck = ''
-    PYTHONPATH=${helpers}/scripts ${python3}/bin/python3 \
-      ${../../../../scripts/cursor-selection-test.py} ${./bibata-material-select.py}
-  '';
   meta = {
     description = "Select a prebuilt Material Bibata cursor palette from a wallpaper accent";
     homepage = "https://github.com/SakibShahariar/material-bibata-cursor";

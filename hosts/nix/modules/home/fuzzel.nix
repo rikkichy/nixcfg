@@ -94,10 +94,10 @@ in
       settings.OnlyShowIn = "X-DesktopTools;";
     };
     nix-switch = terminalEntry "nh os switch"
-      ''nh os switch "${nixcfgPath}" --hostname nix --no-update-lock-file''
+      ''nh os switch --no-nom "${nixcfgPath}" --hostname nix --no-update-lock-file''
       "system-software-update";
     nix-update = terminalEntry "nh os switch --update"
-      ''nh os switch "${nixcfgPath}" --hostname nix --update''
+      ''nh os switch --no-nom "${nixcfgPath}" --hostname nix --update''
       "system-software-install";
     nix-clean = terminalEntry "Garbage collection — nh clean all"
       "nh clean all"

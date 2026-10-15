@@ -155,13 +155,7 @@ The native installer can overlook a signing/enrollment subprocess failure.
 `verify-limine-secureboot.py` checks the installed configuration hash and
 verifies the EFI signature against `/var/lib/sbctl/keys/db/db.pem` after each
 bootloader installation. A failed check aborts the operation. Installation
-is not transactional, so repair before rebooting. The isolated regression
-check rejects unsigned images, changed configurations, signed images without
-config enrollment, and images modified after signing:
-
-```bash
-nix build --no-link 'path:.#nixosConfigurations.nix.config.system.build.secureBootTest'
-```
+is not transactional, so repair before rebooting.
 
 ### Firmware enrollment checkpoint
 
@@ -224,7 +218,7 @@ custom keys with factory defaults. Then perform the approved boot check.
 Require `sudo sbctl status` and `bootctl status` to report enabled with
 Setup Mode disabled. Require working NVIDIA graphics, integrity lockdown, and valid
 TPM measurements. Physical firmware rejection of an untrusted image remains
-an operator-only check. Isolated signing tests do not prove it.
+an operator-only check. Successful signing does not prove firmware enforcement.
 
 For recovery, first disable enforcement in firmware while preserving its
 databases. Keep a usable console, LUKS passphrase, recovery ISO and known-good
@@ -276,8 +270,7 @@ Require both boot parameters, translated `DMA` or `DMA-FQ` domains rather
 than `identity`, and a working NVIDIA GPU. `DMA-FQ` uses lazy IOTLB
 invalidation. It is translated DMA, not passthrough. Verify the integrated
 GPU's group too if it remains enabled. Group numbers can change across boots.
-A virtual AMD-IOMMU boot check exercises translation, not the motherboard's
-firmware or physical GPU compatibility. Retain the known-working generation
+Retain the known-working generation
 and [boot-menu recovery path](#limine-recovery-with-a-zero-timeout).
 
 ## Local module signing and integrity lockdown
@@ -302,15 +295,13 @@ expires at reboot. Initial build commands also need the client flag:
 
 ```bash
 nix --extra-experimental-features ca-derivations build --no-link \
-  'path:.#nixosConfigurations.nix.config.system.build.lockdownTest' \
+  'path:.#nixosConfigurations.nix.config.system.build.kernel' \
   'path:.#nixosConfigurations.nix.config.system.build.initialRamdisk'
 ```
 
-The check verifies every module's signature against the exported certificate.
-It then boots the actual kernel in QEMU to require integrity lockdown and BPF
-LSM. It loads signed modules and the virtual camera, and rejects unsigned modules
-and corrupted signatures. It does not test the physical NVIDIA GPU, sensors,
-firmware TPM measurements, or encrypted-root unlock.
+These commands build the signed kernel and its actual initrd without activation.
+They do not prove physical NVIDIA GPU operation, sensors, firmware TPM
+measurements, or encrypted-root unlock.
 
 Kernel and driver updates require a joint local build. Additional external
 modules must join that build. A configuration assertion rejects unsigned
@@ -343,7 +334,8 @@ nvidia-smi
 
 Require `[integrity]`, an active `bpf` LSM, `PKCS#7`, and a working GPU.
 Some kmod builds cannot decode signer/hash details even when `sig_id` is
-present. The cryptographic build check is the signature verification.
+present. `sig_id` identifies the signature format, not its validity.
+The kernel enforces signature verification when loading modules.
 Also verify NCT6687 sensors, OBS Cam and the documented disk-unlock fallback.
 Lockdown restricts interfaces such as `/dev/mem`, MSR writes and hibernation.
 Root utilities relying on them may be affected.

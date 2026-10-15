@@ -140,6 +140,10 @@ disabled so the service alone switches input sources. Home Manager owns
 collections and behavior. On a fresh Mac, grant Accessibility permission when
 prompted, then run `betterglobekey doctor`.
 
+The formula comes from [Homebrew core](https://formulae.brew.sh/formula/betterglobekey).
+No additional tap is required. With `cleanup = "none"`, activation preserves
+installed taps and unmanaged formulae.
+
 ## Ghostty and wallpaper themes
 
 The Darwin home configuration also manages Matugen's configuration, `wallpaper-theme`, and
@@ -200,8 +204,7 @@ removing this configuration:
 /usr/bin/chflags nouchg "$HOME/Library/Application Support/Spotify/PersistentCache/Update"
 ```
 
-The next activation restores the protection. The native guard regression check is
-`bash hosts/ne/dotfiles/spotify/test-block-updates.sh`. It uses disposable directories.
+The next activation restores the protection.
 
 ## Marta
 

@@ -73,8 +73,10 @@ Generated hardware and UUIDs replace only the installed
 creation, the installer assigns `/etc/nixos` to the target's `ri:users`.
 Generated hardware and local edits remain uncommitted. New files are marked
 intent-to-add so Git-based flakes can see them. As `ri`, use
-`git pull --ff-only` and `nh os switch`. Resolve upstream conflicts rather than
-discarding the generated hardware file. No snapshot adoption is needed.
+`git pull --ff-only` and `nh os switch`. For desktop `nix`, use `nh os switch --no-nom`
+for [local module signing](nix-security.md#local-module-signing-and-integrity-lockdown).
+Resolve upstream conflicts rather than discarding the generated hardware file.
+No snapshot adoption is needed.
 After formatting, udev identities are refreshed before hardware generation.
 Before installation, the evaluated root, EFI and cryptroot configuration must
 match the mapper and UUIDs read directly from the new filesystems/LUKS header.
@@ -97,16 +99,11 @@ Use the [disk](nix-security.md#touch-only-disk-unlock) and
 [sudo](nix-security.md#touch-only-sudo-with-password-fallback) acceptance checklists
 with the selected hostname before relying on touch-only authentication.
 
-For `nixos-server`, a separate pre-erase approval covers the dedicated initrd
-SSH host key. The installer generates it outside the checkout before installing
-the system and prints its public fingerprint. Its private key is included on
-unencrypted `/boot`. The server offers key-authenticated, unlock-only SSH on
-port 2222, followed by the LUKS passphrase prompt. Verify wired NIC/firmware
-support, the DHCP address and the separate host fingerprint before relying on
-[remote disk unlock](nixos-server.md#encrypted-root-ssh-unlock).
+Unlock encrypted root at the local console with a server-side FIDO2 token or
+the LUKS recovery passphrase. Ordinary SSH is available only after boot.
+See [encrypted-root console unlock](nixos-server.md#encrypted-root-console-unlock).
 
-Developer verification: use packaged `--help` or read-only `--plan` for the
-installer surface.
+Use packaged `--help` or read-only `--plan` for the installer surface.
 The native pre-push hook owns repository-wide evaluation. Do not repeat it here.
 These checks do not prove disk installation, live PAM, or physical cold boot.
 
@@ -116,6 +113,8 @@ Use this recovery procedure only when `/etc/nixos` contains installed source
 and generated hardware but lacks Git metadata. The guided installer normally
 creates a user-owned checkout. For separately approved activation, keep using
 `nh os switch path:/etc/nixos --hostname <host>` until adoption is complete.
+For desktop `nix`, append `--no-nom` for
+[local module signing](nix-security.md#local-module-signing-and-integrity-lockdown).
 Do not clone over the snapshot or replace its hardware file.
 
 Run the following in Bash as `ri`, only when `/etc/nixos/.git` does not exist.

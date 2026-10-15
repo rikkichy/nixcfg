@@ -4,7 +4,7 @@
   home.packages = with pkgs; [
     sops age
     btop git gh wget
-    starship zoxide eza fzf bat ripgrep lazygit jq fastfetch micro
+    eza fzf bat ripgrep lazygit jq fastfetch micro
     file unzip
     matugen
     nerd-fonts.departure-mono
@@ -36,6 +36,24 @@
     nix-direnv.enable = true;
   };
 
+  programs.starship = {
+    enable = true;
+    enableFishIntegration = true;
+    enableBashIntegration = false;
+    enableZshIntegration = false;
+    enableIonIntegration = false;
+    enableNushellIntegration = false;
+  };
+
+  programs.zoxide = {
+    enable = true;
+    enableFishIntegration = true;
+    enableBashIntegration = false;
+    enableZshIntegration = false;
+    enableNushellIntegration = false;
+    options = [ "--cmd cd" ];
+  };
+
   programs.fish = {
     enable = true;
     shellAbbrs = {
@@ -64,19 +82,9 @@
     };
     shellAliases.ls = "eza --icons --group-directories-first -1";
 
-    interactiveShellInit = lib.mkMerge [
-      (lib.mkOrder 1490 ''
-        starship init fish | source
-        zoxide init fish --cmd cd | source
-      '')
-      (lib.mkOrder 1492 ''
-        function mark_prompt_start --on-event fish_prompt
-            echo -en "\e]133;A\e\\"
-        end
-
-        source $HOME/.config/fish/user-config.fish 2> /dev/null
-      '')
-    ];
+    interactiveShellInit = lib.mkOrder 1492 ''
+      source $HOME/.config/fish/user-config.fish 2> /dev/null
+    '';
 
     functions.fish_greeting = ''
       fastfetch --key-padding-left 5

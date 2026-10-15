@@ -66,7 +66,7 @@ Do not infer game placement from a `Game` priority rule.
 The 9950X3D CCDs are asymmetric: cores 0–7 have 96 MB L3 and cores 8–15 have
 32 MB. CPPC performance rankings alone do not distinguish the cache-rich half.
 `hosts/nix/hardware-policy.nix` sets `amd_x3d_mode=cache` through udev with
-`DRIVER=="amd_3d_vcache"`. The attribute appears only after driver binding.
+`DRIVER=="amd_x3d_vcache"`. The attribute appears only after driver binding.
 Keying on the driver waits for that event, unlike a racing tmpfiles/boot write.
 Read `amd_x3d_mode` to confirm the preference. There is no scheduler log confirming
 the preference.
@@ -116,14 +116,12 @@ source in its private mount namespace. The bounded root-only
 It releases boot targets without waiting for lighting completion. Its detector allowlist comes
 from the package registry at build time. See [RGB lighting](../../../../docs/nix.md#rgb-lighting) for devices/actions and permission boundaries.
 
-`hosts/nix/boot.nix` uses the cached latest kernel with `vsyscall=none`,
-`slab_nomerge`, and `page_alloc.shuffle=1`. `init_on_free` is deliberately absent
-because of its gaming cost. Do not assume that a maintained hardened-kernel/profile
-option exists in the locked Nixpkgs. A custom kernel configuration loses cache
-coverage and can make input updates build the kernel and out-of-tree NVIDIA
-module. Check actual kernel/module compatibility before proposing RANDSTRUCT,
-CFI, lockdown, or signing changes. They are not free hardening toggles for this
-GPU stack.
+`hosts/nix/boot.nix` selects a custom joint kernel/module-signing build based
+on `linuxPackages_latest`, not the stock cached kernel. See the
+[signing and lockdown contract](../../../../docs/nix-security.md#local-module-signing-and-integrity-lockdown)
+for build cost, external-module compatibility and recovery requirements.
+Boot parameters retain `vsyscall=none`, `slab_nomerge`, and `page_alloc.shuffle=1`.
+`init_on_free` is deliberately absent because of its gaming cost.
 
 ## systemd startup and staged updates
 

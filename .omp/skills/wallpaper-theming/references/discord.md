@@ -26,9 +26,6 @@ destination and renames it only after successful JSON processing. Invalid input
 leaves the existing settings untouched. This settings file is not QuickCSS and
 does not use its inode-watcher contract.
 
-For settings-merge changes, use `bash common/dotfiles/discord/test-sync-settings.sh`
-with GNU coreutils and jq on PATH. Check merge precedence, private-state preservation and failure safety.
-
 ## Color-only theme
 
 Enable **Wallpaper** in Equicord and leave other themes disabled for Discord's

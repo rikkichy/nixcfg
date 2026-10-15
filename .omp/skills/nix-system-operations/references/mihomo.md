@@ -91,9 +91,8 @@ IP-addressed voice UDP. Process lookup requires `ProtectProc=default` and
 `CAP_SYS_PTRACE`/`CAP_DAC_READ_SEARCH` alongside `CAP_NET_ADMIN`. Retain
 `DynamicUser` and the remaining sandbox. These are broad cross-user inspection
 privileges, not Discord-only access. Browser Discord is only domain-routed.
-`scripts/mihomo-routing-test.py` checks same-user lookup and UDP fail-closed
-behavior in isolated Mihomo. Cross-user service lookup needs live verification
-after approved activation. See the operator guide for this security boundary.
+Cross-user service lookup needs live verification after approved activation.
+See the operator guide for this security boundary.
 
 ## Subscription and node failure modes
 

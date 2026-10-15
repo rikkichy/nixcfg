@@ -19,8 +19,7 @@ action. Paths below are repository-relative.
   [OMP startup host context](../../../docs/shared.md#omp-startup-host-context).
   `common/dotfiles/` owns shared assets. Micro settings are generated in the shell module.
 - `common/dotfiles/omp/nixcfg-execution.js`: runtime execution-context extension
-  deployed by the shared shell module. `scripts/omp-context-test.mjs` owns its
-  standalone classification check.
+  deployed by the shared shell module.
 - `common/modules/zed.nix`: shared editor settings, theme and language-server commands.
 - `common/modules/spotify.nix`: build-time injection and writable palette.
   Keep zero-add-on themes loading matching rewritten JS/CSS through native theme patches.
@@ -37,9 +36,10 @@ checkout `/etc/nixos`, not a store source path or the evaluation working directo
 ## Shell and package rules
 
 Portable package ownership stays with the shared shell module. Do not repeat
-that inventory in system modules or Homebrew. Preserve initialization ordering:
-Starship/zoxide initialize before the prompt-start hook and optional
-`~/.config/fish/user-config.fish`. Keep host PATH additions host-local.
+that inventory in system modules or Homebrew. Use Home Manager's native Starship
+and zoxide Fish integrations. They initialize before host terminal setup and
+optional `~/.config/fish/user-config.fish`. Fish 4 owns OSC 133 prompt markers.
+Keep host PATH additions host-local.
 
 Fish's `ls` is an eza alias and `cd` uses zoxide. Account login-shell registration
 is a system concern, not something Home Manager's Fish configuration fixes for

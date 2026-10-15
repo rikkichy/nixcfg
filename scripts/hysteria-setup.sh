@@ -94,7 +94,7 @@ private_directory() {
   chmod 700 -- "$path"
 }
 
-# noclobber also rejects symlinks; umask protects files even when sourced by tests.
+# noclobber rejects existing files and symlinks; umask keeps new files private.
 create() ( umask 077; set -o noclobber; cat > "$1" )
 
 # Read passwords from a private file, never argv or a printed shell expansion.

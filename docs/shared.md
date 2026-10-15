@@ -5,8 +5,9 @@ Related: [Desktop Linux](nix.md) · [macOS](ne.md) · [Server](nixos-server.md)
 ## Rebuild commands
 
 All three hosts import the system module `common/modules/nh.nix`, which installs
-`nh` and sets `NH_FLAKE=/etc/nixos`. Use `nh os switch` on either Linux host and
-`nh darwin switch --hostname ne` on the Mac. Keep `--hostname ne` when the Mac's
+`nh` and sets `NH_FLAKE=/etc/nixos`. Use `nh os switch --no-nom` on desktop
+`nix`, `nh os switch` on the server, and `nh darwin switch --hostname ne` on the Mac.
+Keep `--hostname ne` when the Mac's
 local hostname differs from the flake attribute. The server does not need
 Home Manager for this shared command. Run as your normal user. `nh` requests
 elevation as needed. An explicit `NH_OS_FLAKE` takes precedence over `NH_FLAKE`
@@ -15,6 +16,8 @@ for OS commands. For an explicit checkout/host, use
 `nh darwin switch path:/etc/nixos --hostname ne`.
 Switching activates the configuration and requires separate operator approval.
 Source edits and successful verification do not grant that approval.
+Desktop rebuilds retain `--no-nom` because nix-output-monitor cannot parse the
+[content-addressed signed kernel](nix-security.md#local-module-signing-and-integrity-lockdown).
 
 Darwin selects `nh-unwrapped` from the dedicated `nixpkgs-nh` input, keeping its
 compiler/dependency closure on a verified official-cache build. The main
@@ -35,9 +38,12 @@ Official NixOS signature verification remains enabled with the existing trusted 
 All three hosts import `common/modules/shell.nix` through Home Manager for their
 primary user. It owns portable CLI packages, Fish abbreviations and
 aliases, Starship, zoxide, direnv, Matugen, Departure Mono Nerd Font, and shared
-Starship/fastfetch/btop/micro configuration. Optional local Fish additions belong
-in `~/.config/fish/user-config.fish`. Host modules own platform-specific shell
-initialization and terminal integration.
+Starship/fastfetch/btop/micro configuration. Home Manager's native modules own
+Starship and zoxide packages and Fish integration. zoxide retains `--cmd cd`.
+Fish 4 owns OSC 133 prompt markers without a custom prompt-start hook.
+Optional local Fish additions belong in `~/.config/fish/user-config.fish`,
+sourced after the integrations and host terminal initialization.
+Host modules own platform-specific shell initialization and terminal integration.
 The managed btop configuration contains theme overrides only. Other settings
 follow the packaged btop defaults.
 
@@ -102,8 +108,7 @@ To verify static startup loading without a model request, run OMP in RPC mode.
 Send only `{"id":"startup","type":"get_state"}`. The response's
 `systemPrompt` must contain the host rule while `messageCount` is zero.
 The dynamic execution-context field is not part of this zero-message state.
-It is appended when a prompt reaches `before_agent_start`. The classifier's
-standalone regression check is `bun scripts/omp-context-test.mjs`.
+It is appended when a prompt reaches `before_agent_start`.
 
 ## Spotify and wallpaper colors
 

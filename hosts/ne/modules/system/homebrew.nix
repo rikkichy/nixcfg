@@ -5,7 +5,6 @@
       "can1357/tap"
       "facebook/fb"
       "mmathys/tap"
-      "serpentiel/tools"
     ];
     brews = [
       "ast-grep"

@@ -41,12 +41,14 @@ is desktop-only. Fresh-install disk erasure is never an existing-system recovery
 ## Rebuilds and desktop tools
 
 After separate activation approval, apply configuration changes with
-`nh os switch --no-update-lock-file`. See [shared rebuild behavior](shared.md#rebuild-commands)
+`nh os switch --no-nom --no-update-lock-file`. See [shared rebuild behavior](shared.md#rebuild-commands)
 for checkout selection, environment precedence and elevation.
+Keep `--no-nom` for the [content-addressed signed kernel](nix-security.md#local-module-signing-and-integrity-lockdown).
 META+ALT exposes three Nix commands in held terminals:
 - **nh os switch**
 - **nh os switch --update** (update all inputs, rebuild and switch)
 - **Garbage collection — nh clean all**
+Both rebuild entries pass `--no-nom` automatically.
 
 The live `~/.config/hypr` symlink targets `hosts/nix/dotfiles/ricing/hypr/`.
 If it points elsewhere, switch the host configuration before reloading Hyprland.
@@ -74,8 +76,6 @@ manual resizing. Other workspaces retain dwindle.
 Telegram activation requests do not steal focus or reveal its workspace.
 Use **META + D** to reveal it. Notification clicks that request application
 activation follow the same focus policy.
-The launch decision regression check runs from the repository root with
-`Hyprland --verify-config --config "$PWD/scripts/communication-workspace-test.lua"`.
 
 Brave Origin (`pkgs.brave-origin`) is the default browser for the browser shortcut,
 HTML files and web links. Its profile remains application-owned under
@@ -257,6 +257,9 @@ That module also owns `gtk-4.0/gtk.css`. See [palette ownership](../.omp/skills/
 **Edit templates, not generated files**, which are replaced at the next wallpaper.
 Shared templates live in `common/dotfiles/matugen/templates/`. Linux-only ones
 live in `hosts/nix/dotfiles/ricing/matugen/templates/`.
+Thunar uses the base GTK theme's keyboard-focus indicators. Its file view and
+sidebar stay visible without animations. Selection text uses the generated
+`accent_color`, not an undefined inherited `primary` color.
 Use `wpp`/`awpp` after editing: bare Matugen renders palettes, not the complete
 wallpaper, terminal, cursor and wallpaper-record application.
 
@@ -265,7 +268,7 @@ wallpaper, terminal, cursor and wallpaper-record application.
 `quickshell.service` runs the pinned Quickshell package with
 `hosts/nix/dotfiles/ricing/quickshell/`. The unit's restart trigger includes the QML store path,
 so a configuration rebuild updates the unit as well as its files. After separate
-activation approval, apply with `nh os switch`. No manual notification daemon
+activation approval, apply with `nh os switch --no-nom`. No manual notification daemon
 or wallpaper daemon should run alongside the managed ones.
 
 The left rail groups a folded tray toggle, notifications, the centered
@@ -367,8 +370,9 @@ in the [Quickshell source](../hosts/nix/dotfiles/ricing/quickshell/)
 and [engineering reference](../.omp/skills/desktop-shell/references/quickshell.md).
 
 Implementation reference: [Quickshell v0.3.1](https://git.outfoxxed.me/quickshell/quickshell/src/tag/v0.3.1),
-including its native Hyprland IPC and service APIs. The flake applies a
-socket-lifetime correction required with the pinned Qt.
+including its native Hyprland IPC and service APIs. The
+[socket-lifetime workaround](../.omp/skills/desktop-shell/references/quickshell.md#palette-and-native-crash-boundary)
+is retained as commented code, not applied to the active package.
 
 
 ## RGB lighting
@@ -433,7 +437,7 @@ To avoid ordinary local compilation, inspect the build plan after updating:
 nix build --dry-run --no-write-lock-file \
   'path:/etc/nixos#nixosConfigurations.nix.config.system.build.toplevel'
 mkdir -p ~/.local/state
-nh os build path:/etc/nixos --hostname nix --no-update-lock-file \
+nh os build --no-nom path:/etc/nixos --hostname nix --no-update-lock-file \
   --max-jobs 0 --out-link ~/.local/state/nixcfg-next
 ```
 
@@ -445,7 +449,7 @@ with bounded parallelism.
 
 ```sh
 mkdir -p ~/.local/state
-nh os build /etc/nixos --hostname nix --no-update-lock-file \
+nh os build --no-nom /etc/nixos --hostname nix --no-update-lock-file \
   --max-jobs 2 --cores 8 --out-link ~/.local/state/nixcfg-next
 ```
 
@@ -455,12 +459,12 @@ activated. The result link retains the built system against garbage collection.
 With separate activation approval, switch that exact snapshot:
 
 ```sh
-nh os switch ~/.local/state/nixcfg-next --ask
+nh os switch --no-nom ~/.local/state/nixcfg-next --ask
 ```
 
 The link is a snapshot: later edits are excluded, and a failed build can leave
 an older result. For next-boot staging, use
-`nh os boot /etc/nixos --hostname nix --no-update-lock-file`.
+`nh os boot --no-nom /etc/nixos --hostname nix --no-update-lock-file`.
 Keep known-good generations for
 [Limine recovery](nix-security.md#limine-recovery-with-a-zero-timeout).
 **Garbage collection — nh clean all** removes older generations, keeping one per profile.
@@ -469,5 +473,5 @@ Keep known-good generations for
 through Git. Tracked modifications are visible without committing. New source
 files need `git add` (or `git add -N` to mark intent without staging their contents).
 For approved activation with untracked source files, use
-`nh os switch path:/etc/nixos --hostname nix --no-update-lock-file`.
+`nh os switch --no-nom path:/etc/nixos --hostname nix --no-update-lock-file`.
 Neither mode makes plaintext safe in the tree.

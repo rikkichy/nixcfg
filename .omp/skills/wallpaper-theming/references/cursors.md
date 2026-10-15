@@ -13,8 +13,7 @@ wallpaper-change time.
   archive and upstream matcher source by hash. It installs Hyprcursor,
   Xcursor and scalable SVG assets without native compilation.
 - `hosts/nix/pkgs/ricing/bibata-material-select.py` owns the writable selection
-  and first-use migration. The package's check phase runs
-  `scripts/cursor-selection-test.py` with the pinned upstream matcher.
+  and first-use migration.
 - `hosts/nix/modules/home/matugen.nix` writes the accent to
   `~/.local/state/theme/cursor.conf`, calls the selector, then refreshes the
   compositor before advancing the wallpaper success record.
