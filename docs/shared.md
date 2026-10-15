@@ -133,3 +133,56 @@ to load the palette. There is no stylesheet watcher, local web server, or remote
 debugging endpoint. Spotify/Spicetify updates follow the Nix input pins. Client
 compatibility still requires keeping those pins current. See the
 [Mac guide](ne.md#spotify-and-spicetify) for update-cache protection and recovery.
+
+## Lan Mouse: desktop and Mac
+
+`nix` installs the Nixpkgs Lan Mouse package. `ne` deploys the official ARM64
+app through Home Manager using `hosts/ne/pkgs/lan-mouse.nix`. No background
+service or login item is enabled. Peer configuration and certificates remain
+application-owned, outside this public checkout.
+
+After separately approved activation on both hosts:
+
+1. Launch **Lan Mouse** from the Linux application launcher, or run `lan-mouse`.
+   On the Mac, open `~/Applications/Home Manager Apps/Lan Mouse.app`.
+   Its settings are available from the menu-bar icon, not a persistent Dock icon.
+2. On macOS, grant the app Accessibility access in **System Settings → Privacy &
+   Security**. Grant Input Monitoring or Local Network access if macOS requests
+   it. If the application firewall prompts, allow incoming connections for this
+   app; do not disable the firewall.
+3. Start with Linux controlling the Mac. In Linux's Lan Mouse window, select
+   **Add**, enter the Mac's LAN IP or resolvable hostname, and choose the edge
+   matching the Mac's physical position.
+4. On the Mac, authorize the Linux device under **Incoming Connections**.
+   Compare its fingerprint with **General** on the Linux device before accepting.
+   Activate the client and move the pointer across the chosen edge.
+5. Hold **left Ctrl + Shift + Alt + Super together** on the sending keyboard to
+   release capture (Command/Option correspond to Super/Alt on Mac).
+   Keep a local input device available while checking the connection.
+   Authorize the opposite direction separately if wanted; trust is not bidirectional.
+
+Linux permits UDP 4242 only on the configured Ethernet/Wi-Fi interfaces,
+`enp11s0` and `wlp8s0`. No router port-forward is needed. Use a trusted LAN;
+these interface rules do not restrict the source subnet. Credentials, peer
+addresses and fingerprints are not provisioned by activation.
+
+To retain peers and authorization, save the running configuration on each host:
+
+```sh
+# Linux
+lan-mouse cli save-config
+# macOS
+"$HOME/Applications/Home Manager Apps/Lan Mouse.app/Contents/MacOS/lan-mouse" cli save-config
+```
+
+Lan Mouse writes `~/.config/lan-mouse/config.toml` (or the corresponding
+`$XDG_CONFIG_HOME` path). Keep it writable and outside the repository.
+For manual changes, see the
+[upstream configuration reference](https://github.com/feschber/lan-mouse/tree/v0.11.0#configuration).
+An application upgrade can require renewed macOS permissions.
+
+Upstream documents modifier-key limitations when a non-layer-shell sender
+(including macOS) controls a wlroots receiver. Verify Ctrl/Shift/Alt/Super
+before relying on Mac-to-Hyprland control. Keyboard-layout and BetterGlobeKey
+behavior also need real-device verification. Lan Mouse does not synchronize
+the clipboard or provide access before graphical login.
