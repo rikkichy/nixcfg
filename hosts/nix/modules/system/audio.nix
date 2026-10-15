@@ -6,7 +6,6 @@
     alsa.enable = true;
     alsa.support32Bit = true;
     pulse.enable = true;
-    jack.enable = true;
 
     extraConfig.pipewire."90-blessing3-eq" = {
       "context.modules" = [

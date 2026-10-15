@@ -50,8 +50,6 @@
     telegram-desktop
 
     pavucontrol
-    sonobus
-    qpwgraph
 
     android-tools
 

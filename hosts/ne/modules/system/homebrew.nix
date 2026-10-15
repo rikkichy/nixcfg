@@ -46,7 +46,6 @@
         trusted = true;
       }
       "prismlauncher"
-      "sonobus"
       "wallspace"
       "wireshark-app"
     ];
