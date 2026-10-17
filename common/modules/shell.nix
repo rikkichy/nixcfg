@@ -1,9 +1,15 @@
 { config, osConfig, lib, pkgs, nixcfgPath, ... }:
 let
-  flake = "(builtins.getFlake ${builtins.toJSON nixcfgPath})";
-  host = "${if pkgs.stdenv.hostPlatform.isDarwin then "darwinConfigurations" else "nixosConfigurations"}.${osConfig.networking.hostName}";
+  tooling = import ./language-servers.nix { inherit lib pkgs osConfig nixcfgPath; };
+  ompTooling = pkgs.writeText "omp-tooling.yml" ''
+    astGrep:
+      enabled: true
+    lsp:
+      diagnosticsOnEdit: true
+      diagnosticsOnWrite: true
+  '';
   omp = pkgs.writeShellScriptBin "omp" ''
-    exec ${lib.getExe pkgs.bun} x --bun --package @oh-my-pi/pi-coding-agent@latest omp "$@"
+    exec ${lib.getExe pkgs.bun} x --bun --package @oh-my-pi/pi-coding-agent@latest omp --config ${ompTooling} "$@"
   '';
 in
 
@@ -40,17 +46,15 @@ in
     ../dotfiles/omp/nixcfg-execution.js;
 
   home.file.".omp/agent/lsp.json".text = builtins.toJSON {
-    servers.nixd = {
-      command = lib.getExe pkgs.nixd;
-      settings.nixd = {
-        nixpkgs.expr = "${flake}.${host}.pkgs";
-        options = {
-          nixos.expr = "${flake}.nixosConfigurations.nix.options";
-          nixos-server.expr = "${flake}.nixosConfigurations.nixos-server.options";
-          darwin.expr = "${flake}.darwinConfigurations.ne.options";
-          home-manager.expr = "${flake}.${host}.options.home-manager.users.type.getSubOptions []";
-        };
-      };
+    servers = lib.mapAttrs (_: server: server // {
+      settings = server.settings or { };
+    }) tooling.servers // {
+      # Use the same selected servers as Zed, even when alternatives are on PATH.
+      nil.disabled = true;
+      pyright.disabled = true;
+      pylsp.disabled = true;
+      ty.disabled = true;
+      typescript-native.disabled = true;
     };
   };
 

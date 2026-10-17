@@ -58,14 +58,26 @@ After activation, open a new terminal. Existing OMP settings, credentials, and s
 Homebrew cleanup remains disabled; remove its old formula separately with
 `brew uninstall can1357/tap/omp` when the new launcher works.
 
+`common/modules/language-servers.nix` owns the server commands, arguments and
+settings shared by Zed and OMP. Both clients reference the same Nix-store
+executables without adding language runtimes to the global PATH.
 The shared shell module generates `~/.omp/agent/lsp.json` for OMP's default
-profile. It starts the Nix-managed `nixd` executable for Nix navigation and diagnostics.
-The server evaluates this checkout through `nixcfgPath`, using the current host's
-package set, all three system option sets, and the current host's Home Manager options.
-Other OMP profiles remain independent. Zed retains its separately owned language-server configuration.
+profile. Project LSP overrides and other OMP profiles remain independent.
+OMP detects servers from project-root markers, so launch it from the project root.
 
-Repository `.omp/config.yml` enables diagnostics after edits and writes.
-These diagnostics do not prove builds, activation, boot, or runtime behavior.
+nixd uses the current host's package set, all three system option sets, and
+the current host's Home Manager options. Its evaluation expressions use
+`/private/etc/nixos` on Darwin because Nix's path fetcher rejects the `/etc` symlink.
+The runtime checkout remains `/etc/nixos`. Both clients use nixfmt for Nix formatting.
+
+The OMP launcher supplies a config overlay enabling native AST search and
+diagnostics after edits and writes without replacing mutable user settings.
+Additional `--config` overlays can override these launcher settings.
+The `omp config get` subcommand reports persisted settings, not this agent-launch overlay.
+AST tools need no external ast-grep executable. Nix's grammar downloads on
+first use, so a fresh offline installation needs a populated grammar cache.
+AST rewrites are syntax-based, not symbol-aware. Use LSP for references and renames.
+Diagnostics and AST matches do not prove builds, activation, boot, or runtime behavior.
 See [AGENTS.md](../AGENTS.md) for repository development policy.
 Future Home Manager deployments require separate activation approval.
 
@@ -75,20 +87,22 @@ Conflicting managed files are preserved with `.before-home-manager`. Existing
 backups are not overwritten.
 
 Only the desktop and Mac import `common/modules/zed.nix`, which owns Zed's read-only
-settings, extension selection, language-server commands, and the captured theme.
+settings, extension selection, the shared-server adapter, and the captured theme.
 On Linux it also owns the Zed package. On Darwin it configures the existing app.
 Edit this module rather than Zed's settings UI. Extensions are installed by Zed
 on startup, not version-pinned by Nix. Before the first Linux activation, back up
 any unmanaged `~/.config/zed/settings.json` or conflicting Matugen theme file.
 Restart Zed after activation so language servers use the new generation.
 
-Project environments still come from direnv. Zed's Node runtime and the fallback
-Go runtime are editor-scoped, not global project toolchains. Darwin Rust keeps
+Project environments still come from direnv. Zed's Node runtime and the shared
+gopls fallback Go runtime are tool-scoped, not global project toolchains. Darwin Rust keeps
 using rustup. Install `rust-src` and `rustfmt` for each project toolchain that
 needs standard-library navigation and formatting. Linux supplies default Rust
 tools and sources. Project development shells can override them.
-QML language-server support is Linux-only, with Qt and Quickshell import
-metadata passed explicitly. Darwin retains QML syntax support.
+QML language-server support belongs to desktop `nix`, with Qt and Quickshell
+imports shared by both clients. Darwin retains QML syntax support.
+Kotlin uses the desktop package or Darwin's existing Homebrew installation.
+The headless server receives the portable servers, without Kotlin, Qt or Quickshell.
 
 JetBrains Kotlin LSP pre-release builds expire.
 If its log reports an expired build, update `hosts/nix/pkgs/kotlin-lsp.nix` from the upstream release and checksum.
