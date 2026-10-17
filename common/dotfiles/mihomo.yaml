@@ -144,8 +144,6 @@ rules:
   - GEOSITE,bitwarden,REJECT
   - GEOSITE,pinterest,PROXY
   - GEOSITE,pinterest,REJECT
-  - GEOSITE,jetbrains,PROXY
-  - GEOSITE,jetbrains,REJECT
   - DOMAIN-SUFFIX,patreon.com,PROXY
   - DOMAIN-SUFFIX,patreon.com,REJECT
   - DOMAIN-SUFFIX,patreonusercontent.com,PROXY
