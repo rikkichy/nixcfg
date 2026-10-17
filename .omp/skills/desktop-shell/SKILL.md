@@ -21,7 +21,6 @@ This skill owns the Linux desktop shell, not host `ne`. Load only the relevant r
 - Treat native objects as disposable. Guard null/ready state. Pass external data as argv. Never interpolate titles, SSIDs or device names into shell commands.
 - Generated palettes remain writable. Home Manager owns static sources, never generated Quickshell/Fuzzel colours or the generated Hyprland scheme. The Hyprland directory is a live out-of-store symlink. QML is store-deployed with a service restart trigger.
 - Never replace the running notification daemon or alter live audio/network state to test a candidate. Quickshell previews need a separate compositor **and** D-Bus session. Snapshot and restore the user-manager and D-Bus activation environments around nested Hyprland. Details are in the Quickshell reference.
-- Use the single smallest check proving the changed behavior. The [pre-push gate](../nixcfg-validation/SKILL.md#pre-push-gate) owns repository-wide evaluation. For visual changes, exercise the actual isolated shell and capture its Wayland output. QML load/Nix evaluation is not visual proof. For Hyprland parsing changes, reload logs and `configerrors` are not substitutes for `--verify-config`.
 
 ## Adjacent ownership
 

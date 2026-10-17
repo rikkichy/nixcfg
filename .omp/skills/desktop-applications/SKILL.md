@@ -40,6 +40,3 @@ Read the applicable [host operator section](../../../docs/nix.md) before consequ
   Measure the real window class and activation path before changing integration.
 - Do not mistake sandbox visibility for host visibility.
   A working JVM does not prove a complete AppImage runtime. Follow the relevant package reference.
-- Use one focused check of the changed application behavior. The
-  [pre-push gate](../nixcfg-validation/SKILL.md#pre-push-gate) owns repository-wide
-  evaluation. Evaluation alone does not prove app startup, media playback or IPC connectivity.

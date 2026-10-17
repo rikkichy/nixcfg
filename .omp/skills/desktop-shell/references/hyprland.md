@@ -66,14 +66,15 @@ Counterintuitive daemon semantics to preserve:
 - `-m output` alone invokes slurp to select a monitor and blocks until a click. Even on one monitor it is not an immediate fullscreen grab. `active` is a modifier, not a mode: keep `-m output -m active` for Print.
 - Pass `-o` explicitly. Hyprshot's default starts with `SAVEDIR=${XDG_PICTURES_DIR:=~}` and relies on `xdg-user-dir` for fallback resolution when the variable is unset. Do not tie screenshot success to the user's incidental environment.
 
-## Verification signals that mislead
+## Parser and reload failure modes
 
-Use [nixcfg-validation](../../nixcfg-validation/SKILL.md) for the current `--verify-config` invocation, and follow [Quickshell preview isolation](quickshell.md#isolated-verification) before starting a nested compositor.
+Follow [Quickshell preview isolation](quickshell.md#preview-isolation) before starting a nested compositor.
 
 - `hyprctl reload` does not append to `hyprland.log`. “No new errors” proves nothing. The log grows at startup, not reload.
 - `hyprctl configerrors` reflects startup parsing and can stay empty after a broken reload, including `hl.env("XCURSOR_SIZE", nil)`.
 - `pcall` cannot catch `hl.*` argument errors: the native error collector receives them instead of Lua exceptions. `pcall(hl.env, k, v)` can return true for a rejected value. Do not type-check native calls through the REPL.
 - `hl.env`'s “must be a string” can mean the value was `nil`, not numeric. `CLuaConfigString::parse` uses `lua_isstring`, which also accepts numbers.
-- A wrong `desc:` silently misses. In an isolated or intended test, compare the matched mode with an intentionally unmatched description and fallback. Confirm that the monitor rule discriminates between them. Do not change the live monitor as an incidental validation step.
+- A wrong `desc:` silently misses and uses the fallback. Do not change the live monitor as an incidental diagnostic step.
 
-Inspect/count `hyprctl binds -j` to detect truncated keybind loading. Use `hyprctl getoption <opt>` for values set after a suspected abort. Use `hyprctl repl 'return require("variables").x'` to inspect a real config value. None replaces parser verification or visual/runtime evidence for the changed surface.
+`hyprctl binds -j` exposes truncated keybind loading. `hyprctl getoption <opt>` reports values after a suspected abort.
+`hyprctl repl 'return require("variables").x'` reads a real config value.

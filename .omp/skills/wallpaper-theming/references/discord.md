@@ -59,13 +59,4 @@ text directly to a live style element, after theme styles, with a 50ms read
 debounce. Keeping wallpaper updates in QuickCSS avoids dropping the static
 theme during each palette update. Theme symlinks into the Nix store are supported.
 
-## Verification
-
-Choose the smallest check covering the changed surface. For palette changes,
-render with an isolated Matugen config. Confirm that the stylesheet contains only
-color custom properties. The pre-push gate owns host evaluation. Do not duplicate it here.
-For visual changes, check the affected Discord surface in an approved or isolated
-session with Wallpaper plus QuickCSS. Layout, home icon, window controls, fonts
-and animations should remain native. For palette reload changes, change the
-isolated wallpaper and confirm that colors update without restarting Discord.
-Host evaluation alone does not prove these UI checks.
+Preview color changes only in an isolated or separately approved Discord session.

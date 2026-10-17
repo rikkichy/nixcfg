@@ -3,9 +3,8 @@
 Sources: `hosts/nix/boot.nix`, `hosts/nix/hardware-policy.nix`,
 `hosts/nix/lighting.nix`, `hosts/nix/storage.nix`, and
 `hosts/nix/modules/system/{nix,security,session,gaming,flatpak}.nix`.
-Operator procedures: [docs/nix.md](../../../../docs/nix.md). For validation use
-[nixcfg-validation](../../nixcfg-validation/SKILL.md). Any activation or disruptive
-runtime experiment needs operator approval.
+Operator procedures: [docs/nix.md](../../../../docs/nix.md).
+Any activation or disruptive runtime experiment needs operator approval.
 
 ## Polkit subjects under UWSM
 

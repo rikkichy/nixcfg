@@ -1,4 +1,8 @@
-{ config, osConfig, lib, pkgs, ... }:
+{ config, osConfig, lib, pkgs, nixcfgPath, ... }:
+let
+  flake = "(builtins.getFlake ${builtins.toJSON nixcfgPath})";
+  host = "${if pkgs.stdenv.hostPlatform.isDarwin then "darwinConfigurations" else "nixosConfigurations"}.${osConfig.networking.hostName}";
+in
 
 {
   home.packages = with pkgs; [
@@ -30,6 +34,21 @@
 
   home.file.".omp/agent/extensions/nixcfg-execution.js".source =
     ../dotfiles/omp/nixcfg-execution.js;
+
+  home.file.".omp/agent/lsp.json".text = builtins.toJSON {
+    servers.nixd = {
+      command = lib.getExe pkgs.nixd;
+      settings.nixd = {
+        nixpkgs.expr = "${flake}.${host}.pkgs";
+        options = {
+          nixos.expr = "${flake}.nixosConfigurations.nix.options";
+          nixos-server.expr = "${flake}.nixosConfigurations.nixos-server.options";
+          darwin.expr = "${flake}.darwinConfigurations.ne.options";
+          home-manager.expr = "${flake}.${host}.options.home-manager.users.type.getSubOptions []";
+        };
+      };
+    };
+  };
 
   programs.direnv = {
     enable = true;

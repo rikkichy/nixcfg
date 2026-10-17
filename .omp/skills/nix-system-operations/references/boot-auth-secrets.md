@@ -3,9 +3,8 @@
 Sources: `hosts/nix/hardware.nix`, `hosts/nix/boot.nix`,
 `hosts/nix/modules/system/security.nix`, `.secrets/nix/sops.nix`, and the Linux
 module imports in `flake.nix`. Operator commands and recovery checkpoints are
-in [docs/nix-security.md](../../../../docs/nix-security.md). Use
-[nixcfg-validation](../../nixcfg-validation/SKILL.md) for the validation workflow
-and security checklist. No enrollment or boot test is implied by a source edit.
+in [docs/nix-security.md](../../../../docs/nix-security.md).
+No enrollment or boot test is implied by a source edit.
 
 ## One root mapping, independent password recovery
 

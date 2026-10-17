@@ -70,14 +70,4 @@ Use direnv/project flakes for project runtimes. This repository has no
   settings. The captured `common/dotfiles/zed/themes/matugen.json` does not follow
   wallpaper changes. Shared palette changes also require `wallpaper-theming`.
 
-## Verification
-
-Use the single smallest check proving the changed behavior. The native pre-push
-gate owns evaluation of all three configurations: `nix`, `ne` and `nixos-server`.
-Evaluation proves option/package selection, not editor or shell behavior.
-For shell changes, run Fish with the generated configuration in a disposable
-home. Check the changed interaction. For Zed changes, launch the appropriate
-installed app. Inspect the actual formatter/language-server result without
-modifying project toolchains. Report unavailable macOS/Linux runtime checks.
-Never claim that one host's success proves the other's. No switch or app restart
-against the user's live session is implied by validation.
+Source edits do not authorize a switch or app restart against the user's live session.

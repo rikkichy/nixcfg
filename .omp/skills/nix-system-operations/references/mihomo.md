@@ -7,8 +7,7 @@ Mihomo, the `vpn` command and tunnel-specific network rules are desktop-only.
 `nixos-server` imports neither the VPN service nor its secret renderer.
 Operator procedures: [VPN in docs/nix-networking.md](../../../../docs/nix-networking.md#vpn-mihomo).
 Read [SOPS safety](boot-auth-secrets.md#sops-authoring-and-identity-boundaries)
-before changing secret inputs and [nixcfg-validation](../../nixcfg-validation/SKILL.md)
-for validation and security acceptance checks.
+before changing secret inputs.
 
 ## Public template, private runtime rendering
 

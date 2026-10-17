@@ -40,6 +40,8 @@ and switching. See [source inclusion and prebuilds](../../../../docs/nix.md#upda
 `nh clean all` cleans all profiles and runs garbage collection, keeping one
 generation per profile by default.
 
-## Verification
+## Preview safety
 
-Choose the smallest check for the changed behavior. For Fuzzel configuration changes, render a palette and combine it with static settings for `fuzzel --check-config`. Fuzzel comments begin with `#`, not `;`. Isolated checks use a temporary include path and `--cache=/dev/null`, never the user's launch cache. For changed picker interactions, exercise the affected dismissal or raw-input behavior without invoking destructive actions. Night-light IPC and screenshot caveats are in [Hyprland](hyprland.md). The [pre-push gate](../../nixcfg-validation/SKILL.md#pre-push-gate) owns repository-wide evaluation.
+Fuzzel comments begin with `#`, not `;`. Previews use a temporary include path and
+`--cache=/dev/null`, never the user's launch cache. Do not invoke destructive
+picker actions during a preview. Night-light IPC and screenshot caveats are in [Hyprland](hyprland.md).

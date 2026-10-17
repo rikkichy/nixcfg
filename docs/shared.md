@@ -53,6 +53,17 @@ architectures. `flake.lock` selects the installed release.
 `nix flake update omp --flake /etc/nixos` refreshes that pin explicitly.
 macOS uses the `can1357/tap/omp` Homebrew formula.
 
+The shared shell module generates `~/.omp/agent/lsp.json` for OMP's default
+profile. It starts the Nix-managed `nixd` executable for Nix navigation and diagnostics.
+The server evaluates this checkout through `nixcfgPath`, using the current host's
+package set, all three system option sets, and the current host's Home Manager options.
+Other OMP profiles remain independent. Zed retains its separately owned language-server configuration.
+
+Repository `.omp/config.yml` enables diagnostics after edits and writes.
+These diagnostics do not prove builds, activation, boot, or runtime behavior.
+See [AGENTS.md](../AGENTS.md) for repository development policy.
+Future Home Manager deployments require separate activation approval.
+
 The server's `hosts/nixos-server/home.nix` imports only the shared shell module.
 Fish is `ri`'s system login shell. Reconnect SSH after activation to start it.
 Conflicting managed files are preserved with `.before-home-manager`. Existing
@@ -103,12 +114,6 @@ hostname/account lookup, an SSH target or proof of an active GUI session.
 Activation requires separate approval. Start a new OMP session afterward. Named
 profiles and `PI_CODING_AGENT_DIR` use their own rule directories and do not read
 the default directory. Do not copy machine identity rules between hosts.
-
-To verify static startup loading without a model request, run OMP in RPC mode.
-Send only `{"id":"startup","type":"get_state"}`. The response's
-`systemPrompt` must contain the host rule while `messageCount` is zero.
-The dynamic execution-context field is not part of this zero-message state.
-It is appended when a prompt reaches `before_agent_start`.
 
 ## Spotify and wallpaper colors
 

@@ -19,19 +19,28 @@ Host-oriented Nix config for:
 - Describe the current design, never its history. Documentation states what is
   true and why. Put changelog language such as "now", "used to", and "replaced"
   in the commit message. Descriptions of failed prior approaches also belong there.
-- Before changing a subsystem, load the matching project skill. Its constraints
-  and verification methods are part of the implementation, not optional notes.
+- Before changing a subsystem, load the matching project skill for its ownership,
+  compatibility, and operating constraints.
 - Keep changes focused. Do not rewrite generated or application-owned state when
   the tracked source, template, or seed is elsewhere.
 - Secret provisioning, PIV/FIDO enrollment, keyslot removal, activation, and
   reboot require separate operator approval. Never read production secrets into
   tool output or manufacture recipients/ciphertext to bypass pending provisioning.
 
-## Commands and validation
+## Development workflow
 
-Run only the smallest check proving the changed behavior. Reuse user verification.
-Load `nixcfg-validation` for the native pre-push gate and explicit diagnostics.
-Do not run automatic quick/full matrices or duplicate the gate before pushing.
+Use OMP's nixd integration for Nix diagnostics and symbol navigation before and
+after relevant edits. Its managed configuration belongs to
+`common/modules/shell.nix`; `.omp/config.yml` enables edit diagnostics.
+Do not create permanent or throwaway test files, smoke scripts, or fixtures.
+Do not run routine test suites or repository-wide validation matrices.
+Use a focused command or in-memory interaction when needed to establish changed
+behavior, and reuse user-provided evidence. If nixd is unavailable or inconclusive,
+report that limit and use source inspection plus the relevant native command.
+Language-server diagnostics do not prove host evaluation, compilation, activation,
+authentication, boot, or GUI behavior. Preserve operator safety and recovery
+procedures, and report unperformed checks without claiming success.
+
 Use explicit `path:` references while iterating. Git flakes omit new files.
 Host guides own operator procedures. Separately authorized activation uses
 `nh os switch` on Linux and `nh darwin switch` on macOS.
@@ -40,8 +49,8 @@ Host guides own operator procedures. Separately authorized activation uses
 
 Always commit and push task-owned changes confirmation, explicitly requested.
 Preserve unrelated working-tree and staged changes. Stage only owned hunks in
-overlapping files, never a blanket add. Do not force-push or bypass the pre-push
-hook. Read-only reviews/proposals do not create commits. Publication does not
+overlapping files, never a blanket add. Do not force-push or bypass unrelated
+hooks. Read-only reviews/proposals do not create commits. Publication does not
 authorize activation, restarts, secret changes, enrollment or reboot.
 
 ## Architecture
@@ -95,21 +104,5 @@ OMP advertises skill names/descriptions and loads bodies on demand. Load the
 matching skill and only its relevant references. Read the applicable operator
 procedure before consequential actions. Do not import whole runbooks into context.
 Review `.omp/` and `AGENTS.md` as tracked resources, including reference targets.
-Commands in `.omp/commands/`: `/plan`, `/review`,
-`/check [quick|full] [nix|ne|nixos-server|all]`, and `/finish`.
+Commands in `.omp/commands/`: `/plan`, `/review`, and `/finish`.
 
-## Validation policy
-
-- Inspect the scoped final diff. The pre-push gate owns whitespace, syntax and
-  all three host evaluations. Do not repeat that matrix during ordinary work.
-- Evaluation is not compilation, activation, authentication or boot proof.
-  Native build/runtime checks require the applicable platform and changed surface.
-- `hosts/nix/dotfiles/ricing/hypr/` changes require `Hyprland --verify-config`. Reload logs and
-  `hyprctl configerrors` are not reliable validation.
-- Never treat a successful `nh os switch` as proof that an initrd change
-  will boot. Load `nix-system-operations` and inspect the generated boot inputs.
-- For SOPS/PAM/FIDO work, use the enrollment and recovery checklist in
-  `docs/nix-security.md`. Dummy-data tests, evaluation, activation, and actual hardware
-  checks are separate evidence. Never report hardware checks from configuration alone.
-- Report checks that were not run and why. Do not silently substitute a weaker
-  check for the documented one.

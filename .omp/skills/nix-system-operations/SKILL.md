@@ -36,11 +36,9 @@ load runbooks or authorize their procedures.
 - Never print private keys, decrypted SOPS values, provider URLs, or HWID.
   Never put them into the checkout, store, arguments, logs, or documentation.
   A Nix rollback does not restore token enrollment, private keys, or out-of-store mappings.
-- Use the single smallest check proving the changed behavior.
-  The [pre-push gate](../nixcfg-validation/SKILL.md#pre-push-gate) owns repository-wide evaluation.
-  Evaluation/build/switch success is not boot or authentication proof. Retain
-  relevant [security acceptance evidence](../nixcfg-validation/references/security.md)
-  and record operator-only checks as pending until separately approved and performed.
+- Evaluation/build/switch success is not boot or authentication proof. Follow the
+  [security procedures](../../../docs/nix-security.md) for consequential changes.
+  Record operator-only checks as pending until separately approved and performed.
 - Route macOS `ne` work to [darwin-host](../darwin-host/SKILL.md).
   Route shared shell and Zed work to [shared-home](../shared-home/SKILL.md).
   Route Linux desktop/session UI to [desktop-shell](../desktop-shell/SKILL.md).

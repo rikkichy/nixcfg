@@ -108,17 +108,8 @@ Use the exact family `DepartureMono Nerd Font`. Font visibility may require an a
 Keep Spotify's resource link after `copyApps`. See [update-cache recovery](../../../docs/ne.md#spotify-and-spicetify)
 before changing the user-immutable updater directory.
 
-## Verification
+## Live-session boundaries
 
-Load `nixcfg-validation` and run one smallest check that proves the changed
-behavior. The native Git pre-push hook owns full repository-wide verification.
-Do not repeat its evaluation gate during development or finishing.
-Darwin evaluation does not build the Swift helper or exercise activation.
-Claim only observed proof.
-
-For changed native behavior, separately exercise the actual Mac surface with
-operator approval. Check defaults/pmset values, keyboard doctor, file reveal/defaults,
-or Ghostty/Marta rendering as applicable. Render palettes to temporary destinations first.
-Never overwrite live preferences just to validate a template. Record unavailable
-Mac builds and runtime checks as NOT RUN. Switching, Homebrew cleanup, account
-shell changes, service restarts and power actions require separate approval.
+Never overwrite live preferences to preview a template. Use separate palette destinations.
+Switching, Homebrew cleanup, account shell changes, service restarts and power
+actions require separate approval.

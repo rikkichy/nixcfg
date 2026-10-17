@@ -104,8 +104,7 @@ the LUKS recovery passphrase. Ordinary SSH is available only after boot.
 See [encrypted-root console unlock](nixos-server.md#encrypted-root-console-unlock).
 
 Use packaged `--help` or read-only `--plan` for the installer surface.
-The native pre-push hook owns repository-wide evaluation. Do not repeat it here.
-These checks do not prove disk installation, live PAM, or physical cold boot.
+Help and plan output do not prove disk installation, live PAM, or physical cold boot.
 
 ### Adopt the installed snapshot
 

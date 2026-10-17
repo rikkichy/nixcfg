@@ -465,9 +465,9 @@ First provisioning is an operator procedure, not something a rebuild does:
    printing plaintext. Privately compare all imported values, especially HWID.
    Merely adding `personal.yaml` selects SOPS at the next evaluation: finish
    these tests and provision the host key **before activation**.
-7. Review/stage the policy, ciphertext, and module explicitly. Run quick/full
-   validation and a build, then request activation. Check runtime permissions,
-   start ordering, a controlled changed-secret restart, and provider behavior.
+7. Review/stage the policy, ciphertext, and module explicitly, then request activation.
+   After approved activation, check runtime permissions, start ordering,
+   a controlled changed-secret restart, and provider behavior.
    Keep all `/etc/mihomo` inputs and the known-working generation until cutover
    and rollback have been exercised.
 

@@ -1,4 +1,4 @@
-# Quickshell — native UI and isolated verification
+# Quickshell — native UI and preview isolation
 
 [Skill routing](../SKILL.md) · [Host shell guide](../../../../docs/nix.md#expressive-desktop-shell)
 
@@ -57,8 +57,10 @@ as commented code. The active package is unmodified Nixpkgs Quickshell for
 binary-cache reuse. Deleting during `readyRead` can let Qt access its freed
 sender during `channelReadyRead`, so the stock package retains that crash risk.
 
-## Isolated verification
+## Preview isolation
 
-Only one notification daemon can own the session bus. Use a separate compositor **and** D-Bus session for candidate shells. Never displace the running desktop. Exercise only the changed IPC, notification lifetime or workspace transition. For visual changes, capture actual Wayland output. Successful QML loading or Nix evaluation is not visual proof. Keep live audio/network state untouched. The [host guide](../../../../docs/nix.md#expressive-desktop-shell) records the design rationale.
+Only one notification daemon can own the session bus. Candidate shells require a separate compositor **and** D-Bus session.
+Never displace the running desktop or change live audio/network state during a preview.
+The [host guide](../../../../docs/nix.md#expressive-desktop-shell) records the design rationale.
 
 Nested Hyprland can modify the real user-manager and D-Bus activation environment even when Quickshell uses a private bus. Before a preview, snapshot live `WAYLAND_DISPLAY`, `DISPLAY`, `HYPRLAND_INSTANCE_SIGNATURE` and compositor/cursor variables, including whether each was unset. Restore both activation environments afterward, including on failure. Check the user-manager display against `hyprctl instances` before starting real services. A deleted preview socket makes awww and Quickshell fail to start and leaves Home Manager waiting for wallpaper readiness.

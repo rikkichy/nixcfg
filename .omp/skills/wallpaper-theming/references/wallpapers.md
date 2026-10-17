@@ -26,8 +26,8 @@ Home Manager's configured XDG locations. Collection overrides remain supported.
 The checked application steps stay outside Matugen's wallpaper command and hooks:
 version 4.2 logs nonzero command exits but returns success.
 
-Matugen owns `quickshell/colors.json`. Render `hosts/nix/dotfiles/ricing/matugen/templates/quickshell.json` to a temporary destination when changing roles.
-Follow the [Quickshell writable-consumer and isolated-verification contract](../../desktop-shell/references/quickshell.md#palette-and-native-crash-boundary) to prove live reload without touching the running shell.
+Matugen owns `quickshell/colors.json`.
+Follow the [Quickshell writable-consumer contract](../../desktop-shell/references/quickshell.md#palette-and-native-crash-boundary).
 
 Thumbnails are pre-rendered to `~/.cache/wallpaper-picker` with
 `gdk-pixbuf-thumbnailer`. Fuzzel builds with `+png +svg` only, so JPEG sources
@@ -80,23 +80,19 @@ Palette/cursor generation intentionally writes application-owned config/data,
 wallpaper state and terminal devices. Video playback has separate GPU/media
 requirements. Those user-state paths remain writable outside awww.
 
-For runtime proof, use a nested compositor/private bus and a uniquely named
+Service previews require a nested compositor/private bus and a uniquely named
 transient copy of the evaluated service. Never use the live wallpaper service.
-Follow [compositor environment isolation](../../desktop-shell/references/quickshell.md#isolated-verification).
+Follow [compositor environment isolation](../../desktop-shell/references/quickshell.md#preview-isolation).
 Override the transient cache/runtime paths to disposable directories **outside**
 shared `/tmp`/`/var/tmp`, which `PrivateTmp` hides.
 Pass the nested Wayland socket as an absolute `WAYLAND_DISPLAY`.
 Save the activation-environment snapshot outside the checkout so an interrupted
-smoke test can still restore the live session.
+preview can still restore the live session.
 Preserve the actual `ExecStartPre`, sandbox properties and `ExecStartPost`.
 Omit session dependencies and automatic restart.
-Prove query readiness and image display from a custom path with spaces.
-Prove cache restoration after transient restart and socket cleanup.
-Use dummy files to prove read-only home/system access and writable cache/runtime access.
-Check secret-path denial without opening real secrets.
+Never open real secrets during a preview.
 Stop only the transient unit and nested compositor.
 Restore manager/bus environments even on failure, then remove disposable artifacts.
-Evaluation alone is not runtime sandbox proof.
 
 #### Animated wallpapers
 

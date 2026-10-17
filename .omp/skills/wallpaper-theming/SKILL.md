@@ -27,7 +27,7 @@ Read the applicable host or [shared operator section](../../../docs/shared.md#sp
 | --- | --- |
 | Shared palette format/math, writable outputs, terminal colors or font names | [Palettes](references/palettes.md) |
 | Linux still/animated pickers, cache, readiness, restoration or failure ordering | [Wallpapers](references/wallpapers.md) |
-| Bibata palette selection, prebuilt assets, Hyprland reload or cursor verification | [Cursors](references/cursors.md) |
+| Bibata palette selection, prebuilt assets, Hyprland reload or cursor caches | [Cursors](references/cursors.md) |
 | Equicord static theme, QuickCSS or declarative plugin preferences | [Discord](references/discord.md) |
 
 ## Mandatory rules
@@ -42,6 +42,3 @@ Read the applicable host or [shared operator section](../../../docs/shared.md#sp
 - Keep Equicord's static theme separate from in-place-written QuickCSS. Atomic
   rename breaks the QuickCSS file watcher. Keep settings writable. Plugin
   declarations merge on activation while private/runtime state stays local.
-- Use the single smallest check proving the changed behavior from the relevant
-  reference. The [pre-push gate](../nixcfg-validation/SKILL.md#pre-push-gate)
-  owns repository-wide evaluation. `hyprctl setcursor` returning `ok` is not visual proof.

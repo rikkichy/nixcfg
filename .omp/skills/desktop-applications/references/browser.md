@@ -25,13 +25,10 @@ and subsequent user changes are preserved. For an existing profile, turn off
 Stats and Background Image in the new-tab customization panel.
 
 Brave Origin includes Brave Shields for content blocking. No additional blocker
-is declared. Home Manager does not seed Widevine. Encrypted-media playback needs
-separate browser-level verification.
+is declared. Home Manager does not seed Widevine.
 
-Smoke-test the packaged executable with an isolated disposable profile, never
-the user's existing session. Verify a rendered page and JavaScript execution.
-Version output alone does not prove browser startup. Headless rendering is not
-proof of Wayland GPU acceleration or DRM playback.
+Browser previews use an isolated disposable profile, never the user's existing session.
+Headless rendering does not establish Wayland GPU acceleration or DRM playback.
 
 `StartupWMClass` controls **running-window** icons (bar/alt-tab). Launcher icons instead
 come from `Icon=` resolved against the icon theme. Measure the actual window class.

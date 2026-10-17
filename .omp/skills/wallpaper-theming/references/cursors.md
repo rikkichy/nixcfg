@@ -61,16 +61,7 @@ A running GTK3 Wayland client can retain its own Xcursor assets until restarted.
 The compositor refresh does not invalidate that client-side cache. Cursor size
 remains configurable through the existing Hyprland/Xcursor settings.
 
-## Verification
-
-Build the package and exercise `bibata-material-select` against a temporary
-selector directory, never the user's active cursor directory.
-Verify that all format links resolve to the same selected theme.
-Verify that failed selection preserves the previous pointer. Inspect an `.hlc` SVG and its selected palette
-to establish asset colours. This is not compositor-rendering proof.
-
-On Linux, separately verify the visible cursor after changing wallpaper,
-including a stationary pointer, animated shape and required scale/size.
-`hyprctl setcursor` returning `ok` is not proof that a theme loaded. Screenshots
-can omit a hardware-plane cursor. Use an isolated compositor with software
-cursors for visual capture. Do not change the user's live pointer or session.
+`hyprctl setcursor` returning `ok` does not establish that a theme loaded.
+Screenshots can omit a hardware-plane cursor. Visual capture needs an isolated
+compositor with software cursors. Follow [preview isolation](../../desktop-shell/references/quickshell.md#preview-isolation).
+Cursor previews must use a separate selector directory, never the user's active cursor directory or live pointer.
