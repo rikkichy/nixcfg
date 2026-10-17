@@ -27,7 +27,7 @@ authentication. Browser origins are restricted to that localhost origin.
 
 ### Split routing and server selection
 
-YouTube, Discord, Roblox/Sober, Instagram, Proton Mail, Spotify, Bitwarden, Pinterest,
+YouTube, Discord, Roblox/Sober, Instagram, Proton Mail, Spotify, Bitwarden, Pinterest, JetBrains,
 noko.chat, smotret-anime.co, 6b6t.org, enderdash.com, terraformersmc.com, meteordev.org and cyrisia.com
 use the selected proxy server. Other destinations use `DIRECT`.
 The listed services use Mihomo's geosite data except these explicit domains,
