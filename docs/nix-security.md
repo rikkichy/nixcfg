@@ -137,6 +137,15 @@ Automatic factory-dbx restoration accepts checked SHA-256 revocation lists.
 Other formats stop for review rather than skipping validation. The helper
 cannot verify physical firmware rejection of untrusted images.
 
+**Fresh-install prerequisite:** the desktop configuration already requires local
+sbctl signing keys when installing its bootloader. Automatic key generation is
+disabled, and the post-install verifier requires the db certificate.
+The interactive installer does not provision these keys. The helper above
+requires existing installed Limine files, so it cannot bootstrap a blank target.
+Before desktop installation, arrange separately approved provisioning or restoration
+of the target's root-only `/var/lib/sbctl` keys and retain an encrypted offline backup.
+Do not defer this prerequisite until the first reboot or disable verification to bypass it.
+
 The desktop uses native Limine signing, not a different bootloader.
 `boot.loader.limine.secureBoot.enable` signs the EFI image with the local
 sbctl db key. The image authenticates the enrolled BLAKE2b configuration hash.
@@ -287,11 +296,11 @@ or checkout. There is no persistent signing key to enroll or back up.
 These are content-addressed builds: a fresh signing identity produces new
 artifact paths, including dependent initrds. Nix's `ca-derivations` feature
 must be enabled in both the client and daemon. The desktop configuration
-enables it persistently. Before that configuration is activated, the
-operator-approved runtime override
-`/run/systemd/system/nix-daemon.service.d/lockdown-ca.conf` supplies
-`NIX_CONFIG=extra-experimental-features = ca-derivations` to the daemon. It
-expires at reboot. Initial build commands also need the client flag:
+enables it persistently. Before that configuration is activated, the Secure Boot
+helper can request approval for a temporary daemon override and restart.
+It writes `/run/systemd/system/nix-daemon.service.d/nixcfg-secureboot.conf` with
+`NIX_CONFIG=extra-experimental-features = ca-derivations`. This expires at reboot.
+Initial build commands also need the client flag:
 
 ```bash
 nix --extra-experimental-features ca-derivations build --no-link \

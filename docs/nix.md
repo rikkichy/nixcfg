@@ -127,10 +127,9 @@ runs during NixOS activation.
 
 ## Printing
 
-`hosts/nix/modules/system/applications.nix` disables CUPS. The evaluated system
-has no CUPS service or socket and declares no printing listener. Source edits
-do not stop a running daemon. Applying this policy requires separately approved
-activation.
+`hosts/nix/modules/system/applications.nix` disables CUPS. This declares no CUPS
+service, socket or printing listener. Source edits do not stop a running daemon.
+Applying this policy requires separately approved activation.
 
 ## Desktop service policy
 
@@ -406,7 +405,8 @@ Update selected pins with `nix flake update nixpkgs home-manager --flake /etc/ni
 **nh os switch --update** updates all inputs, rebuilds and switches.
 Review and commit `flake.lock` after a successful build.
 
-The desktop trusts the official NixOS cache. Local package patches require an
+The desktop configures the Yandex NixOS cache mirror with priority 10 and
+`https://cache.nixos.org/`. Local package patches require an
 exact matching cached build. Otherwise they build locally.
 Ananicy uses the unmodified Nixpkgs package. The desktop kernel, NVIDIA open
 modules, NCT6687 and v4l2loopback share a local
@@ -417,8 +417,8 @@ The optional signed Attic cache at `https://cache.kror.net/nixcfg` supplies
 explicit patched/custom package targets through
 `.github/workflows/package-cache.yml`. Follow the
 [server cache provisioning and desktop trust procedure](nixos-server.md#public-package-cache-attic)
-before enabling it. An absent `/etc/nix/attic.conf` keeps official-cache-only
-behavior. CI builds the committed lock file and publishes exact derivation outputs.
+before enabling it. An absent `/etc/nix/attic.conf` leaves only the configured
+NixOS cache endpoints. CI builds the committed lock file and publishes exact derivation outputs.
 Commit input updates and wait for successful publication before expecting matching downloads.
 Proprietary application and full-host closures are not public cache targets.
 A binary cache moves compilation to CI. It does
@@ -442,10 +442,12 @@ nh os build --no-nom path:/etc/nixos --hostname nix --no-update-lock-file \
 ```
 
 With no remote builders, `--max-jobs 0` rejects uncached ordinary packages.
-Derivations marked `preferLocalBuild`, including small configuration generators,
-can still run locally. Binary AppImage wrapping and Python/script packaging
-are distinct from native compilation. The normal build below permits local work
-with bounded parallelism.
+Derivations marked `preferLocalBuild` can still run locally. This includes the
+desktop's signed kernel, not only small configuration generators.
+`hosts/nix/pkgs/lockdown-kernel.nix` also disables substitution for that kernel.
+This command is therefore not a no-compilation guarantee. Binary AppImage
+wrapping and Python/script packaging are distinct from native compilation.
+The normal build below permits local work with bounded parallelism.
 
 ```sh
 mkdir -p ~/.local/state

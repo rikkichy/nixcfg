@@ -40,7 +40,8 @@ offline UUIDs. The live whitelist is writable persistent server state.
 **Rikkichy is the sole level-4 operator**, without a player-limit
 bypass or AuthMe exemption. The module regenerates `ops.json` at startup:
 runtime `/op` or `/deop` commands are not durable policy.
-MiniMOTD owns the **WhatsApp Miku SMP** title, randomized subtitles and Miku icon.
+MiniMOTD owns the **WhatsApp Miku SMP** title and randomized subtitles.
+The server uses the managed `server-icon.png` Miku icon, with MiniMOTD's icon handling disabled.
 Edit `miniMOTDConfig` and the icon source in `hosts/nixos-server/`, not generated
 runtime files. See `hosts/nixos-server/modules/system/minecraft.nix` for pinned
 plugins and presentation policy. Changes require the approved deployment workflow.
@@ -55,10 +56,10 @@ are provisioned.
 All run as the game user and must be treated as code. Managed public config
 templates are copied at startup. Account databases, skin caches, inventory
 snapshots, CoreProtect history and social user data persist.
-There is no life limit, life-donation command or scheduled life reset. Startup
-removes persisted LimitedLives JARs and its data directory when present, and
-removes name bans with the exact reason
-`Out of lives! Ask a friend to donate a life.` while preserving other bans.
+There is no life limit, life-donation command or scheduled life reset.
+When `plugins/LimitedLives.jar` or its data directory exists, startup removes both
+and the matching Paper remap cache. In that migration, it also removes name bans
+with the exact reason `Out of lives! Ask a friend to donate a life.`, preserving other bans.
 The managed `permissions.yml` is cleared at startup. Ordinary player access
 uses the installed plugins' defaults. Existing backup archives are unchanged.
 The container runs as UID/GID **25565**, matching the host `minecraft` account.
@@ -451,8 +452,9 @@ with Java 21 in Docker. The Minecraft EULA is accepted. Host state lives in
 At **05:00 Europe/Moscow**, the persistent timer stops the game and requires a clean stop.
 It archives the entire tree without dereferencing links, publishes by rename,
 and retains seven completed archives. Cleanup attempts restart even after a
-failed archive or forced stop. A missed timer can cause maintenance downtime
-after boot. A successful systemd start requires the Leaf/AuthMe startup markers.
+failed archive or forced stop, unless the system manager reports shutdown.
+A missed timer can cause maintenance downtime after boot.
+A successful systemd start requires the Leaf/AuthMe startup markers.
 It does not prove that a client can authenticate, join or persist world changes.
 
 Invoke backups only through `sudo systemctl start minecraft-backup.service`.

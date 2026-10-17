@@ -10,6 +10,12 @@ For a desktop that cannot boot,
 start with [Limine / live-ISO recovery](nix-security.md#limine-recovery-with-a-zero-timeout),
 not an erasing installer.
 
+**Fresh desktop `nix` installation has an unresolved signing-key prerequisite.**
+The current configuration requires target sbctl keys, but neither installation path provisions them.
+The post-install helper requires existing Limine boot files.
+Resolve the [signing-key prerequisite](nix-security.md#secure-boot-with-limine) before erasing a desktop disk.
+This restriction does not apply to `nixos-server`.
+
 ## Interactive Linux installer
 
 `install.nix` packages `scripts/install.sh` as `nix run path:.#install`.
@@ -23,6 +29,9 @@ cd /etc/nixos
 If `/etc/nixos` already contains a checkout, use it instead. Do not overwrite
 existing configuration. The live ISO's `/etc/nixos` is the source checkout.
 `/mnt/etc/nixos` is the installed target, populated by the installer.
+For desktop `nix`, first enable `ca-derivations` in the live ISO's Nix client
+and daemon as shown in [desktop installation step 3](../README.md#desktop-nixos-nix).
+The signed kernel requires this feature during host evaluation and installation.
 Review the source, then start the guided installation from this directory:
 
 ```sh
@@ -64,7 +73,7 @@ data. It is not an upgrade tool.
 Only public source and encrypted ciphertext belong in the checkout. Before
 erasing, the installer creates an independent Git checkout at the reviewed source HEAD.
 It overlays the reviewed working files, including local edits,
-deletions, new files and tracked `.omp` resources. Source Git configuration,
+deletions, nonignored new files and tracked `.omp` resources. Source Git configuration,
 hooks and credentials are not copied. The installed `main` branch tracks
 `origin/main` at `https://github.com/rikkichy/nixcfg.git`.
 
@@ -171,7 +180,9 @@ for an installed machine that cannot boot. Use [checkout adoption](#adopt-the-in
 only when installed source lacks Git metadata.
 
 Boot the NixOS 26.05 minimal ISO. **Secure Boot must be OFF**.
-The ISO is not signed with custom keys. Otherwise, the USB drive will not appear in the boot menu.
+The ISO is not signed with custom keys. Firmware can reject it while Secure Boot is enabled.
+Before evaluating or installing this desktop, enable `ca-derivations` in the live
+ISO's Nix client and daemon using [desktop installation step 3](../README.md#desktop-nixos-nix).
 
 ### 0. Get a network + become root
 
@@ -277,7 +288,7 @@ git add hosts/nix/hardware.nix
 ### 6. Install
 
 ```
-nixos-install --flake /mnt/etc/nixos#nix
+nixos-install --flake path:/mnt/etc/nixos#nix
 ```
 
 It prompts for a **root** password at the end. Set one you remember.

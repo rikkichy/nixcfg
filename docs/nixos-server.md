@@ -246,7 +246,7 @@ identity before installing trust or publishing credentials.
 `client` asks before writing root-owned `/etc/nix/attic.conf` and separately
 before desktop activation/daemon restart. An identical existing file is reused.
 A different file or symlink is refused rather than overwritten. Missing include
-means official-cache-only behavior until activation. This file contains only
+means that the existing substituters remain in use until activation. This file contains only
 `extra-substituters` and `extra-trusted-public-keys`: no JWT or private key.
 Official caches/signature checking remain enabled. No trusted user is added.
 Server/Darwin trust is unchanged.

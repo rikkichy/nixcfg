@@ -2,6 +2,11 @@
 
 ### Desktop NixOS (`nix`)
 
+**Fresh desktop installation is currently blocked without signing-key provisioning.**
+The configuration requires existing target sbctl keys, but the installer does not provision them.
+The post-install helper cannot bootstrap a blank target.
+Resolve the [signing-key prerequisite](docs/nix-security.md#secure-boot-with-limine) before erasing a disk or following these steps.
+
 1. Boot a networked x86_64 NixOS UEFI live ISO with Secure Boot disabled.
    This profile targets the AMD/NVIDIA desktop, not a generic PC.
    Connect a USB-visible FIDO2 YubiKey. **The installer erases the selected disk.**

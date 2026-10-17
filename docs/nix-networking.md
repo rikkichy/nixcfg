@@ -76,9 +76,10 @@ opens only the active subscription's live nodes, fastest first. Dismissing
 either submenu leaves the selection unchanged. **Switch to global** routes traffic
 handled by Mihomo through the selected subscription/server. **Switch to scoped**
 restores the service-specific rules. The prompt shows the current mode.
-Switching closes existing Mihomo connections so applications reconnect using the
-new policy. Downloads, calls and games can be interrupted. The mode is a runtime
-choice. Mihomo starts in scoped mode from the template.
+Switching routing mode closes existing Mihomo connections so applications
+reconnect using the new policy. Downloads, calls and games can be interrupted.
+Server and subscription changes do not close existing connections.
+The mode is a runtime choice. Mihomo starts in scoped mode from the template.
 **Edit config** opens the public `common/dotfiles/mihomo.yaml` template in Zed (`zeditor`), including when Mihomo
 is unavailable. It never opens the private rendered configuration. Saving edits
 does not activate them: apply them with an approved NixOS rebuild.

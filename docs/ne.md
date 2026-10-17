@@ -94,12 +94,12 @@ operator approval before those steps.
 
 ```sh
 cd /etc/nixos
-nix run --inputs-from path:. nixpkgs#nh -- darwin build path:. --hostname ne
-# Once, before first activation: back up the old Fish directory so unmanaged
+nix --extra-experimental-features 'nix-command flakes' run --inputs-from path:. nixpkgs#nh -- darwin build path:. --hostname ne
+# Once, before first activation: if ~/.config/fish exists, back it up so unmanaged
 # conf.d scripts and functions cannot override the shared configuration.
 # Use a fresh backup name if this destination already exists.
 mv ~/.config/fish ~/.config/fish.before-nix-darwin
-nix run --inputs-from path:. nixpkgs#nh -- darwin switch path:. --hostname ne
+nix --extra-experimental-features 'nix-command flakes' run --inputs-from path:. nixpkgs#nh -- darwin switch path:. --hostname ne
 ```
 
 If activation reports an existing `/etc` file conflict, inspect and back up that
@@ -125,7 +125,7 @@ macOS may request authentication for this account change.
 Rustup is Nix-managed, but Rust toolchains remain mutable and project-owned.
 The host PATH no longer needs `/opt/homebrew/opt/rustup/bin`.
 After Homebrew initialization, Fish places the Home Manager profile's `bin`
-directory first in PATH. Nix CLI tools take precedence over retained Brew duplicates.
+directory ahead of Homebrew in PATH. Nix CLI tools take precedence over retained Brew duplicates.
 
 ## SSH agent
 
@@ -158,7 +158,7 @@ installed taps and unmanaged formulae.
 ## Ghostty and wallpaper themes
 
 The Darwin home configuration also manages Matugen's configuration, `wallpaper-theme`, and
-Ghostty's settings. Ghostty and Zed applications remain externally installed on macOS.
+Ghostty's settings. Home Manager installs both Ghostty and Zed on macOS.
 Edit Ghostty's settings in `hosts/ne/modules/home/ghostty.nix`,
 not the store-backed files in `~/.config`.
 Ghostty uses the shared `common/dotfiles/matugen/templates/terminal-colors.conf` palette
@@ -258,6 +258,7 @@ remove it from the activation argument list in `file-associations.nix`. Then cha
 Nokochat's Java/Node toolchain, Go tooling, XcodeGen, Docker/Compose clients,
 and Gitleaks belong to its own `~/src/nokochat/flake.nix`: enter that checkout
 with `nix develop`. Do not add them back to the global Brew inventory or export
-a global `JAVA_HOME`. Its development shell also supplies and starts Colima.
-Xcode and the writable Android SDK remain host-managed. Docker Desktop is not
-required. See Nokochat's README for the container lifecycle.
+a global `JAVA_HOME`. Its interactive development shell supplies and starts Colima.
+The project flake also supplies the immutable Android SDK. Xcode and writable
+emulator data remain host-managed. Docker Desktop is not required.
+See Nokochat's README for SDK setup and the container lifecycle.
