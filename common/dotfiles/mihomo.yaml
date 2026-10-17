@@ -144,6 +144,24 @@ rules:
   - GEOSITE,bitwarden,REJECT
   - GEOSITE,pinterest,PROXY
   - GEOSITE,pinterest,REJECT
+  - DOMAIN-SUFFIX,download.jetbrains.com,PROXY
+  - DOMAIN-SUFFIX,download.jetbrains.com,REJECT
+  - DOMAIN-SUFFIX,chatgpt.com,PROXY
+  - DOMAIN-SUFFIX,chatgpt.com,REJECT
+  - DOMAIN-SUFFIX,openai.com,PROXY
+  - DOMAIN-SUFFIX,openai.com,REJECT
+  - DOMAIN-SUFFIX,claude.ai,PROXY
+  - DOMAIN-SUFFIX,claude.ai,REJECT
+  - DOMAIN-SUFFIX,anthropic.com,PROXY
+  - DOMAIN-SUFFIX,anthropic.com,REJECT
+  - DOMAIN-SUFFIX,twitter.com,PROXY
+  - DOMAIN-SUFFIX,twitter.com,REJECT
+  - DOMAIN-SUFFIX,x.com,PROXY
+  - DOMAIN-SUFFIX,x.com,REJECT
+  - DOMAIN-SUFFIX,twimg.com,PROXY
+  - DOMAIN-SUFFIX,twimg.com,REJECT
+  - DOMAIN-SUFFIX,t.co,PROXY
+  - DOMAIN-SUFFIX,t.co,REJECT
   - DOMAIN-SUFFIX,patreon.com,PROXY
   - DOMAIN-SUFFIX,patreon.com,REJECT
   - DOMAIN-SUFFIX,patreonusercontent.com,PROXY
