@@ -32,6 +32,13 @@ Host-oriented Nix config for:
 Use OMP's nixd integration for Nix diagnostics and symbol navigation before and
 after relevant edits. Its managed configuration belongs to
 `common/modules/shell.nix`; `.omp/config.yml` enables edit diagnostics.
+Use LSP for symbol definitions, references, and renames. Use `ast_grep` for
+structural code searches and `ast_edit` for repetitive structural changes.
+Review each AST rewrite preview before applying it. AST matching does not resolve
+symbol identity or prove Nix evaluation. Reserve text search for literal text,
+unsupported syntax, or an unavailable structural tool; use surgical edits for
+one-off changes. OMP provides the native AST tools without a separate CLI dependency.
+
 Do not create permanent or throwaway test files, smoke scripts, or fixtures.
 Do not run routine test suites or repository-wide validation matrices.
 Use a focused command or in-memory interaction when needed to establish changed
