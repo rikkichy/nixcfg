@@ -113,7 +113,7 @@ until Limine has successfully booted and unlocked the installed system.
 
 ## Server services and private provisioning
 
-`hosts/nixos-server/modules/system/services.nix` supplies OMP, YubiKey Manager,
+`hosts/nixos-server/modules/system/services.nix` supplies YubiKey Manager,
 `age-plugin-yubikey`, PC/SC, Docker with weekly native pruning, and the Moscow
 timezone. `ri` can manage Docker and NetworkManager. Docker membership is
 root-equivalent. Pruning may remove stopped containers and unused resources,
@@ -129,6 +129,8 @@ and SSH before leaving that console. No network activation is automatic here.
 
 `nixos-server` has no Mihomo service, configuration renderer or SOPS import.
 It needs no `/etc/mihomo` inputs or VPN age identity.
+
+OMP is installed and updated through the [shared Bun launcher](shared.md#shared-shell-and-editor), not the system package cache.
 
 ## Public package cache (Attic)
 
@@ -166,7 +168,7 @@ not republished through this cache.
 
 These roots are redistributable according to their pinned package metadata:
 desktop packages retain upstream free licenses, the custom packages are
-MIT/Apache/GPL/OFL, and Vhelper/OpenWave/OMP are GPL/MIT/MIT.
+MIT/Apache/GPL/OFL, and Vhelper/OpenWave are GPL/MIT.
 The upload includes runtime closures, not build dependencies. OpenWave
 references the free GTK/audio stack. Vhelper references Protontricks, whose
 pinned package uses `steam.run-free`, **not the proprietary Steam client**.

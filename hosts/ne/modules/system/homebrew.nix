@@ -2,7 +2,6 @@
   homebrew = {
     enable = true;
     taps = [
-      "can1357/tap"
       "facebook/fb"
       "mmathys/tap"
     ];
@@ -13,7 +12,6 @@
         start_service = true;
       }
       "cabextract"
-      "can1357/tap/omp"
       "cmake"
       "facebook/fb/idb-companion"
       "fd"

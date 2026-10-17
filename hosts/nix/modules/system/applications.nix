@@ -4,8 +4,6 @@
   programs.git.enable = true;
 
   environment.systemPackages = with pkgs; [
-    omp
-
     (brave-origin.overrideAttrs (old: {
       postInstall = (old.postInstall or "") + ''
         cp ${pkgs.writeText "brave-origin-initial-preferences" (builtins.toJSON {

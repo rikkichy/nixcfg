@@ -2,10 +2,14 @@
 let
   flake = "(builtins.getFlake ${builtins.toJSON nixcfgPath})";
   host = "${if pkgs.stdenv.hostPlatform.isDarwin then "darwinConfigurations" else "nixosConfigurations"}.${osConfig.networking.hostName}";
+  omp = pkgs.writeShellScriptBin "omp" ''
+    exec ${lib.getExe pkgs.bun} x --bun --package @oh-my-pi/pi-coding-agent@latest omp "$@"
+  '';
 in
 
 {
   home.packages = with pkgs; [
+    omp
     sops age
     btop git gh wget
     eza fzf bat ripgrep lazygit jq fastfetch micro
@@ -75,6 +79,9 @@ in
 
   programs.fish = {
     enable = true;
+    shellInit = lib.mkAfter ''
+      fish_add_path --global --path --move ${omp}/bin
+    '';
     shellAbbrs = {
       lg = "lazygit";
       pic = "omp --continue";

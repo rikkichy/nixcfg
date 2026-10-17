@@ -2,7 +2,6 @@
 
 {
   environment.systemPackages = with pkgs; [
-    omp
     yubikey-manager
     age-plugin-yubikey
   ];

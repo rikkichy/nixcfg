@@ -73,26 +73,6 @@
         "type": "github"
       }
     },
-    "omp": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1790715112,
-        "narHash": "sha256-wqvWkZuJYAAk4ndUQcsON4x8u5TO5/XTqZBVBUJ93mI=",
-        "owner": "rikkichy",
-        "repo": "oh-my-pi-flake",
-        "rev": "307c681f4f7f3de8c236069066895e7579808da6",
-        "type": "github"
-      },
-      "original": {
-        "owner": "rikkichy",
-        "repo": "oh-my-pi-flake",
-        "type": "github"
-      }
-    },
     "openwave": {
       "inputs": {
         "nixpkgs": [
@@ -120,7 +100,6 @@
         "nix-darwin": "nix-darwin",
         "nixpkgs": "nixpkgs",
         "nixpkgs-nh": "nixpkgs-nh",
-        "omp": "omp",
         "openwave": "openwave",
         "sops-nix": "sops-nix",
         "spicetify-nix": "spicetify-nix",

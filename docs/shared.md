@@ -47,11 +47,16 @@ Host modules own platform-specific shell initialization and terminal integration
 The managed btop configuration contains theme overrides only. Other settings
 follow the packaged btop defaults.
 
-Linux OMP comes from `github:rikkichy/oh-my-pi-flake`. Its hourly GitHub workflow
-commits the latest stable release after builds and smoke checks on both Linux
-architectures. `flake.lock` selects the installed release.
-`nix flake update omp --flake /etc/nixos` refreshes that pin explicitly.
-macOS uses the `can1357/tap/omp` Homebrew formula.
+All three hosts use a shared `omp` launcher backed by Nix-managed Bun.
+On first launch, Bun installs [`@oh-my-pi/pi-coding-agent`](https://github.com/can1357/oh-my-pi#install) into its user cache.
+Each launch checks npm's `latest` tag and updates before starting OMP.
+[Bun handles cached execution](https://bun.sh/docs/pm/bunx) when the registry is unavailable.
+The first launch requires network access. OMP releases are not pinned by `flake.lock`
+or restored by a Nix rollback. No update timer or activation-time download is needed.
+The shared Fish initialization puts this launcher ahead of existing Brew or Bun-global installations.
+After activation, open a new terminal. Existing OMP settings, credentials, and sessions stay in `~/.omp`.
+Homebrew cleanup remains disabled; remove its old formula separately with
+`brew uninstall can1357/tap/omp` when the new launcher works.
 
 The shared shell module generates `~/.omp/agent/lsp.json` for OMP's default
 profile. It starts the Nix-managed `nixd` executable for Nix navigation and diagnostics.

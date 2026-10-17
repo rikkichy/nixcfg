@@ -39,11 +39,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    omp = {
-      url = "github:rikkichy/oh-my-pi-flake";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     tg-ws-proxy = {
       url = "github:Flowseal/tg-ws-proxy";
       flake = false;
@@ -56,14 +51,14 @@
       nixcfgPath = "/etc/nixos";
       system = "x86_64-linux";
 
-      commonOverlay = import ./common/pkgs/overlay.nix { inherit inputs; };
+      commonOverlay = import ./common/pkgs/overlay.nix;
       overlay = import ./hosts/nix/pkgs/overlay.nix { inherit inputs; };
       # Reuse the host's final package set, including both overlays and policy.
       desktopPkgs = self.nixosConfigurations.nix.pkgs;
       cacheTargets = {
         inherit (desktopPkgs)
           quickshell hyprland tg-ws-proxy photocraft filmcraft
-          google-sans-rounded vpn omp;
+          google-sans-rounded vpn;
         vhelper = inputs.vhelper.packages.${system}.default;
         openwave = inputs.openwave.packages.${system}.openwave-bin;
       };
