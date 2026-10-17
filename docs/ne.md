@@ -28,10 +28,14 @@ The separate host lives in `hosts/ne/default.nix`. It uses nix-darwin's default
 upstream Nix package, installs `nh`, and enables Fish as the login shell.
 `hosts/ne/home.nix` imports the shared `common/modules/shell.nix` configuration described below.
 Content-addressed derivations let this host evaluate the desktop's signed kernel during cross-host evaluation.
-The host does not import the Linux desktop, secrets, or overlays. The Darwin host
-declares Brew-owned formulae, casks, and taps in `hosts/ne/modules/system/homebrew.nix`.
-Activation neither upgrades nor removes packages. Applications installed outside
-Homebrew remain owned by their existing installers.
+The host does not import the Linux desktop, secrets, or overlays.
+`hosts/ne/home.nix` owns Darwin CLI packages and Prism Launcher.
+Home Manager deploys Ghostty from `pkgs.ghostty-bin` and Zed from `pkgs.zed-editor`
+through its existing `copyApps` activation. Automatic updates are disabled for both apps.
+`hosts/ne/modules/system/homebrew.nix` retains BetterGlobeKey, maigret, helium-browser,
+Marta, noswoosh, and wallspace. Maigret remains on Brew because the pinned Nix package is broken.
+Google Cloud CLI and Wireshark are not declared or replaced.
+Homebrew activation neither upgrades nor removes packages (`cleanup = "none"`).
 
 The host also owns reduced-motion, Dock, Finder, keyboard, trackpad, and
 per-power-source sleep/energy preferences. Some macOS preferences require
@@ -56,9 +60,11 @@ the cask or restore those bindings.
 
 Ghostty explicitly selects the shared Departure Mono Nerd Font. Activation installs
 the font on macOS, and Ghostty may need restarting before it appears.
-Do not duplicate shared tools in the Brew inventory. Removing a Brew declaration
-does not uninstall an existing copy: cleanup remains disabled. Before a targeted
-uninstall, verify the deployed Nix binary, login-shell paths, and Brew dependents.
+Do not duplicate Nix-owned tools in the Brew inventory. Removing a declaration
+does not uninstall an existing copy. After approved activation and runtime checks,
+obtain separate approval for targeted removal of duplicate CLI tools or app bundles.
+Check deployed Nix binaries, login-shell paths, and Brew dependents first.
+Keep working installations until their replacements work. Do not run blanket `brew cleanup`.
 
 See [shared shell and editor configuration](shared.md#shared-shell-and-editor)
 for portable packages, Zed settings, and language-server ownership.
@@ -67,7 +73,7 @@ for portable packages, Zed settings, and language-server ownership.
 
 This configuration targets the existing `rii` account. Homebrew must be installed
 at `/opt/homebrew`. nix-darwin manages its inventory, not the Homebrew installation.
-Ghostty and Zed must be installed separately.
+Use an existing terminal for bootstrap. Home Manager installs Ghostty and Zed during activation.
 
 Install [Nix](https://nixos.org/download/) in an interactive terminal:
 
@@ -115,6 +121,11 @@ Before removing a Brew Fish installation, check `dscl . -read /Users/"$USER" Use
 and verify that `/run/current-system/sw/bin/fish` starts. After activation registers
 that path in `/etc/shells`, select it with `chsh -s /run/current-system/sw/bin/fish`.
 macOS may request authentication for this account change.
+
+Rustup is Nix-managed, but Rust toolchains remain mutable and project-owned.
+The host PATH no longer needs `/opt/homebrew/opt/rustup/bin`.
+After Homebrew initialization, Fish places the Home Manager profile's `bin`
+directory first in PATH. Nix CLI tools take precedence over retained Brew duplicates.
 
 ## SSH agent
 
@@ -234,8 +245,9 @@ that cache it may need restarting.
 ## Zed file associations
 
 On Darwin, `hosts/ne/modules/home/file-associations.nix` owns the text/source file associations.
-Its user activation runs `hosts/ne/pkgs/zed-file-associations.nix` using the native `NSWorkspace` API.
-This includes extensions with dynamic content types that `duti` cannot set. Zed must already be installed.
+Its user activation runs after `copyApps` and passes the managed `Zed.app` path
+to `hosts/ne/pkgs/zed-file-associations.nix`. The native `NSWorkspace` API handles dynamic content types that `duti` cannot set.
+The explicit app path prevents a leftover manual installation from taking precedence.
 macOS may ask for approval when a default changes. Associations already pointing
 to Zed are skipped. The activation leaves folder, media, archive, PDF, and Adobe
 project defaults alone. To retain a different default for a managed extension,

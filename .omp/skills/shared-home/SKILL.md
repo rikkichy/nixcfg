@@ -24,7 +24,7 @@ action. Paths below are repository-relative.
 - `common/modules/spotify.nix`: build-time injection and writable palette.
   Keep zero-add-on themes loading matching rewritten JS/CSS through native theme patches.
   Read [Spotify](../../../docs/shared.md#spotify-and-wallpaper-colors) for the operator contract.
-- `hosts/ne/modules/home/shell.nix`: Brew/rustup/Bun environment only.
+- `hosts/ne/modules/home/shell.nix`: Brew/Bun environment only.
 - `hosts/nix/modules/home/foot.nix`: Linux terminal integration. Do not move its
   OSC delivery or systemd behavior into the portable shell module.
 
@@ -51,21 +51,22 @@ Use direnv/project flakes for project runtimes. This repository has no
 
 - Home Manager settings and the captured theme are read-only. Edit their source,
   not Zed's settings UI. Back up unmanaged conflicts before first activation.
-- Linux owns the Zed package. Darwin configures the external app (`package = null`).
-  Extensions remain unpinned. Read [the shared guide](../../../docs/shared.md#shared-shell-and-editor) for activation/restart procedures.
+- Home Manager owns Zed on both platforms. Darwin uses `pkgs.zed-editor` with
+  `auto_update = false` and existing `copyApps` deployment. Extensions remain unpinned.
+  Read [the shared guide](../../../docs/shared.md#shared-shell-and-editor) for activation/restart procedures.
 - `load_direnv = "direct"` supplies project environments. Zed's Node/npm are
   editor-scoped, and gopls appends a fallback Go runtime so project Go stays first.
   Do not expose those runtimes globally or override project toolchain selection.
-- Preserve Darwin rustup versus Linux default Rust tools/sources and shared rust-analyzer.
+- Preserve Darwin's Nix-managed rustup with mutable, project-owned toolchains,
+  Linux default Rust tools/sources, and shared rust-analyzer.
   Project shells may override toolchains. Read [the shared guide](../../../docs/shared.md#shared-shell-and-editor) for rustup component setup.
 - QML language-server support is Linux-only. Qt/Quickshell imports are explicit
   binary arguments. Darwin retains QML syntax support. Do not make Qt a Darwin
   dependency to satisfy a Linux editor feature.
 - nixd evaluates both system option trees and the current host's Home Manager
   options through `nixcfgPath`. Preserve the host-specific Home Manager selection.
-- Kotlin LSP uses `hosts/nix/pkgs/kotlin-lsp.nix` or `/opt/homebrew/bin/kotlin-lsp`.
+- Kotlin LSP uses `common/pkgs/kotlin-lsp.nix` on Darwin and desktop Linux, without a Brew fallback.
   Read [the shared guide](../../../docs/shared.md#shared-shell-and-editor) for expired-build recovery. Do not substitute fwcd's server.
-  Darwin activation never upgrades Brew packages.
 - Native macOS file associations belong to `darwin-host`, not shared editor
   settings. The captured `common/dotfiles/zed/themes/matugen.json` does not follow
   wallpaper changes. Shared palette changes also require `wallpaper-theming`.

@@ -55,8 +55,8 @@ The first launch requires network access. OMP releases are not pinned by `flake.
 or restored by a Nix rollback. No update timer or activation-time download is needed.
 The shared Fish initialization puts this launcher ahead of existing Brew or Bun-global installations.
 After activation, open a new terminal. Existing OMP settings, credentials, and sessions stay in `~/.omp`.
-Homebrew cleanup remains disabled; remove its old formula separately with
-`brew uninstall can1357/tap/omp` when the new launcher works.
+Homebrew cleanup remains disabled. After approved activation and runtime checks,
+remove the old formula only with separate approval: `brew uninstall can1357/tap/omp`.
 
 `common/modules/language-servers.nix` owns the server commands, arguments and
 settings shared by Zed and OMP. Both clients reference the same Nix-store
@@ -74,8 +74,8 @@ The OMP launcher supplies a config overlay enabling native AST search and
 diagnostics after edits and writes without replacing mutable user settings.
 Additional `--config` overlays can override these launcher settings.
 The `omp config get` subcommand reports persisted settings, not this agent-launch overlay.
-AST tools need no external ast-grep executable. Nix's grammar downloads on
-first use, so a fresh offline installation needs a populated grammar cache.
+Native AST tools are independent of the standalone Nix-managed `ast-grep` CLI.
+Nix's grammar downloads on first use, so a fresh offline installation needs a populated grammar cache.
 AST rewrites are syntax-based, not symbol-aware. Use LSP for references and renames.
 Diagnostics and AST matches do not prove builds, activation, boot, or runtime behavior.
 See [AGENTS.md](../AGENTS.md) for repository development policy.
@@ -88,26 +88,26 @@ backups are not overwritten.
 
 Only the desktop and Mac import `common/modules/zed.nix`, which owns Zed's read-only
 settings, extension selection, the shared-server adapter, and the captured theme.
-On Linux it also owns the Zed package. On Darwin it configures the existing app.
+It owns the Zed package on both platforms, using `pkgs.zed-editor` on Darwin
+with `auto_update = false`. Home Manager deploys the Mac app through `copyApps`.
 Edit this module rather than Zed's settings UI. Extensions are installed by Zed
-on startup, not version-pinned by Nix. Before the first Linux activation, back up
+on startup, not version-pinned by Nix. Before the first activation, back up
 any unmanaged `~/.config/zed/settings.json` or conflicting Matugen theme file.
 Restart Zed after activation so language servers use the new generation.
 
 Project environments still come from direnv. Zed's Node runtime and the shared
-gopls fallback Go runtime are tool-scoped, not global project toolchains. Darwin Rust keeps
-using rustup. Install `rust-src` and `rustfmt` for each project toolchain that
-needs standard-library navigation and formatting. Linux supplies default Rust
-tools and sources. Project development shells can override them.
+gopls fallback Go runtime are tool-scoped, not global project toolchains.
+Darwin uses Nix-managed rustup with mutable, project-owned toolchains.
+Install `rust-src` and `rustfmt` for each project toolchain that needs standard-library navigation and formatting.
+Linux supplies default Rust tools and sources. Project development shells can override them.
 QML language-server support belongs to desktop `nix`, with Qt and Quickshell
 imports shared by both clients. Darwin retains QML syntax support.
-Kotlin uses the desktop package or Darwin's existing Homebrew installation.
+Kotlin uses `common/pkgs/kotlin-lsp.nix` on both desktop Linux and Darwin, without a Homebrew fallback.
 The headless server receives the portable servers, without Kotlin, Qt or Quickshell.
 
 JetBrains Kotlin LSP pre-release builds expire.
-If its log reports an expired build, update `hosts/nix/pkgs/kotlin-lsp.nix` from the upstream release and checksum.
-Upgrade only the Darwin cask with `brew upgrade --cask kotlin-lsp`.
-Darwin activation deliberately does not upgrade Homebrew packages.
+If its log reports an expired build, update `common/pkgs/kotlin-lsp.nix` from the upstream release and platform checksums.
+Deploy the updated package only through separately approved activation.
 
 ### OMP startup host context
 

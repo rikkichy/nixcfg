@@ -35,7 +35,7 @@ in
 
   programs.zed-editor = {
     enable = true;
-    package = if isLinux then pkgs.zed-editor else null;
+    package = pkgs.zed-editor;
     extraPackages = lib.optionals isLinux [ pkgs.qt6.qtdeclarative ];
     mutableUserSettings = false;
     themes.matugen = ../dotfiles/zed/themes/matugen.json;
@@ -63,7 +63,7 @@ in
         light = "Matugen Light";
         dark = "Matugen Dark";
       };
-      auto_update = !isLinux;
+      auto_update = false;
       autosave = "off";
       format_on_save = "on";
       auto_signature_help = true;

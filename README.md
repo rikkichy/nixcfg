@@ -128,8 +128,8 @@
 ### macOS (`ne`)
 
 1. Use the existing `rii` account on Apple Silicon.
-   Install [Homebrew](https://brew.sh/) at `/opt/homebrew`, plus [Ghostty](https://ghostty.org/) and [Zed](https://zed.dev/).
-   Install Nix in an interactive terminal:
+   Use an interactive terminal to install [Homebrew](https://brew.sh/) at `/opt/homebrew` and Nix.
+   Home Manager deploys Ghostty and Zed during activation.
 
    ```sh
    curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install | sh

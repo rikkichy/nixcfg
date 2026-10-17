@@ -25,8 +25,6 @@ final: prev: {
 
   bibata-material-cursor = final.callPackage ./ricing/bibata-material-cursor.nix { };
 
-  kotlin-lsp = final.callPackage ./kotlin-lsp.nix { };
-
   google-sans-rounded =
     final.callPackage ./ricing/google-sans-rounded.nix { };
 }

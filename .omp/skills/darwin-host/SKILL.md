@@ -23,13 +23,13 @@ Then bootstrap as the normal user with
 | Source | Owns |
 | --- | --- |
 | `hosts/ne/default.nix` | identity, user, Fish login shell, system imports, state version |
-| `hosts/ne/home.nix` | Home Manager imports and state version |
+| `hosts/ne/home.nix` | Home Manager imports, Darwin CLI packages, Prism Launcher and state version |
 | `hosts/ne/modules/system/nix.nix` | upstream Nix, flakes and content-addressed derivations |
 | `common/modules/nh.nix` | system-wide nh and NH_FLAKE, shared with both Linux hosts |
 | `hosts/ne/modules/system/homebrew.nix` | Brew formulae, casks, taps and BetterGlobeKey service |
 | `hosts/ne/modules/system/preferences.nix` | native preferences and per-power-source pmset activation |
-| `hosts/ne/modules/home/shell.nix` | Homebrew, rustup and Bun PATH integration |
-| `hosts/ne/modules/home/ghostty.nix` | Ghostty settings |
+| `hosts/ne/modules/home/shell.nix` | Homebrew and Bun PATH integration |
+| `hosts/ne/modules/home/ghostty.nix` | Ghostty package (`pkgs.ghostty-bin`) and settings |
 | `hosts/ne/modules/home/matugen.nix` | Matugen configuration and wallpaper-theme |
 | `hosts/ne/modules/home/marta.nix` | official Marta launcher wrapper |
 | `hosts/ne/modules/home/keyboard.nix` | BetterGlobeKey configuration deployment |
@@ -49,13 +49,18 @@ Keep state versions fixed unless deliberately performing a compatibility migrati
 
 - Homebrew must already exist at `/opt/homebrew`. Activation installs declared
   inventory but neither updates/upgrades nor removes it (`cleanup = "none"`).
-  Removing a declaration is not an uninstall. Verify Nix binaries, Brew
-  dependents and the deployed login shell before any separately approved removal.
-- Ghostty and Zed applications are externally installed. Their Home Manager
-  modules set `package = null`. Nix owns their configuration, not those app bundles.
+  Removing a declaration is not an uninstall. After approved activation and
+  runtime checks, verify Brew dependents and the deployed login shell before
+  separately approved, targeted duplicate removal. Never run blanket Brew cleanup.
+- Home Manager deploys Ghostty, Zed and Prism through existing `copyApps`.
+  Zed uses `pkgs.zed-editor` with automatic updates disabled.
+- Brew retains BetterGlobeKey, maigret, helium-browser, Marta, noswoosh and wallspace.
+  Google Cloud CLI and Wireshark are removed from declarations, not migrated.
 - Load `shared-home` for portable CLI packages, fonts and Zed. Do not duplicate
   them in Brew or turn editor-scoped runtimes into global project toolchains.
 - Load `shared-home` for project/toolchain boundaries. Do not add project runtimes globally.
+  Rustup is Nix-managed, with mutable, project-owned toolchains. Keep its former
+  `/opt/homebrew/opt/rustup/bin` path out of host shell configuration.
   For Nokochat setup, read [project environments](../../../docs/ne.md#project-environments) and its project's guide.
 - Home Manager does not migrate existing account login shells.
   Before approved migration, read [shell migration](../../../docs/ne.md#updates-and-shell-migration) and [bootstrap](../../../docs/ne.md#bootstrap).
@@ -79,7 +84,7 @@ Keep state versions fixed unless deliberately performing a compatibility migrati
   Removing a declared default does not clear its stored value: the guide gives
   the explicit `NSFileViewer` removal procedure.
 - Zed associations use `NSWorkspace` and `UTType`, including dynamic content
-  types. Do not substitute `duti`. Zed must already be installed. Skip extensions
+  types. Do not substitute `duti`. Zed must be deployed before association changes. Skip extensions
   already assigned to it, propagate native failures, and preserve the explicit
   text/source allowlist. Folder/media/archive/PDF/Adobe defaults stay untouched.
   macOS may request approval. Changing defaults is an activation side effect.

@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 
 {
   imports = [
@@ -18,5 +18,30 @@
   ];
 
   home.stateVersion = "26.05";
-  home.packages = [ (pkgs.callPackage ./pkgs/lan-mouse.nix { }) ];
+  home.packages = [ (pkgs.callPackage ./pkgs/lan-mouse.nix { }) ] ++ (with pkgs; [
+    ast-grep
+    cabextract
+    cmake
+    fd
+    ffmpeg
+    git-filter-repo
+    idb-companion
+    imagemagick
+    innoextract
+    libpq
+    openssh
+    pipx
+    pngquant
+    poppler
+    potrace
+    prismlauncher
+    railway
+    # Keep the pinned rust-analyzer ahead of rustup's proxy.
+    (lib.lowPrio rustup)
+    _7zz
+    tmux
+    unar
+    uv
+    yt-dlp
+  ]);
 }

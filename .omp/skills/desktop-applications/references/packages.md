@@ -51,13 +51,13 @@ path retains `utils.logging_setup`.
 
 ## Kotlin language server
 
-`hosts/nix/pkgs/kotlin-lsp.nix` uses the standalone Linux x64 archive from the
-[official releases](https://github.com/Kotlin/kotlin-lsp/releases).
+`common/pkgs/kotlin-lsp.nix` uses platform-specific Linux x64 and Darwin ARM64
+archives from the [official releases](https://github.com/Kotlin/kotlin-lsp/releases).
 Use the publisher's download URL and compare the downloaded archive's hash
 with its published SHA-256 before updating the pin.
-Preserve `autoPatchelfHook`, the native runtime libraries and the
-`bin/intellij-server` wrapper: this archive contains Linux ELF binaries, not
-only portable JVM bytecode.
+Preserve Linux-only `autoPatchelfHook` and native runtime libraries, plus the
+bundled JBR and native launcher on both platforms. These archives contain
+native binaries, not only portable JVM bytecode.
 
 ## Project and editor ownership
 

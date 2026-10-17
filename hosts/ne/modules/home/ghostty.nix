@@ -1,10 +1,11 @@
-{ ... }:
+{ pkgs, ... }:
 
 {
   programs.ghostty = {
     enable = true;
-    package = null; # Keep the existing macOS application.
+    package = pkgs.ghostty-bin;
     settings = {
+      auto-update = "off";
       theme = "Matugen";
       command = "/run/current-system/sw/bin/fish";
       background-opacity = 0.6;

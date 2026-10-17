@@ -83,7 +83,7 @@ in
     };
   } // lib.optionalAttrs (isDarwin || isDesktop) {
     kotlin-lsp = {
-      command = if isDarwin then "/opt/homebrew/bin/kotlin-lsp" else lib.getExe pkgs.kotlin-lsp;
+      command = lib.getExe (pkgs.callPackage ../pkgs/kotlin-lsp.nix { });
       args = [ "--stdio" ];
     };
   } // lib.optionalAttrs isDesktop {
