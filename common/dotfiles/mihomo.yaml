@@ -162,6 +162,10 @@ rules:
   - DOMAIN-SUFFIX,twimg.com,REJECT
   - DOMAIN-SUFFIX,t.co,PROXY
   - DOMAIN-SUFFIX,t.co,REJECT
+  - DOMAIN-SUFFIX,robtopgames.com,PROXY
+  - DOMAIN-SUFFIX,robtopgames.com,REJECT
+  - DOMAIN-SUFFIX,geode-sdk.org,PROXY
+  - DOMAIN-SUFFIX,geode-sdk.org,REJECT
   - DOMAIN-SUFFIX,patreon.com,PROXY
   - DOMAIN-SUFFIX,patreon.com,REJECT
   - DOMAIN-SUFFIX,patreonusercontent.com,PROXY
