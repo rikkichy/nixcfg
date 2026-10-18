@@ -122,6 +122,9 @@
   };
 
   xdg.configFile = {
+    # Adopt the capture daemon's existing systemctl-enable symlink.
+    "systemd/user/default.target.wants/openwave.service".force = true;
+
     "gtk-3.0/settings.ini".text = ''
       [Settings]
       gtk-application-prefer-dark-theme=0

@@ -115,8 +115,10 @@ observation-only health service. It starts with the user manager's `default.targ
 and follows upstream's audio dependencies and restart policy. The GUI requires
 and starts after this daemon, using the same pinned package. Keeping the units
 separate lets OpenWave verify capture-service ownership without mistaking its
-GUI for the daemon. Settings and generated user audio rules remain app-owned;
-automatic hardware recovery is not enabled.
+GUI for the daemon. Home Manager explicitly owns
+`default.target.wants/openwave.service`, replacing an existing imperative
+enablement symlink at that exact path. Settings and generated user audio rules
+remain app-owned; automatic hardware recovery is not enabled.
 
 Flatpak bootstrap remains timer-driven and does not block desktop startup.
 If OpenDeck is missing, successful bootstrap requests its first launch only
