@@ -64,10 +64,29 @@
 
   systemd.user.services.openwave = {
     Unit = {
+      Description = "OpenWave Audio Manager";
+      Wants = [ "pipewire.service" "wireplumber.service" ];
+      Before = [ "pipewire.service" "wireplumber.service" ];
+      StartLimitIntervalSec = 60;
+      StartLimitBurst = 5;
+    };
+    Service = {
+      Type = "simple";
+      ExecStart = "${inputs.openwave.packages.${pkgs.stdenv.hostPlatform.system}.openwave-bin}/bin/openwave-daemon";
+      Restart = "on-failure";
+      RestartSec = 3;
+    };
+    Install.WantedBy = [ "default.target" ];
+  };
+
+  # Upstream reserves openwave.service for the capture daemon.
+  systemd.user.services.openwave-gui = {
+    Unit = {
       Description = "OpenWave audio controls";
       PartOf = [ "graphical-session.target" ];
       Requisite = [ "graphical-session.target" ];
-      After = [ "graphical-session.target" ];
+      Requires = [ "openwave.service" ];
+      After = [ "graphical-session.target" "openwave.service" ];
     };
     Service = {
       Type = "exec";

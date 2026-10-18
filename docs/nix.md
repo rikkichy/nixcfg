@@ -104,11 +104,19 @@ Spout/OBS frame-rate settings remain independent.
 
 ### Session application startup
 
-OpenWave and OpenDeck start hidden through user services owned by
-`graphical-session.target`, not delayed Hyprland commands.
+The OpenWave GUI (`openwave-gui.service`) and OpenDeck start hidden through user
+services owned by `graphical-session.target`, not delayed Hyprland commands.
 Installed apps start once per graphical session. Session exit stops their
 managed processes. UWSM's existing Flatpak scope policy also stops OpenDeck's
 separate sandbox process tree.
+
+`openwave.service` is reserved for `openwave-daemon`, the capture keepalive and
+observation-only health service. It starts with the user manager's `default.target`
+and follows upstream's audio dependencies and restart policy. The GUI requires
+and starts after this daemon, using the same pinned package. Keeping the units
+separate lets OpenWave verify capture-service ownership without mistaking its
+GUI for the daemon. Settings and generated user audio rules remain app-owned;
+automatic hardware recovery is not enabled.
 
 Flatpak bootstrap remains timer-driven and does not block desktop startup.
 If OpenDeck is missing, successful bootstrap requests its first launch only
@@ -119,8 +127,8 @@ Bootstrap and each OpenDeck launch enforce the narrow Discord IPC socket grant.
 Discord must already be running when OpenDeck starts for that socket to be
 available inside the sandbox.
 
-Inspect failures with `systemctl --user status openwave opendeck opendeck-autostart flatpak-bootstrap`.
-Read their logs with `journalctl --user -u openwave -u opendeck -u opendeck-autostart -u flatpak-bootstrap`.
+Inspect failures with `systemctl --user status openwave openwave-gui opendeck opendeck-autostart flatpak-bootstrap`.
+Read their logs with `journalctl --user -u openwave -u openwave-gui -u opendeck -u opendeck-autostart -u flatpak-bootstrap`.
 These commands do not start or restart applications.
 
 ### OpenDeck: VTube Studio Native
