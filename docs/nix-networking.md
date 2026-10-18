@@ -28,7 +28,7 @@ authentication. Browser origins are restricted to that localhost origin.
 ### Split routing and server selection
 
 YouTube, Discord, Roblox/Sober, Instagram, Proton Mail, Spotify, Bitwarden, Pinterest,
-noko.chat, smotret-anime.co, 6b6t.org, enderdash.com, terraformersmc.com, meteordev.org and cyrisia.com
+noko.chat, smotret-anime.co, 6b6t.org, enderdash.com, terraformersmc.com, meteordev.org, cyrisia.com and flintmc.net
 use the selected proxy server. Other destinations use `DIRECT`.
 The listed services use Mihomo's geosite data except these explicit domains,
 whose domain-suffix rules include all subdomains (including api.noko.chat and dl.noko.chat).
