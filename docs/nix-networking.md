@@ -32,10 +32,10 @@ noko.chat, smotret-anime.co, 6b6t.org, enderdash.com, terraformersmc.com, meteor
 use the selected proxy server. Other destinations use `DIRECT`.
 The listed services use Mihomo's geosite data except these explicit domains,
 whose domain-suffix rules include all subdomains (including api.noko.chat and dl.noko.chat).
-Explicit proxy domains also include `download.jetbrains.com`, `chatgpt.com`,
+Explicit proxy domains also include `download.jetbrains.com`, `download-cdn.jetbrains.com`, `chatgpt.com`,
 `openai.com`, `claude.ai`, `anthropic.com`, `twitter.com`, `x.com`, `twimg.com`,
 `t.co`, `robtopgames.com` and `geode-sdk.org`, including their subdomains.
-Other JetBrains domains are not included.
+The JetBrains CDN rule covers redirected Kotlin language-server downloads. Other JetBrains domains are not included.
 Cachix and its `*.cachix.org` cache endpoints use `DIRECT` in scoped mode.
 Patreon's website and API use `patreon.com`. Its CDN uses `patreonusercontent.com`
 (including `c10.patreonusercontent.com`).
