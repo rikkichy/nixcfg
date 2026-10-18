@@ -111,9 +111,7 @@ Install `rust-src` and `rustfmt` for each project toolchain that needs standard-
 Linux supplies default Rust tools and sources. Project development shells can override them.
 QML language-server support belongs to desktop `nix`, with Qt and Quickshell
 imports shared by both clients. Darwin retains QML syntax support.
-Kotlin uses `common/pkgs/kotlin-lsp.nix` on Darwin, without a Homebrew fallback.
-Desktop Linux temporarily omits Kotlin LSP from the shared server registry and disables it in Zed
-so system rebuilds do not download the server. Kotlin syntax support remains enabled.
+Kotlin uses `common/pkgs/kotlin-lsp.nix` on both desktop Linux and Darwin, without a Homebrew fallback.
 The headless server receives the portable servers, without Kotlin, Qt or Quickshell.
 
 JetBrains Kotlin LSP pre-release builds expire.

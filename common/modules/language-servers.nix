@@ -81,7 +81,7 @@ in
       command = "${pkgs.vscode-langservers-extracted}/bin/vscode-json-language-server";
       args = [ "--stdio" ];
     };
-  } // lib.optionalAttrs isDarwin {
+  } // lib.optionalAttrs (isDarwin || isDesktop) {
     kotlin-lsp = {
       command = lib.getExe (pkgs.callPackage ../pkgs/kotlin-lsp.nix { });
       args = [ "--stdio" ];
