@@ -3,6 +3,7 @@
 {
   environment.systemPackages = with pkgs; [
     prismlauncher
+    labymod-launcher
     wineWow64Packages.stable
     mangohud
 

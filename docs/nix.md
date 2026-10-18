@@ -88,6 +88,10 @@ Existing default file associations remain unchanged. Update each package's
 version and hash together. Both editors are experimental. Keep backups of
 documents and projects. FilmCraft has no Linux hardware video decoding path.
 
+LabyMod Launcher (`pkgs.labymod-launcher`) is installed alongside Prism Launcher
+by `hosts/nix/modules/system/gaming.nix`. Nixpkgs supplies its AppImage runtime,
+desktop entry and icon; account and game data remain application-owned.
+
 OBS Studio uses the NixOS virtual-camera integration: `v4l2loopback` provides
 `/dev/video1` as **OBS Cam**, with exclusive capture capabilities for browser
 compatibility. The `ri` user belongs to `video` for camera-device access.
