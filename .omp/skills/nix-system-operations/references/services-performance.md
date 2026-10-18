@@ -115,10 +115,13 @@ source in its private mount namespace. The bounded root-only
 It releases boot targets without waiting for lighting completion. Its detector allowlist comes
 from the package registry at build time. See [RGB lighting](../../../../docs/nix.md#rgb-lighting) for devices/actions and permission boundaries.
 
-`hosts/nix/boot.nix` selects a custom joint kernel/module-signing build based
-on `linuxPackages_latest`, not the stock cached kernel. See the
-[signing and lockdown contract](../../../../docs/nix-security.md#local-module-signing-and-integrity-lockdown)
-for build cost, external-module compatibility and recovery requirements.
+`hosts/nix/boot.nix` selects stock `pkgs.linuxPackages_latest`; matching
+substitutes avoid a local kernel build. NVIDIA open modules, NCT6687 and
+v4l2loopback are separate packages and may compile on cache misses.
+The custom signing/lockdown policy is commented out, with its implementation
+retained but dormant. No explicit lockdown or module-signature enforcement is
+configured; Limine Secure Boot is unchanged. See the
+[kernel policy and recovery checks](../../../../docs/nix-security.md#local-module-signing-and-integrity-lockdown).
 Boot parameters retain `vsyscall=none`, `slab_nomerge`, and `page_alloc.shuffle=1`.
 `init_on_free` is deliberately absent because of its gaming cost.
 

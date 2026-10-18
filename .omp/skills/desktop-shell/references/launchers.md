@@ -33,8 +33,8 @@ Three flat desktop entries open held Foot terminals: `nh os switch`,
 Exec fragments, not runtime user input.
 
 Rebuilds use `nh os switch --no-nom` and the Git-aware checkout. Native Nix output
-avoids nix-output-monitor's
-[content-addressed derivation limitation](../../../../docs/nix-security.md#local-module-signing-and-integrity-lockdown).
+is a launcher preference, not a requirement of the stock kernel; no
+`ca-derivations` bootstrap is needed.
 Plain switching uses `--no-update-lock-file`. The update entry updates all inputs before rebuilding
 and switching. See [source inclusion and prebuilds](../../../../docs/nix.md#updates-and-prebuilt-systems).
 `nh clean all` cleans all profiles and runs garbage collection, keeping one

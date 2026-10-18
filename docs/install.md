@@ -29,9 +29,6 @@ cd /etc/nixos
 If `/etc/nixos` already contains a checkout, use it instead. Do not overwrite
 existing configuration. The live ISO's `/etc/nixos` is the source checkout.
 `/mnt/etc/nixos` is the installed target, populated by the installer.
-For desktop `nix`, first enable `ca-derivations` in the live ISO's Nix client
-and daemon as shown in [desktop installation step 3](../README.md#desktop-nixos-nix).
-The signed kernel requires this feature during host evaluation and installation.
 Review the source, then start the guided installation from this directory:
 
 ```sh
@@ -82,8 +79,7 @@ Generated hardware and UUIDs replace only the installed
 creation, the installer assigns `/etc/nixos` to the target's `ri:users`.
 Generated hardware and local edits remain uncommitted. New files are marked
 intent-to-add so Git-based flakes can see them. As `ri`, use
-`git pull --ff-only` and `nh os switch`. For desktop `nix`, use `nh os switch --no-nom`
-for [local module signing](nix-security.md#local-module-signing-and-integrity-lockdown).
+`git pull --ff-only` and `nh os switch`.
 Resolve upstream conflicts rather than discarding the generated hardware file.
 No snapshot adoption is needed.
 After formatting, udev identities are refreshed before hardware generation.
@@ -121,8 +117,6 @@ Use this recovery procedure only when `/etc/nixos` contains installed source
 and generated hardware but lacks Git metadata. The guided installer normally
 creates a user-owned checkout. For separately approved activation, keep using
 `nh os switch path:/etc/nixos --hostname <host>` until adoption is complete.
-For desktop `nix`, append `--no-nom` for
-[local module signing](nix-security.md#local-module-signing-and-integrity-lockdown).
 Do not clone over the snapshot or replace its hardware file.
 
 Run the following in Bash as `ri`, only when `/etc/nixos/.git` does not exist.
@@ -181,8 +175,6 @@ only when installed source lacks Git metadata.
 
 Boot the NixOS 26.05 minimal ISO. **Secure Boot must be OFF**.
 The ISO is not signed with custom keys. Firmware can reject it while Secure Boot is enabled.
-Before evaluating or installing this desktop, enable `ca-derivations` in the live
-ISO's Nix client and daemon using [desktop installation step 3](../README.md#desktop-nixos-nix).
 
 ### 0. Get a network + become root
 

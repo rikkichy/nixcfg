@@ -225,7 +225,7 @@ permit untrusted images even while Secure Boot reports enabled.
 After the approved enrollment, enable Secure Boot without replacing the
 custom keys with factory defaults. Then perform the approved boot check.
 Require `sudo sbctl status` and `bootctl status` to report enabled with
-Setup Mode disabled. Require working NVIDIA graphics, integrity lockdown, and valid
+Setup Mode disabled. Require working NVIDIA graphics and valid
 TPM measurements. Physical firmware rejection of an untrusted image remains
 an operator-only check. Successful signing does not prove firmware enforcement.
 
@@ -284,73 +284,46 @@ and [boot-menu recovery path](#limine-recovery-with-a-zero-timeout).
 
 ## Local module signing and integrity lockdown
 
-The desktop kernel enforces integrity lockdown from early boot and passes
-`lockdown=integrity` explicitly. Module-signature enforcement is also enabled.
-`hosts/nix/pkgs/lockdown-kernel.nix` builds the kernel, NVIDIA open modules,
-NCT6687 sensor driver and OBS's v4l2loopback together. Every module is signed
-with the kernel build's temporary key. Its certificate is embedded in the
-kernel and exported as `module-signing.x509`. The private key stays in the
-build sandbox and is deleted after signing, never installed into the store
-or checkout. There is no persistent signing key to enroll or back up.
+The desktop selects stock `pkgs.linuxPackages_latest`, allowing the kernel to
+come from a matching binary cache rather than requiring a local signing build.
+The custom policy in `hosts/nix/boot.nix` is commented out;
+`hosts/nix/pkgs/lockdown-kernel.nix` remains dormant. Explicit integrity
+lockdown and module-signature enforcement are no longer configured.
+Do not assume the running kernel enforces either policy merely because Secure
+Boot is enabled.
 
-These are content-addressed builds: a fresh signing identity produces new
-artifact paths, including dependent initrds. Nix's `ca-derivations` feature
-must be enabled in both the client and daemon. The desktop configuration
-enables it persistently. Before that configuration is activated, the Secure Boot
-helper can request approval for a temporary daemon override and restart.
-It writes `/run/systemd/system/nix-daemon.service.d/nixcfg-secureboot.conf` with
-`NIX_CONFIG=extra-experimental-features = ca-derivations`. This expires at reboot.
-Initial build commands also need the client flag:
+NVIDIA open modules, the NCT6687 sensor driver and OBS's v4l2loopback are
+separate packages matched to the selected kernel. Cache misses can still
+compile the kernel or external modules locally, but driver changes no longer
+require a joint locally signed kernel build. Keep NVIDIA's `open = true`.
 
-```bash
-nix --extra-experimental-features ca-derivations build --no-link \
-  'path:.#nixosConfigurations.nix.config.system.build.kernel' \
-  'path:.#nixosConfigurations.nix.config.system.build.initialRamdisk'
-```
+No `ca-derivations` bootstrap or daemon override is needed for this kernel.
+`nh os build --no-nom path:/etc/nixos --hostname nix --no-update-lock-file`
+builds without activation; `--no-nom` is only a native-output preference,
+not a kernel requirement.
 
-These commands build the signed kernel and its actual initrd without activation.
-They do not prove physical NVIDIA GPU operation, sensors, firmware TPM
-measurements, or encrypted-root unlock.
-
-Kernel and driver updates require a joint local build. Additional external
-modules must join that build. A configuration assertion rejects unsigned
-standalone module packages. Keep NVIDIA's `open = true`. The proprietary
-module flavor is not part of this build.
+Limine Secure Boot signing, configuration/artifact hash authentication and TPM
+measurement remain unchanged. They do not establish Linux lockdown or
+module-signature enforcement, or an organization signature accepted by anti-cheat.
 
 Activation and reboot require separate approval. Retain a known-working
 generation and the [boot-menu recovery path](#limine-recovery-with-a-zero-timeout).
-For initial authorized activation, pass the feature directly to Nix through
-`nh`'s argument separator:
-
-```bash
-nh os switch --no-nom path:/etc/nixos -- --extra-experimental-features ca-derivations
-```
-
-Use `nh os build` with the same arguments for a build without activation.
-`--no-nom` uses Nix's native output: the installed nix-output-monitor cannot
-parse content-addressed derivations. Keep that flag on desktop rebuilds.
-After activation the feature is persistent, so the trailing
-`-- --extra-experimental-features ca-derivations` is no longer needed.
-
 After the approved reboot:
 
 ```bash
-cat /sys/kernel/security/lockdown
-cat /sys/kernel/security/lsm
-modinfo -F sig_id nvidia
+uname -r
+cat /proc/cmdline
+if test -r /sys/kernel/security/lockdown; then
+  cat /sys/kernel/security/lockdown
+fi
 nvidia-smi
 ```
 
-Require `[integrity]`, an active `bpf` LSM, `PKCS#7`, and a working GPU.
-Some kmod builds cannot decode signer/hash details even when `sig_id` is
-present. `sig_id` identifies the signature format, not its validity.
-The kernel enforces signature verification when loading modules.
-Also verify NCT6687 sensors, OBS Cam and the documented disk-unlock fallback.
-Lockdown restricts interfaces such as `/dev/mem`, MSR writes and hibernation.
-Root utilities relying on them may be affected.
-
-Local module signing does not sign the kernel image for UEFI, enable Secure
-Boot, or establish an organization signature accepted by anti-cheat.
+Record the actual running kernel and lockdown state; `[integrity]` and signed
+external modules are no longer acceptance requirements. Verify working NVIDIA
+graphics, NCT6687 sensors, OBS Cam and the documented disk-unlock fallback.
+Repeat the Secure Boot and TPM operator checks above. A successful build does
+not prove these runtime or firmware properties.
 
 ## Touch-only sudo with password fallback
 

@@ -18,21 +18,14 @@ Resolve the [signing-key prerequisite](docs/nix-security.md#secure-boot-with-lim
    cd /etc/nixos
    ```
 
-3. Enable content-addressed builds in the live ISO's Nix client and daemon.
-
-   ```sh
-   printf '\nextra-experimental-features = nix-command flakes ca-derivations\n' | sudo tee -a /etc/nix/nix.conf
-   sudo systemctl restart nix-daemon
-   ```
-
-4. Run the installer. Select `nix`, the target disk, and the YubiKey.
+3. Run the installer. Select `nix`, the target disk, and the YubiKey.
    Follow the disk, account-password, and token-enrollment prompts. Keep the recovery passwords.
 
    ```sh
-   sudo nix --extra-experimental-features 'nix-command flakes ca-derivations' run path:.#install
+   sudo nix --extra-experimental-features 'nix-command flakes' run path:.#install
    ```
 
-5. Complete the installer's final authentication checks before closing the recovery shell.
+4. Complete the installer's final authentication checks before closing the recovery shell.
    Follow the [disk-unlock](docs/nix-security.md#touch-only-disk-unlock) and [sudo](docs/nix-security.md#touch-only-sudo-with-password-fallback) checklists.
    Reboot only after successful installation. Unlock the disk and log in as `ri`.
 
@@ -40,19 +33,19 @@ Resolve the [signing-key prerequisite](docs/nix-security.md#secure-boot-with-lim
    sudo reboot
    ```
 
-6. At the first keyring prompt, leave the password empty and confirm.
+5. At the first keyring prompt, leave the password empty and confirm.
    Flatpak applications install automatically after login.
    Restore or provision [private VPN inputs](docs/nix-security.md#private-inputs-and-first-provisioning) before relying on Mihomo.
    Keep private keys and subscription values outside this checkout.
 
-7. Start Secure Boot setup on the installed desktop. Approve each operation separately when prompted.
+6. Start Secure Boot setup on the installed desktop. Approve each operation separately when prompted.
    Retain an encrypted offline backup of the private signing keys before changing firmware trust.
 
    ```sh
    nix run path:/etc/nixos#secureboot-setup
    ```
 
-8. When the helper requests it, reboot into firmware and enter Setup Mode while preserving KEK/db/dbx.
+7. When the helper requests it, reboot into firmware and enter Setup Mode while preserving KEK/db/dbx.
    **Do not use an all-key reset.** Follow the [firmware checkpoint](docs/nix-security.md#firmware-enrollment-checkpoint).
    Keep Secure Boot enforcement disabled. Boot Linux and rerun the helper to enroll the keys.
 
@@ -60,7 +53,7 @@ Resolve the [signing-key prerequisite](docs/nix-security.md#secure-boot-with-lim
    nix run path:/etc/nixos#secureboot-setup
    ```
 
-9. Only after the helper verifies the installed bootloader, enable Secure Boot in firmware without restoring factory keys.
+8. Only after the helper verifies the installed bootloader, enable Secure Boot in firmware without restoring factory keys.
    On the MSI board, select **Maximum Security**. Reboot and check the installed system.
 
    ```sh
@@ -72,11 +65,11 @@ Resolve the [signing-key prerequisite](docs/nix-security.md#secure-boot-with-lim
    Complete the [firmware enforcement checks](docs/nix-security.md#msi-enforcement-and-boot-acceptance), including graphics and recovery.
    Keep the recovery ISO, passwords, and a known-working generation.
 
-10. After future configuration changes, rebuild as `ri`.
+9. After future configuration changes, rebuild as `ri`.
 
-    ```sh
-    nh os switch --no-nom path:/etc/nixos
-    ```
+   ```sh
+   nh os switch path:/etc/nixos
+   ```
 
 ### NixOS server (`nixos-server`)
 

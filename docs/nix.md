@@ -43,7 +43,7 @@ is desktop-only. Fresh-install disk erasure is never an existing-system recovery
 After separate activation approval, apply configuration changes with
 `nh os switch --no-nom --no-update-lock-file`. See [shared rebuild behavior](shared.md#rebuild-commands)
 for checkout selection, environment precedence and elevation.
-Keep `--no-nom` for the [content-addressed signed kernel](nix-security.md#local-module-signing-and-integrity-lockdown).
+`--no-nom` selects native Nix output; the stock kernel does not require it.
 META+ALT exposes three Nix commands in held terminals:
 - **nh os switch**
 - **nh os switch --update** (update all inputs, rebuild and switch)
@@ -429,10 +429,12 @@ Review and commit `flake.lock` after a successful build.
 The desktop configures the Yandex NixOS cache mirror with priority 10 and
 `https://cache.nixos.org/`. Local package patches require an
 exact matching cached build. Otherwise they build locally.
-Ananicy uses the unmodified Nixpkgs package. The desktop kernel, NVIDIA open
-modules, NCT6687 and v4l2loopback share a local
-[module-signing build](nix-security.md#local-module-signing-and-integrity-lockdown).
-Kernel or driver updates rebuild that signed set together.
+Ananicy uses the unmodified Nixpkgs package. The desktop uses stock
+`pkgs.linuxPackages_latest`, with NVIDIA open modules, NCT6687 and v4l2loopback
+built as separate matching packages. The
+[custom signing policy is disabled](nix-security.md#local-module-signing-and-integrity-lockdown).
+Matching substitutes avoid compilation; cache misses can still build the
+kernel or external modules locally.
 
 The optional signed Attic cache at `https://cache.kror.net/nixcfg` supplies
 explicit patched/custom package targets through
@@ -463,9 +465,9 @@ nh os build --no-nom path:/etc/nixos --hostname nix --no-update-lock-file \
 ```
 
 With no remote builders, `--max-jobs 0` rejects uncached ordinary packages.
-Derivations marked `preferLocalBuild` can still run locally. This includes the
-desktop's signed kernel, not only small configuration generators.
-`hosts/nix/pkgs/lockdown-kernel.nix` also disables substitution for that kernel.
+Derivations marked `preferLocalBuild`, such as small configuration generators,
+can still run locally. The stock kernel no longer has the custom signing
+build's local-only restriction.
 This command is therefore not a no-compilation guarantee. Binary AppImage
 wrapping and Python/script packaging are distinct from native compilation.
 The normal build below permits local work with bounded parallelism.

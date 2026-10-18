@@ -16,8 +16,8 @@ for OS commands. For an explicit checkout/host, use
 `nh darwin switch path:/etc/nixos --hostname ne`.
 Switching activates the configuration and requires separate operator approval.
 Source edits and successful verification do not grant that approval.
-Desktop rebuilds retain `--no-nom` because nix-output-monitor cannot parse the
-[content-addressed signed kernel](nix-security.md#local-module-signing-and-integrity-lockdown).
+Desktop examples and launchers retain `--no-nom` as a native Nix output
+preference; the stock kernel requires neither it nor `ca-derivations`.
 
 Darwin selects `nh-unwrapped` from the dedicated `nixpkgs-nh` input, keeping its
 compiler/dependency closure on a verified official-cache build. The main

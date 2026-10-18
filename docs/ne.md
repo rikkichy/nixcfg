@@ -27,7 +27,6 @@ Recovery: [Spotify update-cache protection](#spotify-and-spicetify) ·
 The separate host lives in `hosts/ne/default.nix`. It uses nix-darwin's default
 upstream Nix package, installs `nh`, and enables Fish as the login shell.
 `hosts/ne/home.nix` imports the shared `common/modules/shell.nix` configuration described below.
-Content-addressed derivations let this host evaluate the desktop's signed kernel during cross-host evaluation.
 The host does not import the Linux desktop, secrets, or overlays.
 `hosts/ne/home.nix` owns Darwin CLI packages and Prism Launcher.
 Home Manager deploys Ghostty from `pkgs.ghostty-bin` and Zed from `pkgs.zed-editor`

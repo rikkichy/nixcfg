@@ -7,7 +7,6 @@ import os
 from pathlib import Path
 import re
 import signal
-import shlex
 import stat
 import struct
 import subprocess
@@ -217,23 +216,8 @@ def enroll():
 
 def activate(repo):
     confirm('Activate the reviewed checkout with nh os switch and update signed EFI boot files?')
-    if 'ca-derivations' not in run('nix', 'config', 'show', 'experimental-features', capture=True).decode().split():
-        environment = shlex.split(run('systemctl', 'show', 'nix-daemon.service', '-p', 'Environment', '--value', capture=True).decode())
-        expected = 'NIX_CONFIG=extra-experimental-features = ca-derivations'
-        if any(item.startswith('NIX_CONFIG=') and item != expected for item in environment):
-            raise RuntimeError('Existing daemon NIX_CONFIG needs review; refusing to replace it')
-        confirm('Bootstrap content-addressed builds with a temporary nix-daemon override and daemon restart?')
-        override = Path('/run/systemd/system/nix-daemon.service.d/nixcfg-secureboot.conf')
-        root_owned(override)
-        text = '[Service]\nEnvironment="NIX_CONFIG=extra-experimental-features = ca-derivations"\n'
-        if override.exists() and override.read_text() != text:
-            raise RuntimeError('Existing daemon override differs; refusing to replace it')
-        override.parent.mkdir(parents=True, exist_ok=True)
-        override.write_text(text)
-        run('systemctl', 'daemon-reload')
-        run('systemctl', 'restart', 'nix-daemon.service')
     run('nh', 'os', 'switch', '--bypass-root-check', '--no-nom', '--hostname', 'nix',
-        'path:' + str(repo), '--', '--extra-experimental-features', 'ca-derivations')
+        'path:' + str(repo))
     verify_boot()
 
 
