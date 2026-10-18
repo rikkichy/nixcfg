@@ -1,4 +1,4 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, inputs, ... }:
 
 {
   home.activation.osuSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
@@ -60,6 +60,21 @@
       "application/x-osu-replay"
       "x-scheme-handler/osu"
     ] (_: "osu!.desktop");
+  };
+
+  systemd.user.services.openwave = {
+    Unit = {
+      Description = "OpenWave audio controls";
+      PartOf = [ "graphical-session.target" ];
+      Requisite = [ "graphical-session.target" ];
+      After = [ "graphical-session.target" ];
+    };
+    Service = {
+      Type = "exec";
+      ExecStart = "${inputs.openwave.packages.${pkgs.stdenv.hostPlatform.system}.openwave-bin}/bin/openwave --hide";
+      Slice = "session.slice";
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
   };
 
   systemd.user.services.tg-ws-proxy = {

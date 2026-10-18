@@ -101,6 +101,11 @@ vimcmd_visual_symbol = "▼"
 format = "[$env_value]($style)"
 style = 'green italic'
 
+[env_var.NIX_DIRENV_DID_FALLBACK]
+variable = "NIX_DIRENV_DID_FALLBACK"
+format = "[stale devShell]($style) "
+style = "bold yellow"
+
 [sudo]
 format = "[$symbol]($style)"
 style = "bold italic bright-purple"

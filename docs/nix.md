@@ -102,6 +102,27 @@ enables `render_unfocused` for both classes so hidden windows keep receiving
 render callbacks. `hyprland/misc.lua` sets their shared limit to 60 FPS. Application and
 Spout/OBS frame-rate settings remain independent.
 
+### Session application startup
+
+OpenWave and OpenDeck start hidden through user services owned by
+`graphical-session.target`, not delayed Hyprland commands.
+Installed apps start once per graphical session. Session exit stops their
+managed processes. UWSM's existing Flatpak scope policy also stops OpenDeck's
+separate sandbox process tree.
+
+Flatpak bootstrap remains timer-driven and does not block desktop startup.
+If OpenDeck is missing, successful bootstrap requests its first launch only
+while a graphical session is active. The launch request stays active until
+logout, so later bootstrap completion does not reopen a closed or failed app.
+The daily Flatpak update timer is unchanged.
+Bootstrap and each OpenDeck launch enforce the narrow Discord IPC socket grant.
+Discord must already be running when OpenDeck starts for that socket to be
+available inside the sandbox.
+
+Inspect failures with `systemctl --user status openwave opendeck opendeck-autostart flatpak-bootstrap`.
+Read their logs with `journalctl --user -u openwave -u opendeck -u opendeck-autostart -u flatpak-bootstrap`.
+These commands do not start or restart applications.
+
 ### OpenDeck: VTube Studio Native
 
 The `vts-opendeck` flake input pins

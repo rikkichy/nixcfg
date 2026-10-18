@@ -39,10 +39,13 @@ All three hosts import `common/modules/shell.nix` through Home Manager for their
 primary user. It owns portable CLI packages, Fish abbreviations and
 aliases, Starship, zoxide, direnv, Matugen, Departure Mono Nerd Font, and shared
 Starship/fastfetch/btop/micro configuration. Home Manager's native modules own
-Starship and zoxide packages and Fish integration. zoxide retains `--cmd cd`.
+fzf, Starship and zoxide packages and Fish integration. zoxide retains `--cmd cd`.
+fzf supplies Ctrl-R for command history, Ctrl-T for file selection, and Alt-C for directory selection.
+Selecting a history entry inserts it without executing it.
 Fish 4 owns OSC 133 prompt markers without a custom prompt-start hook.
 Optional local Fish additions belong in `~/.config/fish/user-config.fish`,
-sourced after the integrations and host terminal initialization.
+sourced after fzf, Starship, zoxide and host terminal initialization.
+A missing file is ignored. Errors from an existing file remain visible.
 Host modules own platform-specific shell initialization and terminal integration.
 The managed btop configuration contains theme overrides only. Other settings
 follow the packaged btop defaults.
@@ -95,8 +98,14 @@ on startup, not version-pinned by Nix. Before the first activation, back up
 any unmanaged `~/.config/zed/settings.json` or conflicting Matugen theme file.
 Restart Zed after activation so language servers use the new generation.
 
-Project environments still come from direnv. Zed's Node runtime and the shared
-gopls fallback Go runtime are tool-scoped, not global project toolchains.
+Project environments still come from direnv.
+If nix-direnv loads a previous environment after evaluation fails, Starship displays `stale devShell`.
+This warning means that the current project environment did not evaluate successfully.
+Fix the project shell, then run `nix-direnv-reload` to reload it.
+The warning clears when direnv supplies a successfully evaluated environment.
+Fallback remains enabled for offline use.
+
+Zed's Node runtime and the shared gopls fallback Go runtime are tool-scoped, not global project toolchains.
 Darwin uses Nix-managed rustup with mutable, project-owned toolchains.
 Install `rust-src` and `rustfmt` for each project toolchain that needs standard-library navigation and formatting.
 Linux supplies default Rust tools and sources. Project development shells can override them.

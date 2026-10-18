@@ -51,8 +51,7 @@ restores skins by name. Authenticated players can use `/skin set <skinName>` and
 `/skin clear`. Skin lookups are not account verification. Cancelled logins do not
 trigger skin updates, and AuthMe's pre-login command list does not permit skin
 commands. No RCON, query, JMX or management listener is provisioned.
-MiniMOTD, AuthMe, SkinsRestorer, InventoryRollbackPlus, CoreProtect and social
-are provisioned.
+MiniMOTD, AuthMe, SkinsRestorer, CoreProtect and social are provisioned.
 All run as the game user and must be treated as code. Managed public config
 templates are copied at startup. Account databases, skin caches, inventory
 snapshots, CoreProtect history and social user data persist.
@@ -77,7 +76,7 @@ Deployment, DNS and router changes require separate operator authorization:
 1. On the server, inspect `free -h`, `df -h /var/lib /var/backup` and
    `ip -br -4 address`. If a directory is absent, inspect its nearest existing
    parent instead. Allow room for the 12 GiB service cap plus the OS and other workloads.
-   Also allow room for approximately eight compressed full backups plus the live world.
+   Allow room for the live world, growing CoreProtect history and any retained recovery archives.
    A 16 GiB host is only a starting estimate, not verified capacity.
    Leave deployment pending on undersized hardware. Do not silently reduce the
    selected capacity.
@@ -168,20 +167,19 @@ Administration over the existing SSH connection:
 ```sh
 sudo docker logs -f minecraft
 sudo journalctl -u minecraft-server -f
-sudo systemctl status minecraft-server minecraft-backup.timer
-sudo systemctl start minecraft-backup.service
+sudo systemctl status minecraft-server
 sudo timeout 5s docker exec minecraft /bin/bash -c 'printf "list\n" > /tmp/minecraft.stdin'
 ```
 
 Use FIFO console commands only while the container is running.
 Manage lifecycle with `systemctl start|stop|restart minecraft-server`, not direct `docker stop`,
-`docker restart` or `docker rm`. Systemd owns restarts and backup coordination.
+`docker restart` or `docker rm`. Systemd owns restarts.
 The stop hook sends console `stop` immediately, with no player warning or
-countdown, including for backups and host shutdown. It waits for the server to
-save and exit. Before allowing backups, it requires exit code zero and rejects an OOM-killed container.
+countdown, including for host shutdown. It waits for the server to save and exit.
+It requires exit code zero and rejects an OOM-killed container.
 The stop-command budget is five minutes.
-A hung stop fails the unit and prevents archive publication. Subsequent systemd
-termination and container cleanup can extend the total shutdown time.
+A hung stop fails the unit. Subsequent systemd termination and container cleanup
+can extend the total shutdown time.
 
 The image has a Nix-derived tag. Preloading and service startup compare its OS,
 architecture, complete runtime configuration and ordered filesystem-layer hashes
@@ -268,41 +266,40 @@ through the approved rebuild/restart workflow, not `/reload`.
 
 ## Minecraft inventory recovery
 
-Pinned [InventoryRollbackPlus 1.8.5](https://modrinth.com/plugin/inventoryrollbackplus/version/eDsOfX6z)
-records inventories, armor, ender chests, XP and player status on death, join,
-quit, world change and manual backup. It retains 50 death snapshots and 10 of
-each other type per player, including empty inventories. The plugin removes older snapshots
-at those limits. It captures death inventories before most other
-death handlers. Items still drop normally.
-Recovery only covers events recorded after the plugin is activated.
+Automatic inventory snapshots are disabled. Startup removes the previously deployed
+[InventoryRollbackPlus 1.8.5](https://modrinth.com/plugin/inventoryrollbackplus/version/eDsOfX6z)
+JAR and its Paper remap cache, but preserves its configuration and snapshot directory:
+`/var/lib/minecraft/plugins/InventoryRollbackPlus/`.
+No death, join, quit, world-change or shutdown snapshots are generated after this cutover.
+Existing snapshots are not pruned by the retired plugin.
 
-`inventoryRollbackConfig` in `hosts/nixos-server/modules/system/minecraft.nix`
-owns public policy, copied to `plugins/InventoryRollbackPlus/config.yml` at
-startup. Snapshots use local YAML storage under
-`/var/lib/minecraft/plugins/InventoryRollbackPlus/`, persist across image
-updates and are included in the daily offline archive. Display times use
-`UTC+3` (Moscow). Update checks and bStats are disabled.
+Retiring the plugin avoids a shutdown loophole:
+its [1.8.5 shutdown handler](https://github.com/TechnicallyCoded/Inventory-Rollback-Plus/blob/76fb56190a853f144fe303e6264e68b87e6666a0/src/main/java/com/nuclyon/technicallycoded/inventoryrollback/InventoryRollbackPlus.java)
+saves online inventories even with `enabled: false`.
+Setting `max-saves` to zero disables retention limits, not recording.
 
-As an authenticated operator, use:
+The `/irp` commands are unavailable in normal operation. Recovery from retained
+snapshots requires separately approved installation of a compatible plugin and a server restart.
+The managed startup removes its JAR, so recovery also requires an explicit deployment-policy change.
+Preserve the snapshot directory before re-enabling the plugin: automatic capture and retention can resume.
+Without a retained matching snapshot, full inventory rollback is unavailable.
+
+During that approved recovery, an authenticated operator can use:
 
 ```text
-/irp forcebackup Denay39
 /irp restore Denay39
 ```
 
-The first command snapshots the online player's current state before a restore.
-The second opens the backup menu: select the death category, timestamp and
-inventory restore action. The full-inventory restore button requires the target
+The command opens the backup menu: select the appropriate category, timestamp
+and inventory restore action. The full-inventory restore button requires the target
 online and **overwrites their current inventory without making its own backup**.
 Do not also recover the same dropped items or copy items out of the preview.
 That can duplicate them. Restore only the intended inventory. Teleport, XP,
 health and ender-chest recovery are separate actions.
 
-Restore/manual-backup permissions default to operators. Ordinary players'
-snapshots are automatic. Before relying on recovery after deployment, test with a disposable item.
-Verify death capture and restoration through the in-game menu.
-Installing the plugin requires the approved rebuild/restart workflow.
-Do not hot-load it into the running server.
+Restoration permissions default to operators. Preserve the player's current state
+before restoring, and verify the selected snapshot and result.
+Do not hot-load the plugin into the running server.
 
 ## Minecraft block and container history
 
@@ -316,9 +313,9 @@ history. Update checks and automatic error reporting are also disabled.
 
 CoreProtect uses SQLite at
 `/var/lib/minecraft/plugins/CoreProtect/database.db`. The database persists
-across rebuilds and is included in daily offline backups. No external database
-or credentials are required. No automatic purge is configured: monitor disk
-usage, and retain a backup before deliberately purging old history.
+across rebuilds, but no new full-world backups protect it.
+No external database or credentials are required. No automatic purge is configured:
+monitor disk usage, and preserve a consistent recovery copy before deliberately purging old history.
 History only covers events recorded after activation.
 
 As an authenticated operator, inspect blocks/containers with `/co inspect`
@@ -334,8 +331,8 @@ The radius is centered on the operator. Review a preview before applying a
 rollback without `#preview`. `/co restore` reapplies rolled-back actions.
 Avoid broad/global rollbacks. Lookup, inspection and rollback permissions
 default to operators. No additional player grants are provisioned.
-Use InventoryRollbackPlus for full death-inventory snapshots, and do not
-restore the same lost items through both plugins.
+Full inventory restoration requires a retained snapshot and the separately approved
+InventoryRollbackPlus recovery procedure above. Do not restore the same lost items through both plugins.
 
 Deployment uses the approved image rebuild/restart workflow.
 After activation, verify `/co status`, then place/break a disposable block.
@@ -433,7 +430,8 @@ social's database, messages or other settings. A legacy `plugins/social/settings
 would override the managed split configuration, so startup refuses it.
 Migrate and remove that legacy file before using this layout. Runtime edits to
 `settings/chat.yml` and `settings/motd.yml` are overwritten at the next container start.
-Social state is included in full-world backups and must stay out of Git.
+Social state remains in the live data directory and must stay out of Git.
+It is not backed up automatically.
 
 After approved deployment, confirm that social loads without errors.
 Test normal chat, replies, `/pm` and reactions between authenticated players.
@@ -447,39 +445,37 @@ source inspection are not proof of this integration.
 
 `hosts/nixos-server/modules/system/minecraft.nix` runs Leaf 1.21.11 build 179
 with Java 21 in Docker. The Minecraft EULA is accepted. Host state lives in
-`/var/lib/minecraft` (container `/data`). Root-only completed archives live in
+`/var/lib/minecraft` (container `/data`). Any existing root-only completed archives remain in
 `/var/backup/minecraft` outside the container.
-At **05:00 Europe/Moscow**, the persistent timer stops the game and requires a clean stop.
-It archives the entire tree without dereferencing links, publishes by rename,
-and retains seven completed archives. Cleanup attempts restart even after a
-failed archive or forced stop, unless the system manager reports shutdown.
-A missed timer can cause maintenance downtime after boot.
+
+**All automatic backups are disabled.** There is no full-world backup service,
+timer, archive generation or retention job. InventoryRollbackPlus is retired as
+described above. AuthMe's backup system remains disabled. CoreProtect history
+and normal world saves continue, but neither replaces a full-world backup.
+The change does not delete existing archives, inventory snapshots or live world data.
+
+Recovery is limited to retained data. Changes after the last usable archive or
+inventory snapshot have no automatic backup recovery point.
+A Nix rollback does not restore world data. Local archives do not protect against
+root compromise, disk failure or host loss. No off-host backup is configured.
 A successful systemd start requires the Leaf/AuthMe startup markers.
 It does not prove that a client can authenticate, join or persist world changes.
 
-Invoke backups only through `sudo systemctl start minecraft-backup.service`.
-Systemd serializes this unit. Do not concurrently rebuild, restart the game or
-restore. A stopped game is skipped without starting it or pruning archives.
-Failed copies do not publish recovery points or prune completed archives.
-Local root-only archives resist deletion by the game account, not root compromise,
-disk failure or host loss. Keep an operator-controlled external copy.
+Before an approved cutover, allow any backup already running under the old
+generation to finish, including its cleanup. Do not concurrently rebuild, restart or restore.
 
 Restoration requires separate operator approval and a trusted completed archive:
 
-1. Stop scheduling with `sudo systemctl stop minecraft-backup.timer`. Wait for
-   any in-flight backup (including its cleanup) to finish. Inspect
-   `sudo systemctl status minecraft-backup.service` until inactive or failed.
-   Do not stop an in-flight backup merely to bypass this wait.
-2. Run `sudo systemctl stop minecraft-server.service`. Require
+1. Run `sudo systemctl stop minecraft-server.service`. Require
    `sudo systemctl show minecraft-server -p ActiveState -p Result -p MainPID`
    to report `inactive`, `success`, and `0`. Investigate a forced/failed stop.
-3. In a root shell, assign `archive` to the trusted absolute archive path.
+2. In a root shell, assign `archive` to the trusted absolute archive path.
    Run `gzip -t "$archive"` and `tar -tvzf "$archive"` and review all members.
    Require only `minecraft/` and its descendants, with no absolute names or `..` path components.
    Require no escaping hard-link targets and no device/FIFO entries.
    Preserve symbolic links as links (managed files may link into `/nix/store`).
    Never use tar's dereference option. Do not extract an untrusted archive.
-4. Extract into a fresh root-only staging directory, never onto the live tree:
+3. Extract into a fresh root-only staging directory, never onto the live tree:
 
    ```sh
    stage=$(mktemp -d /var/lib/minecraft-restore.XXXXXXXX)
@@ -497,14 +493,15 @@ Restoration requires separate operator approval and a trusted completed archive:
    Execute checked commands one at a time, or use a shell with `set -e`.
    Stop on any error. Keep the printed/recorded `displaced` path for rollback.
    `chown -hR` does not traverse symlinks.
-5. Start with the matching server/config version.
+4. Start with the matching server/config version.
+   Keep automatic backups disabled when selecting a compatible server version.
    Inspect `sudo docker logs -f minecraft` and verify the actual world and
    player state. Startup regenerates managed EULA, OP list, server properties
    and plugin policy. The writable whitelist and authentication databases are
    restored from the archive.
    A Nix generation rollback alone does not roll back world data.
    Never open a newer-version world with an older server.
-6. Preserve the displaced tree until acceptance. If recovery fails, stop the
+5. Preserve the displaced tree until acceptance. If recovery fails, stop the
    game and move the attempted tree to another unique recovery directory.
    Move `"$displaced/minecraft"` back to `/var/lib/minecraft`.
-   Start the matching version and verify it. Restart `minecraft-backup.timer` only after acceptance.
+   Start the matching version and verify it. Automatic backups remain disabled.

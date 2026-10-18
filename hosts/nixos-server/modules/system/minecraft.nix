@@ -218,29 +218,6 @@ let
       - '<bold><gradient:#25D366:#39FF14:#00D4C4>WhatsApp Miku SMP</gradient></bold>'
       - '<gray>здарова, <green>$(nickname)</green></gray>'
   '';
-  inventoryRollback = pkgs.fetchurl {
-    url = "https://cdn.modrinth.com/data/XWKWAzd8/versions/eDsOfX6z/InventoryRollbackPlus-1.8.5.jar";
-    sha512 = "7982cbea2b067844908c1e2a2b3b5bfd83c6e1b5e1390f4a8c46c0303e9b944c807f89806e8f7c8cb48a114724e2a706a1169f75fe2074247e2f761753888206";
-  };
-  inventoryRollbackConfig = pkgs.writeText "inventoryrollbackplus-config.yml" ''
-    enabled: true
-    max-saves:
-      join: 10
-      quit: 10
-      death: 50
-      world-change: 10
-      force: 10
-    folder-location: DEFAULT
-    mysql:
-      enabled: false
-    time-zone: 'UTC+3'
-    time-format: 'yyyy-MM-dd HH:mm:ss z'
-    allow-other-plugins-edit-death-inventory: false
-    restore-to-player-button: true
-    save-empty-inventories: true
-    update-checker: false
-    bStats: false
-  '';
   coreProtect = pkgs.fetchurl {
     url = "https://cdn.modrinth.com/data/Lu3KuzdV/versions/3sehX6Sg/CoreProtect-CE-24.1.jar";
     sha512 = "76aad727528ddb990bbee5069f8ef3fcd018ae0bcdea89b965be2485e828633eb068672e841be64e550c8474f901a24d8c15c7bd44c2bd6c96244e1e58de0c95";
@@ -326,7 +303,6 @@ let
     install -m 0444 ${miniMOTDConfig} "$out/minimotd.conf"
     install -m 0444 ${authMeConfig} "$out/authme.yml"
     install -m 0444 ${skinsRestorerConfig} "$out/skinsrestorer.yml"
-    install -m 0444 ${inventoryRollbackConfig} "$out/inventoryrollbackplus.yml"
     install -m 0444 ${coreProtectConfig} "$out/coreprotect.yml"
     install -m 0444 ${socialChatConfig} "$out/social-chat.yml"
     install -m 0444 ${socialMotdConfig} "$out/social-motd.yml"
@@ -403,7 +379,10 @@ let
     for plugin in GrimAC Phantom packetevents; do
       rm -f "plugins/$plugin.jar" "plugins/.paper-remapped/$plugin.jar"
     done
-    mkdir -p plugins/MiniMOTD plugins/AuthMe plugins/SkinsRestorer plugins/InventoryRollbackPlus plugins/CoreProtect plugins/social/settings
+    # IRP 1.8.5 still saves on shutdown when enabled:false. Retire its code,
+    # not its configuration or existing per-player snapshots.
+    rm -f plugins/InventoryRollbackPlus.jar plugins/.paper-remapped/InventoryRollbackPlus.jar
+    mkdir -p plugins/MiniMOTD plugins/AuthMe plugins/SkinsRestorer plugins/CoreProtect plugins/social/settings
     installPlugin ${miniMOTD} plugins/MiniMOTD.jar
     # MiniMOTD saves normalized config on load, so this must be a writable copy.
     rm -f plugins/MiniMOTD/main.conf
@@ -414,10 +393,6 @@ let
     rm -f plugins/AuthMe/config.yml plugins/SkinsRestorer/config.yml
     install -m 0600 /etc/minecraft/authme.yml plugins/AuthMe/config.yml
     install -m 0600 /etc/minecraft/skinsrestorer.yml plugins/SkinsRestorer/config.yml
-    installPlugin ${inventoryRollback} plugins/InventoryRollbackPlus.jar
-    # Replace public policy only; per-player inventory snapshots persist.
-    rm -f plugins/InventoryRollbackPlus/config.yml
-    install -m 0600 /etc/minecraft/inventoryrollbackplus.yml plugins/InventoryRollbackPlus/config.yml
     installPlugin ${coreProtect} plugins/CoreProtect.jar
     # CoreProtect owns its persistent database; only public policy is replaced.
     rm -f plugins/CoreProtect/config.yml
@@ -594,110 +569,5 @@ in
 
   systemd.tmpfiles.rules = [
     "d ${dataDir} 0700 minecraft minecraft -"
-    "d /var/backup/minecraft 0700 root root -"
   ];
-  systemd.timers.minecraft-backup = {
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnCalendar = "*-*-* 05:00:00 Europe/Moscow";
-      Persistent = true;
-    };
-  };
-  systemd.services.minecraft-backup = {
-    description = "Offline Minecraft world backup";
-    path = [ pkgs.systemd pkgs.coreutils pkgs.gnutar pkgs.gzip ];
-    serviceConfig = {
-      Type = "oneshot";
-      User = "root";
-      UMask = "0077";
-      RuntimeDirectory = "minecraft-backup";
-      RuntimeDirectoryMode = "0700";
-      TimeoutStartSec = "30min";
-      # Cleanup waits for the server's six-minute start/readiness budget.
-      TimeoutStopSec = "7min";
-      NoNewPrivileges = true;
-      PrivateTmp = true;
-      ProtectHome = true;
-      ProtectSystem = "strict";
-      ReadWritePaths = [ "/var/backup/minecraft" "/run/minecraft-backup" ];
-    };
-    script = ''
-      set -euo pipefail
-      export LC_ALL=C
-      data=${lib.escapeShellArg dataDir}
-      backup=/var/backup/minecraft
-      runtime=/run/minecraft-backup
-      unit=minecraft-server.service
-      fail() { echo "$*" >&2; exit 1; }
-      [[ -d "$data" && ! -L "$data" ]] || fail "Not a real Minecraft data directory"
-      [[ "$(systemctl show "$unit" -p LoadState --value)" = loaded ]] ||
-        fail "Minecraft unit is not loaded"
-      active=$(systemctl show "$unit" -p ActiveState --value)
-      sub=$(systemctl show "$unit" -p SubState --value)
-      if [[ "$active/$sub" = inactive/dead ]]; then
-        echo "Minecraft is stopped; skipping backup and retention"
-        exit 0
-      fi
-      [[ "$active/$sub" = active/running ]] ||
-        fail "Refusing backup of Minecraft in state $active/$sub"
-
-      partial=$(mktemp "$backup/minecraft-$(date -u +%Y%m%dT%H%M%SZ)-XXXXXXXX.partial")
-      printf '%s\n' "$partial" > "$runtime/partial"
-      touch "$runtime/restart-needed"
-      systemctl stop "$unit"
-      [[ "$(systemctl show "$unit" -p ActiveState --value)" = inactive &&
-         "$(systemctl show "$unit" -p Result --value)" = success &&
-         "$(systemctl show "$unit" -p MainPID --value)" = 0 ]] ||
-        fail "Minecraft did not stop cleanly; refusing archive and retention"
-
-      tar -C "$(dirname "$data")" -czf "$partial" "$(basename "$data")"
-      mv -- "$partial" "''${partial%.partial}.tar.gz"
-      echo "Published ''${partial%.partial}.tar.gz"
-      # Bash glob order is lexical in the C locale; only our completed files count.
-      shopt -s nullglob
-      archives=()
-      for archive in "$backup"/minecraft-*.tar.gz; do
-        name=''${archive##*/}
-        if [[ "$name" =~ ^minecraft-[0-9]{8}T[0-9]{6}Z-[a-zA-Z0-9]{8}\.tar\.gz$ &&
-              -f "$archive" && ! -L "$archive" ]]; then
-          archives+=("$archive")
-        fi
-      done
-      for ((i=0; i<''${#archives[@]}-7; i++)); do
-        rm -- "''${archives[i]}"
-      done
-    '';
-    # ExecStopPost also runs on failed startup and timeout. Cleanup errors must
-    # not short-circuit the independent attempt to return the game to service.
-    postStop = ''
-      set -uo pipefail
-      runtime=/run/minecraft-backup
-      status=0
-      if [[ -f "$runtime/partial" ]]; then
-        if IFS= read -r partial < "$runtime/partial" &&
-           [[ "$partial" =~ ^/var/backup/minecraft/minecraft-[0-9]{8}T[0-9]{6}Z-[a-zA-Z0-9]{8}\.partial$ ]]; then
-          rm -f -- "$partial" || status=1
-        else
-          echo "Invalid backup partial marker" >&2
-          status=1
-        fi
-      fi
-      if [[ -e "$runtime/restart-needed" ]]; then
-        if manager=$(systemctl show -p SystemState --value); then
-          if [[ "$manager" = stopping ]]; then
-            echo "System is shutting down; leaving Minecraft stopped"
-          elif systemctl start minecraft-server.service; then
-            rm -- "$runtime/restart-needed" || status=1
-          else
-            echo "Minecraft restart failed after backup" >&2
-            status=1
-          fi
-        else
-          echo "Cannot query system manager state for Minecraft restart" >&2
-          status=1
-        fi
-      fi
-      exit "$status"
-    '';
-  };
 }

@@ -12,6 +12,10 @@ Recovery: [SSH access and sudo password fallback](#ssh-and-remote-sudo) ·
 [Bootloader checkpoints](#bootloader-migration) ·
 [Minecraft restoration](minecraft.md#minecraft-backups-and-recovery)
 
+Minecraft automatic backups are disabled. Existing archives and inventory snapshots
+remain available for the [retained-data recovery procedures](minecraft.md#minecraft-backups-and-recovery).
+CoreProtect continues recording block and container history, not full-world backups.
+
 ## SSH and remote sudo
 
 Before installation, ensure that this checkout contains your FIDO2 SSH public key

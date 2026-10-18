@@ -18,7 +18,7 @@ in
     omp
     sops age
     btop git gh wget
-    eza fzf bat ripgrep lazygit jq fastfetch micro
+    eza bat ripgrep lazygit jq fastfetch micro
     file unzip
     matugen
     nerd-fonts.departure-mono
@@ -61,6 +61,14 @@ in
   programs.direnv = {
     enable = true;
     nix-direnv.enable = true;
+  };
+
+  programs.fzf = {
+    enable = true;
+    enableFishIntegration = true;
+    enableBashIntegration = false;
+    enableZshIntegration = false;
+    enableNushellIntegration = false;
   };
 
   programs.starship = {
@@ -113,7 +121,9 @@ in
     shellAliases.ls = "eza --icons --group-directories-first -1";
 
     interactiveShellInit = lib.mkOrder 1492 ''
-      source $HOME/.config/fish/user-config.fish 2> /dev/null
+      if test -e "$HOME/.config/fish/user-config.fish"
+        source "$HOME/.config/fish/user-config.fish"
+      end
     '';
 
     functions.fish_greeting = ''

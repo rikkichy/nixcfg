@@ -161,6 +161,11 @@ The Darwin home configuration also manages Matugen's configuration, `wallpaper-t
 Ghostty's settings. Home Manager installs both Ghostty and Zed on macOS.
 Edit Ghostty's settings in `hosts/ne/modules/home/ghostty.nix`,
 not the store-backed files in `~/.config`.
+Control-Command-Return toggles Ghostty's quick terminal while Ghostty is running.
+The hidden terminal retains its session until Ghostty exits.
+After separately approved activation, reload Ghostty's configuration.
+Grant Ghostty Accessibility permission in macOS System Settings to enable the global shortcut.
+This does not add a login item or change the native Command-backquote shortcut.
 Ghostty uses the shared `common/dotfiles/matugen/templates/terminal-colors.conf` palette
 and the same `scheme-content` mode as NixOS, including Fastfetch's accent slots 16–18.
 Run `wallpaper-theme` (or `wallpaper-theme light`) after changing the macOS wallpaper.

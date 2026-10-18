@@ -11,9 +11,6 @@ hl.on("hyprland.start", function()
 
     hl.exec_cmd("mpris-proxy")
 
-    hl.exec_cmd("sleep 3 && openwave --hide")
-    hl.exec_cmd("sleep 5 && flatpak run me.amankhanna.opendeck --hide")
-
 end)
 
 local function resize_window(win)

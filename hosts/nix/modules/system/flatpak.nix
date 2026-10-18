@@ -5,6 +5,7 @@
 
   systemd.user.services.flatpak-bootstrap = {
     description = "Install the Flatpak apps this config expects";
+    unitConfig.OnSuccess = [ "opendeck-autostart.service" ];
     serviceConfig = {
       Type = "oneshot";
       TimeoutStartSec = "10min";
@@ -28,6 +29,35 @@
     timerConfig = {
       OnStartupSec = "2min";
       AccuracySec = "1min";
+    };
+  };
+
+  # Keep the launch request active for the session, even if OpenDeck exits or
+  # fails before bootstrap completes. A second start then does nothing.
+  systemd.user.services.opendeck-autostart = {
+    description = "Start installed OpenDeck once per graphical session";
+    wantedBy = [ "graphical-session.target" ];
+    partOf = [ "graphical-session.target" ];
+    requisite = [ "graphical-session.target" ];
+    after = [ "graphical-session.target" ];
+    unitConfig.ConditionPathExists = "%h/.local/share/flatpak/app/me.amankhanna.opendeck/current/active";
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.systemd}/bin/systemctl --user --no-block start opendeck.service";
+    };
+  };
+
+  systemd.user.services.opendeck = {
+    description = "OpenDeck controls";
+    partOf = [ "graphical-session.target" ];
+    requisite = [ "graphical-session.target" ];
+    after = [ "graphical-session.target" ];
+    serviceConfig = {
+      Type = "exec";
+      ExecStartPre = "${pkgs.flatpak}/bin/flatpak override --user --filesystem=xdg-run/discord-ipc-0 me.amankhanna.opendeck";
+      ExecStart = "${pkgs.flatpak}/bin/flatpak run --user me.amankhanna.opendeck --hide";
+      Slice = "session.slice";
     };
   };
 
