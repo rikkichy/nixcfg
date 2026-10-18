@@ -97,6 +97,7 @@ in
           code_actions_on_format."source.organizeImports.ruff" = true;
         };
         Kotlin.language_servers = [ "kotlin-lsp" ];
+        Kotlin.enable_language_server = !isLinux;
         Lua.formatter.external = {
           command = lib.getExe pkgs.stylua;
           arguments = [
