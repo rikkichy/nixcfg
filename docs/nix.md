@@ -58,8 +58,9 @@ and it must remain writable.
 Compositor motion lives in `hosts/nix/dotfiles/ricing/hypr/hyprland/animations.lua`.
 Windows spring open from 80% size and shrink to 92% on a 140ms exit.
 Ordinary workspaces page vertically with a more heavily damped spring; special
-workspaces use short vertical slide-fades. Opacity uses separate, non-bouncing
-curves. Existing shell reduced-motion layer rules remain unchanged.
+workspaces fade in place over 120ms and out over 100ms, without sliding.
+Opacity uses non-bouncing curves. Existing shell reduced-motion layer rules
+remain unchanged.
 
 Window opening adapts [Material 3 Expressive fast spatial spring tokens](https://raw.githubusercontent.com/androidx/androidx/androidx-main/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/ExpressiveMotionTokens.kt).
 Hyprland 0.56.2 uses `dampening = 2 * dampingRatio * sqrt(stiffness * mass)`,
