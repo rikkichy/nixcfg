@@ -23,10 +23,10 @@ hl.animation({ leaf = "windowsIn", enabled = true, speed = 1, spring = "expressi
 hl.animation({ leaf = "windowsOut", enabled = true, speed = 1.4, bezier = "emphasizedAccel", style = "popin 92%" })
 hl.animation({ leaf = "windowsMove", enabled = true, speed = 2.4, bezier = "emphasizedDecel" })
 
--- Vertical pages stay opaque; special workspaces appear in place without sliding.
+-- Special workspaces enter from the left and retreat to the same edge.
 hl.animation({ leaf = "workspaces", enabled = true, speed = 1, spring = "expressivePaging", style = "slidevert" })
-hl.animation({ leaf = "specialWorkspaceIn", enabled = true, speed = 1.2, bezier = "emphasizedDecel", style = "fade" })
-hl.animation({ leaf = "specialWorkspaceOut", enabled = true, speed = 1, bezier = "emphasizedAccel", style = "fade" })
+hl.animation({ leaf = "specialWorkspaceIn", enabled = true, speed = 2.4, bezier = "emphasizedDecel", style = "slide left" })
+hl.animation({ leaf = "specialWorkspaceOut", enabled = true, speed = 1.6, bezier = "emphasizedAccel", style = "slide right" })
 
 hl.animation({ leaf = "fade", enabled = true, speed = 1.6, bezier = "standard" })
 hl.animation({ leaf = "fadeIn", enabled = true, speed = 1.2, bezier = "standard" })

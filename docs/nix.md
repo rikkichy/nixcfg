@@ -58,7 +58,7 @@ and it must remain writable.
 Compositor motion lives in `hosts/nix/dotfiles/ricing/hypr/hyprland/animations.lua`.
 Windows spring open from 80% size and shrink to 92% on a 140ms exit.
 Ordinary workspaces page vertically with a more heavily damped spring; special
-workspaces fade in place over 120ms and out over 100ms, without sliding.
+workspaces slide in from the left over 240ms and retreat left over 160ms.
 Opacity uses non-bouncing curves. Existing shell reduced-motion layer rules
 remain unchanged.
 
