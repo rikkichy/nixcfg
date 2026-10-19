@@ -55,6 +55,20 @@ If it points elsewhere, switch the host configuration before reloading Hyprland.
 Keep the locally generated `scheme/current.lua` in that directory. Git ignores it,
 and it must remain writable.
 
+Compositor motion lives in `hosts/nix/dotfiles/ricing/hypr/hyprland/animations.lua`.
+Windows spring open from 80% size and shrink to 92% on a 140ms exit.
+Ordinary workspaces page vertically with a more heavily damped spring; special
+workspaces use short vertical slide-fades. Opacity uses separate, non-bouncing
+curves. Existing shell reduced-motion layer rules remain unchanged.
+
+Window opening adapts [Material 3 Expressive fast spatial spring tokens](https://raw.githubusercontent.com/androidx/androidx/androidx-main/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/ExpressiveMotionTokens.kt).
+Hyprland 0.56.2 uses `dampening = 2 * dampingRatio * sqrt(stiffness * mass)`,
+not Material's damping ratio directly. Its native springs settle physically and
+ignore the required `speed` field; Bezier speeds are in 100ms units.
+Tune stiffness for spring responsiveness and damping ratio for bounce.
+The [current animation wiki](https://wiki.hypr.land/configuring/core/animations/)
+uses newer API spelling; keep `dampening` for this installed version.
+
 Wallpaper, animated wallpaper, emoji, blue-light filter, VPN and session tools
 are available through META+ALT.
 Short commands such as `wpp`, `awpp` and `vpnp` remain searchable there.
