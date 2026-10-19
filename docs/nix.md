@@ -62,6 +62,14 @@ workspaces use a vertical slide-fade with 15% travel over 240ms in both directio
 Opacity uses non-bouncing curves. Existing shell reduced-motion layer rules
 remain unchanged.
 
+Special-workspace windows become 65% transparent (35% opacity) when their
+monitor's active numbered workspace contains a fullscreen app. Maximized apps,
+named workspaces and fullscreen apps on other monitors do not trigger it.
+`hyprland/rules.lua` maintains a conditional tag through native compositor events;
+removing the tag restores the normal opacity rules, including after fullscreen
+exit, window moves and workspace switches. This applies to focused, unfocused
+and fullscreen windows inside the special workspace. Blur and dimming are unchanged.
+
 Window opening adapts [Material 3 Expressive fast spatial spring tokens](https://raw.githubusercontent.com/androidx/androidx/androidx-main/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/ExpressiveMotionTokens.kt).
 Hyprland 0.56.2 uses `dampening = 2 * dampingRatio * sqrt(stiffness * mass)`,
 not Material's damping ratio directly. Its native springs settle physically and

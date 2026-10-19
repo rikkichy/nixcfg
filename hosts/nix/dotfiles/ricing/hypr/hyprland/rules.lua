@@ -140,6 +140,50 @@ hl.on("window.open", function(opened)
     end
 end)
 
+-- 65% transparent, including inactive/fullscreen special windows; removing the tag restores normal rules.
+hl.window_rule({ match = { tag = "special_over_fullscreen" }, opacity = "0.35 override" })
+
+local function update_special_opacity()
+    for _, w in ipairs(hl.get_windows()) do
+        local ws = w.workspace
+        local monitor = ws and ws.monitor
+        local base = monitor and monitor.active_workspace
+        local transparent = not not (ws and ws.special and base and base.name
+            and base.name:match("^%d+$") and base.fullscreen_mode == 2)
+        local tagged = false
+        for _, tag in ipairs(w.tags) do
+            if tag == "special_over_fullscreen" then tagged = true; break end
+        end
+        if transparent ~= tagged then
+            hl.dispatch(hl.dsp.window.tag({
+                window = w,
+                tag = (transparent and "+" or "-") .. "special_over_fullscreen",
+            }))
+        end
+    end
+end
+
+-- Close/move notifications can precede their final state. Coalesce updates after the event completes.
+local opacity_update_pending = false
+local function schedule_special_opacity()
+    if opacity_update_pending then return end
+    opacity_update_pending = true
+    hl.timer(function()
+        opacity_update_pending = false
+        update_special_opacity()
+    end, { timeout = 1, type = "oneshot" })
+end
+
+for _, event in ipairs({
+    "window.open", "window.close", "window.fullscreen", "window.move_to_workspace",
+    "workspace.active", "workspace.special_active", "workspace.move_to_monitor",
+    "monitor.removed", "monitor.layout_changed",
+}) do
+    hl.on(event, schedule_special_opacity)
+end
+hl.on("config.reloaded", update_special_opacity)
+hl.on("hyprland.start", update_special_opacity)
+
 hl.workspace_rule({ workspace = "w[tv1]s[false]", gaps_out = vars.singleWindowGapsOut })
 hl.workspace_rule({ workspace = "f[1]s[false]", gaps_out = vars.singleWindowGapsOut })
 
