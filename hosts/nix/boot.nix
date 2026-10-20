@@ -36,6 +36,10 @@ in
     package = (pkgs.plymouth.override {
       systemd = config.boot.initrd.systemd.package;
     }).overrideAttrs (old: {
+      patches = (old.patches or [ ]) ++ [
+        ./pkgs/ricing/plymouth/unlock-success.patch
+        ./pkgs/ricing/plymouth/material-entry.patch
+      ];
       postPatch = (old.postPatch or "") + ''
         substituteInPlace src/libply-splash-graphics/ply-throbber.c \
           --replace-fail '#define FRAMES_PER_SECOND 30' '#define FRAMES_PER_SECOND 240' \
@@ -57,6 +61,16 @@ in
 
   boot.initrd.luks.devices."cryptroot" = {
     allowDiscards = true;
+  };
+  boot.initrd.systemd.services."systemd-cryptsetup@cryptroot" = {
+    overrideStrategy = "asDropin";
+    # Cosmetic notification: never fail or hold up unlock for an unresponsive splash.
+    serviceConfig.ExecStartPost = "-${pkgs.writeShellScript "cryptroot-unlocked" ''
+      set -e
+      mkdir -p /run/plymouth
+      : > /run/plymouth/cryptroot-unlocked
+      ${config.boot.plymouth.package}/bin/plymouth update --status=cryptroot-unlocked &
+    ''}";
   };
   boot.kernelPackages = pkgs.linuxPackages_latest;
   hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.stable;

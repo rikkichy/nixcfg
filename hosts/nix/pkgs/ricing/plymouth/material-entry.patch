@@ -1,0 +1,94 @@
+--- a/src/libply-splash-graphics/ply-entry.c
++++ b/src/libply-splash-graphics/ply-entry.c
+@@ -51,6 +51,8 @@
+ 
+ #include <linux/kd.h>
+ 
++#define ENTRY_PADDING 16
++
+ #ifndef FRAMES_PER_SECOND
+ #define FRAMES_PER_SECOND 30
+ #endif
+@@ -123,7 +125,7 @@
+         long bullet_width, text_field_width;
+ 
+         bullet_width = ply_image_get_width (entry->bullet_image);
+-        text_field_width = ply_image_get_width (entry->text_field_image);
++        text_field_width = ply_image_get_width (entry->text_field_image) - 2 * ENTRY_PADDING;
+ 
+         return (int) (text_field_width / bullet_width) - ((text_field_width % bullet_width) < (bullet_width / 2) ? 1 : 0);
+ }
+@@ -193,10 +195,10 @@
+                         /* We've got more bullets than we can show in the available space, so
+                          * draw a little half bullet to indicate some bullets are offscreen
+                          */
+-                        bullet_area.x = entry->area.x - bullet_area.width / 2.0;
++                        bullet_area.x = entry->area.x + ENTRY_PADDING - bullet_area.width / 2.0;
+                         bullet_area.y = entry->area.y + entry->area.height / 2.0 - bullet_area.height / 2.0;
+                         clip_area = bullet_area;
+-                        clip_area.x = entry->area.x;
++                        clip_area.x = entry->area.x + ENTRY_PADDING;
+ 
+                         ply_pixel_buffer_fill_with_buffer_with_clip (pixel_buffer,
+                                                                      bullet_buffer,
+@@ -206,7 +208,7 @@
+                 }
+ 
+                 for (i = 0; i < number_of_visible_bullets; i++) {
+-                        bullet_area.x = entry->area.x + i * bullet_area.width + bullet_area.width / 2.0;
++                        bullet_area.x = entry->area.x + ENTRY_PADDING + i * bullet_area.width + bullet_area.width / 2.0;
+                         bullet_area.y = entry->area.y + entry->area.height / 2.0 - bullet_area.height / 2.0;
+ 
+                         ply_pixel_buffer_fill_with_buffer (pixel_buffer,
+@@ -218,12 +220,12 @@
+                 ply_label_set_text (entry->label, entry->text);
+                 ply_label_show (entry->label,
+                                 NULL,
+-                                entry->area.x,
++                                entry->area.x + ENTRY_PADDING,
+                                 entry->area.y + entry->area.height / 2
+                                 - ply_label_get_height (entry->label) / 2);
+                 ply_label_draw_area (entry->label, pixel_buffer,
+-                                     entry->area.x, entry->area.y,
+-                                     entry->area.width, entry->area.height);
++                                     entry->area.x + ENTRY_PADDING, entry->area.y,
++                                     entry->area.width - 2 * ENTRY_PADDING, entry->area.height);
+         }
+ }
+ 
+--- a/src/plugins/splash/two-step/plugin.c
++++ b/src/plugins/splash/two-step/plugin.c
+@@ -1062,7 +1062,7 @@
+         if (prompt != NULL && prompt[0]) {
+                 char buf[128];
+ 
+-                /* Strip ':' at end of prompt since we show it below the text-entry */
++                /* The prompt is an external field label, without a trailing colon. */
+                 prompt_len = strlen (prompt);
+                 if (prompt[prompt_len - 1] == ':' && prompt_len < sizeof(buf)) {
+                         strcpy (buf, prompt);
+@@ -1072,20 +1072,14 @@
+ 
+                 ply_label_set_text (view->label, prompt);
+ 
+-                /* We center the prompt in the middle and use 80% of the horizontal space */
+-                int label_width = screen_width * 100 / 80;
+-                ply_label_set_alignment (view->label, PLY_LABEL_ALIGN_CENTER);
++                int label_width = ply_entry_get_width (view->entry);
++                ply_label_set_alignment (view->label, PLY_LABEL_ALIGN_LEFT);
+                 ply_label_set_width (view->label, label_width);
+ 
+-                /* Add 10 pixels padding between text-entry field and prompt */
+-                dialog_bottom += 10;
+-
+-                x = (screen_width - label_width) / 2;
+-                y = dialog_bottom;
++                x = view->lock_area.x + view->lock_area.width;
++                y = view->dialog_area.y - ply_label_get_height (view->label) - 8;
+ 
+                 ply_label_show (view->label, view->display, x, y);
+-
+-                dialog_bottom += ply_label_get_height (view->label);
+         }
+ 
+         if (show_keyboard_indicators) {

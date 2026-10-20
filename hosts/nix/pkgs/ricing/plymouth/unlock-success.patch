@@ -1,0 +1,223 @@
+--- a/src/libply-splash-graphics/ply-throbber.c
++++ b/src/libply-splash-graphics/ply-throbber.c
+@@ -72,6 +72,9 @@
+         long                 x, y;
+         long                 width, height;
+         double               start_time, now;
++        /* Borrowed from the theme; retain the current frame while fading out. */
++        ply_pixel_buffer_t  *final_frame;
++        double               finish_time, final_opacity;
+ 
+         int                  frame_number;
+         uint32_t             is_stopped : 1;
+@@ -151,20 +154,24 @@
+         if (number_of_frames == 0)
+                 return true;
+ 
+-        should_continue = true;
+-        percent_in_sequence = fmod (time, THROBBER_DURATION) / THROBBER_DURATION;
+-        last_frame_number = throbber->frame_number;
+-        throbber->frame_number = (int) (number_of_frames * percent_in_sequence);
+-
+-        if (throbber->stop_trigger != NULL) {
+-                /* If we are trying to stop, make sure we don't skip the last
+-                 * frame and loop around. Clamp it to the last frame.
+-                 */
+-                if (last_frame_number > throbber->frame_number)
+-                        throbber->frame_number = number_of_frames - 1;
++        if (throbber->final_frame != NULL) {
++                double progress = CLAMP ((time - throbber->finish_time) / 0.3, 0.0, 1.0);
++                throbber->final_opacity = progress * progress * (3.0 - 2.0 * progress);
++                should_continue = progress < 1.0;
++        } else {
++                should_continue = true;
++                percent_in_sequence = fmod (time, THROBBER_DURATION) / THROBBER_DURATION;
++                last_frame_number = throbber->frame_number;
++                throbber->frame_number = (int) (number_of_frames * percent_in_sequence);
++
++                if (throbber->stop_trigger != NULL) {
++                        /* If stopping, don't skip the last frame and loop around. */
++                        if (last_frame_number > throbber->frame_number)
++                                throbber->frame_number = number_of_frames - 1;
+ 
+-                if (throbber->frame_number == number_of_frames - 1)
+-                        should_continue = false;
++                        if (throbber->frame_number == number_of_frames - 1)
++                                should_continue = false;
++                }
+         }
+ 
+         frames = (ply_pixel_buffer_t *const *) ply_array_get_pointer_elements (throbber->frames);
+@@ -305,6 +312,9 @@
+ {
+         assert (throbber != NULL);
+ 
++        if (throbber->final_frame != NULL)
++                return true;
++
+         if (!throbber->is_stopped)
+                 ply_throbber_stop_now (throbber, false);
+ 
+@@ -330,6 +340,7 @@
+                        bool            redraw)
+ {
+         throbber->is_stopped = true;
++        throbber->final_frame = NULL;
+ 
+         if (redraw) {
+                 ply_pixel_display_draw_area (throbber->display,
+@@ -353,6 +364,8 @@
+                    ply_trigger_t  *stop_trigger)
+ {
+         if (throbber->is_stopped) {
++                if (throbber->final_frame != NULL)
++                        ply_throbber_stop_now (throbber, true);
+                 ply_trace ("throbber already stopped");
+                 if (stop_trigger != NULL) {
+                         ply_trace ("pulling stop trigger right away");
+@@ -375,6 +388,21 @@
+         return throbber->is_stopped;
+ }
+ 
++/* The caller owns frame and must keep it alive until the throbber is stopped. */
++void
++ply_throbber_finish (ply_throbber_t     *throbber,
++                     ply_pixel_buffer_t *frame,
++                     bool                animate)
++{
++        if (throbber->is_stopped || throbber->final_frame != NULL)
++                return;
++
++        throbber->final_frame = frame;
++        throbber->final_opacity = animate ? 0.0 : 1.0;
++        throbber->finish_time = ply_get_timestamp () - throbber->start_time -
++                               (animate ? 0.0 : 0.3);
++}
++
+ void
+ ply_throbber_draw_area (ply_throbber_t     *throbber,
+                         ply_pixel_buffer_t *buffer,
+@@ -385,10 +413,21 @@
+ {
+         ply_pixel_buffer_t *const *frames;
+ 
+-        if (throbber->is_stopped)
++        if (throbber->is_stopped && throbber->final_frame == NULL)
+                 return;
+ 
+         frames = (ply_pixel_buffer_t *const *) ply_array_get_pointer_elements (throbber->frames);
++        if (throbber->final_frame != NULL) {
++                if (throbber->final_opacity < 1.0)
++                        ply_pixel_buffer_fill_with_buffer_at_opacity (buffer,
++                                                                     frames[throbber->frame_number],
++                                                                     throbber->x, throbber->y,
++                                                                     1.0 - throbber->final_opacity);
++                ply_pixel_buffer_fill_with_buffer_at_opacity (buffer, throbber->final_frame,
++                                                             throbber->x, throbber->y,
++                                                             throbber->final_opacity);
++                return;
++        }
+         ply_pixel_buffer_fill_with_buffer (buffer,
+                                            frames[throbber->frame_number],
+                                            throbber->x,
+--- a/src/libply-splash-graphics/ply-throbber.h
++++ b/src/libply-splash-graphics/ply-throbber.h
+@@ -47,6 +47,9 @@
+ void ply_throbber_stop (ply_throbber_t *throbber,
+                         ply_trigger_t  *stop_trigger);
+ bool ply_throbber_is_stopped (ply_throbber_t *throbber);
++void ply_throbber_finish (ply_throbber_t     *throbber,
++                          ply_pixel_buffer_t *frame,
++                          bool                animate);
+ 
+ void ply_throbber_draw_area (ply_throbber_t     *throbber,
+                              ply_pixel_buffer_t *buffer,
+--- a/src/plugins/splash/two-step/plugin.c
++++ b/src/plugins/splash/two-step/plugin.c
+@@ -136,6 +136,7 @@
+         mode_settings_t                     mode_settings[PLY_BOOT_SPLASH_MODE_COUNT];
+         char                               *font;
+         ply_image_t                        *lock_image;
++        ply_image_t                        *unlock_success_image;
+         ply_image_t                        *box_image;
+         ply_image_t                        *corner_image;
+         ply_image_t                        *header_image;
+@@ -187,6 +188,7 @@
+         ply_trigger_t                      *stop_trigger;
+ 
+         uint32_t                            root_is_mounted : 1;
++        uint32_t                            unlock_succeeded : 1;
+         uint32_t                            needs_redraw : 1;
+         uint32_t                            is_visible : 1;
+         uint32_t                            is_animating : 1;
+@@ -934,6 +936,10 @@
+                 ply_throbber_start (view->throbber,
+                                     plugin->loop,
+                                     view->display, x, y);
++                if (plugin->unlock_succeeded && plugin->unlock_success_image != NULL)
++                        ply_throbber_finish (view->throbber,
++                                             ply_image_get_buffer (plugin->unlock_success_image),
++                                             false);
+                 ply_pixel_display_draw_area (view->display, x, y, width, height);
+                 view->animation_bottom = y + height;
+         }
+@@ -1183,6 +1189,14 @@
+         plugin->lock_image = ply_image_new (image_path);
+         free (image_path);
+ 
++        asprintf (&image_path, "%s/unlock-success.png", image_dir);
++        plugin->unlock_success_image = ply_image_new (image_path);
++        free (image_path);
++        if (!ply_image_load (plugin->unlock_success_image)) {
++                ply_image_free (plugin->unlock_success_image);
++                plugin->unlock_success_image = NULL;
++        }
++
+         asprintf (&image_path, "%s/box.png", image_dir);
+         plugin->box_image = ply_image_new (image_path);
+         free (image_path);
+@@ -1438,6 +1452,8 @@
+         }
+ 
+         ply_image_free (plugin->lock_image);
++        if (plugin->unlock_success_image != NULL)
++                ply_image_free (plugin->unlock_success_image);
+ 
+         if (plugin->box_image != NULL)
+                 ply_image_free (plugin->box_image);
+@@ -1844,6 +1860,9 @@
+ 
+         plugin->loop = loop;
+         plugin->mode = mode;
++        /* /run survives switch-root and theme reloads, but not another boot. */
++        plugin->unlock_succeeded = mode == PLY_BOOT_SPLASH_MODE_BOOT_UP &&
++                                   ply_file_exists ("/run/plymouth/cryptroot-unlocked");
+ 
+         if (boot_buffer && ply_console_viewer_preferred ()) {
+                 plugin->boot_buffer = boot_buffer;
+@@ -1958,7 +1977,25 @@
+ update_status (ply_boot_splash_plugin_t *plugin,
+                const char               *status)
+ {
++        ply_list_node_t *node;
++
+         assert (plugin != NULL);
++
++        if (plugin->mode != PLY_BOOT_SPLASH_MODE_BOOT_UP ||
++            plugin->unlock_succeeded || plugin->unlock_success_image == NULL ||
++            strcmp (status, "cryptroot-unlocked") != 0 ||
++            !ply_file_exists ("/run/plymouth/cryptroot-unlocked"))
++                return;
++
++        plugin->unlock_succeeded = true;
++        for (node = ply_list_get_first_node (plugin->views); node != NULL;
++             node = ply_list_get_next_node (plugin->views, node)) {
++                view_t *view = ply_list_node_get_data (node);
++                if (view->throbber != NULL)
++                        ply_throbber_finish (view->throbber,
++                                             ply_image_get_buffer (plugin->unlock_success_image),
++                                             true);
++        }
+ }
+ 
+ static void

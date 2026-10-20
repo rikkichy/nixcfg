@@ -91,9 +91,10 @@ theme dependencies, sets the steady rotation period to 3640ms for a three-turn
 4.55-second loop, and lowers the spring settlement threshold to avoid an abrupt
 rotation snap. Geometry attribution and MIT/Apache licenses accompany the assets.
 
-Plymouth requests 240 updates/second with a 1ms minimum timer delay. Only the
-throbber's timing constants change; its event loop and other animation rates
-remain upstream. Qt, Python, Mesa and Xvfb are build-only. The initrd uses native
+Plymouth requests 240 updates/second with a 1ms minimum timer delay. Its event
+loop and other animation rates remain upstream. The native throbber also supports
+a 300ms eased crossfade from its current frame to a checkmark, then stops its
+animation timer. Qt, Python, Mesa and Xvfb are build-only. The initrd uses native
 Plymouth, without a QML runtime, custom password handler or wallpaper dependency.
 
 The update target is not a display refresh guarantee. Plymouth's DRM renderer
@@ -102,11 +103,29 @@ highest refresh rate. This monitor advertises 1920×1080 at 60Hz as preferred;
 Hyprland's 240Hz setting applies only after login. No boot display mode is forced.
 Actual presentation remains limited by the early display mode, driver and load.
 
+An initrd-only `ExecStartPost` drop-in for `systemd-cryptsetup@cryptroot.service`
+records successful unlock in `/run/plymouth/cryptroot-unlocked` and sends the
+Plymouth status notification asynchronously. It runs only after cryptsetup
+succeeds, for either YubiKey or passphrase authentication; submitting a password,
+token detection, and boot progress do not signal success. Notification failure
+cannot fail or delay unlock. The runtime marker survives late display startup,
+Escape/details and switch-root, but not reboot. Shutdown/reboot ignore it.
+No service waits for the crossfade to finish.
+
 Systemd's FIDO2 touch cue and other messages remain visible below the animation.
 PIN/passphrase entry replaces the static heading with the real prompt and masked
 input; the heading returns afterward until Plymouth quits. Shutdown/reboot omit
 the encryption heading. Escape toggles between graphics and boot details;
 quiet console settings do not disable the journal or password fallback.
+
+The PIN/passphrase field follows Material 3 Expressive's
+[`OutlinedTextFieldDefaults.roundedShape`](https://developer.android.com/reference/kotlin/androidx/compose/material3/OutlinedTextFieldDefaults#roundedShape())
+recommendation: 12px outer corners, 56px height, a 2px primary-color focus outline,
+and 16px horizontal content padding. The real prompt sits above the field;
+masked dots, overflow indication, keyboard layout and Caps Lock remain native.
+SVG-generated field and bullet assets replace the stock Plymouth bitmaps.
+Native layout changes preserve the input value and only alter its presentation.
+
 NVIDIA's display modules load in the initrd in parallel with disk unlock.
 Plymouth uses its upstream udev/vconsole ordering, without waiting for
 `systemd-modules-load.service`. Its daemon can retain the one-shot FIDO2 touch
@@ -120,7 +139,8 @@ A build or isolated graphical preview does not prove NVIDIA early display,
 physical YubiKey unlock, or greeter handoff. Before a separately approved boot
 test, follow the [Limine recovery procedure](#limine-recovery-with-a-zero-timeout)
 and retain the working generation. Check the splash, touch/no-PIN unlock,
-no-token/passphrase and wrong-token/no-touch fallback, Escape details, and
+no-token/passphrase and wrong-token/no-touch fallback, masked input/backspace,
+the checkmark only after successful unlock, Escape/details restoration, and
 handoff to the desktop at the physical console. Do not change enrollment or
 keyslots to troubleshoot appearance.
 

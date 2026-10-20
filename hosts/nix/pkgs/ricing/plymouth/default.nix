@@ -69,6 +69,24 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     svg = ElementTree.tostring(icon.getroot())
     cairosvg.svg2png(bytestring=svg, write_to="material-lock.png", output_width=96, output_height=96)
     cairosvg.svg2png(bytestring=svg, write_to="lock.png", output_width=48, output_height=48)
+    cairosvg.svg2png(
+        bytestring=b'<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96">'
+                   b'<path d="M24 49 L41 66 L73 30" fill="none" stroke="#a8c7fa" '
+                   b'stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        write_to="unlock-success.png",
+    )
+    # Material 3 Expressive rounded outlined field: medium shape, 56px, 2px focus stroke.
+    cairosvg.svg2png(
+        bytestring=b'<svg xmlns="http://www.w3.org/2000/svg" width="368" height="56">'
+                   b'<rect x="1" y="1" width="366" height="54" rx="11" fill="none" '
+                   b'stroke="#a8c7fa" stroke-width="2"/></svg>',
+        write_to="entry.png",
+    )
+    cairosvg.svg2png(
+        bytestring=b'<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12">'
+                   b'<circle cx="6" cy="6" r="3" fill="#e3e2e6"/></svg>',
+        write_to="bullet.png",
+    )
     PY
     runHook postBuild
   '';
@@ -79,9 +97,9 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     mkdir -p "$theme" "$out/share/licenses/expressive"
     install -Dm444 GoogleSansRounded-Semibold.ttf \
       "$out/share/fonts/truetype/GoogleSansRounded-Semibold.ttf"
-    cp lock.png ${animation}/throbber-*.png "$theme/"
+    cp lock.png entry.png bullet.png unlock-success.png ${animation}/throbber-*.png "$theme/"
     cp material-lock.png "$theme/watermark.png"
-    cp ${plymouth}/share/plymouth/themes/spinner/{entry,bullet,keyboard,keymap-render,capslock}.png "$theme/"
+    cp ${plymouth}/share/plymouth/themes/spinner/{keyboard,keymap-render,capslock}.png "$theme/"
     cp ${google-sans-rounded.src}/LICENSE "$out/share/licenses/expressive/font-OFL"
     cp ${materialLicense} "$out/share/licenses/expressive/material-symbols-Apache-2.0"
     cp ${plymouth.src}/COPYING "$out/share/licenses/expressive/plymouth-GPL-2.0"
