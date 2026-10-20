@@ -83,10 +83,21 @@ it in the initrd. The font is also registered for shutdown rendering.
 
 The Material 3 Expressive loading animation uses a pinned
 [official reference animation](https://github.com/material-components/material-components-android/blob/66b0eeb53afeb6025ffbbd37734b08e5bce197ed/docs/components/LoadingIndicator.md),
-converted at build time into 136 transparent 96px frames. Plymouth's native
-throbber duration is compiled as 4.55 seconds to preserve the seven-shape timing
-instead of its default two-second loop. No browser, Android runtime, custom
-password handler, or wallpaper-state dependency runs in the initrd.
+with FFmpeg motion interpolation at build time: 136 captured frames become
+1092 transparent 96px frames at 240 frames/second. The middle of three repeated
+cycles provides interpolation context across the loop boundary. This is an
+interpolated capture, not a native vector animation; edge artifacts are possible.
+Plymouth keeps the 4.55-second seven-shape loop and requests 240 updates/second
+with a 1ms minimum timer delay. Only the throbber's timing constants change;
+the event loop and other animation rates remain upstream. FFmpeg is build-only;
+no browser, Android runtime, custom password handler, or wallpaper-state
+dependency runs in the initrd.
+
+The update target is not a display refresh guarantee. Plymouth's DRM renderer
+prefers a user-defined mode, then the monitor's preferred mode, rather than the
+highest refresh rate. This monitor advertises 1920×1080 at 60Hz as preferred;
+Hyprland's 240Hz setting applies only after login. No boot display mode is forced.
+Actual presentation remains limited by the early display mode, driver and load.
 
 Systemd's FIDO2 touch cue and other messages remain visible below the animation.
 PIN/passphrase entry replaces the static heading with the real prompt and masked

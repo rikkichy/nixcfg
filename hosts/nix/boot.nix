@@ -32,10 +32,15 @@ in
 
   boot.plymouth = {
     enable = true;
-    # Plymouth otherwise compresses every throbber loop to two seconds.
+    # Keep the original loop speed while allowing 240 Hz animation updates.
     package = (pkgs.plymouth.override {
       systemd = config.boot.initrd.systemd.package;
     }).overrideAttrs (old: {
+      postPatch = (old.postPatch or "") + ''
+        substituteInPlace src/libply-splash-graphics/ply-throbber.c \
+          --replace-fail '#define FRAMES_PER_SECOND 30' '#define FRAMES_PER_SECOND 240' \
+          --replace-fail '0.005);' '0.001);'
+      '';
       env = old.env // {
         NIX_CFLAGS_COMPILE = (old.env.NIX_CFLAGS_COMPILE or "")
           + " -DTHROBBER_DURATION=4.55";
