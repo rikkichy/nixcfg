@@ -107,9 +107,12 @@ PIN/passphrase entry replaces the static heading with the real prompt and masked
 input; the heading returns afterward until Plymouth quits. Shutdown/reboot omit
 the encryption heading. Escape toggles between graphics and boot details;
 quiet console settings do not disable the journal or password fallback.
-NVIDIA's display modules load in the initrd, and Plymouth waits for module
-loading before selecting its renderer. Greetd uses its native Plymouth quit-wait
-ordering.
+NVIDIA's display modules load in the initrd in parallel with disk unlock.
+Plymouth uses its upstream udev/vconsole ordering, without waiting for
+`systemd-modules-load.service`. Its daemon can retain the one-shot FIDO2 touch
+cue before a display is available, then attach to NVIDIA through native udev
+discovery. Do not serialize cryptsetup behind the splash or graphics loading.
+Greetd uses its native Plymouth quit-wait ordering.
 
 Build without activation with
 `nix build --no-link 'path:.#nixosConfigurations.nix.config.system.build.initialRamdisk'`.

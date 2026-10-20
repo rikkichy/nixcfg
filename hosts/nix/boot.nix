@@ -54,8 +54,6 @@ in
   boot.consoleLogLevel = 3;
   boot.initrd.verbose = false;
   boot.initrd.kernelModules = [ "nvidia" "nvidia_modeset" "nvidia_drm" ];
-  # The splash needs the NVIDIA framebuffer before it selects a renderer.
-  boot.initrd.systemd.services.plymouth-start.after = [ "systemd-modules-load.service" ];
 
   boot.initrd.luks.devices."cryptroot" = {
     allowDiscards = true;
