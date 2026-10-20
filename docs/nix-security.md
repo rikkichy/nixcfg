@@ -72,6 +72,41 @@ Test boot without the token using the retained passphrase. Test no-touch/wrong-t
 fallback. Record waits and results. Do not garbage-collect the recovery
 generation or remove fallback slots until all paths work.
 
+### Graphical disk unlock
+
+`hosts/nix/boot.nix` enables Plymouth with the host-owned
+`hosts/nix/pkgs/ricing/plymouth/` theme. The native `two-step` renderer shows a
+Material Symbols Rounded lock and the two-line heading “System is encrypted.”
+/ “Verify your identity.” Google Sans Flex Rounded is the same font family as
+Fuzzel; the build creates a static Semibold instance at weight 600 and embeds
+it in the initrd. The font is also registered for shutdown rendering.
+
+The Material 3 Expressive loading animation uses a pinned
+[official reference animation](https://github.com/material-components/material-components-android/blob/66b0eeb53afeb6025ffbbd37734b08e5bce197ed/docs/components/LoadingIndicator.md),
+converted at build time into 136 transparent 96px frames. Plymouth's native
+throbber duration is compiled as 4.55 seconds to preserve the seven-shape timing
+instead of its default two-second loop. No browser, Android runtime, custom
+password handler, or wallpaper-state dependency runs in the initrd.
+
+Systemd's FIDO2 touch cue and other messages remain visible below the animation.
+PIN/passphrase entry replaces the static heading with the real prompt and masked
+input; the heading returns afterward until Plymouth quits. Shutdown/reboot omit
+the encryption heading. Escape toggles between graphics and boot details;
+quiet console settings do not disable the journal or password fallback.
+NVIDIA's display modules load in the initrd, and Plymouth waits for module
+loading before selecting its renderer. Greetd uses its native Plymouth quit-wait
+ordering.
+
+Build without activation with
+`nix build --no-link 'path:.#nixosConfigurations.nix.config.system.build.initialRamdisk'`.
+A build or isolated graphical preview does not prove NVIDIA early display,
+physical YubiKey unlock, or greeter handoff. Before a separately approved boot
+test, follow the [Limine recovery procedure](#limine-recovery-with-a-zero-timeout)
+and retain the working generation. Check the splash, touch/no-PIN unlock,
+no-token/passphrase and wrong-token/no-touch fallback, Escape details, and
+handoff to the desktop at the physical console. Do not change enrollment or
+keyslots to troubleshoot appearance.
+
 ### Limine recovery with a zero timeout
 
 `boot.loader.timeout = 0` means immediate boot without a visible menu. The

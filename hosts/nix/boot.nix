@@ -7,6 +7,9 @@
 #   };
 # in
 
+let
+  expressivePlymouth = pkgs.callPackage ./pkgs/ricing/plymouth { };
+in
 {
   imports = [ ../../common/modules/nixos-limine.nix ];
 
@@ -26,6 +29,28 @@
   boot.loader.limine.extraConfig = ''
     measured_boot: yes
   '';
+
+  boot.plymouth = {
+    enable = true;
+    # Plymouth otherwise compresses every throbber loop to two seconds.
+    package = (pkgs.plymouth.override {
+      systemd = config.boot.initrd.systemd.package;
+    }).overrideAttrs (old: {
+      env = old.env // {
+        NIX_CFLAGS_COMPILE = (old.env.NIX_CFLAGS_COMPILE or "")
+          + " -DTHROBBER_DURATION=4.55";
+      };
+    });
+    theme = "expressive";
+    themePackages = [ expressivePlymouth ];
+    font = expressivePlymouth.font;
+  };
+  fonts.packages = [ expressivePlymouth ];
+  boot.consoleLogLevel = 3;
+  boot.initrd.verbose = false;
+  boot.initrd.kernelModules = [ "nvidia" "nvidia_modeset" "nvidia_drm" ];
+  # The splash needs the NVIDIA framebuffer before it selects a renderer.
+  boot.initrd.systemd.services.plymouth-start.after = [ "systemd-modules-load.service" ];
 
   boot.initrd.luks.devices."cryptroot" = {
     allowDiscards = true;
@@ -56,6 +81,9 @@
   # ];
 
   boot.kernelParams = [
+    "quiet"
+    "rd.udev.log_level=3"
+    "rd.systemd.show_status=auto"
     # "lockdown=integrity"
     "amd_iommu=force_isolation"
     "iommu.passthrough=0"
