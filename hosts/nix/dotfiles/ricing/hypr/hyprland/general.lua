@@ -2,7 +2,7 @@ local vars = require("variables")
 
 hl.config({
     general = {
-        layout          = "master",
+        layout          = "dwindle",
 
         allow_tearing   = true,
 

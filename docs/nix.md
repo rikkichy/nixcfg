@@ -92,10 +92,10 @@ or application controls. Manual window resizing uses **META + right mouse drag**
 only. **META + ALT + \\** remains the picture-in-picture shortcut.
 
 **META + D** toggles the communication workspace and launches missing Discord
-and Telegram windows. Master is the default layout for all workspaces.
+and Telegram windows. This workspace alone uses the master layout.
 Discord occupies approximately 81% of the width on the left, and Telegram occupies 19% on the right. Both windows are full-height.
 Opening either app restores this arrangement. Toggling the workspace preserves
-manual resizing. Other workspaces use the default master proportions.
+manual resizing. Other workspaces retain dwindle.
 Telegram activation requests do not steal focus or reveal its workspace.
 Use **META + D** to reveal it. Notification clicks that request application
 activation follow the same focus policy.
