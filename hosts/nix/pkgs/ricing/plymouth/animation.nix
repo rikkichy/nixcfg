@@ -1,51 +1,61 @@
 {
   lib,
-  fetchurl,
+  fetchzip,
   runCommand,
-  imagemagick,
-  ffmpeg,
+  python3,
+  qt6,
+  mesa,
+  xvfb-run,
 }:
 
 let
-  revision = "66b0eeb53afeb6025ffbbd37734b08e5bce197ed";
-  upstream = "https://raw.githubusercontent.com/material-components/material-components-android/${revision}";
-  animation = fetchurl {
-    url = "${upstream}/docs/components/assets/loadingindicator/loading-indicator.gif";
-    hash = "sha256-S4CdduizUMLkB8tPEERN/qmNXeeGIYDTw26AC3nefRQ=";
+  revision = "3cf182586c6c948a6ae61b15df13ff1365c0dab0";
+  source = fetchzip {
+    url = "https://github.com/duxlabs-dev/dux-qml-common/archive/${revision}.tar.gz";
+    hash = "sha256-bZqeOW6WZdBqhXsYgo2WUPbegIsOmx5eof8SGutGApc=";
   };
-  license = fetchurl {
-    url = "${upstream}/LICENSE";
-    hash = "sha256-z8d0m5b2O9McPEK1xHG/dWgUBT6EfBDz6wA0F7xSPTA=";
-  };
+  python = python3.withPackages (ps: [ ps.pyside6 ]);
 in
 runCommand "plymouth-expressive-animation"
   {
-    nativeBuildInputs = [ imagemagick ffmpeg ];
+    nativeBuildInputs = [ python qt6.qtshadertools xvfb-run ];
+    QT_PLUGIN_PATH = "${qt6.qtbase}/${qt6.qtbase.qtPluginPrefix}";
+    QML_IMPORT_PATH = "${qt6.qtdeclarative}/${qt6.qtbase.qtQmlPrefix}";
+    QT_QPA_PLATFORM = "xcb";
+    QT_XCB_GL_INTEGRATION = "xcb_glx";
+    QSG_RHI_BACKEND = "opengl";
+    QSG_RENDER_LOOP = "basic";
+    QT_SCALE_FACTOR = "1";
+    LIBGL_ALWAYS_SOFTWARE = "true";
+    LIBGL_DRIVERS_PATH = "${mesa}/lib/dri";
+    LD_LIBRARY_PATH = lib.makeLibraryPath [ mesa ];
     meta = {
-      description = "Interpolated Material 3 Expressive loading indicator frames for Plymouth";
-      homepage = "https://github.com/material-components/material-components-android/blob/${revision}/docs/components/LoadingIndicator.md";
-      license = lib.licenses.asl20;
-      platforms = lib.platforms.all;
+      description = "Material 3 Expressive frames rendered directly from Quickshell QML";
+      homepage = "https://github.com/duxlabs-dev/dux-qml-common";
+      license = with lib.licenses; [ mit asl20 ];
+      platforms = lib.platforms.linux;
     };
   }
   ''
-    mkdir -p masks smooth "$out"
-    # The reference capture repeats its first pose at frame 136; omit that pose
-    # and the three trailing frames of the next cycle, rather than adding a pause.
-    # Recover coverage from its green channel before interpolating the mask.
-    magick ${animation} -coalesce -delete 136-139 \
-      -channel G -separate +channel -level 32%,94% -negate \
-      -filter Lanczos -resize 96x96 -depth 8 -scene 0 masks/frame-%04d.png
-    # 136 source frames / 4.55 seconds = 2720/91 Hz. Keep the middle cycle so
-    # interpolation also sees both sides of the loop boundary.
-    # ponytail: interpolated motion is approximate; use vector assets if edge artifacts matter.
-    ffmpeg -v error -framerate 2720/91 -stream_loop 2 -i masks/frame-%04d.png \
-      -vf 'minterpolate=fps=240:scd=none:mc_mode=aobmc:me_mode=bidir:mb_size=4:vsbmc=1,trim=start_frame=1092:end_frame=2184,setpts=PTS-STARTPTS' \
-      -fps_mode passthrough -start_number 0 smooth/frame-%04d.png
-    magick smooth/frame-*.png \
-      -background '#a8c7fa' -alpha Shape -strip \
-      -set comment 'Adapted from Material Components for Android ${revision}, Apache-2.0: cropped to one cycle, motion-interpolated to 240 Hz, recolored, resized, and converted to transparent PNG.' \
-      -define png:exclude-chunk=date,time -scene 0 \
-      PNG32:"$out/throbber-%04d.png"
-    install -Dm644 ${license} "$out/share/licenses/expressive-animation/LICENSE"
+    mkdir -p Widgets Shaders/qsb
+    cp ${source}/DCommon/Widgets/{DLoadingIndicator.qml,MaterialShapes.js,MaterialShapeData.js,DLogoShape.js} Widgets/
+    # Remove shell theme dependencies, not the shape, spring or shader implementation.
+    # 3640ms steady rotation makes the seven-shape 4550ms loop exactly three turns.
+    # Let the spring settle instead of snapping its rotation at the 10% threshold.
+    substituteInPlace Widgets/DLoadingIndicator.qml \
+      --replace-fail 'import qs.DCommon.Common' "" \
+      --replace-fail 'property color containerColor: Style.primaryContainer' 'property color containerColor: "#a8c7fa"' \
+      --replace-fail 'property color color: contained ? Style.onPrimaryContainer : Style.primary' 'property color color: "#a8c7fa"' \
+      --replace-fail 'radius: Style.fullRadius(width, height)' 'radius: width / 2' \
+      --replace-fail 'readonly property int rotationDuration: 4666' 'readonly property int rotationDuration: 3640' \
+      --replace-fail 'readonly property real visibilityThreshold: 0.1' 'readonly property real visibilityThreshold: 0.001'
+    qsb --glsl '100 es,120,150' \
+      -o Shaders/qsb/loading_indicator.frag.qsb \
+      ${source}/DCommon/Shaders/frag/loading_indicator.frag
+    export XDG_RUNTIME_DIR="$TMPDIR/runtime"
+    mkdir -m700 "$XDG_RUNTIME_DIR"
+    xvfb-run -a python ${./render-animation.py} Widgets/DLoadingIndicator.qml "$out"
+    license="$out/share/licenses/expressive-animation"
+    install -Dm644 ${source}/LICENSE "$license/MIT"
+    cp ${source}/DCommon/Widgets/{MaterialShapes.NOTICE,Apache-2.0.txt} "$license/"
   ''

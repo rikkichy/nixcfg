@@ -81,17 +81,20 @@ Material Symbols Rounded lock and the two-line heading â€œSystem is encrypted.â€
 Fuzzel; the build creates a static Semibold instance at weight 600 and embeds
 it in the initrd. The font is also registered for shutdown rendering.
 
-The Material 3 Expressive loading animation uses a pinned
-[official reference animation](https://github.com/material-components/material-components-android/blob/66b0eeb53afeb6025ffbbd37734b08e5bce197ed/docs/components/LoadingIndicator.md),
-with FFmpeg motion interpolation at build time: 136 captured frames become
-1092 transparent 96px frames at 240 frames/second. The middle of three repeated
-cycles provides interpolation context across the loop boundary. This is an
-interpolated capture, not a native vector animation; edge artifacts are possible.
-Plymouth keeps the 4.55-second seven-shape loop and requests 240 updates/second
-with a 1ms minimum timer delay. Only the throbber's timing constants change;
-the event loop and other animation rates remain upstream. FFmpeg is build-only;
-no browser, Android runtime, custom password handler, or wallpaper-state
-dependency runs in the initrd.
+The spinner comes from the pinned Quickshell
+[`DLoadingIndicator.qml`](https://github.com/duxlabs-dev/dux-qml-common/blob/3cf182586c6c948a6ae61b15df13ff1365c0dab0/DCommon/Widgets/DLoadingIndicator.qml)
+component, its AndroidX shape geometry and its fragment shader. At build time,
+Qt Quick renders the actual component at exact 240Hz timestamps into 1092
+transparent 96px PNG frames. There is no GIF, video capture or image interpolation.
+The seven shapes and spring implementation stay upstream. Export removes shell
+theme dependencies, sets the steady rotation period to 3640ms for a three-turn
+4.55-second loop, and lowers the spring settlement threshold to avoid an abrupt
+rotation snap. Geometry attribution and MIT/Apache licenses accompany the assets.
+
+Plymouth requests 240 updates/second with a 1ms minimum timer delay. Only the
+throbber's timing constants change; its event loop and other animation rates
+remain upstream. Qt, Python, Mesa and Xvfb are build-only. The initrd uses native
+Plymouth, without a QML runtime, custom password handler or wallpaper dependency.
 
 The update target is not a display refresh guarantee. Plymouth's DRM renderer
 prefers a user-defined mode, then the monitor's preferred mode, rather than the

@@ -136,7 +136,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
 
   meta = {
     description = "Native Plymouth theme with Material Rounded lock and Expressive loading";
-    license = with lib.licenses; [ gpl2Plus asl20 ofl ];
+    license = with lib.licenses; [ gpl2Plus mit asl20 ofl ];
     platforms = lib.platforms.linux;
   };
 })
