@@ -8,7 +8,7 @@
   environment.systemPackages = [ pkgs.vpn ];
 
   services.mihomo = {
-    enable = true;
+    # enable = true;
     tunMode = true;
   };
 
