@@ -161,20 +161,16 @@ retention before the disk fills.
 `flake.nix` exports `cacheTargets.x86_64-linux` and the same named `packages`.
 The desktop packages and custom wrappers/assets come from the
 **desktop's final pkgs**, not a second import with approximate overlays.
-`vhelper` and `openwave` use their exact locked input outputs consumed by the
-desktop. OpenWave selects `openwave-bin` for the application, udev rules and
-cache target. It repackages a pinned published release without compiling Rust.
-The OpenWave input owns that release pin independently of its development
-version. Filen, Fuzzel and the Spicetify CLI use unmodified Nixpkgs packages
+`vhelper` uses the exact locked input output consumed by the desktop.
+Filen, Fuzzel and the Spicetify CLI use unmodified Nixpkgs packages
 and are not custom cache targets. Spotify's theme patches run during app
 packaging. Prebuilt Material Bibata assets are fetched from their publisher,
 not republished through this cache.
 
 These roots are redistributable according to their pinned package metadata:
 desktop packages retain upstream free licenses, the custom packages are
-MIT/Apache/GPL/OFL, and Vhelper/OpenWave are GPL/MIT.
-The upload includes runtime closures, not build dependencies. OpenWave
-references the free GTK/audio stack. Vhelper references Protontricks, whose
+MIT/Apache/GPL/OFL, and Vhelper is GPL.
+The upload includes runtime closures, not build dependencies. Vhelper references Protontricks, whose
 pinned package uses `steam.run-free`, **not the proprietary Steam client**.
 Wrappers/fonts reference ordinary free tools/libraries.
 Preserve this boundary when adding roots or updating runtime dependencies.

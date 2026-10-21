@@ -16,8 +16,6 @@
     }))
     inputs.vhelper.packages.${pkgs.stdenv.hostPlatform.system}.default
 
-    inputs.openwave.packages.${pkgs.stdenv.hostPlatform.system}.openwave-bin
-
     filen-desktop
     lan-mouse
 

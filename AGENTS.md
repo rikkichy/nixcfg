@@ -61,7 +61,7 @@ Portable shell configuration belongs in `common/`. Keep Linux modules Linux-only
 Skills identify precise source owners and runtime pitfalls.
 
 External projects own their toolchains.
-Edit Vhelper, OpenWave, and the native VTube Studio OpenDeck plugin in `rikkichy/vhelper`, `rikkichy/openwave`, and `rikkichy/vts-opendeck`, respectively.
+Edit Vhelper and the native VTube Studio OpenDeck plugin in `rikkichy/vhelper` and `rikkichy/vts-opendeck`, respectively.
 This checkout only pins and exposes the plugin package.
 
 ## Runbooks

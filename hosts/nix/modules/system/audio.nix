@@ -7,6 +7,20 @@
     alsa.support32Bit = true;
     pulse.enable = true;
 
+    # MK1 shares its capture/playback clock. Avoid idle transitions and renegotiation.
+    wireplumber.extraConfig."51-wave-xlr-mk1"."monitor.alsa.rules" = [
+      {
+        matches = [
+          { "node.name" = "~alsa_(input|output)[.]usb-Elgato_Systems_Elgato_Wave_XLR_.*"; }
+        ];
+        actions.update-props = {
+          "session.suspend-timeout-seconds" = 0;
+          "node.pause-on-idle" = false;
+          "audio.rate" = 48000;
+        };
+      }
+    ];
+
     extraConfig.pipewire."90-blessing3-eq" = {
       "context.modules" = [
         {
@@ -63,6 +77,74 @@
               "node.name" = "blessing3_eq_output";
               "node.passive" = true;
               "stream.dont-remix" = true;
+            };
+          };
+        }
+      ];
+    };
+
+    # Wave DX on Elgato Wave XLR: warm voice EQ, no EasyEffects.
+    # Smart filtering targets the capture source of the Elgato card.
+    extraConfig.pipewire."91-wave-dx-velvet-voice" = {
+      "context.modules" = [
+        {
+          name = "libpipewire-module-filter-chain";
+          args = {
+            "node.description" = "Wave DX - Velvet Voice";
+            "media.name" = "Wave DX - Velvet Voice";
+
+            "filter.graph" = {
+              nodes = [
+                {
+                  type = "builtin";
+                  name = "preamp";
+                  label = "linear";
+                  control = {
+                    Mult = 0.794328; # -2 dB headroom
+                    Add = 0.0;
+                  };
+                }
+                {
+                  type = "builtin";
+                  name = "eq";
+                  label = "param_eq";
+                  config.filters = [
+                    { type = "bq_highpass"; freq = 75.0; gain = 0.0; q = 0.71; }
+                    { type = "bq_lowshelf"; freq = 135.0; gain = 1.5; q = 0.71; }
+                    { type = "bq_peaking"; freq = 280.0; gain = -2.5; q = 1.0; }
+                    { type = "bq_peaking"; freq = 900.0; gain = -1.0; q = 1.1; }
+                    { type = "bq_peaking"; freq = 3500.0; gain = -1.8; q = 1.0; }
+                    { type = "bq_highshelf"; freq = 8000.0; gain = -1.0; q = 0.71; }
+                  ];
+                }
+              ];
+              links = [
+                {
+                  output = "preamp:Out";
+                  input = "eq:In 1";
+                }
+              ];
+              inputs = [ "preamp:In" ];
+              outputs = [ "eq:Out 1" ];
+            };
+
+            "audio.channels" = 1;
+            "audio.position" = [ "MONO" ];
+
+            "capture.props" = {
+              "node.name" = "capture.wave_dx_velvet_voice";
+              "node.passive" = true;
+            };
+
+            "playback.props" = {
+              "node.name" = "wave_dx_velvet_voice";
+              "node.description" = "Wave DX - Velvet Voice";
+              "media.class" = "Audio/Source";
+              "filter.smart" = true;
+              "filter.smart.name" = "wave-dx-velvet-voice";
+              "filter.smart.target" = {
+                "alsa.card_name" = "Elgato Wave XLR";
+              };
             };
           };
         }

@@ -135,23 +135,68 @@ enables `render_unfocused` for both classes so hidden windows keep receiving
 render callbacks. `hyprland/misc.lua` sets their shared limit to 60 FPS. Application and
 Spout/OBS frame-rate settings remain independent.
 
+### Wave XLR MK1 and Wave DX audio
+
+`hosts/nix/modules/system/audio.nix` owns the desktop's PipeWire filters and
+WirePlumber policy. The Wave XLR MK1 (`0fd9:007d`) runs capture and playback
+at 48 kHz without idle pause or suspension. Other Wave models are not covered.
+
+**Wave DX - Velvet Voice** is the mono microphone filter: a headroom preamp
+followed by six native parametric EQ filters. Its coefficients and graph ports
+live in the audio module. Select the Wave XLR input in recording applications.
+WirePlumber's smart-filter policy inserts the voice processing for that device.
+The **Blessing 3 EQ** is a separate stereo headphone filter on the same card.
+Neither filter requires EasyEffects or vendor-control USB permissions.
+
+The user `wave-xlr-keepalive.service` follows PipeWire, not the graphical session.
+Its compiled C helper selects the single MK1 hardware source by node identity and
+starts a serial-targeted `pw-cat` stream. WirePlumber can route that stream through
+the smart voice filter. The helper drains signed-16-bit mono samples in memory,
+including when no voice application is recording. It never stores or logs samples.
+
+After a one-second startup allowance, three seconds without data can restart
+the owned capture. Thirty seconds of digital silence while confirmed unmuted
+allows one capture restart per incident. Only nonzero samples rearm that allowance.
+Unknown graph/mute state does not authorize watchdog recovery. Unplug/replug and
+PipeWire recreation require fresh node identity. Multiple matching inputs are
+ambiguous, not permission to select another microphone.
+The helper never changes gain, mute, phantom power, card profiles or USB state.
+
+Read-only inspection:
+
+```sh
+systemctl --user status wave-xlr-keepalive
+journalctl --user -u wave-xlr-keepalive
+wpctl status
+```
+
+After separately approved activation, check the microphone's processed signal,
+headphone EQ, idle-to-playback, mute/unmute and unplug/replug behavior.
+Confirm exactly one MK1 keepalive and no fallback to another microphone.
+Evaluation alone does not establish device behavior or perceived audio quality.
+
+#### Audio activation safeguards
+
+Home Manager checks known OpenWave-generated integration paths before user-unit reload.
+Recognized files move to adjacent `.before-wave-xlr-mk1` backups, with numbered
+backups when needed. Symlinks, non-files and unrecognized content stop activation
+for review. Application settings and scenes are preserved.
+Inspect the exact reported path rather than deleting a configuration directory.
+
+The keepalive conflicts with `openwave.service` and `openwave-gui.service`.
+Quit any manually launched vendor-control client before approved activation.
+Arrange an audio interruption when applying PipeWire or WirePlumber changes.
+Existing virtual sources require clients to select the Wave XLR input instead.
+Administrator-owned `/etc/udev/rules.d/99-openwave.rules` copies require separate review.
+For rollback, retain a known-working generation and restore retired integration
+files only while the replacement service is stopped.
+
 ### Session application startup
 
-The OpenWave GUI (`openwave-gui.service`) and OpenDeck start hidden through user
-services owned by `graphical-session.target`, not delayed Hyprland commands.
-Installed apps start once per graphical session. Session exit stops their
-managed processes. UWSM's existing Flatpak scope policy also stops OpenDeck's
-separate sandbox process tree.
-
-`openwave.service` is reserved for `openwave-daemon`, the capture keepalive and
-observation-only health service. It starts with the user manager's `default.target`
-and follows upstream's audio dependencies and restart policy. The GUI requires
-and starts after this daemon, using the same pinned package. Keeping the units
-separate lets OpenWave verify capture-service ownership without mistaking its
-GUI for the daemon. Home Manager explicitly owns
-`default.target.wants/openwave.service`, replacing an existing imperative
-enablement symlink at that exact path. Settings and generated user audio rules
-remain app-owned; automatic hardware recovery is not enabled.
+OpenDeck starts hidden through a user service owned by `graphical-session.target`,
+not a delayed Hyprland command. It starts once per graphical session.
+Session exit stops its managed process. UWSM's existing Flatpak scope policy
+also stops its separate sandbox process tree.
 
 Flatpak bootstrap remains timer-driven and does not block desktop startup.
 If OpenDeck is missing, successful bootstrap requests its first launch only
@@ -162,8 +207,8 @@ Bootstrap and each OpenDeck launch enforce the narrow Discord IPC socket grant.
 Discord must already be running when OpenDeck starts for that socket to be
 available inside the sandbox.
 
-Inspect failures with `systemctl --user status openwave openwave-gui opendeck opendeck-autostart flatpak-bootstrap`.
-Read their logs with `journalctl --user -u openwave -u openwave-gui -u opendeck -u opendeck-autostart -u flatpak-bootstrap`.
+Inspect failures with `systemctl --user status opendeck opendeck-autostart flatpak-bootstrap`.
+Read their logs with `journalctl --user -u opendeck -u opendeck-autostart -u flatpak-bootstrap`.
 These commands do not start or restart applications.
 
 ### OpenDeck: VTube Studio Native

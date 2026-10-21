@@ -30,10 +30,6 @@
       url = "github:rikkichy/vhelper";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    openwave = {
-      url = "github:rikkichy/openwave";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     vts-opendeck = {
       url = "github:rikkichy/vts-opendeck";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -60,7 +56,6 @@
           quickshell hyprland tg-ws-proxy
           google-sans-rounded vpn;
         vhelper = inputs.vhelper.packages.${system}.default;
-        openwave = inputs.openwave.packages.${system}.openwave-bin;
       };
     in
     {
