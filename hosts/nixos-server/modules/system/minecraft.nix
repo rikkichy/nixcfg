@@ -27,11 +27,8 @@ let
     simulation-distance = 6;
     motd = "WhatsApp Miku SMP";
   };
-  propertiesFile = pkgs.writeText "server.properties" (
-    lib.concatStringsSep "\n" (lib.mapAttrsToList
-      (name: value: "${name}=${if builtins.isBool value then lib.boolToString value else toString value}")
-      serverProperties) + "\n"
-  );
+  propertiesFile = pkgs.writeText "server.properties"
+    (lib.generators.toKeyValue { } serverProperties);
   whitelistSeedFile = pkgs.writeText "whitelist-seed.json" (builtins.toJSON (
     lib.mapAttrsToList (name: uuid: { inherit name uuid; }) whitelistSeed
   ));

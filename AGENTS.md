@@ -60,7 +60,7 @@ Darwin must not import Linux overlays or system modules. Do not reuse desktop ha
 Portable shell configuration belongs in `common/`. Keep Linux modules Linux-only. Linux themes, Foot, and systemd user services stay host-owned.
 Skills identify precise source owners and runtime pitfalls.
 
-External projects own their toolchains. Nokochat uses its own flake.
+External projects own their toolchains.
 Edit Vhelper, OpenWave, and the native VTube Studio OpenDeck plugin in `rikkichy/vhelper`, `rikkichy/openwave`, and `rikkichy/vts-opendeck`, respectively.
 This checkout only pins and exposes the plugin package.
 

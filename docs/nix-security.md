@@ -358,9 +358,9 @@ and [boot-menu recovery path](#limine-recovery-with-a-zero-timeout).
 
 The desktop selects stock `pkgs.linuxPackages_latest`, allowing the kernel to
 come from a matching binary cache rather than requiring a local signing build.
-The custom policy in `hosts/nix/boot.nix` is commented out;
-`hosts/nix/pkgs/lockdown-kernel.nix` remains dormant. Explicit integrity
-lockdown and module-signature enforcement are no longer configured.
+The unused local signing derivation and its commented boot configuration have
+been removed. Explicit integrity lockdown and module-signature enforcement
+are not configured.
 Do not assume the running kernel enforces either policy merely because Secure
 Boot is enabled.
 

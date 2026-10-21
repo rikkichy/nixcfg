@@ -172,8 +172,6 @@ rules:
   - DOMAIN-SUFFIX,patreon.com,REJECT
   - DOMAIN-SUFFIX,patreonusercontent.com,PROXY
   - DOMAIN-SUFFIX,patreonusercontent.com,REJECT
-  - DOMAIN-SUFFIX,noko.chat,PROXY
-  - DOMAIN-SUFFIX,noko.chat,REJECT
   - DOMAIN-SUFFIX,smotret-anime.co,PROXY
   - DOMAIN-SUFFIX,smotret-anime.co,REJECT
   - DOMAIN-SUFFIX,6b6t.org,PROXY

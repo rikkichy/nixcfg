@@ -1,9 +1,9 @@
 { writeShellApplication, python3, sbctl, efitools, e2fsprogs, nh, nix
-, openssl, pesign, tpm2-tools, systemd, coreutils
+, openssl, pesign, tpm2-tools, coreutils
 }:
 writeShellApplication {
   name = "nixcfg-secureboot-setup";
-  runtimeInputs = [ sbctl efitools e2fsprogs nh nix openssl pesign tpm2-tools systemd coreutils ];
+  runtimeInputs = [ sbctl efitools e2fsprogs nh nix openssl pesign tpm2-tools coreutils ];
   text = ''
     case "''${1:-}" in
       -h|--help) ;;

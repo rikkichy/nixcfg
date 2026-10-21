@@ -353,7 +353,7 @@ client() {
     printf 'Activation pending: nix run path:%s#attic-setup -- client\nRerun after cache publication and approve activation. Trust remains inactive until its include is activated and the daemon reloads it.\n' "$repo"
     return 0
   fi
-  snapshot=$(sudo nix build --no-link --print-out-paths --no-write-lock-file \
+  snapshot=$(sudo nix build --no-link --print-out-paths --no-update-lock-file \
     --option extra-substituters "${endpoint}${cache_name}" --option extra-trusted-public-keys "$trusted_key" \
     "path:$repo#nixosConfigurations.nix.config.system.build.toplevel") || fail 'Desktop snapshot build failed; no activation or daemon restart performed.'
   [[ $snapshot =~ ^/nix/store/[a-z0-9]{32}-[^/[:space:]]+$ && -d $snapshot ]] || fail 'Expected one built NixOS snapshot path.'

@@ -335,7 +335,7 @@ verify_boot_devices() {
   luks_uuid=$(cryptsetup luksUUID "$rootpart")
   esp_uuid=$(blkid --probe --match-tag UUID --output value "$esp")
   [[ -n $luks_uuid && -n $esp_uuid ]] || fail 'Cannot read fresh disk UUIDs; refusing installation.'
-  devices=$("${nixcmd[@]}" eval --json --no-write-lock-file \
+  devices=$("${nixcmd[@]}" eval --json --no-update-lock-file \
     "path:/mnt/etc/nixos#nixosConfigurations.$host.config" --apply \
     'c: { luks = builtins.mapAttrs (_: v: v.device) c.boot.initrd.luks.devices;
           root = c.fileSystems."/".device; esp = c.fileSystems."/boot".device; }')
@@ -378,7 +378,7 @@ main() {
   work=$(mktemp -d /run/nixcfg-install.XXXXXX)
   prepare_checkout
   printf '\nEvaluating the selected build plan BEFORE erase (not a full build):\n'
-  "${nixcmd[@]}" build --dry-run --no-link --no-write-lock-file "path:$work/repo#nixosConfigurations.$host.config.system.build.toplevel"
+  "${nixcmd[@]}" build --dry-run --no-link --no-update-lock-file "path:$work/repo#nixosConfigurations.$host.config.system.build.toplevel"
   disks=$(scan_disks) || fail 'Cannot establish device usage; refusing erase.'
   select_disk
   [[ -b $disk ]] || fail 'Selected disk is not a block device.'
@@ -417,10 +417,9 @@ main() {
   rm -- "/mnt/etc/nixos/hosts/$host/hardware.nix"
   install -m 0644 "$work/hardware.nix" "/mnt/etc/nixos/hosts/$host/hardware.nix"
   verify_boot_devices
-  nixos-install --root /mnt --flake "path:/mnt/etc/nixos#$host" --no-root-passwd --no-write-lock-file
+  printf '\nThe installer will prompt for a nonempty ROOT recovery password:\n'
+  nixos-install --root /mnt --flake "path:/mnt/etc/nixos#$host" --no-update-lock-file
   nixos-enter --root /mnt -c 'chown -R ri:users /etc/nixos'
-  printf '\nSet a nonempty ROOT recovery password:\n'
-  nixos-enter --root /mnt -c 'passwd root'
   password_status=$(nixos-enter --root /mnt -c 'passwd --status root')
   [[ $password_status == 'root P '* ]] || fail 'Root does not have an unlocked password.'
   printf '\nSet a nonempty RI password (required for sudo fallback):\n'

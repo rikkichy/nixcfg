@@ -35,12 +35,12 @@ last message printed before the wait.
 
 Its settings live in two different places, and only one of them is a file:
 
-- **The sidebar bookmarks are `xdg.configFile."gtk-3.0/bookmarks"`.** That is
-  the GTK file shared with every GIO browser, not a Thunar format. The flake
-  manages it as a read-only store symlink. This disables "Add Bookmark" and
-  dragging a folder onto the sidebar. Edit the list only through the attribute.
-  `force = true` permits replacing an unmanaged bookmarks file created by the
-  application before the first activation.
+- **The sidebar bookmarks are `gtk.gtk3.bookmarks`.** Home Manager writes the
+  GTK file shared with every GIO browser, not a Thunar format, as a read-only
+  store symlink. This disables "Add Bookmark" and dragging a folder onto the
+  sidebar. Edit the list through the attribute.
+  `xdg.configFile."gtk-3.0/bookmarks".force = true` permits replacing an unmanaged
+  bookmarks file created by the application before the first activation.
 - **Everything else is xfconf**, declared through `xfconf.settings.thunar`.
   Home Manager applies these values with `xfconf-query` at activation instead
   of managing a file. Each switch reapplies declared values, so GUI changes to

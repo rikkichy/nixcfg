@@ -18,6 +18,22 @@
     icon-theme = "Papirus-Dark";
   };
 
+  gtk = {
+    enable = true;
+    gtk2.enable = false;
+    gtk3 = {
+      extraConfig.gtk-application-prefer-dark-theme = 0;
+      bookmarks = [
+        "file://${config.home.homeDirectory}/Pictures/Screenshots"
+        "file://${config.home.homeDirectory}/Documents"
+        "file://${config.home.homeDirectory}/Downloads"
+      ];
+    };
+    gtk4.extraConfig.gtk-application-prefer-dark-theme = 0;
+  };
+
+  services.mpris-proxy.enable = true;
+
   xfconf.settings.thunar = {
     last-menubar-visible = false;
     hidden-bookmarks = [
@@ -103,10 +119,11 @@
       Wants = [ "network-online.target" ];
     };
     Service = {
+      StateDirectory = "tg-ws-proxy";
+      StateDirectoryMode = "0700";
       ExecStart = toString (pkgs.writeShellScript "tg-ws-proxy-start" ''
         set -eu
-        dir="''${XDG_STATE_HOME:-$HOME/.local/state}/tg-ws-proxy"
-        mkdir -p "$dir"
+        dir="$STATE_DIRECTORY"
         if [ ! -s "$dir/secret" ]; then
           ${pkgs.openssl}/bin/openssl rand -hex 16 > "$dir/secret"
           chmod 600 "$dir/secret"
@@ -124,11 +141,6 @@
   xdg.configFile = {
     # Adopt the capture daemon's existing systemctl-enable symlink.
     "systemd/user/default.target.wants/openwave.service".force = true;
-
-    "gtk-3.0/settings.ini".text = ''
-      [Settings]
-      gtk-application-prefer-dark-theme=0
-    '';
 
     "qtengine/config.json" = {
       force = true;
@@ -148,17 +160,6 @@
       };
     };
 
-    "gtk-3.0/bookmarks" = {
-      force = true;
-      text = ''
-        file://${config.home.homeDirectory}/Pictures/Screenshots
-        file://${config.home.homeDirectory}/Documents
-        file://${config.home.homeDirectory}/Downloads
-      '';
-    };
-    "gtk-4.0/settings.ini".text = ''
-      [Settings]
-      gtk-application-prefer-dark-theme=0
-    '';
+    "gtk-3.0/bookmarks".force = true;
   };
 }

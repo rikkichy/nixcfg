@@ -10,6 +10,7 @@
   services.mihomo = {
     # enable = true;
     tunMode = true;
+    processesInfo = true;
   };
 
   systemd.services.mihomo.serviceConfig = {
@@ -18,8 +19,6 @@
     # Mihomo resolves desktop socket owners through /proc/<pid>/{fd,exe}.
     # These privileges permit cross-user reads, not only Discord inspection.
     ProtectProc = lib.mkForce "default";
-    CapabilityBoundingSet = [ "CAP_SYS_PTRACE" "CAP_DAC_READ_SEARCH" ];
-    AmbientCapabilities = [ "CAP_SYS_PTRACE" "CAP_DAC_READ_SEARCH" ];
   };
 
   networking.networkmanager.unmanaged = [ "interface-name:mihomo" ];

@@ -20,6 +20,6 @@ in
   # without renaming or re-signing the native app executable.
   home.activation.discord = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     run ${lib.getExe disableUpdates}
-    run ${discord.stageModules} "${discord}/Applications/Discord.app/Contents/Resources/modules"
+    run ${discord.stageModules} "${discord}/share/discord/modules"
   '';
 }

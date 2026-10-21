@@ -259,10 +259,8 @@ remove it from the activation argument list in `file-associations.nix`. Then cha
 
 ## Project environments
 
-Nokochat's Java/Node toolchain, Go tooling, XcodeGen, Docker/Compose clients,
-and Gitleaks belong to its own `~/src/nokochat/flake.nix`: enter that checkout
-with `nix develop`. Do not add them back to the global Brew inventory or export
-a global `JAVA_HOME`. Its interactive development shell supplies and starts Colima.
-The project flake also supplies the immutable Android SDK. Xcode and writable
-emulator data remain host-managed. Docker Desktop is not required.
-See Nokochat's README for SDK setup and the container lifecycle.
+Project toolchains belong to each project's flake: enter its checkout with `nix develop`.
+Keep Java/Node, Go, Android SDKs and container tooling project-scoped rather than
+adding them to the global Brew inventory or exporting a global `JAVA_HOME`.
+Xcode and writable emulator data remain host-managed. Follow each project's
+guide for SDK setup and container lifecycle.

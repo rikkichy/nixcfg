@@ -218,7 +218,7 @@ wrong passwords must be rejected.
 After Rikkichy is registered, test a second client impersonating that name.
 Without the password, it must not enter the world or execute operator commands. Cancelling or timing out
 the login dialog must disconnect. Check skins after login. Port scans do not
-prove authentication. Inspect the timer schedule and a manual archive privately.
+prove authentication. Inspect a manual recovery archive privately.
 Report observed capacity only, not the configured player ceiling as a load result.
 
 ## Minecraft network tuning

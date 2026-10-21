@@ -143,6 +143,20 @@ Activation requires separate approval. Start a new OMP session afterward. Named
 profiles and `PI_CODING_AGENT_DIR` use their own rule directories and do not read
 the default directory. Do not copy machine identity rules between hosts.
 
+## Discord and Equicord
+
+The desktop and Mac share writable Equicord settings through `common/modules/discord.nix`.
+Close Discord before activation so its in-memory settings cannot overwrite the merge.
+For a missing settings file, activation seeds the wallpaper theme and Quick CSS in the same atomic transaction as the plugin merge.
+An existing empty file starts from `{}`, without first-run defaults.
+Existing theme choices, private settings, and undeclared plugin preferences remain unchanged.
+Activation disables omitted plugins, then recursively merges the declared plugin preferences.
+Invalid settings abort without replacing the destination.
+The replacement uses a mode-0600 temporary file and an atomic rename, with cleanup on failure.
+
+On macOS, activation stages the package's `share/discord/modules` for Finder launches.
+The signed executable stays unchanged, and the existing updater restrictions remain enabled.
+
 ## Spotify and wallpaper colors
 
 The desktop and Mac import `common/modules/spotify.nix`. The pinned

@@ -5,7 +5,7 @@ set -euo pipefail
 declared=$1
 settings=$2
 mkdir -p -- "$(dirname -- "$settings")"
-input=/dev/null
+input=$3 # First-run settings, used only when the destination does not exist.
 if [ -e "$settings" ]; then
     input=$settings
 fi

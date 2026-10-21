@@ -209,7 +209,8 @@ login applet/tray through XDG autostart precedence. The Bluetooth control center
 opens `blueman-manager` for discovery and pairing. Its native D-Bus activation
 can start the applet when needed. Unattended incoming pairing, file-transfer
 approval and other applet background features require the applet to be running.
-BlueZ, OBEX and the Bluetooth MPRIS bridge remain available.
+BlueZ and OBEX remain available. Home Manager's Bluetooth-target service owns
+the MPRIS bridge, independently of compositor startup.
 
 GVFS and fwupd retain UDisks. Hyprland retains the GTK portal with the explicit
 `[ "hyprland" "gtk" ]` default preference. Avahi, Flatpak maintenance,
@@ -494,7 +495,7 @@ GitHub changes. DNS and inbound server TCP 80/443 remain operator prerequisites.
 To avoid ordinary local compilation, inspect the build plan after updating:
 
 ```sh
-nix build --dry-run --no-write-lock-file \
+nix build --dry-run --no-update-lock-file \
   'path:/etc/nixos#nixosConfigurations.nix.config.system.build.toplevel'
 mkdir -p ~/.local/state
 nh os build --no-nom path:/etc/nixos --hostname nix --no-update-lock-file \

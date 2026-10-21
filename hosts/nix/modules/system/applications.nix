@@ -44,7 +44,6 @@
     onlyoffice-desktopeditors
 
     (discord.override { withEquicord = true; })
-    nokochat
     telegram-desktop
 
     pavucontrol

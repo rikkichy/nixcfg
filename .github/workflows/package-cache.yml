@@ -47,14 +47,13 @@ jobs:
       - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31
         with:
           extra_nix_config: |
-            experimental-features = nix-command flakes
             require-sigs = true
       - name: Select explicit targets
         id: targets
         env:
           TARGET: ${{ inputs.target || 'all' }}
         run: |
-          targets=$(nix eval --json --no-write-lock-file 'path:.#cacheTargets.x86_64-linux' --apply builtins.attrNames)
+          targets=$(nix eval --json --no-update-lock-file 'path:.#cacheTargets.x86_64-linux' --apply builtins.attrNames)
           if [ "$TARGET" != all ]; then
             jq -e --arg target "$TARGET" 'index($target) != null' <<< "$targets"
             targets=$(jq -cn --arg target "$TARGET" '[$target]')
@@ -76,7 +75,6 @@ jobs:
       - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31
         with:
           extra_nix_config: |
-            experimental-features = nix-command flakes
             require-sigs = true
             extra-substituters = https://cache.kror.net/nixcfg
             extra-trusted-public-keys = ${{ vars.ATTIC_PUBLIC_KEY }}
@@ -86,9 +84,8 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
         run: |
-          nix build --no-write-lock-file --out-link "$RUNNER_TEMP/attic-client" 'path:.#attic-client'
-          nix build --no-write-lock-file --out-link "$RUNNER_TEMP/cache-target" --json "path:.#cacheTargets.x86_64-linux.$TARGET" > "$RUNNER_TEMP/outputs.json"
-          jq -er '.[].outputs | to_entries[].value' "$RUNNER_TEMP/outputs.json" > "$RUNNER_TEMP/store-paths"
+          nix build --no-update-lock-file --out-link "$RUNNER_TEMP/attic-client" 'path:.#attic-client'
+          nix build --no-update-lock-file --out-link "$RUNNER_TEMP/cache-target" --print-out-paths "path:.#cacheTargets.x86_64-linux.$TARGET" > "$RUNNER_TEMP/store-paths"
           test -s "$RUNNER_TEMP/store-paths"
       - name: Upload selected closure
         env:

@@ -66,13 +66,6 @@
     localNetworkGameTransfers.openFirewall = false;
 
     extraCompatPackages = [ pkgs.proton-ge-bin ];
-
-    package = pkgs.steam.override {
-      extraBwrapArgs = [
-        "--bind /games /games"
-        "--bind /data /data"
-      ];
-    };
   };
 
   programs.gamemode.enable = true;

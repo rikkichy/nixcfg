@@ -61,7 +61,7 @@ Keep state versions fixed unless deliberately performing a compatibility migrati
 - Load `shared-home` for project/toolchain boundaries. Do not add project runtimes globally.
   Rustup is Nix-managed, with mutable, project-owned toolchains. Keep its former
   `/opt/homebrew/opt/rustup/bin` path out of host shell configuration.
-  For Nokochat setup, read [project environments](../../../docs/ne.md#project-environments) and its project's guide.
+  For project setup, read [project environments](../../../docs/ne.md#project-environments) and the project's guide.
 - Home Manager does not migrate existing account login shells.
   Before approved migration, read [shell migration](../../../docs/ne.md#updates-and-shell-migration) and [bootstrap](../../../docs/ne.md#bootstrap).
   Verify that Nix Fish is registered and runnable. Preserve unmanaged startup files and existing backups.

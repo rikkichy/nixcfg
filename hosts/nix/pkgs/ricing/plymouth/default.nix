@@ -40,9 +40,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
 
     font = TTFont("${google-sans-rounded}/share/fonts/truetype/GoogleSansRounded-Regular.ttf")
     # The rounded outlines are already baked in; retain every other axis default.
-    axes = {axis.axisTag: axis.defaultValue for axis in font["fvar"].axes}
-    axes["wght"] = 600
-    instantiateVariableFont(font, axes, inplace=True)
+    instantiateVariableFont(font, {"wght": 600}, inplace=True, static=True)
     # Do not let the source variable font's Rounded/Regular names override weight 600.
     names = {
         1: "Google Sans Flex Rounded", 2: "Semibold",

@@ -53,7 +53,9 @@ Resolve the [signing-key prerequisite](docs/nix-security.md#secure-boot-with-lim
    nix run path:/etc/nixos#secureboot-setup
    ```
 
-8. Only after the helper verifies the installed bootloader, enable Secure Boot in firmware without restoring factory keys.
+8. Manually verify the installed Limine image and its configuration hash before enabling Secure Boot.
+   The helper does not verify these boot files. Follow the [firmware checkpoint](docs/nix-security.md#firmware-enrollment-checkpoint).
+   Then enable Secure Boot in firmware without restoring factory keys.
    On the MSI board, select **Maximum Security**. Reboot and check the installed system.
 
    ```sh

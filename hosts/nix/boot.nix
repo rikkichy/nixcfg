@@ -1,12 +1,5 @@
 { config, pkgs, ... }:
 
-# Local signing policy disabled so the stock kernel can use binary caches.
-# let
-#   signedKernel = import ./pkgs/lockdown-kernel.nix {
-#     inherit (pkgs) lib applyPatches linuxPackages_latest;
-#   };
-# in
-
 let
   expressivePlymouth = pkgs.callPackage ./pkgs/ricing/plymouth { };
 in
@@ -69,33 +62,10 @@ in
   boot.kernelPackages = pkgs.linuxPackages_latest;
   hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.stable;
 
-  # nix.settings.experimental-features = [ "ca-derivations" ];
-  # boot.kernelPackages = (pkgs.linuxPackagesFor signedKernel).extend (self: _: {
-  #   nct6687d = self.kernel;
-  #   v4l2loopback = self.kernel;
-  # });
-  # hardware.nvidia.package = pkgs.linuxPackages_latest.nvidiaPackages.stable.overrideAttrs (old: {
-  #   passthru = old.passthru // { open = config.boot.kernelPackages.kernel; };
-  # });
-  #
-  # assertions = [
-  #   {
-  #     assertion = config.hardware.nvidia.open;
-  #     message = "The lockdown kernel includes NVIDIA's open modules; keep hardware.nvidia.open enabled.";
-  #   }
-  #   {
-  #     assertion = lib.all
-  #       (package: toString package == toString config.boot.kernelPackages.kernel)
-  #       config.boot.extraModulePackages;
-  #     message = "Lockdown requires external modules to be included in the joint kernel signing build.";
-  #   }
-  # ];
-
   boot.kernelParams = [
     "quiet"
     "rd.udev.log_level=3"
     "rd.systemd.show_status=auto"
-    # "lockdown=integrity"
     "amd_iommu=force_isolation"
     "iommu.passthrough=0"
     "amd_pstate=active"

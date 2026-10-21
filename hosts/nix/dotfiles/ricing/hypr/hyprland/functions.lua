@@ -16,29 +16,6 @@ local function wsaction(action, range, i)
     end
 end
 
-local function resize_by_screen(x, y)
-    local screen = hl.get_active_monitor()
-    if screen and type(screen.width) == "number" and type(screen.height) == "number" then
-        if not (x == 0 and y == 0) then
-            local w = (x and x > 0) and math.floor(screen.width * x / 100) or screen.width
-            local h = (y and y > 0) and math.floor(screen.height * y / 100) or screen.height
-            return { x = w, y = h, relative = false }
-        end
-    end
-end
-
-local function resizer(window, pattern, x_percent, y_percent, actions, exact)
-    if (window and window.title) and string.find(window.title, pattern, 1, exact) then
-        local disp = (type(actions) == "table") and actions or { actions }
-        for _, x in ipairs(disp) do
-            hl.dispatch(x)
-        end
-
-        hl.dispatch(hl.dsp.window.resize(resize_by_screen(x_percent, y_percent)))
-        hl.dispatch(hl.dsp.window.set_prop({ prop = "keep_aspect_ratio", value = "true" }))
-    end
-end
-
 local function move_actions(win)
     local screen = hl.get_active_monitor()
 
@@ -67,7 +44,6 @@ local function move_actions(win)
 end
 
 return {
-    resizer              = resizer,
     wsaction             = wsaction,
     move_actions         = move_actions,
 }

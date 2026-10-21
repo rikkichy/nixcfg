@@ -17,18 +17,6 @@ in
 
   home.activation.equicordSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     settings=${lib.escapeShellArg "${equicordDataDir}/settings/settings.json"}
-    if [ ! -e "$settings" ]; then
-      run mkdir -p "$(dirname "$settings")"
-      run cp ${
-        pkgs.writeText "equicord-settings.json" (
-          builtins.toJSON {
-            enabledThemes = [ "wallpaper.theme.css" ];
-            useQuickCss = true;
-          }
-        )
-      } "$settings"
-      run chmod u+w "$settings"
-    fi
     run ${lib.getExe (pkgs.writeShellApplication {
       name = "sync-equicord-settings";
       runtimeInputs = [ pkgs.coreutils pkgs.jq ];
@@ -37,6 +25,13 @@ in
       pkgs.writeText "equicord-plugins.json" (
         builtins.toJSON (import ../dotfiles/discord/plugins.nix)
       )
-    } "$settings"
+    } "$settings" ${
+      pkgs.writeText "equicord-settings.json" (
+        builtins.toJSON {
+          enabledThemes = [ "wallpaper.theme.css" ];
+          useQuickCss = true;
+        }
+      )
+    }
   '';
 }

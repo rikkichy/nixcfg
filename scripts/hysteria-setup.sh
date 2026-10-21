@@ -133,9 +133,7 @@ server() {
   [[ $(stat -c %u -- "$bootstrap_dir") == 0 ]] || fail 'Bootstrap directory must be root-owned.'
   chmod 755 -- "$bootstrap_dir"
   workdir=$(mktemp -d /tmp/nixcfg-hysteria.XXXXXX)
-  openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -days 365 \
-    -subj /CN=nixos-server -addext subjectAltName=DNS:nixos-server \
-    -keyout "$workdir/key" -out "$workdir/cert" >/dev/null
+  hysteria cert --host nixos-server --cert "$workdir/cert" --key "$workdir/key" >/dev/null
   { openssl rand -hex 32; openssl rand -hex 32; } |
     jq -Rn --arg server "$endpoint" --rawfile certificate "$workdir/cert" \
       '{server: $server, auth: input, obfs: input, certificate: $certificate}' > "$workdir/bootstrap.json"

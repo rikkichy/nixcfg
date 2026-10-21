@@ -181,7 +181,7 @@ Preserve this boundary when adding roots or updating runtime dependencies.
 Attic skips paths already signed by the official `cache.nixos.org-1` key.
 
 No system/Home Manager aggregate closure is published. Proprietary Spotify,
-Discord/Equicord, Brave, NokoChat and Kotlin LSP are deliberately excluded.
+Discord/Equicord, Brave and Kotlin LSP are deliberately excluded.
 `allowUnfree` on the desktop is not redistribution permission. VTS OpenDeck's
 separate exported package is not a cache target (the desktop uses Flatpak).
 If proprietary caching becomes necessary, first establish redistribution rights
@@ -284,9 +284,9 @@ remote key or disabled signatures. The preflight checks that the upload secret
 exists. Build steps receive no token. The upload step reads it from a private
 file and removes that file on exit. Actions are pinned to commit revisions.
 
-CI builds the **committed** `flake.lock`. Local uncommitted input updates do not
-match published derivations until deliberately committed. Wait for publication
-before expecting matching downloads. Evaluation alone is not a populated cache.
+CI builds the **committed** `flake.lock` and rejects implicit lock updates.
+Local uncommitted input updates do not match published derivations until deliberately committed.
+Wait for publication before expecting matching downloads. Evaluation alone is not a populated cache.
 
 ```bash
 gh workflow run package-cache.yml --repo rikkichy/nixcfg -f target=quickshell
@@ -301,7 +301,7 @@ store path is not download proof.
 For real acceptance, copy the published output to a fresh temporary local store with `nix copy --from https://cache.kror.net/nixcfg
 --to "local?root=$temporary_store" --option extra-trusted-public-keys "$key"
 "$published_store_path"`.
-Obtain the exact path from CI's build JSON/logs or `nix eval --raw 'path:/etc/nixos#quickshell.outPath'` at the same committed lock.
+Obtain the exact path with `nix eval --raw 'path:/etc/nixos#quickshell.outPath'` at the same committed lock.
 Use an input-addressed output for signature-enforcement checks.
 Content-addressed paths can be accepted independently of a trusted signature. Verify that a narinfo
 carries the recorded `nixcfg` signature. Verify that an anonymous download succeeds and a

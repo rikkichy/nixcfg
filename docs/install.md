@@ -213,16 +213,14 @@ mkdir -p /mnt/boot
 mount /dev/nvme0n1p1 /mnt/boot
 ```
 
-### 3. Generate hardware config, then clone this repo
+### 3. Clone this repo and generate its hardware config
 
 ```
-nixos-generate-config --root /mnt
-mv /mnt/etc/nixos /mnt/etc/nixos.generated
-
 nix-shell -p git --run '
   git clone https://github.com/rikkichy/nixcfg /mnt/etc/nixos
 '
-cp /mnt/etc/nixos.generated/hardware-configuration.nix /mnt/etc/nixos/hosts/nix/hardware.nix
+nixos-generate-config --root /mnt --show-hardware-config \
+  > /mnt/etc/nixos/hosts/nix/hardware.nix
 ```
 
 The clone is owned by `root:root` because you are root here. You do not need to change that ownership.
@@ -232,12 +230,11 @@ before the desktop starts.
 `hosts/nix/hardware.nix` is tracked and specific to this machine.
 For another host, create its own `hosts/<name>/` configuration and verify every
 disk/boot setting. `hosts/nix/default.nix` imports this desktop's hardware.
-Ignore the generated `/mnt/etc/nixos.generated/configuration.nix`. The system module
-comes from this repo.
+The system module comes from this repo; no generated starter configuration is needed.
 
 ### 4. Fill in the LUKS device name
 
-`nixos-generate-config` already wrote the LUKS device into the generated hardware configuration, copied to `hosts/nix/hardware.nix`.
+`nixos-generate-config` writes the LUKS device directly into `hosts/nix/hardware.nix`.
 It uses the mapping name that you opened in step 1:
 
 ```

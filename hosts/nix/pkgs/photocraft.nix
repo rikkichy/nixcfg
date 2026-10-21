@@ -7,9 +7,8 @@ let
     url = "https://github.com/storytold/photocraft/releases/download/v${version}/photocraft-${version}-linux-x86_64.AppImage";
     hash = "sha256-9U2GOAcFO738/6DWJO9+SdP9QTEMe7Ht5IU29pkp0i8=";
   };
-  contents = appimageTools.extract { inherit pname version src; };
 in
-appimageTools.wrapType2 {
+appimageTools.wrapType2 (finalAttrs: {
   inherit pname version src;
 
   # Desktop entries and icons are installed by Nix, not the AppImage launcher.
@@ -19,7 +18,7 @@ appimageTools.wrapType2 {
 
   extraInstallCommands = ''
     mkdir -p $out/share
-    cp -r ${contents}/usr/share/. $out/share/
+    cp -r ${finalAttrs.contents}/usr/share/. $out/share/
   '';
 
   meta = {
@@ -29,4 +28,4 @@ appimageTools.wrapType2 {
     mainProgram = pname;
     platforms = [ "x86_64-linux" ];
   };
-}
+})

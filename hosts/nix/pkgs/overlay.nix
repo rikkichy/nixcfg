@@ -19,7 +19,6 @@ final: prev: {
     src = inputs.tg-ws-proxy;
   };
 
-  nokochat = final.callPackage ./nokochat.nix { };
   photocraft = final.callPackage ./photocraft.nix { };
   filmcraft = final.callPackage ./filmcraft.nix { };
 

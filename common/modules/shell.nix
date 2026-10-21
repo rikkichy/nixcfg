@@ -18,7 +18,7 @@ in
     omp
     sops age
     btop git gh wget
-    eza bat ripgrep lazygit jq fastfetch micro
+    eza bat ripgrep lazygit jq fastfetch
     file unzip
     matugen
     nerd-fonts.departure-mono
@@ -131,14 +131,14 @@ in
     '';
   };
 
+  programs.micro = {
+    enable = true;
+    settings.colorscheme = "simple";
+  };
+
   xdg.configFile = {
     "starship.toml".source = ../dotfiles/starship.toml;
     "btop/btop.conf".source = ../dotfiles/btop.conf;
     "fastfetch/config.jsonc".source = ../dotfiles/fastfetch.jsonc;
-    "micro/settings.json".text = ''
-      {
-          "colorscheme": "simple"
-      }
-    '';
   };
 }

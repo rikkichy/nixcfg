@@ -9,14 +9,15 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("gsettings set org.gnome.desktop.interface cursor-theme " .. vars.cursorTheme)
     hl.exec_cmd("gsettings set org.gnome.desktop.interface cursor-size " .. vars.cursorSize)
 
-    hl.exec_cmd("mpris-proxy")
-
 end)
 
 local function resize_window(win)
-    local pip = fn.move_actions(win) or {}
+    if not (win and win.title and win.title:find("Picture[- ]in[- ][Pp]icture")) then return end
 
-    fn.resizer(win, "Picture[- ]in[- ][Pp]icture", 0, 0, pip, false)
+    for _, action in ipairs(fn.move_actions(win) or {}) do
+        hl.dispatch(action)
+    end
+    hl.dispatch(hl.dsp.window.set_prop({ prop = "keep_aspect_ratio", value = "true", window = win }))
 end
 
 hl.on("window.title", resize_window)

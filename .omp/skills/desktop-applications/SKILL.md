@@ -1,6 +1,6 @@
 ---
 name: desktop-applications
-description: Linux host nix desktop application packaging and runtime integration, including Brave Origin, Thunar, osu!lazer, NokoChat AppImage and OpenDeck Flatpak. Use for Linux packages, desktop entries, MIME defaults, app-owned configuration seeding or sandbox permissions. macOS apps belong to darwin-host; shared Zed and toolchains belong to shared-home.
+description: Linux host nix desktop application packaging and runtime integration, including Brave Origin, Thunar, osu!lazer, AppImages and OpenDeck Flatpak. Use for Linux packages, desktop entries, MIME defaults, app-owned configuration seeding or sandbox permissions. macOS apps belong to darwin-host; shared Zed and toolchains belong to shared-home.
 ---
 
 # Desktop Applications — host `nix`
@@ -27,7 +27,7 @@ Read the applicable [host operator section](../../../docs/nix.md) before consequ
 | Browser, Widevine, web-app icons or single-instance launch behavior | [Browser](references/browser.md) |
 | Thunar, bookmarks, xfconf or portal activation stalls | [File manager](references/file-manager.md) |
 | osu! settings, credentials, tablet configuration or MIME types | [osu!lazer](references/osu.md) |
-| NokoChat AppImage or external project ownership | [Packages](references/packages.md) |
+| AppImage assets, Filen, Telegram proxy or Kotlin language server packaging | [Packages](references/packages.md) |
 | OpenDeck sockets, host commands, profiles or sandbox permissions | [OpenDeck](references/opendeck.md) |
 
 ## Mandatory rules
@@ -39,4 +39,3 @@ Read the applicable [host operator section](../../../docs/nix.md) before consequ
 - Separate launcher icon resolution from a running window's `StartupWMClass`.
   Measure the real window class and activation path before changing integration.
 - Do not mistake sandbox visibility for host visibility.
-  A working JVM does not prove a complete AppImage runtime. Follow the relevant package reference.

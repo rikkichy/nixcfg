@@ -30,10 +30,10 @@ authentication. Browser origins are restricted to that localhost origin.
 ### Split routing and server selection
 
 YouTube, Discord, Roblox/Sober, Instagram, Proton Mail, Spotify, Bitwarden, Pinterest,
-noko.chat, smotret-anime.co, 6b6t.org, enderdash.com, terraformersmc.com, meteordev.org, cyrisia.com and flintmc.net
+smotret-anime.co, 6b6t.org, enderdash.com, terraformersmc.com, meteordev.org, cyrisia.com and flintmc.net
 use the selected proxy server. Other destinations use `DIRECT`.
 The listed services use Mihomo's geosite data except these explicit domains,
-whose domain-suffix rules include all subdomains (including api.noko.chat and dl.noko.chat).
+whose domain-suffix rules include all subdomains.
 Explicit proxy domains also include `download.jetbrains.com`, `download-cdn.jetbrains.com`, `chatgpt.com`,
 `openai.com`, `claude.ai`, `anthropic.com`, `twitter.com`, `x.com`, `twimg.com`,
 `t.co`, `robtopgames.com` and `geode-sdk.org`, including their subdomains.
@@ -191,7 +191,8 @@ After updating the pin, review upstream runtime dependencies.
 A systemd **user** service runs it headless on `127.0.0.1:1443`.
 The secret is generated once on first start and kept in
 `~/.local/state/tg-ws-proxy/secret` (mode 600), outside this public repository.
-The persisted value stays stable across service restarts.
+The user service's `StateDirectory` owns its mode-700 parent directory under
+`XDG_STATE_HOME`. The persisted value stays stable across service restarts.
 
 Read it with:
 
