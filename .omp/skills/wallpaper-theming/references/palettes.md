@@ -24,7 +24,7 @@ outputs belong to [darwin-host](../../darwin-host/SKILL.md).
 Palettes are generated only after display acceptance. See the canonical
 [wallpaper state machine](wallpapers.md) for apply ordering, failures and success-record semantics.
 Matugen writes `hypr/scheme/current.lua`,
-`quickshell/colors.json`, `fuzzel/colors.ini`, both GTK and Thunar styles,
+`quickshell/colors.json`, `fuzzel/colors.ini`, GTK3/GTK4 styles,
 btop/nvtop/Qt palettes, Equicord QuickCSS, terminal colours and cursor accent.
 GTK3/GTK4 outputs remain separate entries: this matugen pin loses earlier paths
 in multi-output templates.
@@ -32,7 +32,7 @@ Consequences:
 
 - **Never put those paths under `xdg.configFile`.** Home Manager files are
   read-only store symlinks, which would prevent every colour change.
-  Home Manager's `gtk` module is unused for the same reason.
+  Home Manager's `gtk` module owns settings and bookmarks, not generated CSS.
   These outputs do not exist until the first theme application.
   `wallpaper-restore` generates them.
 - `hosts/nix/modules/home/quickshell.nix` maps `~/.config/hypr` to
@@ -64,14 +64,16 @@ Consequences:
   supported formats. Use `hex_alpha` for hexadecimal output with alpha.
 
 **foot carries no palette of its own.** Its colours arrive as OSC escape
-sequences through two paths:
+sequences:
 
 - `term-sequences` writes `~/.local/state/theme/sequences.txt` and sends it to
   every open pty.
 - Linux Fish initialization in `hosts/nix/modules/home/foot.nix`
   `cat`s the same file for shells started later.
+- The Yazi desktop session in `hosts/nix/modules/home/applications.nix` reads
+  the same file before launching Yazi, without starting an interactive shell.
 
-Both paths are required for terminals to follow the wallpaper.
+Preserve both live updates and initialization for newly opened terminals.
 
 The parser reads assignments once as data and accepts only known keys with six
 hex digits. It preserves the first duplicate and validates before writing any output.

@@ -17,5 +17,3 @@
 @define-color sidebar_backdrop_color @window_bg_color;
 @define-color theme_selected_bg_color alpha(@accent_color, 0.15);
 @define-color theme_selected_fg_color @accent_color;
-
-@import "thunar.css";

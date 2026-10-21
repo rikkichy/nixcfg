@@ -1,5 +1,20 @@
-{ config, pkgs, lib, inputs, ... }:
+{ config, pkgs, lib, inputs, terminalColours, ... }:
 
+let
+  yaziSession = pkgs.writeShellScript "yazi-session" ''
+    palette=${lib.escapeShellArg "${dirOf terminalColours}/sequences.txt"}
+    if [ -r "$palette" ]; then
+      ${pkgs.coreutils}/bin/cat -- "$palette"
+    fi
+    exec ${lib.getExe config.programs.yazi.finalPackage} "$@"
+  '';
+  yaziOpen = pkgs.writeShellApplication {
+    name = "yazi-open";
+    text = ''
+      exec ${lib.getExe config.programs.foot.package} --app-id=yazi --title=Yazi -- ${yaziSession} "$@"
+    '';
+  };
+in
 {
   home.activation.osuSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     osudir="${config.home.homeDirectory}/.local/share/osu"
@@ -34,12 +49,25 @@
 
   services.mpris-proxy.enable = true;
 
-  xfconf.settings.thunar = {
-    last-menubar-visible = false;
-    hidden-bookmarks = [
-      "file://${config.home.homeDirectory}/Desktop"
-      "recent:///"
+  programs.yazi = {
+    enable = true;
+    enableFishIntegration = true;
+    shellWrapperName = "y";
+    keymap.mgr.prepend_keymap = [
+      { on = [ "g" "s" ]; run = "cd ~/Pictures/Screenshots"; desc = "Screenshots"; }
+      { on = [ "g" "D" ]; run = "cd ~/Documents"; desc = "Documents"; }
+      { on = [ "g" "d" ]; run = "cd ~/Downloads"; desc = "Downloads"; }
     ];
+  };
+
+  home.packages = [ yaziOpen ];
+  xdg.desktopEntries.yazi = {
+    name = "Yazi File Manager";
+    icon = "yazi";
+    exec = "${lib.getExe yaziOpen} %f";
+    terminal = false;
+    categories = [ "System" "FileManager" "FileTools" ];
+    mimeType = [ "inode/directory" ];
   };
 
   xdg.mimeApps = {
@@ -50,7 +78,7 @@
       "x-scheme-handler/https" = "brave-origin.desktop";
       "x-scheme-handler/about" = "brave-origin.desktop";
       "x-scheme-handler/unknown" = "brave-origin.desktop";
-      "inode/directory" = "thunar.desktop";
+      "inode/directory" = "yazi.desktop";
       "video/mp4" = "mpv.desktop";
       "video/x-matroska" = "mpv.desktop";
       "audio/mpeg" = "mpv.desktop";

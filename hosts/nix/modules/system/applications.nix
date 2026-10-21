@@ -79,17 +79,6 @@
 
   services.gvfs.enable = true;
 
-  programs.thunar = {
-    enable = true;
-    plugins = with pkgs; [
-      thunar-volman
-      thunar-archive-plugin
-      thunar-vcs-plugin
-    ];
-  };
-
-  services.tumbler.enable = true;
-
   programs.chromium = {
     enable = true;
     defaultSearchProviderEnabled = true;

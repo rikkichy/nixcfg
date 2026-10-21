@@ -17,8 +17,6 @@ let
       quickshell = template ../../dotfiles/ricing/matugen/templates/quickshell.json "${cfg}/quickshell/colors.json";
       gtk3 = template ../../dotfiles/ricing/matugen/templates/gtk.css "${cfg}/gtk-3.0/gtk.css";
       gtk4 = template ../../dotfiles/ricing/matugen/templates/gtk.css "${cfg}/gtk-4.0/gtk.css";
-      thunar3 = template ../../dotfiles/ricing/matugen/templates/thunar.css "${cfg}/gtk-3.0/thunar.css";
-      thunar4 = template ../../dotfiles/ricing/matugen/templates/thunar.css "${cfg}/gtk-4.0/thunar.css";
       hypr = template ../../dotfiles/ricing/matugen/templates/hypr-scheme.lua "${cfg}/hypr/scheme/current.lua";
       terminal = template ../../../../common/dotfiles/matugen/templates/terminal-colors.conf terminalColours;
       btop = template ../../../../common/dotfiles/matugen/templates/btop.theme "${cfg}/btop/themes/wallpaper.theme" // {

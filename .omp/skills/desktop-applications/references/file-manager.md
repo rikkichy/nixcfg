@@ -1,55 +1,30 @@
-# The file manager
+# Yazi file manager
 
-Ownership: `hosts/nix/modules/system/applications.nix` installs and integrates
-Thunar. `hosts/nix/modules/home/applications.nix` declares its bookmarks,
-xfconf settings and MIME defaults.
+`hosts/nix/modules/home/applications.nix` owns native Home Manager Yazi settings,
+its Foot launcher, desktop-entry override and folder MIME association.
+The Linux desktop guide owns [usage and post-activation checks](../../../../docs/nix.md).
 
-Thunar uses `services.tumbler` for thumbnails and `programs.xfconf` for
-settings persistence. Without these services, it draws no previews and remembers
-no view state. Neither failure is logged.
+## Launch and palette boundaries
 
-The GNOME session services that modern Nautilus assumes are all absent here.
-This causes a **25-second stall, not an error**:
+The desktop entry overrides upstream's terminal-dependent launch with an explicit
+Foot invocation. Home Manager gives this entry priority over the packaged entry.
+Hyprland and desktop folder opening share `yazi-open`. Forward paths as argv,
+never interpolate them into shell code. Keep `Terminal=false` because the launcher
+creates its own terminal.
 
-- `org.freedesktop.Tracker3.Miner.Files` and Localsearch are not activatable,
-  and `org.gnome.Mutter.ServiceChannel` has no owner. Each is reported once at
-  startup and each fails in milliseconds. These messages appear immediately
-  above the stall but do not cause it.
-- The stall itself is the D-Bus default reply timeout. Opening a folder from
-  another application uses xdg-desktop-portal, which calls `ShowItems`
-  on `org.freedesktop.FileManager1`. This activates the file manager through D-Bus
-  under `systemd --user` as `dbus-:1.2-org.freedesktop.FileManager1@N.service`.
-  The call returns `Failed to call ShowItems: Timeout was reached` exactly
-  25s later, every time. Inside the process, GTK4's synchronous
-  `org.freedesktop.portal.Settings` read at startup has the same 25s timeout:
-  `Couldn't read the color-scheme setting: Timeout was reached`.
+The session reads the existing writable OSC sequence file before executing Yazi.
+Do not generate another palette or start an interactive shell to initialize it.
+A missing palette must not prevent browsing. The native Fish wrapper runs inside
+the current terminal and returns the selected directory to Fish.
 
-Compare direct file-manager startup with portal activation to distinguish the
-two failures. Direct startup takes less than a second. A direct
-`FileManager1.ShowItems` call answers in well under a second.
-These measurements identify the activation path, not the program, as the cause
-of the slow open.
+## Desktop integration limits
 
-`journalctl --user` shows these events. A terminal only shows the
-last message printed before the wait.
+Yazi does not own `org.freedesktop.FileManager1`. The desktop portal can fall back
+to opening a parent directory, but selection is lost. Direct D-Bus callers without
+a fallback may fail. Do not silently retain a GUI file manager or introduce a bridge.
+GTK file dialogs and GVFS remain independent of Yazi. File Roller and Catfish
+remain available as standalone applications.
 
-Its settings live in two different places, and only one of them is a file:
-
-- **The sidebar bookmarks are `gtk.gtk3.bookmarks`.** Home Manager writes the
-  GTK file shared with every GIO browser, not a Thunar format, as a read-only
-  store symlink. This disables "Add Bookmark" and dragging a folder onto the
-  sidebar. Edit the list through the attribute.
-  `xdg.configFile."gtk-3.0/bookmarks".force = true` permits replacing an unmanaged
-  bookmarks file created by the application before the first activation.
-- **Everything else is xfconf**, declared through `xfconf.settings.thunar`.
-  Home Manager applies these values with `xfconf-query` at activation instead
-  of managing a file. Each switch reapplies declared values, so GUI changes to
-  them do not persist. Undeclared values remain Thunar-owned.
-  `hidden-bookmarks` addresses built-in sidebar entries by URI:
-  `recent:///`, `trash:///`, `computer:///`, `network:///`, and the desktop directory
-  as a `file://` path. These entries have no on-disk form to edit.
-
-`xfconf-query -c thunar -lv` lists the values that have been set.
-The full set of recognised property names is only in the binary.
-Use `strings .thunar-wrapped | grep -E '^(misc|last|hidden)-'` to find a property.
-Thunar's own preferences dialog exposes a fraction of them.
+`gtk.gtk3.bookmarks` still owns GTK dialog bookmarks as a read-only store symlink.
+Its `xdg.configFile."gtk-3.0/bookmarks".force` setting adopts an unmanaged file.
+Yazi's quick locations use native keymap entries, not the GTK bookmark file.

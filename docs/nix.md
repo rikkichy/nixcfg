@@ -104,6 +104,19 @@ Brave Origin (`pkgs.brave-origin`) is the default browser for the browser shortc
 HTML files and web links. Its profile remains application-owned under
 `~/.config/BraveSoftware/Brave-Origin`. No extensions are force-installed.
 
+**META + E** opens Yazi in Foot. The Yazi launcher and default folder handler
+use the same `yazi-open` command, which applies the current terminal palette.
+In Fish, `y` opens Yazi and changes the shell's directory when it exits.
+Yazi quick locations are `g s` for Screenshots, `g D` for Documents, and `g d`
+for Downloads. Foot supports native image previews through Sixel.
+
+GTK Open/Save dialogs, their bookmarks, GVFS, File Roller and Catfish remain.
+Yazi does not provide `org.freedesktop.FileManager1`. “Show in folder” can fall
+back to opening the parent directory without selecting the file. Applications
+without a fallback may fail. No D-Bus bridge or terminal file-picker portal is installed.
+After approved activation, check META+E, `xdg-open "$HOME"`, image previews,
+and a browser download's “Show in folder” action.
+
 LabyMod Launcher (`pkgs.labymod-launcher`) is installed alongside Prism Launcher
 by `hosts/nix/modules/system/gaming.nix`. Nixpkgs supplies its AppImage runtime,
 desktop entry and icon; account and game data remain application-owned.
@@ -303,14 +316,12 @@ follows Matugen. Restart Spotify after generating a new palette.
 ## Two rules that are easy to break
 
 **Runtime colour outputs must stay writable**, not Home Manager store symlinks.
-Do not put them under `xdg.configFile` or enable Home Manager's `gtk` module.
-That module also owns `gtk-4.0/gtk.css`. See [palette ownership](../.omp/skills/wallpaper-theming/references/palettes.md#linux-generation-and-write-ownership).
+Do not put those outputs under `xdg.configFile` or configure Home Manager's
+GTK CSS options. Its GTK settings and bookmarks remain managed separately.
+See [palette ownership](../.omp/skills/wallpaper-theming/references/palettes.md#linux-generation-and-write-ownership).
 **Edit templates, not generated files**, which are replaced at the next wallpaper.
 Shared templates live in `common/dotfiles/matugen/templates/`. Linux-only ones
 live in `hosts/nix/dotfiles/ricing/matugen/templates/`.
-Thunar uses the base GTK theme's keyboard-focus indicators. Its file view and
-sidebar stay visible without animations. Selection text uses the generated
-`accent_color`, not an undefined inherited `primary` color.
 Use `wpp`/`awpp` after editing: bare Matugen renders palettes, not the complete
 wallpaper, terminal, cursor and wallpaper-record application.
 
