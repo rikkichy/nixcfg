@@ -104,11 +104,6 @@ def check_keys():
             raise RuntimeError(name + ': private key and certificate do not match')
 
 
-def verify_boot():
-    run(sys.executable, os.environ['NIXCFG_LIMINE_VERIFIER'], CONFIG, IMAGE,
-        STATE / 'keys/db/db.pem', 'sbverify')
-
-
 def backup():
     root_owned(BACKUP)
     directory = BACKUP if BACKUP.exists() else EFI
@@ -218,14 +213,13 @@ def activate(repo):
     confirm('Activate the reviewed checkout with nh os switch and update signed EFI boot files?')
     run('nh', 'os', 'switch', '--bypass-root-check', '--no-nom', '--hostname', 'nix',
         'path:' + str(repo))
-    verify_boot()
 
 
 def firmware_step(enrolled):
     if enrolled:
         print('Keys are enrolled. In BIOS: keep Custom mode, enable Secure Boot, and select Maximum Security / Deny Execute. Do not restore factory keys.')
     else:
-        print('Signed Limine is ready. In BIOS: remove ONLY PK to enter Setup Mode, retaining KEK/db/dbx. Keep Secure Boot disabled.')
+        print('Limine installation completed without a post-install hash/signature check. In BIOS: remove ONLY PK to enter Setup Mode, retaining KEK/db/dbx. Keep Secure Boot disabled.')
         print('MSI: Reset To Setup Mode deletes ALL keys. If no explicit PK-only action exists, stop rather than using it.')
         print('Keep a working recovery ISO/console, LUKS passphrase and encrypted offline key backup before changing firmware.')
     print('No reboot was performed. Rerun this command after the BIOS step. Recovery: disable enforcement without deleting keys.')
@@ -233,15 +227,13 @@ def firmware_step(enrolled):
 
 def main():
     parser = argparse.ArgumentParser(prog='nixcfg-secureboot-setup', description=__doc__, epilog='Uses native sbctl. No key rotation, automatic PK deletion, firmware enforcement toggle or reboot. Rerun after each BIOS step.')
-    parser.add_argument('--status', action='store_true', help='read-only status and installed Limine verification')
+    parser.add_argument('--status', action='store_true', help='read-only Secure Boot status')
     parser.add_argument('repository', nargs='?', default='/etc/nixos', help='reviewed checkout (default: /etc/nixos)')
     args = parser.parse_args()
     if os.geteuid() != 0 or not Path('/etc/NIXOS').exists() or not EFI.is_dir():
         raise RuntimeError('Run on the installed NixOS desktop in UEFI mode with sudo')
     run('sbctl', 'status')
     if args.status:
-        if (STATE / 'keys/db/db.pem').is_file():
-            verify_boot()
         return
     if os.uname().nodename != 'nix':
         raise RuntimeError('This helper activates the repository desktop host nix, not other hosts')
@@ -270,15 +262,12 @@ def main():
     check_keys()
     uuid.UUID((STATE / 'GUID').read_text().strip())
     backup()
-    try:
-        verify_boot()
-    except subprocess.CalledProcessError:
-        activate(repo)
+    activate(repo)
     if local_key_present('PK'):
         if not all(local_key_present(name) for name in ('KEK', 'db')) or not value('dbx'):
             raise RuntimeError('Local PK is enrolled but trust/revocations are incomplete; inspect before further writes')
         if value('SecureBoot') == b'\x01':
-            print('Secure Boot is enabled; local keys and installed Limine verified. Still confirm MSI Maximum Security / Deny Execute in BIOS.')
+            print('Secure Boot is enabled; local keys are enrolled. Installed Limine was not verified. Still confirm MSI Maximum Security / Deny Execute in BIOS.')
         else:
             firmware_step(True)
         return

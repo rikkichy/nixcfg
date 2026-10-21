@@ -194,14 +194,15 @@ nix run path:/etc/nixos#secureboot-setup
 
 It requests sudo, preserves existing keys/backups, and asks separately before
 key creation, activation, revocation restoration and firmware enrollment.
-Rerun the same command after each BIOS step. Firmware and key state determine
-where to resume. Enrollment uses native `sbctl enroll-keys --append --microsoft
+Rerun the same command after each BIOS step. Each interactive run requests activation
+to install signed boot files. Firmware and key state determine where enrollment resumes.
+Enrollment uses native `sbctl enroll-keys --append --microsoft
 --firmware-builtin=db,KEK`. It temporarily removes KEK/db immutable flags only
 after approval and restores them on failure. It never deletes PK, rotates keys,
 changes BIOS enforcement or reboots automatically.
 
-Use `nix run path:/etc/nixos#secureboot-setup -- --status` for read-only status
-and installed Limine verification, or `-- --help` without sudo.
+Use `nix run path:/etc/nixos#secureboot-setup -- --status` for read-only Secure Boot
+status, or `-- --help` without sudo.
 An optional positional argument selects a reviewed Git checkout instead of
 `/etc/nixos`. Setup targets this repository's `nix` host and standard sbctl
 key paths, not a live installer, other distributions or custom sbctl backends.
@@ -211,12 +212,12 @@ cannot verify physical firmware rejection of untrusted images.
 
 **Fresh-install prerequisite:** the desktop configuration already requires local
 sbctl signing keys when installing its bootloader. Automatic key generation is
-disabled, and the post-install verifier requires the db certificate.
+disabled.
 The interactive installer does not provision these keys. The helper above
 requires existing installed Limine files, so it cannot bootstrap a blank target.
 Before desktop installation, arrange separately approved provisioning or restoration
 of the target's root-only `/var/lib/sbctl` keys and retain an encrypted offline backup.
-Do not defer this prerequisite until the first reboot or disable verification to bypass it.
+Do not defer this prerequisite until the first reboot or disable signing to bypass it.
 
 The desktop uses native Limine signing, not a different bootloader.
 `boot.loader.limine.secureBoot.enable` signs the EFI image with the local
@@ -233,10 +234,9 @@ trust. `sbctl --microsoft` includes Microsoft's **public** certificates during
 enrollment. It cannot sign our images with Microsoft's private keys.
 
 The native installer can overlook a signing/enrollment subprocess failure.
-`verify-limine-secureboot.py` checks the installed configuration hash and
-verifies the EFI signature against `/var/lib/sbctl/keys/db/db.pem` after each
-bootloader installation. A failed check aborts the operation. Installation
-is not transactional, so repair before rebooting.
+No post-install configuration-hash or EFI-signature check runs automatically.
+Successful installation does not prove that the installed boot files are valid.
+Installation is not transactional, so repair failures before rebooting.
 
 ### Firmware enrollment checkpoint
 

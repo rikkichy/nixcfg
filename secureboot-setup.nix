@@ -1,9 +1,9 @@
 { writeShellApplication, python3, sbctl, efitools, e2fsprogs, nh, nix
-, openssl, sbsigntool, pesign, tpm2-tools, systemd, coreutils
+, openssl, pesign, tpm2-tools, systemd, coreutils
 }:
 writeShellApplication {
   name = "nixcfg-secureboot-setup";
-  runtimeInputs = [ sbctl efitools e2fsprogs nh nix openssl sbsigntool pesign tpm2-tools systemd coreutils ];
+  runtimeInputs = [ sbctl efitools e2fsprogs nh nix openssl pesign tpm2-tools systemd coreutils ];
   text = ''
     case "''${1:-}" in
       -h|--help) ;;
@@ -13,7 +13,6 @@ writeShellApplication {
         fi
         ;;
     esac
-    export NIXCFG_LIMINE_VERIFIER=${./hosts/nix/pkgs/verify-limine-secureboot.py}
     exec ${python3.withPackages (ps: [ ps.pyyaml ])}/bin/python3 ${./scripts/secureboot-setup.py} "$@"
   '';
 }

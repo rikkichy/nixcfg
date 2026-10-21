@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, pkgs, ... }:
 
 # Local signing policy disabled so the stock kernel can use binary caches.
 # let
@@ -19,12 +19,6 @@ in
     autoGenerateKeys = false;
     autoEnrollKeys.enable = false;
   };
-  boot.loader.limine.extraInstallCommands = ''
-    ${pkgs.python3}/bin/python3 ${./pkgs/verify-limine-secureboot.py} \
-      ${lib.escapeShellArg "${config.boot.loader.efi.efiSysMountPoint}/limine/limine.conf"} \
-      ${lib.escapeShellArg "${config.boot.loader.efi.efiSysMountPoint}/efi/${if config.boot.loader.limine.efiInstallAsRemovable then "boot" else "limine"}/BOOTX64.EFI"} \
-      /var/lib/sbctl/keys/db/db.pem ${pkgs.sbsigntool}/bin/sbverify
-  '';
   environment.systemPackages = [ config.boot.loader.limine.secureBoot.sbctl ];
   boot.loader.limine.extraConfig = ''
     measured_boot: yes
