@@ -1,11 +1,13 @@
 {
   lib,
-  stdenvNoCC,
+  stdenv,
   callPackage,
   fetchurl,
   google-sans-rounded,
   plymouth,
-  python3,
+  harfbuzz,
+  pkg-config,
+  qt6,
 }:
 
 let
@@ -19,73 +21,30 @@ let
     url = "https://raw.githubusercontent.com/google/material-design-icons/${materialRevision}/LICENSE";
     hash = "sha256-WNHhf/5RCaeuKWyq/K39vmp9F28LxKsB4SpomwSZ2L0=";
   };
-  python = python3.withPackages (ps: [
-    ps.fonttools
-    ps.cairosvg
-  ]);
+  # The pinned Rounded source has no Semibold file. HarfBuzz performs the
+  # instancing; its name-override API requires this package-local build option.
+  fontHarfbuzz = (harfbuzz.override { withIntrospection = false; }).overrideAttrs (old: {
+    mesonFlags = old.mesonFlags ++ [ "-Dexperimental_api=true" ];
+  });
 in
-stdenvNoCC.mkDerivation (finalAttrs: {
+stdenv.mkDerivation (finalAttrs: {
   pname = "plymouth-theme-expressive";
   version = "1.0";
   dontUnpack = true;
-  nativeBuildInputs = [ python ];
+  nativeBuildInputs = [ pkg-config ];
+  buildInputs = [ qt6.qtbase qt6.qtsvg fontHarfbuzz ];
+  dontWrapQtApps = true;
 
   buildPhase = ''
     runHook preBuild
-    python - <<'PY'
-    from xml.etree import ElementTree
-    import cairosvg
-    from fontTools.ttLib import TTFont
-    from fontTools.varLib.instancer import instantiateVariableFont
-
-    font = TTFont("${google-sans-rounded}/share/fonts/truetype/GoogleSansRounded-Regular.ttf")
-    # The rounded outlines are already baked in; retain every other axis default.
-    instantiateVariableFont(font, {"wght": 600}, inplace=True, static=True)
-    # Do not let the source variable font's Rounded/Regular names override weight 600.
-    names = {
-        1: "Google Sans Flex Rounded", 2: "Semibold",
-        3: "GoogleSansFlexRounded-Semibold-600",
-        4: "Google Sans Flex Rounded Semibold",
-        6: "GoogleSansFlexRounded-Semibold",
-        16: "Google Sans Flex Rounded", 17: "Semibold",
-        21: "Google Sans Flex Rounded", 22: "Semibold",
-    }
-    for name_id, value in names.items():
-        font["name"].removeNames(nameID=name_id)
-        font["name"].setName(value, name_id, 3, 1, 0x409)
-        font["name"].setName(value, name_id, 1, 0, 0)
-    font["name"].removeNames(nameID=25)
-    if "STAT" in font:
-        del font["STAT"]
-    font["OS/2"].usWeightClass = 600
-    font["OS/2"].fsSelection &= ~((1 << 5) | (1 << 6))
-    font["head"].macStyle &= ~1
-    font.save("GoogleSansRounded-Semibold.ttf")
-
-    icon = ElementTree.parse("${lock}")
-    icon.getroot().set("fill", "#a8c7fa")
-    svg = ElementTree.tostring(icon.getroot())
-    cairosvg.svg2png(bytestring=svg, write_to="material-lock.png", output_width=96, output_height=96)
-    cairosvg.svg2png(bytestring=svg, write_to="lock.png", output_width=48, output_height=48)
-    cairosvg.svg2png(
-        bytestring=b'<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96">'
-                   b'<path d="M24 49 L41 66 L73 30" fill="none" stroke="#a8c7fa" '
-                   b'stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-        write_to="unlock-success.png",
-    )
-    # Material 3 Expressive rounded outlined field: medium shape, 56px, 2px focus stroke.
-    cairosvg.svg2png(
-        bytestring=b'<svg xmlns="http://www.w3.org/2000/svg" width="368" height="56">'
-                   b'<rect x="1" y="1" width="366" height="54" rx="11" fill="none" '
-                   b'stroke="#a8c7fa" stroke-width="2"/></svg>',
-        write_to="entry.png",
-    )
-    cairosvg.svg2png(
-        bytestring=b'<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12">'
-                   b'<circle cx="6" cy="6" r="3" fill="#e3e2e6"/></svg>',
-        write_to="bullet.png",
-    )
-    PY
+    $CXX -std=c++17 -O2 -fPIC ${./render-assets.cpp} -o render-assets \
+      $(pkg-config --cflags --libs Qt6Svg Qt6Xml)
+    $CXX -std=c++17 -O2 -DHB_EXPERIMENTAL_API ${./instance-font.cpp} -o instance-font \
+      $(PKG_CONFIG_PATH=${lib.getDev fontHarfbuzz}/lib/pkgconfig:$PKG_CONFIG_PATH pkg-config --cflags --libs harfbuzz-subset)
+    ./instance-font \
+      ${google-sans-rounded}/share/fonts/truetype/GoogleSansRounded-Regular.ttf \
+      GoogleSansRounded-Semibold.ttf
+    ./render-assets ${lock}
     runHook postBuild
   '';
 

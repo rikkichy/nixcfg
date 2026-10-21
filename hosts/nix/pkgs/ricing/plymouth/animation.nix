@@ -1,8 +1,8 @@
 {
   lib,
   fetchzip,
-  runCommand,
-  python3,
+  runCommandCC,
+  pkg-config,
   qt6,
   mesa,
   xvfb-run,
@@ -14,11 +14,12 @@ let
     url = "https://github.com/duxlabs-dev/dux-qml-common/archive/${revision}.tar.gz";
     hash = "sha256-bZqeOW6WZdBqhXsYgo2WUPbegIsOmx5eof8SGutGApc=";
   };
-  python = python3.withPackages (ps: [ ps.pyside6 ]);
 in
-runCommand "plymouth-expressive-animation"
+runCommandCC "plymouth-expressive-animation"
   {
-    nativeBuildInputs = [ python qt6.qtshadertools xvfb-run ];
+    nativeBuildInputs = [ pkg-config qt6.qtshadertools xvfb-run ];
+    buildInputs = [ qt6.qtbase qt6.qtdeclarative ];
+    dontWrapQtApps = true;
     QT_PLUGIN_PATH = "${qt6.qtbase}/${qt6.qtbase.qtPluginPrefix}";
     QML_IMPORT_PATH = "${qt6.qtdeclarative}/${qt6.qtbase.qtQmlPrefix}";
     QT_QPA_PLATFORM = "xcb";
@@ -37,6 +38,8 @@ runCommand "plymouth-expressive-animation"
     };
   }
   ''
+    $CXX -std=c++17 -O2 -fPIC ${./render-animation.cpp} -o render-animation \
+      $(pkg-config --cflags --libs Qt6Quick)
     mkdir -p Widgets Shaders/qsb
     cp ${source}/DCommon/Widgets/{DLoadingIndicator.qml,MaterialShapes.js,MaterialShapeData.js,DLogoShape.js} Widgets/
     # Remove shell theme dependencies, not the shape, spring or shader implementation.
@@ -54,7 +57,7 @@ runCommand "plymouth-expressive-animation"
       ${source}/DCommon/Shaders/frag/loading_indicator.frag
     export XDG_RUNTIME_DIR="$TMPDIR/runtime"
     mkdir -m700 "$XDG_RUNTIME_DIR"
-    xvfb-run -a python ${./render-animation.py} Widgets/DLoadingIndicator.qml "$out"
+    xvfb-run -a ./render-animation Widgets/DLoadingIndicator.qml "$out"
     license="$out/share/licenses/expressive-animation"
     install -Dm644 ${source}/LICENSE "$license/MIT"
     cp ${source}/DCommon/Widgets/{MaterialShapes.NOTICE,Apache-2.0.txt} "$license/"

@@ -132,9 +132,11 @@ Then verify video playback, Discord voice/screenshare and a Sober game join.
 Confirm that their connections select `PROXY` while an unrelated destination selects `DIRECT`.
 Configuration evaluation does not prove these live application paths.
 
-Edit the public template `common/dotfiles/mihomo.yaml`. [Runtime rendering](../.omp/skills/nix-system-operations/references/mihomo.md#public-template-private-runtime-rendering)
-supplies private strings outside Nix evaluation/build inputs. Never put credentials
-in the template. Mihomo's private provider/state files must also stay outside Git.
+Edit the public template `common/dotfiles/mihomo.yaml`. The compiled Rust
+[`mihomo-config` renderer](../.omp/skills/nix-system-operations/references/mihomo.md#public-template-private-runtime-rendering)
+supplies private strings at runtime, outside Nix evaluation and build inputs.
+The service and its restart trigger use the same renderer package.
+Never put credentials in the template. Mihomo's private provider/state files must also stay outside Git.
 
 The renderer also generates a fresh controller token on each service start.
 It publishes `/run/mihomo-api.header` atomically, owned by desktop user `ri`

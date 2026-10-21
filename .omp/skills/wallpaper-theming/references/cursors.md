@@ -1,67 +1,30 @@
-# Dynamic Linux cursor
+# Static Linux cursor
 
-Wallpaper accents select one of the 28 dark Material Bibata palettes. The
-pinned upstream `color_match.py` uses CIEDE2000 distance with its primary/body
-weights. Classic and light variants are excluded. Selection is discrete:
-different wallpapers can choose the same palette, and neutral colours need
-not produce a strictly grey cursor. No cursor pixels or SVGs are rendered at
-wallpaper-change time.
+The desktop uses **Bibata Modern Ice**: a white pointer with a black outline
+and rounded edges. Wallpaper changes do not affect its color or assets.
 
-## Source and ownership
+## Ownership
 
-- `hosts/nix/pkgs/ricing/bibata-material-cursor.nix` pins the prebuilt dark
-  archive and upstream matcher source by hash. It installs Hyprcursor,
-  Xcursor and scalable SVG assets without native compilation.
-- `hosts/nix/pkgs/ricing/bibata-material-select.py` owns the writable selection
-  and first-use migration.
-- `hosts/nix/modules/home/matugen.nix` writes the accent to
-  `~/.local/state/theme/cursor.conf`, calls the selector, then refreshes the
-  compositor before advancing the wallpaper success record.
-- Upstream tooling is MIT. Compiled cursor artwork is GPL-3.0-or-later.
-  Prebuilt assets are downloaded from their publisher, not republished through
-  the repository's optional package cache.
+- `hosts/nix/home.nix` declares `home.pointerCursor`, including GTK and Xcursor integration.
+- `hosts/nix/pkgs/ricing/bibata-modern-ice.nix` installs the hash-pinned upstream
+  release assets and GPL license. It does not run Python or render cursors.
+- `hosts/nix/dotfiles/ricing/hypr/variables.lua` supplies the same theme name and
+  size to Hyprland's environment and startup commands. Keep these values aligned
+  when changing cursor size.
+- Matugen owns application and terminal colors, not the desktop pointer.
 
-## Writable selector and recovery
+Home Manager owns the static theme links and default cursor metadata.
+If activation finds an unmanaged file at a managed destination, inspect and
+back it up before retrying. Do not force-delete icon directories or saved themes.
 
-The public theme remains `Bibata-Material-Dynamic`, so Hyprland's startup
-configuration, `XCURSOR_THEME` and GTK settings need no per-wallpaper changes.
-`~/.local/share/icons/Bibata-Material-Dynamic` is a real writable directory,
-not a Home Manager-owned store symlink.
+## Applying changes
 
-Its format/metadata entries point through `.selected` to an immutable packaged
-theme. Writers use the per-theme `.render.lock`. Replacing `.selected` is the
-single publication step for subsequent palette changes. An unchanged complete
-selection does not rewrite the pointer. Missing packaged formats or invalid
-input fail before changing selection.
+Source publication does not change the live pointer. Activation and any session
+or application restart require operator approval. Running GTK clients may cache
+cursor assets until restarted. `hyprctl setcursor` returning `ok` alone does not
+prove that the requested theme was loaded.
 
-On first use, existing generated entries move to `.<entry>.before-prebuilt`
-before selector links are installed. Backups are never overwritten. A conflict
-fails visibly. Preserve those backups until the new cursor is verified.
-After an approved configuration rollback, stop cursor writers before restoring generated assets.
-Remove only the selector links. Move each saved entry back to its original name.
-Do not recursively delete the public theme directory.
-
-Palette restoration runs from the saved wallpaper at login. If an old store
-target has been collected, running the current wallpaper pipeline selects a
-complete theme from the current package. User wallpaper collections and their
-selection records still need their own backups.
-
-## Immediate refresh and client caches
-
-`hosts/nix/pkgs/ricing/hyprland-refresh-cursor.patch` is retained, but its
-overlay application is commented out for stock binary-cache reuse. Hyprland's
-`changeTheme()` reloads theme data, while the stock renderer can skip unchanged
-cursor shape names. Palette selection therefore need not immediately update
-the displayed cursor: a shape change or hide/show transition may be needed.
-Selecting another prebuilt palette does not bypass that cache. The retained
-patch can be re-enabled to reinstall the compositor-owned shape during
-`updateTheme()`.
-
-A running GTK3 Wayland client can retain its own Xcursor assets until restarted.
-The compositor refresh does not invalidate that client-side cache. Cursor size
-remains configurable through the existing Hyprland/Xcursor settings.
-
-`hyprctl setcursor` returning `ok` does not establish that a theme loaded.
-Screenshots can omit a hardware-plane cursor. Visual capture needs an isolated
-compositor with software cursors. Follow [preview isolation](../../desktop-shell/references/quickshell.md#preview-isolation).
-Cursor previews must use a separate selector directory, never the user's active cursor directory or live pointer.
+Screenshots can omit a hardware-plane cursor. Visual previews need an isolated
+compositor with software cursors. Follow
+[preview isolation](../../desktop-shell/references/quickshell.md#preview-isolation),
+not the user's active pointer or session.

@@ -10,8 +10,7 @@ It displays the still through awww and stops animated playback.
 It then calls private `theme-apply`, which runs these steps in order:
 1. Generate Matugen application palettes, including Quickshell semantic roles.
 2. Deliver terminal OSC sequences.
-3. Select the prebuilt cursor.
-4. Record success.
+3. Record success.
 
 `wallpaper-restore` also displays its image before calling that helper at login.
 Successful application records the image in `~/.local/state/wallpaper/current`.
@@ -76,7 +75,7 @@ This is write confinement and limited secret-path hiding, **not** full home
 confidentiality or isolation from all same-user UNIX services.
 
 Do not copy this sandbox onto `theme-apply`, `wallpaper-restore` or mpvpaper.
-Palette/cursor generation intentionally writes application-owned config/data,
+Palette generation intentionally writes application-owned config/data,
 wallpaper state and terminal devices. Video playback has separate GPU/media
 requirements. Those user-state paths remain writable outside awww.
 
@@ -100,7 +99,7 @@ Restore manager/bus environments even on failure, then remove disposable artifac
 It passes the choice to `awp-apply`. `animated-wallpaper.service` plays the video.
 Neither colour engine accepts a video. Private `wallpaper-frame` extracts its
 backing still, then `awp-apply` records the video and restarts playback before
-theming the still. Playback must not wait for palette or cursor generation.
+theming the still. Playback must not wait for palette generation.
 At login, playback is ordered after the compositor and awww, not after
 `wallpaper-restore.service`. The bottom layer makes theme restoration independent.
 Both current and animated records coexist. `ConditionFileNotEmpty` skips the

@@ -12,7 +12,7 @@ when changing that format. Shared Zed uses the static captured theme under
 [shared-home](../../shared-home/SKILL.md).
 
 Darwin has an independent `wallpaper-theme` command. It does not use the Linux
-services, OSC delivery or cursor selection. Its lifecycle and mutable Ghostty/Marta
+services or OSC delivery. Its lifecycle and mutable Ghostty/Marta
 outputs belong to [darwin-host](../../darwin-host/SKILL.md).
 
 ## Linux generation and write ownership
@@ -25,7 +25,7 @@ Palettes are generated only after display acceptance. See the canonical
 [wallpaper state machine](wallpapers.md) for apply ordering, failures and success-record semantics.
 Matugen writes `hypr/scheme/current.lua`,
 `quickshell/colors.json`, `fuzzel/colors.ini`, GTK3/GTK4 styles,
-btop/nvtop/Qt palettes, Equicord QuickCSS, terminal colours and cursor accent.
+btop/nvtop/Qt palettes, Equicord QuickCSS and terminal colours.
 GTK3/GTK4 outputs remain separate entries: this matugen pin loses earlier paths
 in multi-output templates.
 Consequences:

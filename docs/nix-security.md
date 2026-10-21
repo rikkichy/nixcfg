@@ -78,13 +78,14 @@ generation or remove fallback slots until all paths work.
 `hosts/nix/pkgs/ricing/plymouth/` theme. The native `two-step` renderer shows a
 Material Symbols Rounded lock and the two-line heading “System is encrypted.”
 / “Verify your identity.” Google Sans Flex Rounded is the same font family as
-Fuzzel; the build creates a static Semibold instance at weight 600 and embeds
-it in the initrd. The font is also registered for shutdown rendering.
+Fuzzel. HarfBuzz creates a static Semibold instance at weight 600, with the
+remaining axes at their defaults. It is embedded in the initrd and registered
+for shutdown rendering. Qt SVG renders the lock and field assets.
 
 The spinner comes from the pinned Quickshell
 [`DLoadingIndicator.qml`](https://github.com/duxlabs-dev/dux-qml-common/blob/3cf182586c6c948a6ae61b15df13ff1365c0dab0/DCommon/Widgets/DLoadingIndicator.qml)
 component, its AndroidX shape geometry and its fragment shader. At build time,
-Qt Quick renders the actual component at exact 240Hz timestamps into 1092
+a compiled Qt Quick renderer samples the component at exact 240Hz timestamps into 1092
 transparent 96px PNG frames. There is no GIF, video capture or image interpolation.
 The seven shapes and spring implementation stay upstream. Export removes shell
 theme dependencies, sets the steady rotation period to 3640ms for a three-turn
@@ -94,8 +95,9 @@ rotation snap. Geometry attribution and MIT/Apache licenses accompany the assets
 Plymouth requests 240 updates/second with a 1ms minimum timer delay. Its event
 loop and other animation rates remain upstream. The native throbber also supports
 a 300ms eased crossfade from its current frame to a checkmark, then stops its
-animation timer. Qt, Python, Mesa and Xvfb are build-only. The initrd uses native
-Plymouth, without a QML runtime, custom password handler or wallpaper dependency.
+animation timer. The native Qt/HarfBuzz generators, Mesa and Xvfb are build-only.
+The initrd uses native Plymouth, without a QML runtime, custom password handler
+or wallpaper dependency.
 
 The update target is not a display refresh guarantee. Plymouth's DRM renderer
 prefers a user-defined mode, then the monitor's preferred mode, rather than the
@@ -192,14 +194,15 @@ Run the guided helper on the installed desktop:
 nix run path:/etc/nixos#secureboot-setup
 ```
 
-It requests sudo, preserves existing keys/backups, and asks separately before
-key creation, activation, revocation restoration and firmware enrollment.
+The compiled Rust helper requests sudo and preserves existing keys and backups.
+It asks separately before key creation, activation, revocation restoration and firmware enrollment.
+An exclusive lock permits only one setup session. Backup publication cannot replace an existing snapshot.
 Rerun the same command after each BIOS step. Each interactive run requests activation
 to install signed boot files. Firmware and key state determine where enrollment resumes.
 Enrollment uses native `sbctl enroll-keys --append --microsoft
 --firmware-builtin=db,KEK`. It temporarily removes KEK/db immutable flags only
-after approval and restores them on failure. It never deletes PK, rotates keys,
-changes BIOS enforcement or reboots automatically.
+after approval and restores them on failure or handled interruption signals.
+It never deletes PK, rotates keys, changes BIOS enforcement or reboots automatically.
 
 Use `nix run path:/etc/nixos#secureboot-setup -- --status` for read-only Secure Boot
 status, or `-- --help` without sudo.
@@ -207,8 +210,9 @@ An optional positional argument selects a reviewed Git checkout instead of
 `/etc/nixos`. Setup targets this repository's `nix` host and standard sbctl
 key paths, not a live installer, other distributions or custom sbctl backends.
 Automatic factory-dbx restoration accepts checked SHA-256 revocation lists.
-Other formats stop for review rather than skipping validation. The helper
-cannot verify physical firmware rejection of untrusted images.
+It parses TPM event-log YAML with `serde-saphyr` and rejects revoked measured EFI images.
+Other formats stop for review rather than skipping validation.
+The helper has no post-install bootloader hash/signature verifier and cannot prove physical firmware rejection of untrusted images.
 
 **Fresh-install prerequisite:** the desktop configuration already requires local
 sbctl signing keys when installing its bootloader. Automatic key generation is

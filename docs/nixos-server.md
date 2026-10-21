@@ -164,7 +164,7 @@ The desktop packages and custom wrappers/assets come from the
 `vhelper` uses the exact locked input output consumed by the desktop.
 Filen, Fuzzel and the Spicetify CLI use unmodified Nixpkgs packages
 and are not custom cache targets. Spotify's theme patches run during app
-packaging. Prebuilt Material Bibata assets are fetched from their publisher,
+packaging. Static Bibata Modern Ice assets are fetched from their publisher,
 not republished through this cache.
 
 These roots are redistributable according to their pinned package metadata:

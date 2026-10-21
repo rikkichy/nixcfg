@@ -1,6 +1,6 @@
 ---
 name: wallpaper-theming
-description: Shared Matugen palette templates and Linux host nix wallpaper-driven theming, including wpp/awpp, terminal OSC colors, wallpaper services, dynamic Bibata cursors, fonts and Equicord CSS. Use for palette math/templates or Linux theme runtime changes. Darwin's independent wallpaper-theme, Ghostty/Marta lifecycle and macOS wallpaper integration belong to darwin-host; common Zed and shell policy belong to shared-home.
+description: Shared Matugen palette templates and Linux host nix wallpaper-driven theming, including wpp/awpp, terminal OSC colors, wallpaper services, static Bibata cursors, fonts and Equicord CSS. Use for palette math/templates or Linux theme runtime changes. Darwin's independent wallpaper-theme, Ghostty/Marta lifecycle and macOS wallpaper integration belong to darwin-host; common Zed and shell policy belong to shared-home.
 ---
 
 # Wallpaper and Theming
@@ -27,15 +27,15 @@ Read the applicable host or [shared operator section](../../../docs/shared.md#sp
 | --- | --- |
 | Shared palette format/math, writable outputs, terminal colors or font names | [Palettes](references/palettes.md) |
 | Linux still/animated pickers, cache, readiness, restoration or failure ordering | [Wallpapers](references/wallpapers.md) |
-| Bibata palette selection, prebuilt assets, Hyprland reload or cursor caches | [Cursors](references/cursors.md) |
+| Static Bibata assets, Hyprland cursor settings or client caches | [Cursors](references/cursors.md) |
 | Equicord static theme, QuickCSS or declarative plugin preferences | [Discord](references/discord.md) |
 
 ## Mandatory rules
 
-- Keep generated palettes and cursor selection state writable, not Home Manager
-  store symlinks. Prebuilt cursor payloads are immutable. The selection is not.
+- Keep generated palettes writable, not Home Manager store symlinks.
+  Static cursor assets are immutable and Home Manager-owned.
   Change templates rather than runtime outputs. Keep the live Hyprland scheme writable.
-- Display the selected wallpaper before palette/cursor work. Preserve failure
+- Display the selected wallpaper before palette work. Preserve failure
   ordering and success-record semantics. Matugen hooks cannot report critical failure.
 - Keep terminal ANSI hues distinct on low-chroma wallpapers. Shared templates are
   not Linux-only. Do not attach Darwin to Linux services or OSC delivery.

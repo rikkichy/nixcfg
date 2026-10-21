@@ -336,17 +336,17 @@ animated playback have separate units and are not covered by this sandbox.
 
 `awpp` reads `~/Videos/Animated Wallpapers` and reports an empty collection.
 It starts mpvpaper after extracting a valid frame.
-It then derives desktop colours and selects a cursor palette from that frame without delaying playback.
+It derives desktop colours from that frame without delaying playback.
 A theme-generation failure is reported but does not stop the selected video.
 Picking a still with `wpp` displays the image and stops the video before theming.
 At login, animated playback does not wait for theme restoration.
 
 Both pickers generate missing thumbnails with at most four workers and reuse
-fresh cache entries. Cursors select the nearest of 28 prebuilt dark Material
-Bibata palettes. No cursor images are rendered during wallpaper changes.
-Different wallpapers can select identical cursor colours. See the
-[cursor selection contract](../.omp/skills/wallpaper-theming/references/cursors.md)
-for persistent selection, first-use backups and compositor refresh.
+fresh cache entries. The cursor is the static **Bibata Modern Ice** theme:
+a white pointer with a black outline and rounded edges, at size 24.
+Wallpaper changes do not recolor or replace it. Home Manager owns the cursor
+package and GTK/Xcursor settings; Hyprland uses the same theme and size.
+See the [cursor contract](../.omp/skills/wallpaper-theming/references/cursors.md).
 
 The desktop keeps its encrypted, persistent XFS root. There is no tmpfs-root
 reset or separate preservation allowlist. Wallpaper state belongs to
@@ -354,8 +354,8 @@ reset or separate preservation allowlist. Wallpaper state belongs to
 records selections, while `~/.cache/{wallpaper-picker,animated-wallpaper}` holds
 rebuildable thumbnails and frames. Back up the records together with the image
 and video collections if restoring the same selections matters. Generated
-palettes and cursor selection can be reconstructed from their tracked inputs
-and the selected wallpaper. They are not substitutes for collection backups.
+palettes can be reconstructed from their tracked inputs and the selected
+wallpaper. They are not substitutes for collection backups.
 
 Spotify is the native Spicetify package, available from the launcher and music
 workspace keybinding. Its [shared color-only theme](shared.md#spotify-and-wallpaper-colors)
@@ -371,7 +371,7 @@ See [palette ownership](../.omp/skills/wallpaper-theming/references/palettes.md#
 Shared templates live in `common/dotfiles/matugen/templates/`. Linux-only ones
 live in `hosts/nix/dotfiles/ricing/matugen/templates/`.
 Use `wpp`/`awpp` after editing: bare Matugen renders palettes, not the complete
-wallpaper, terminal, cursor and wallpaper-record application.
+wallpaper, terminal and wallpaper-record application.
 
 ## Expressive desktop shell
 

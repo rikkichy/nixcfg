@@ -2,9 +2,6 @@
 
 let
   terminalColours = "${config.xdg.stateHome}/theme/terminal-colors.conf";
-  cursorColours = "${config.xdg.stateHome}/theme/cursor.conf";
-  cursorTheme = "Bibata-Material-Dynamic";
-  cursorDir = "${config.xdg.dataHome}/icons/${cursorTheme}";
 
   template = input: output: {
     input_path = "${input}";
@@ -24,7 +21,6 @@ let
       };
       nvtop = template ../../dotfiles/ricing/matugen/templates/nvtop.colors "${cfg}/nvtop/nvtop.colors";
       qt = template ../../dotfiles/ricing/matugen/templates/qt.colors "${cfg}/qtengine/scheme.colors";
-      cursor = template ../../dotfiles/ricing/matugen/templates/cursor.conf cursorColours;
       discord = template ../../../../common/dotfiles/matugen/templates/discord-palette.css "${equicordDataDir}/settings/quickCss.css";
       spotify = spotifyPaletteTemplate;
       obsidian = template ../../dotfiles/ricing/matugen/templates/obsidian.css "${cfg}/obsidian/matugen.css";
@@ -70,21 +66,6 @@ let
     '';
   };
 
-  cursorApply = pkgs.writeShellApplication {
-    name = "cursor-apply";
-    runtimeInputs = [ pkgs.bibata-material-cursor pkgs.gnused ];
-    text = ''
-      colours=${cursorColours}
-      [ -r "$colours" ] || exit 0
-
-      accent=$(sed -n "s/^accent=//p" "$colours" | head -1)
-      [ -n "$accent" ] || exit 0
-
-      bibata-material-select "$accent" ${lib.escapeShellArg cursorDir}
-      hyprctl setcursor ${cursorTheme} "''${XCURSOR_SIZE:-24}" >/dev/null
-    '';
-  };
-
   defaultWallpaper = ../../dotfiles/ricing/default-wallpaper.png;
 
   wallpaperRecord = lib.escapeShellArg "${config.xdg.stateHome}/wallpaper/current";
@@ -93,7 +74,7 @@ let
 
   themeApply = pkgs.writeShellApplication {
     name = "theme-apply";
-    runtimeInputs = [ pkgs.matugen termSequences cursorApply ];
+    runtimeInputs = [ pkgs.matugen termSequences ];
     text = ''
       wallpaper="''${1:?usage: theme-apply <image>}"
       record=${wallpaperRecord}
@@ -104,7 +85,6 @@ let
         --config ${matugenConfig}
 
       term-sequences
-      cursor-apply
 
       mkdir -p "$(dirname "$record")"
       printf '%s\n' "$wallpaper" > "$record"

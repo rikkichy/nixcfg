@@ -38,7 +38,7 @@ return {
     activeWindowBorderColour   = "rgba(" .. scheme.primary .. "e6)",
     inactiveWindowBorderColour = "rgba(" .. scheme.onSurfaceVariant .. "11)",
 
-    cursorTheme                = "Bibata-Material-Dynamic",
+    cursorTheme                = "Bibata-Modern-Ice",
     cursorSize                 = 24,
 
     sleepGestureCmd            = "systemctl suspend",

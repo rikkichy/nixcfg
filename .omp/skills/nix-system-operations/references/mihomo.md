@@ -2,7 +2,7 @@
 
 Sources: `hosts/nix/modules/system/networking.nix`,
 `common/modules/nixos-mihomo-secrets.nix`, `common/dotfiles/mihomo.yaml`,
-`common/pkgs/{mihomo-config.py,vpn.nix}`, and `.secrets/nix/sops.nix`.
+`common/pkgs/{mihomo-config,vpn.nix}`, and `.secrets/nix/sops.nix`.
 Mihomo, the `vpn` command and tunnel-specific network rules are desktop-only.
 `nixos-server` imports neither the VPN service nor its secret renderer.
 Operator procedures: [VPN in docs/nix-networking.md](../../../../docs/nix-networking.md#vpn-mihomo).
@@ -13,10 +13,10 @@ before changing secret inputs.
 
 The NixOS Mihomo module runs a `DynamicUser` service, with `CAP_NET_ADMIN` from
 `tunMode`, and consumes `/run/mihomo/config.yaml` through `LoadCredential`.
-The repository template is public. `mihomo-config.py` takes a public hostname
-for `x-device-model` and fills the public YAML template with JSON-serialized
+The repository template is public. The compiled Rust `mihomo-config` command takes
+a public hostname for `x-device-model` and fills the template with JSON-serialized
 scalars at runtime. Unicode line separators and YAML-sensitive controls are
-escaped so quotes, backslashes, newlines, and Unicode retain their exact values.
+escaped so quotes, backslashes, newlines, and Unicode retain their decoded values.
 Missing or unknown runtime placeholder fields fail before either output is published.
 Keep runtime placeholders `${name}` unquoted in the public template. The renderer
 supplies serialized scalars. Write `$$` for a literal dollar sign in that template.
@@ -35,10 +35,11 @@ Without ciphertext the legacy files are the inputs:
 when SOPS is active. All inputs must exist and be nonempty. A missing HWID causes
 failure, never generation of a replacement identity.
 
-SOPS strings remain raw. Legacy mode removes whitespace to preserve its
-established effective values. Import the exact meaningful HWID privately.
-Distinguish file framing from identity. Do not blindly normalize the SOPS
-strings or derive HWID from machine-id. Decryption success does not establish
+Both modes require UTF-8 and convert CRLF and CR to LF before rendering.
+SOPS strings otherwise remain raw. Legacy mode removes Unicode whitespace to preserve
+its established effective values. Unsupported modes fail. Import the exact meaningful
+HWID privately. Distinguish file framing from identity. Do not otherwise normalize
+SOPS strings or derive HWID from machine-id. Decryption success does not establish
 provider acceptance or simultaneous-device-limit compatibility.
 
 Secret installation uses sops-nix systemd activation. In SOPS mode, `mihomo-config`
@@ -47,6 +48,8 @@ Mihomo start and intentionally has no `RemainAfterExit`. Root-owned decrypted
 inputs are mode `0400`. The runtime directory is `0700`.
 Rendered output is `0600`, written through a temporary file and atomic replacement. SOPS updates
 request a Mihomo restart so a new `LoadCredential` receives the new rendering.
+The service executes the compiled package, which is also a Mihomo restart trigger.
+Changes to renderer source or dependencies therefore replace the next runtime rendering.
 The API header is published before the rendered config. Failure prevents service
 startup. A restart rotates it, so callers must read the file for each request.
 Updating a source file does not change a running credential. Prove the

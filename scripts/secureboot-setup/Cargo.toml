@@ -1,0 +1,12 @@
+[package]
+name = "nixcfg-secureboot-setup"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+libc = "0.2"
+serde = { version = "1", features = ["derive"] }
+serde-saphyr = { version = "2", default-features = false, features = ["deserialize"] }
+signal-hook = "0.3"
+tempfile = "3"
+uuid = "1"
