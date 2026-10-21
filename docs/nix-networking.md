@@ -29,20 +29,20 @@ authentication. Browser origins are restricted to that localhost origin.
 
 ### Split routing and server selection
 
-Scoped mode proxies only the observed Krypton loader endpoint
-`162.19.224.212:6700`. All other destinations and ports use `DIRECT`, including
-loopback and private LAN addresses. The IP-and-port rule does not depend on DNS
-or protocol sniffing. `vps-c35938de.vps.ovh.net` is the endpoint's reverse-DNS
-hostname, not a confirmed hostname used by the loader. Update the IP rule if
-Krypton's endpoint moves.
+Scoped mode proxies only the observed Krypton startup endpoints on
+`162.19.224.212`: loader port `6700` and subsequent initialization port `3030`.
+All other destinations and ports use `DIRECT`, including loopback and private
+LAN addresses. The IP-and-port rules do not depend on DNS or protocol sniffing.
+`vps-c35938de.vps.ovh.net` is the server's reverse-DNS hostname, not a confirmed
+hostname used by the loader. Update the rules if Krypton's endpoints move.
 
 There are no domain, geosite, ASN or application-process routing rules.
 Sniffing and process lookup are disabled; the service does not request
 cross-user process-inspection privileges.
 
 Empty subscriptions reject traffic instead of falling back to a direct connection.
-The endpoint's proxy rule has a matching rejection rule so an unsupported flow
-cannot fall through to `MATCH,DIRECT`. Keep the pair together.
+Each endpoint's proxy rule has a matching rejection rule so an unsupported flow
+cannot fall through to `MATCH,DIRECT`. Keep each pair together.
 Health checks require the endpoint's HTTP 204 response. Checks remain lazy, so
 an inactive subscription can show stale measurements.
 
@@ -100,10 +100,10 @@ Stopping Mihomo removes the tunnel. It is not a routing toggle.
 External shortcuts can invoke `vpnp`, `vpn mode global`, `vpn mode scoped`,
 or `vpn select <name>`.
 
-After approved activation, launch Krypton and confirm that its connection to
-`162.19.224.212:6700` selects `PROXY`, while an unrelated destination selects
-`DIRECT`. Verify that Minecraft reaches its window. Configuration validation
-does not prove loader connectivity or a successful game launch.
+After approved activation, launch Krypton and confirm that its connections to
+`162.19.224.212` on ports `6700` and `3030` select `PROXY`, while an unrelated
+destination selects `DIRECT`. Verify that Minecraft reaches its window.
+Configuration validation does not prove connectivity or a successful game launch.
 
 Edit the public template `common/dotfiles/mihomo.yaml`. The compiled Rust
 [`mihomo-config` renderer](../.omp/skills/nix-system-operations/references/mihomo.md#public-template-private-runtime-rendering)

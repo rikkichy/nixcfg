@@ -80,7 +80,7 @@ All controller requests must use `--header @/run/mihomo-api.header`.
 Never expand the token into command arguments or log it. Browser CORS permits only the
 localhost controller origin. See the operator guide for ownership and lifecycle.
 
-Scoped mode proxies only Krypton's `162.19.224.212:6700` endpoint, with
+Scoped mode proxies only Krypton's `162.19.224.212` ports `6700` and `3030`, with
 `MATCH,DIRECT` for everything else. `vpn mode global` selects `PROXY` in `GLOBAL`
 before changing Mihomo's mode. Global traffic therefore uses the same subscription/server
 instead of `GLOBAL`'s default `DIRECT`. `vpn mode scoped` restores rule mode.
@@ -102,9 +102,9 @@ privileges or override `ProtectProc`. Keep the upstream sandbox.
 - Keep `proxy: DIRECT` on **both** providers. Otherwise Mihomo can fetch its
   subscription through the very tunnel it needs to repair.
   A bad update then cannot self-recover and may surface only as EOF.
-- Child selectors use `empty-fallback: REJECT`. The Krypton endpoint's proxy rule
+- Child selectors use `empty-fallback: REJECT`. Each Krypton endpoint's proxy rule
   is paired with a rejection rule so unsupported flows cannot fall through to
-  `MATCH,DIRECT`. Keep the pair aligned when updating the endpoint.
+  `MATCH,DIRECT`. Keep each pair aligned when updating the endpoints.
 - HTTP health checks require 204 but do not test UDP relay. Lazy checks can leave
   inactive-provider latency stale. Preserve manual node selection.
 - Node latency needs membership **and** health history. Top-level `PROXY`

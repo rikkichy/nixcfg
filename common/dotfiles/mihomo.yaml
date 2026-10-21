@@ -94,7 +94,9 @@ profile:
   store-selected: true
 
 rules:
-  # Observed Krypton loader endpoint; update if the service moves.
+  # Observed Krypton startup endpoints; update if the service moves.
   - AND,((DST-PORT,6700),(IP-CIDR,162.19.224.212/32,no-resolve)),PROXY
   - AND,((DST-PORT,6700),(IP-CIDR,162.19.224.212/32,no-resolve)),REJECT
+  - AND,((DST-PORT,3030),(IP-CIDR,162.19.224.212/32,no-resolve)),PROXY
+  - AND,((DST-PORT,3030),(IP-CIDR,162.19.224.212/32,no-resolve)),REJECT
   - MATCH,DIRECT
