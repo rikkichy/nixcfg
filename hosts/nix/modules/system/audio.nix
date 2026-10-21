@@ -70,6 +70,7 @@
               "filter.smart.name" = "blessing3-eq";
               "filter.smart.target" = {
                 "alsa.card_name" = "Elgato Wave XLR";
+                "media.class" = "Audio/Sink";
               };
             };
 
@@ -144,6 +145,7 @@
               "filter.smart.name" = "wave-dx-velvet-voice";
               "filter.smart.target" = {
                 "alsa.card_name" = "Elgato Wave XLR";
+                "media.class" = "Audio/Source";
               };
             };
           };

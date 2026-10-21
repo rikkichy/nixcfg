@@ -146,6 +146,9 @@ followed by six native parametric EQ filters. Its coefficients and graph ports
 live in the audio module. Select the Wave XLR input in recording applications.
 WirePlumber's smart-filter policy inserts the voice processing for that device.
 The **Blessing 3 EQ** is a separate stereo headphone filter on the same card.
+Both smart-filter targets match the card name and media class: the voice filter
+uses `Audio/Source`, and the headphone filter uses `Audio/Sink`. Matching only the
+card name is ambiguous and can route the voice filter from the playback monitor.
 Neither filter requires EasyEffects or vendor-control USB permissions.
 
 The user `wave-xlr-keepalive.service` follows PipeWire, not the graphical session.
