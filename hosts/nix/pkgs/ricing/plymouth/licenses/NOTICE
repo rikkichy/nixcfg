@@ -1,0 +1,25 @@
+Expressive Plymouth static assets
+
+Spinner and masked-entry shapes are rasterized adaptations of duxlabs-dev/dux-qml-common,
+revision 3cf182586c6c948a6ae61b15df13ff1365c0dab0.
+Copyright (c) 2025-2026 Avenge Media LLC. MIT license: animation-MIT.
+Material geometry attribution and Apache-2.0 license: MaterialShapes.NOTICE,
+shapes-Apache-2.0. The adaptations use a fixed blue palette, adjusted rotation
+and settling parameters, and sampled, scaled masked-entry pop frames.
+https://github.com/duxlabs-dev/dux-qml-common/tree/3cf182586c6c948a6ae61b15df13ff1365c0dab0
+
+The top lock is a recolored, rasterized Google Material Symbols Rounded
+lock_wght600_48px.svg, revision 49d4db35df873165d6bd6ba09b063c7dafbac2f4.
+Copyright Google LLC. Apache-2.0 license: material-symbols-Apache-2.0.
+https://github.com/google/material-design-icons/tree/49d4db35df873165d6bd6ba09b063c7dafbac2f4
+
+GoogleSansFlex.ttf is the unmodified official Google Sans Flex variable font,
+renamed on disk from GoogleSansFlex[GRAD,ROND,opsz,slnt,wdth,wght].ttf.
+Source: google/fonts, revision d4c1d3820c9bb17ec1a7a526967b1cdafb0885ad.
+Copyright 2015 The Google Sans Flex Authors.
+SIL Open Font License 1.1: font-upstream-OFL. Trademark terms: font-TRADEMARKS.
+https://github.com/google/fonts/tree/d4c1d3820c9bb17ec1a7a526967b1cdafb0885ad/ofl/googlesansflex
+
+Keyboard and Caps Lock icons are copied without modification from the stock
+Plymouth spinner theme when this package is assembled. Plymouth's GPL license
+is installed alongside this notice as plymouth-GPL-2.0.

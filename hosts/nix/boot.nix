@@ -1,7 +1,9 @@
 { config, pkgs, ... }:
 
 let
-  expressivePlymouth = pkgs.callPackage ./pkgs/ricing/plymouth { };
+  expressivePlymouth = pkgs.callPackage ./pkgs/ricing/plymouth {
+    keymap = config.console.keyMap;
+  };
 in
 {
   imports = [ ../../common/modules/nixos-limine.nix ];
@@ -19,24 +21,8 @@ in
 
   boot.plymouth = {
     enable = true;
-    # Keep the original loop speed while allowing 240 Hz animation updates.
-    package = (pkgs.plymouth.override {
-      systemd = config.boot.initrd.systemd.package;
-    }).overrideAttrs (old: {
-      patches = (old.patches or [ ]) ++ [
-        ./pkgs/ricing/plymouth/unlock-success.patch
-        ./pkgs/ricing/plymouth/material-entry.patch
-      ];
-      postPatch = (old.postPatch or "") + ''
-        substituteInPlace src/libply-splash-graphics/ply-throbber.c \
-          --replace-fail '#define FRAMES_PER_SECOND 30' '#define FRAMES_PER_SECOND 240' \
-          --replace-fail '0.005);' '0.001);'
-      '';
-      env = old.env // {
-        NIX_CFLAGS_COMPILE = (old.env.NIX_CFLAGS_COMPILE or "")
-          + " -DTHROBBER_DURATION=4.55";
-      };
-    });
+    # Keep the stock derivation eligible for the NixOS binary cache.
+    package = pkgs.plymouth;
     theme = "expressive";
     themePackages = [ expressivePlymouth ];
     font = expressivePlymouth.font;
@@ -55,7 +41,8 @@ in
     serviceConfig.ExecStartPost = "-${pkgs.writeShellScript "cryptroot-unlocked" ''
       set -e
       mkdir -p /run/plymouth
-      : > /run/plymouth/cryptroot-unlocked
+      cp /etc/plymouth/themes/expressive/unlock-success.png /run/plymouth/cryptroot-unlocked.png.new
+      mv /run/plymouth/cryptroot-unlocked.png.new /run/plymouth/cryptroot-unlocked.png
       ${config.boot.plymouth.package}/bin/plymouth update --status=cryptroot-unlocked &
     ''}";
   };

@@ -74,30 +74,51 @@ generation or remove fallback slots until all paths work.
 
 ### Graphical disk unlock
 
-`hosts/nix/boot.nix` enables Plymouth with the host-owned
-`hosts/nix/pkgs/ricing/plymouth/` theme. The native `two-step` renderer shows a
-Material Symbols Rounded lock and the two-line heading “System is encrypted.”
-/ “Verify your identity.” Google Sans Flex Rounded is the same font family as
-Fuzzel. HarfBuzz creates a static Semibold instance at weight 600, with the
-remaining axes at their defaults. It is embedded in the initrd and registered
-for shutdown rendering. Qt SVG renders the lock and field assets.
+`hosts/nix/boot.nix` selects the unmodified Nixpkgs Plymouth package.
+The host-owned `hosts/nix/pkgs/ricing/plymouth/` theme uses Plymouth's native
+`script` plugin. It changes presentation, not cryptsetup or password handling.
+Plymouth supplies masked character counts to the theme, never password characters.
 
-The spinner comes from the pinned Quickshell
-[`DLoadingIndicator.qml`](https://github.com/duxlabs-dev/dux-qml-common/blob/3cf182586c6c948a6ae61b15df13ff1365c0dab0/DCommon/Widgets/DLoadingIndicator.qml)
-component, its AndroidX shape geometry and its fragment shader. At build time,
-a compiled Qt Quick renderer samples the component at exact 240Hz timestamps into 1092
-transparent 96px PNG frames. There is no GIF, video capture or image interpolation.
-The seven shapes and spring implementation stay upstream. Export removes shell
-theme dependencies, sets the steady rotation period to 3640ms for a three-turn
-4.55-second loop, and lowers the spring settlement threshold to avoid an abrupt
-rotation snap. Geometry attribution and MIT/Apache licenses accompany the assets.
+The theme shows a [Material Symbols Rounded lock](https://github.com/google/material-design-icons/blob/49d4db35df873165d6bd6ba09b063c7dafbac2f4/symbols/web/lock/materialsymbolsrounded/lock_wght600_48px.svg)
+and the two-line heading “System is encrypted.” / “Verify your identity.”
+The official [Google Sans Flex font](https://github.com/google/fonts/tree/d4c1d3820c9bb17ec1a7a526967b1cdafb0885ad/ofl/googlesansflex)
+uses native Pango variations for Semibold weight and rounded outlines.
+The font is embedded in the initrd and
+registered for shutdown rendering.
 
-Plymouth requests 240 updates/second with a 1ms minimum timer delay. Its event
-loop and other animation rates remain upstream. The native throbber also supports
-a 300ms eased crossfade from its current frame to a checkmark, then stops its
-animation timer. The native Qt/HarfBuzz generators, Mesa and Xvfb are build-only.
-The initrd uses native Plymouth, without a QML runtime, custom password handler
-or wallpaper dependency.
+The password field is centered independently beneath the watermark lock.
+Its outline is thicker and its corners are rounder than the stock field.
+The real prompt sits above it, with the declared console layout and live
+Caps Lock indicator below. There is no field-side lock.
+Masked feedback uses seven randomly selected Material 3 expressive shapes.
+New positions pop into place, while existing positions keep their shapes.
+Long input scrolls within the field. Backspace and clear do not replay existing
+shapes or change authentication.
+
+The checked-in asset archive contains the PNG frames and font.
+Upstream licenses accompany the archive and are installed with the theme.
+Theme assembly extracts these files and installs the native script.
+It does not compile Plymouth, HarfBuzz, Qt, or a custom renderer.
+Stock Plymouth and its text-rendering dependencies retain their Nixpkgs
+derivations and remain eligible for binary substitution.
+Nix still assembles the theme, configuration files, and initrd locally.
+Cache availability depends on the selected Nixpkgs revision.
+
+The spinner assets come from the pinned Quickshell
+[`DLoadingIndicator.qml`](https://github.com/duxlabs-dev/dux-qml-common/blob/3cf182586c6c948a6ae61b15df13ff1365c0dab0/DCommon/Widgets/DLoadingIndicator.qml),
+its AndroidX shape geometry and its fragment shader.
+The export contains 1092 transparent 96px PNG frames sampled at 240Hz.
+It preserves the seven shapes and spring implementation, without image interpolation.
+The steady rotation period is 3640ms for a three-turn, 4.55-second loop.
+The spring settlement threshold is 0.001 to avoid an abrupt rotation snap.
+Geometry attribution and MIT/Apache licenses accompany the assets.
+Field feedback uses seven shapes with twelve pre-rendered pop frames each.
+
+The script requests 240 updates per second during the spinner animation.
+Password pops target 180ms. Successful unlock crossfades the current spinner
+frame to a checkmark over a target 300ms.
+The native script timer drives these animations. Delayed callbacks can extend
+their duration. The initrd needs no Qt, QML, Mesa, Xvfb, or font-generation helper.
 
 The update target is not a display refresh guarantee. Plymouth's DRM renderer
 prefers a user-defined mode, then the monitor's preferred mode, rather than the
@@ -106,27 +127,20 @@ Hyprland's 240Hz setting applies only after login. No boot display mode is force
 Actual presentation remains limited by the early display mode, driver and load.
 
 An initrd-only `ExecStartPost` drop-in for `systemd-cryptsetup@cryptroot.service`
-records successful unlock in `/run/plymouth/cryptroot-unlocked` and sends the
+atomically publishes `/run/plymouth/cryptroot-unlocked.png` and sends the
 Plymouth status notification asynchronously. It runs only after cryptsetup
-succeeds, for either YubiKey or passphrase authentication; submitting a password,
-token detection, and boot progress do not signal success. Notification failure
-cannot fail or delay unlock. The runtime marker survives late display startup,
-Escape/details and switch-root, but not reboot. Shutdown/reboot ignore it.
-No service waits for the crossfade to finish.
+succeeds, for either YubiKey or passphrase authentication.
+Password submission, token detection, and boot progress do not signal success.
+Notification failure cannot fail unlock or wait for the splash to respond.
+The runtime image marker lets the native theme recognize success after late
+display startup or Escape/details. It survives switch-root, but not reboot.
+Shutdown and reboot ignore it. No service waits for the crossfade to finish.
 
-Systemd's FIDO2 touch cue and other messages remain visible below the animation.
+Systemd's FIDO2 touch cue and other messages remain visible.
 PIN/passphrase entry replaces the static heading with the real prompt and masked
-input; the heading returns afterward until Plymouth quits. Shutdown/reboot omit
-the encryption heading. Escape toggles between graphics and boot details;
-quiet console settings do not disable the journal or password fallback.
-
-The PIN/passphrase field follows Material 3 Expressive's
-[`OutlinedTextFieldDefaults.roundedShape`](https://developer.android.com/reference/kotlin/androidx/compose/material3/OutlinedTextFieldDefaults#roundedShape())
-recommendation: 12px outer corners, 56px height, a 2px primary-color focus outline,
-and 16px horizontal content padding. The real prompt sits above the field;
-masked dots, overflow indication, keyboard layout and Caps Lock remain native.
-SVG-generated field and bullet assets replace the stock Plymouth bitmaps.
-Native layout changes preserve the input value and only alter its presentation.
+input. Shutdown and reboot omit the encryption heading.
+Escape toggles between graphics and boot details.
+Quiet console settings do not disable the journal or password fallback.
 
 NVIDIA's display modules load in the initrd in parallel with disk unlock.
 Plymouth uses its upstream udev/vconsole ordering, without waiting for
