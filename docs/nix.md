@@ -104,13 +104,6 @@ Brave Origin (`pkgs.brave-origin`) is the default browser for the browser shortc
 HTML files and web links. Its profile remains application-owned under
 `~/.config/BraveSoftware/Brave-Origin`. No extensions are force-installed.
 
-PhotoCraft and FilmCraft are pinned upstream AppImages packaged in
-`hosts/nix/pkgs/{photocraft,filmcraft}.nix` and installed as `photocraft` and
-`filmcraft`. Nix owns their launcher entries, icons and MIME definitions.
-Existing default file associations remain unchanged. Update each package's
-version and hash together. Both editors are experimental. Keep backups of
-documents and projects. FilmCraft has no Linux hardware video decoding path.
-
 LabyMod Launcher (`pkgs.labymod-launcher`) is installed alongside Prism Launcher
 by `hosts/nix/modules/system/gaming.nix`. Nixpkgs supplies its AppImage runtime,
 desktop entry and icon; account and game data remain application-owned.

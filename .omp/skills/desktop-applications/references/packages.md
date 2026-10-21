@@ -14,10 +14,6 @@ contents in an FHS environment. Its function form exposes `finalAttrs.contents`
 to `extraInstallCommands`. Use that path instead of a separate
 `appimageTools.extract` call.
 
-PhotoCraft and FilmCraft install their bundled desktop entries and icons from
-that extraction. Preserve PhotoCraft's `PHOTOCRAFT_NO_DESKTOP_INTEGRATION=1`:
-Nix owns these assets, so its launcher must not install another copy.
-
 ## Filen
 
 Filen uses the unmodified Nixpkgs package so official binary substitutes remain

@@ -19,9 +19,6 @@ final: prev: {
     src = inputs.tg-ws-proxy;
   };
 
-  photocraft = final.callPackage ./photocraft.nix { };
-  filmcraft = final.callPackage ./filmcraft.nix { };
-
   bibata-material-cursor = final.callPackage ./ricing/bibata-material-cursor.nix { };
 
   google-sans-rounded =

@@ -36,8 +36,6 @@
 
     swayimg
     mpv
-    photocraft
-    filmcraft
     qbittorrent
     obsidian
     bitwarden-desktop

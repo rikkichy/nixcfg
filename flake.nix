@@ -57,7 +57,7 @@
       desktopPkgs = self.nixosConfigurations.nix.pkgs;
       cacheTargets = {
         inherit (desktopPkgs)
-          quickshell hyprland tg-ws-proxy photocraft filmcraft
+          quickshell hyprland tg-ws-proxy
           google-sans-rounded vpn;
         vhelper = inputs.vhelper.packages.${system}.default;
         openwave = inputs.openwave.packages.${system}.openwave-bin;
