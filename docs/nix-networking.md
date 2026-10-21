@@ -20,9 +20,9 @@ before reconnecting the phone. Source edits alone do not change the live firewal
 
 ## VPN (mihomo)
 
-`services.mihomo.enable` is commented out in `hosts/nix/modules/system/networking.nix`,
-so the tunnel does not start at boot after activation. Uncomment it to restore
-the service. The following controls require it to be enabled and running.
+`services.mihomo.enable = true` in `hosts/nix/modules/system/networking.nix`
+starts the tunnel at boot. Configuration changes take effect after an approved
+activation. The following controls require the service to be running.
 There is no app to launch. The web dashboard is disabled. The localhost controller at
 `127.0.0.1:9090` remains available to the VPN picker and CLI with bearer-token
 authentication. Browser origins are restricted to that localhost origin.
