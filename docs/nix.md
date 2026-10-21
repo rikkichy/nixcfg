@@ -153,6 +153,9 @@ Its compiled C helper selects the single MK1 hardware source by node identity an
 starts a serial-targeted `pw-cat` stream. WirePlumber can route that stream through
 the smart voice filter. The helper drains signed-16-bit mono samples in memory,
 including when no voice application is recording. It never stores or logs samples.
+The helper targets the desktop's Ryzen 9 9950X3D with `-march=znver5`.
+Its binary is not intended for CPUs without the required instruction support.
+This package-local setting does not change PipeWire or the rest of Nixpkgs.
 
 After a one-second startup allowance, three seconds without data can restart
 the owned capture. Thirty seconds of digital silence while confirmed unmuted

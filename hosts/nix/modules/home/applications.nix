@@ -20,7 +20,7 @@ let
     meta.mainProgram = "wave-xlr-keepalive";
   } ''
     mkdir -p "$out/bin"
-    $CC -std=c11 -O2 -Wall -Wextra -Werror \
+    $CC -std=c11 -O2 -march=znver5 -Wall -Wextra -Werror \
       ${../../pkgs/wave-xlr-keepalive.c} \
       $(pkg-config --cflags --libs json-c) \
       -o "$out/bin/wave-xlr-keepalive"
