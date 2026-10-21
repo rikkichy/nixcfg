@@ -1,4 +1,4 @@
-{ lib, pkgs, ... }:
+{ pkgs, ... }:
 
 {
   imports = [ ../../../../common/modules/nixos-networking.nix ];
@@ -10,15 +10,12 @@
   services.mihomo = {
     # enable = true;
     tunMode = true;
-    processesInfo = true;
+    processesInfo = false;
   };
 
   systemd.services.mihomo.serviceConfig = {
     Restart = "on-failure";
     RestartSec = "5s";
-    # Mihomo resolves desktop socket owners through /proc/<pid>/{fd,exe}.
-    # These privileges permit cross-user reads, not only Discord inspection.
-    ProtectProc = lib.mkForce "default";
   };
 
   networking.networkmanager.unmanaged = [ "interface-name:mihomo" ];

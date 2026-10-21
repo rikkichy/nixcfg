@@ -71,7 +71,7 @@ loose, and LAN application ports are scoped to the physical interfaces. Do not
 turn those into unrestricted firewall openings to fix tunnel routing.
 The controller binds `127.0.0.1:9090`, mixed proxy has `allow-lan: false`, and
 Mihomo DNS and TUN DNS hijacking are disabled. Resolution uses the system DNS.
-Domain routing relies on sniffing. The web dashboard is disabled. The controller
+Routing uses the destination IP and port, without sniffing. The web dashboard is disabled. The controller
 API serves the picker and CLI. Controller status is not tunnel proof.
 Inspect `ip -br addr show mihomo` for an actual IPv4 address. `UP` with only link-local
 IPv6 is not a working tunnel.
@@ -80,21 +80,17 @@ All controller requests must use `--header @/run/mihomo-api.header`.
 Never expand the token into command arguments or log it. Browser CORS permits only the
 localhost controller origin. See the operator guide for ownership and lifecycle.
 
-Scoped mode uses service-selective rules with `MATCH,DIRECT`. Ordinary Nix
-downloads and Git pushes go direct. `vpn mode global` selects `PROXY` in `GLOBAL`
+Scoped mode proxies only Krypton's `162.19.224.212:6700` endpoint, with
+`MATCH,DIRECT` for everything else. `vpn mode global` selects `PROXY` in `GLOBAL`
 before changing Mihomo's mode. Global traffic therefore uses the same subscription/server
 instead of `GLOBAL`'s default `DIRECT`. `vpn mode scoped` restores rule mode.
 Both changes close tracked connections so existing traffic follows the new policy.
 The mode is runtime-only. The template starts scoped. Do not stop Mihomo to change
 routing: that removes the tunnel. `profile.store-selected` persists server choices
 in `cache.db` under the service's state directory.
-Native Discord is matched by its `.Discord-wrapped` executable, including
-IP-addressed voice UDP. Process lookup requires `ProtectProc=default` and
-`CAP_SYS_PTRACE`/`CAP_DAC_READ_SEARCH` alongside `CAP_NET_ADMIN`. Retain
-`DynamicUser` and the remaining sandbox. These are broad cross-user inspection
-privileges, not Discord-only access. Browser Discord is only domain-routed.
-Cross-user service lookup needs live verification after approved activation.
-See the operator guide for this security boundary.
+There are no domain, geosite, ASN or process routing rules. Sniffing and process
+lookup are disabled. The service does not request cross-user inspection
+privileges or override `ProtectProc`. Keep the upstream sandbox.
 
 ## Subscription and node failure modes
 
@@ -106,9 +102,9 @@ See the operator guide for this security boundary.
 - Keep `proxy: DIRECT` on **both** providers. Otherwise Mihomo can fetch its
   subscription through the very tunnel it needs to repair.
   A bad update then cannot self-recover and may surface only as EOF.
-- Child selectors use `empty-fallback: REJECT`. Service proxy rules are paired
-  with rejection rules. A node without UDP support therefore cannot fall through to
-  unrelated traffic's `MATCH,DIRECT`. Keep the target and rejection pairs aligned.
+- Child selectors use `empty-fallback: REJECT`. The Krypton endpoint's proxy rule
+  is paired with a rejection rule so unsupported flows cannot fall through to
+  `MATCH,DIRECT`. Keep the pair aligned when updating the endpoint.
 - HTTP health checks require 204 but do not test UDP relay. Lazy checks can leave
   inactive-provider latency stale. Preserve manual node selection.
 - Node latency needs membership **and** health history. Top-level `PROXY`

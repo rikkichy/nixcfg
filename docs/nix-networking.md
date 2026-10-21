@@ -29,47 +29,20 @@ authentication. Browser origins are restricted to that localhost origin.
 
 ### Split routing and server selection
 
-YouTube, Discord, Roblox/Sober, Instagram, Proton Mail, Spotify, Bitwarden, Pinterest,
-smotret-anime.co, 6b6t.org, enderdash.com, terraformersmc.com, meteordev.org, cyrisia.com and flintmc.net
-use the selected proxy server. Other destinations use `DIRECT`.
-The listed services use Mihomo's geosite data except these explicit domains,
-whose domain-suffix rules include all subdomains.
-Explicit proxy domains also include `download.jetbrains.com`, `download-cdn.jetbrains.com`, `chatgpt.com`,
-`openai.com`, `claude.ai`, `anthropic.com`, `twitter.com`, `x.com`, `twimg.com`,
-`t.co`, `robtopgames.com` and `geode-sdk.org`, including their subdomains.
-The JetBrains CDN rule covers redirected Kotlin language-server downloads. Other JetBrains domains are not included.
-Cachix and its `*.cachix.org` cache endpoints use `DIRECT` in scoped mode.
-Patreon's website and API use `patreon.com`. Its CDN uses `patreonusercontent.com`
-(including `c10.patreonusercontent.com`).
-Minecraft port `25565` uses the proxy only at Hypixel's `172.65.197.160`
-(`mc.hypixel.net`) and 6b6t's `15.204.129.101` (`alt.6b6t.org`, the SRV target
-for `6b6t.org` and `join.6b6t.org`). IP-and-port rules do not proxy other ports
-at these addresses or other Minecraft servers. These are fixed DNS snapshots:
-refresh the addresses when endpoints change. DNS handling remains unchanged.
-Roblox's production network uses ASN data. Mihomo downloads geosite and ASN data
-from the publisher's jsDelivr mirror and checks for updates daily. First startup
-needs access to it.
-In Mihomo 1.19.31, a failed overdue GEO update during startup can stop its updater
-until a reload/restart. Check the GEO logs after a connectivity failure.
-Native Discord's `.Discord-wrapped` process uses proxy/reject rules for all
-public destinations, including IP-addressed voice UDP. Loopback and private LAN
-rules take precedence. This does not identify Discord running inside a browser.
-Browser Discord retains domain routing without guaranteed voice-IP coverage.
-Process lookup uses `find-process-mode: strict`. The service retains `DynamicUser`
-and its other hardening, but uses `ProtectProc=default`, `CAP_SYS_PTRACE` and
-`CAP_DAC_READ_SEARCH` to inspect socket owners across users. These privileges
-permit broader process and file reads, not only Discord inspection. They do not
-make application-name matching a security boundary. Shared service domains can
-also include related products.
+Scoped mode proxies only the observed Krypton loader endpoint
+`162.19.224.212:6700`. All other destinations and ports use `DIRECT`, including
+loopback and private LAN addresses. The IP-and-port rule does not depend on DNS
+or protocol sniffing. `vps-c35938de.vps.ovh.net` is the endpoint's reverse-DNS
+hostname, not a confirmed hostname used by the loader. Update the IP rule if
+Krypton's endpoint moves.
 
-After approved activation, verify that voice connections report
-`ProcessName` / `.Discord-wrapped` and the selected proxy in `/connections`.
+There are no domain, geosite, ASN or application-process routing rules.
+Sniffing and process lookup are disabled; the service does not request
+cross-user process-inspection privileges.
 
 Empty subscriptions reject traffic instead of falling back to a direct connection.
-Each service's proxy rule has a matching rejection rule: if the selected server
-cannot relay UDP, that service fails closed while unrelated traffic stays direct.
-Keep these pairs together when editing the target list. Use a UDP-capable server
-for voice and games. A successful HTTP health check does not prove UDP support.
+The endpoint's proxy rule has a matching rejection rule so an unsupported flow
+cannot fall through to `MATCH,DIRECT`. Keep the pair together.
 Health checks require the endpoint's HTTP 204 response. Checks remain lazy, so
 an inactive subscription can show stale measurements.
 
@@ -81,7 +54,7 @@ It does not increase bandwidth. The TUN retains its gVisor stack.
 opens only the active subscription's live nodes, fastest first. Dismissing
 either submenu leaves the selection unchanged. **Switch to global** routes traffic
 handled by Mihomo through the selected subscription/server. **Switch to scoped**
-restores the service-specific rules. The prompt shows the current mode.
+restores the Krypton-only rule. The prompt shows the current mode.
 Switching routing mode closes existing Mihomo connections so applications
 reconnect using the new policy. Downloads, calls and games can be interrupted.
 Server and subscription changes do not close existing connections.
@@ -97,7 +70,7 @@ vpn                              # show the selected server
 vpn status                       # show the selected server
 vpn mode                         # show global or scoped routing
 vpn mode global                  # proxy Mihomo traffic through the selected server
-vpn mode scoped                  # restore service-specific routing
+vpn mode scoped                  # proxy only the Krypton loader endpoint
 vpn subscription                 # active subscription name
 vpn subscription primary         # select Primary's remembered server
 vpn subscription quattro         # select Quattro's remembered server
@@ -127,10 +100,10 @@ Stopping Mihomo removes the tunnel. It is not a routing toggle.
 External shortcuts can invoke `vpnp`, `vpn mode global`, `vpn mode scoped`,
 or `vpn select <name>`.
 
-For a zapret cutover, pause it rather than uninstalling it.
-Then verify video playback, Discord voice/screenshare and a Sober game join.
-Confirm that their connections select `PROXY` while an unrelated destination selects `DIRECT`.
-Configuration evaluation does not prove these live application paths.
+After approved activation, launch Krypton and confirm that its connection to
+`162.19.224.212:6700` selects `PROXY`, while an unrelated destination selects
+`DIRECT`. Verify that Minecraft reaches its window. Configuration validation
+does not prove loader connectivity or a successful game launch.
 
 Edit the public template `common/dotfiles/mihomo.yaml`. The compiled Rust
 [`mihomo-config` renderer](../.omp/skills/nix-system-operations/references/mihomo.md#public-template-private-runtime-rendering)
@@ -156,13 +129,9 @@ proxy-node lookups use the system resolver. Configure upstream DNS through
 NetworkManager, not the Mihomo template. When the system uses the LAN router,
 the router retains its ControlD DoQ connection and private endpoint.
 
-Domain rules rely on HTTP/TLS/QUIC sniffing without DNS mappings. ECH and
-unsupported traffic can prevent domain classification. Those connections
-follow IP rules or the final `DIRECT` rule. Sniffing does not replace the
-destination address selected by the system resolver.
-
-After an approved rebuild disables fake-IP handling, fully restart applications
-to discard cached synthetic addresses.
+Routing uses the destination IP and port only; no sniffing or DNS mappings are
+needed. Changing the template does not reroute an already established loader
+connection: restart the instance after approved activation.
 
 
 Private input provisioning and SOPS/PIV administration are in
