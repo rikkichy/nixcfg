@@ -55,6 +55,12 @@ If it points elsewhere, switch the host configuration before reloading Hyprland.
 Keep the locally generated `scheme/current.lua` in that directory. Git ignores it,
 and it must remain writable.
 
+Previous/next workspace keys and Super+scroll cycle existing workspaces on the
+current monitor. Closing or moving the last window off an active numbered
+workspace selects the nearest occupied numbered workspace on that monitor
+(lower number wins ties). Explicit empty-workspace selection remains available;
+an open special workspace or no occupied destination prevents automatic switching.
+
 Compositor motion lives in `hosts/nix/dotfiles/ricing/hypr/hyprland/animations.lua`.
 Windows spring open from 80% size and shrink to 92% on a 140ms exit.
 Ordinary workspaces page vertically with a more heavily damped spring; special

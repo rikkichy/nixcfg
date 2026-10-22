@@ -35,12 +35,12 @@ for i = 1, 10 do
     hl.bind(vars.kbMoveWinToWsGroup .. " + " .. key, fn.wsaction("move", "group", i))
 end
 
-hl.bind("SUPER + mouse_down", hl.dsp.focus({ workspace = "-1" }))
-hl.bind("SUPER + mouse_up", hl.dsp.focus({ workspace = "+1" }))
-hl.bind(vars.kbPrevWs, hl.dsp.focus({ workspace = "-1" }), { repeating = true })
-hl.bind(vars.kbNextWs, hl.dsp.focus({ workspace = "+1" }), { repeating = true })
-hl.bind("SUPER + Page_Up", hl.dsp.focus({ workspace = "-1" }), { repeating = true })
-hl.bind("SUPER + Page_down", hl.dsp.focus({ workspace = "+1" }), { repeating = true })
+hl.bind("SUPER + mouse_down", hl.dsp.focus({ workspace = "m-1" }))
+hl.bind("SUPER + mouse_up", hl.dsp.focus({ workspace = "m+1" }))
+hl.bind(vars.kbPrevWs, hl.dsp.focus({ workspace = "m-1" }), { repeating = true })
+hl.bind(vars.kbNextWs, hl.dsp.focus({ workspace = "m+1" }), { repeating = true })
+hl.bind("SUPER + Page_Up", hl.dsp.focus({ workspace = "m-1" }), { repeating = true })
+hl.bind("SUPER + Page_down", hl.dsp.focus({ workspace = "m+1" }), { repeating = true })
 
 hl.bind("CTRL + SUPER + mouse_down", hl.dsp.focus({ workspace = "-10" }))
 hl.bind("CTRL + SUPER + mouse_up", hl.dsp.focus({ workspace = "+10" }))

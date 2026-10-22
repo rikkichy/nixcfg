@@ -184,6 +184,43 @@ end
 hl.on("config.reloaded", update_special_opacity)
 hl.on("hyprland.start", update_special_opacity)
 
+-- Move events expose the destination, so retain only each window's previous workspace ID.
+local window_workspaces = {}
+local function remember_window_workspace(window)
+    window_workspaces[window.address] = window.workspace and window.workspace.id
+end
+for _, window in ipairs(hl.get_windows()) do remember_window_workspace(window) end
+hl.on("window.open", remember_window_workspace)
+
+local function leave_emptied_workspace(window, destination)
+    local source = window_workspaces[window.address]
+    window_workspaces[window.address] = destination and destination.id
+    local active = hl.get_active_workspace()
+    if not active or active.id ~= source or active.special or not active.name:match("^%d+$") then return end
+
+    -- Closing windows are still mapped during the event; recheck after close/move and focus settle.
+    hl.timer(function()
+        local current = hl.get_active_workspace()
+        if not current or current.id ~= source or current.windows ~= 0 or not current.monitor
+            or hl.get_active_special_workspace() then return end
+
+        local target
+        for _, workspace in ipairs(hl.get_workspaces()) do
+            if not workspace.special and workspace.name:match("^%d+$") and workspace.windows > 0
+                and workspace.monitor and workspace.monitor.id == current.monitor.id then
+                local distance = math.abs(workspace.id - source)
+                local best = target and math.abs(target.id - source)
+                if not target or distance < best or (distance == best and workspace.id < target.id) then
+                    target = workspace
+                end
+            end
+        end
+        if target then hl.dispatch(hl.dsp.focus({ workspace = target.id })) end
+    end, { timeout = 1, type = "oneshot" })
+end
+hl.on("window.close", leave_emptied_workspace)
+hl.on("window.move_to_workspace", leave_emptied_workspace)
+
 hl.workspace_rule({ workspace = "w[tv1]s[false]", gaps_out = vars.singleWindowGapsOut })
 hl.workspace_rule({ workspace = "f[1]s[false]", gaps_out = vars.singleWindowGapsOut })
 
