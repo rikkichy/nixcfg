@@ -141,7 +141,8 @@ OMP is installed and updated through the [shared Bun launcher](shared.md#shared-
 `hosts/nixos-server/modules/system/openbot.nix` runs the
 [upstream headless container](https://github.com/nightly-labs/openbot/blob/main/docs/docker.md)
 as `docker-openbot.service`. The image is pinned by version and digest; the
-Electron seccomp profile comes from the locked `openbot` flake input.
+Electron seccomp profile is fetched as a single file pinned by upstream commit
+and SHA-256, so server evaluation does not need the full OpenBot source flake.
 Systemd starts it at boot and restarts it after exit. No desktop login is needed.
 Encrypted root still requires console unlock after a reboot.
 

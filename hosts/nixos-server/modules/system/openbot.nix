@@ -1,8 +1,11 @@
-{ inputs, lib, pkgs, ... }:
+{ lib, pkgs, ... }:
 
 let
-  seccompProfile = pkgs.writeText "openbot-seccomp.json"
-    (builtins.readFile "${inputs.openbot}/docker/seccomp.json");
+  seccompProfile = pkgs.fetchurl {
+    name = "openbot-seccomp.json";
+    url = "https://raw.githubusercontent.com/nightly-labs/openbot/4b39c9a497cfd4af7a718cfdeab52e2059ca6b91/docker/seccomp.json";
+    hash = "sha256-ZlKJ5qHEEEX1UWbQsBmTySn3HfeOOjsmTzJSu44LPZ4=";
+  };
 in
 {
   virtualisation.oci-containers = {
