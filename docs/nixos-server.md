@@ -136,6 +136,32 @@ It needs no `/etc/mihomo` inputs or VPN age identity.
 
 OMP is installed and updated through the [shared Bun launcher](shared.md#shared-shell-and-editor), not the system package cache.
 
+## Obsidian Headless
+
+`hosts/nixos-server/modules/system/services.nix` installs the pinned Nixpkgs
+`obsidian-headless` package and permits its unfree license specifically.
+The [upstream `ob` CLI](https://github.com/obsidianmd/obsidian-headless) syncs
+and publishes vaults without the desktop app; it is not a web notes editor.
+Run it as `ri`, not root. Account credentials and vault contents remain
+application-owned and must stay outside this checkout and the Nix store.
+
+After approved activation, sign in and select an existing Obsidian Sync vault.
+Replace `My Vault` with its name from `ob sync-list-remote`:
+
+```sh
+ob login
+ob sync-list-remote
+mkdir -p ~/vaults/notes
+ob sync-setup --vault "My Vault" --path ~/vaults/notes --device-name nixos-server
+ob sync --path ~/vaults/notes
+```
+
+Enter account and vault encryption passwords at the interactive prompts,
+not in command arguments. `ob sync --path ~/vaults/notes --continuous` watches
+for changes while that process runs; no automatic sync service is configured.
+This installs the CLI on the host only. OpenBot's container does not inherit
+the command, credentials or vault, even with host networking.
+
 ## OpenBot agent server
 
 `hosts/nixos-server/modules/system/openbot.nix` runs the

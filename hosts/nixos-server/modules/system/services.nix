@@ -1,9 +1,12 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 
 {
+  nixpkgs.config.allowUnfreePredicate = pkg: lib.getName pkg == "obsidian-headless";
+
   environment.systemPackages = with pkgs; [
     yubikey-manager
     age-plugin-yubikey
+    obsidian-headless
   ];
 
   services.pcscd.enable = true;
