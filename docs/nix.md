@@ -110,6 +110,18 @@ Brave Origin (`pkgs.brave-origin`) is the default browser for the browser shortc
 HTML files and web links. Its profile remains application-owned under
 `~/.config/BraveSoftware/Brave-Origin`. No extensions are force-installed.
 
+OpenBot is installed from the [upstream Nix flake](https://github.com/nightly-labs/openbot#nix),
+with its revision pinned in `flake.lock` and Nixpkgs following this checkout.
+The package supplies the `openbot` command, launcher entry and icon; Home Manager
+assigns `openbot://` links to `openbot.desktop`. Updates are managed by Nix, not
+the in-app updater: use `nix flake update openbot --flake path:/etc/nixos`, then
+rebuild after separate activation approval.
+The upstream package preserves Electron's sandbox and excludes the Linux remote
+desktop runtime. Settings, provider credentials and workspaces remain
+application-owned. OpenBot uses the PolyForm Noncommercial license; commercial
+use requires a separate license. Agents can modify files and run commands without
+per-action approval; connect providers and grant access only to trusted tasks.
+
 **META + E** opens Yazi in Foot. The Yazi launcher and default folder handler
 use the same `yazi-open` command, which applies the current terminal palette.
 In Fish, `y` opens Yazi and changes the shell's directory when it exits.

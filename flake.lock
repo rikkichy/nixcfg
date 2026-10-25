@@ -73,12 +73,33 @@
         "type": "github"
       }
     },
+    "openbot": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792935750,
+        "narHash": "sha256-ofhY93ft2TQ9nEJUycrzyndGqtKlnq2kRSggR6Mdbpk=",
+        "owner": "nightly-labs",
+        "repo": "openbot",
+        "rev": "4b39c9a497cfd4af7a718cfdeab52e2059ca6b91",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nightly-labs",
+        "repo": "openbot",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "home-manager": "home-manager",
         "nix-darwin": "nix-darwin",
         "nixpkgs": "nixpkgs",
         "nixpkgs-nh": "nixpkgs-nh",
+        "openbot": "openbot",
         "sops-nix": "sops-nix",
         "spicetify-nix": "spicetify-nix",
         "tg-ws-proxy": "tg-ws-proxy",

@@ -117,6 +117,7 @@ in
       "x-scheme-handler/https" = "brave-origin.desktop";
       "x-scheme-handler/about" = "brave-origin.desktop";
       "x-scheme-handler/unknown" = "brave-origin.desktop";
+      "x-scheme-handler/openbot" = "openbot.desktop";
       "inode/directory" = "yazi.desktop";
       "video/mp4" = "mpv.desktop";
       "video/x-matroska" = "mpv.desktop";

@@ -30,6 +30,10 @@
       url = "github:rikkichy/vhelper";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    openbot = {
+      url = "github:nightly-labs/openbot";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     vts-opendeck = {
       url = "github:rikkichy/vts-opendeck";
       inputs.nixpkgs.follows = "nixpkgs";
