@@ -17,8 +17,8 @@
     environment.HOME = "/home/ri";
     serviceConfig = {
       User = "ri";
-      WorkingDirectory = "/home/ri/vault/Obsidian";
-      ExecStart = "${lib.getExe pkgs.obsidian-headless} sync --path /home/ri/vault/Obsidian --continuous";
+      WorkingDirectory = "/home/ri/vaults/Obsidian";
+      ExecStart = "${lib.getExe pkgs.obsidian-headless} sync --path /home/ri/vaults/Obsidian --continuous";
       Restart = "always";
       RestartSec = "10s";
       UMask = "0077";

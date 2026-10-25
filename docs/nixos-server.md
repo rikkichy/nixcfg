@@ -146,7 +146,7 @@ Run it as `ri`, not root. Account credentials and vault contents remain
 application-owned and must stay outside this checkout and the Nix store.
 
 `obsidian-sync.service` runs `ob sync --continuous` as `ri`, using
-`/home/ri/vault/Obsidian` and the account credentials under `/home/ri`.
+`/home/ri/vaults/Obsidian` and the account credentials under `/home/ri`.
 It starts at boot without an SSH login and restarts after exit with a 10-second
 delay. Changes are watched continuously, not on a timer; network availability
 and Obsidian Sync determine propagation latency.
@@ -159,7 +159,7 @@ setup after activation with the service stopped:
 sudo systemctl stop obsidian-sync
 ob login
 ob sync-list-remote
-ob sync-setup --vault "Obsidian" --path ~/vault/Obsidian --device-name nixos-server
+ob sync-setup --vault "Obsidian" --path ~/vaults/Obsidian --device-name nixos-server
 sudo systemctl start obsidian-sync
 ```
 
@@ -210,7 +210,7 @@ For phone pairing, run `docker exec -it openbot openbot mobile-connect`.
 ### Obsidian notes access
 
 The only host vault directory mounted into OpenBot is
-`/home/ri/vault/Obsidian/OpenBot`, read/write at
+`/home/ri/vaults/Obsidian/OpenBot`, read/write at
 `/data/OpenBot/Shared/Obsidian`. Point agents at this container path.
 Systemd tmpfiles creates the host directory and its two vault parents with mode
 `0700`, owned by `ri`; the container's UID 1000 matches `ri` for write access.

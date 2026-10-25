@@ -9,9 +9,9 @@ let
 in
 {
   systemd.tmpfiles.rules = [
-    "d /home/ri/vault 0700 ri users -"
-    "d /home/ri/vault/Obsidian 0700 ri users -"
-    "d /home/ri/vault/Obsidian/OpenBot 0700 ri users -"
+    "d /home/ri/vaults 0700 ri users -"
+    "d /home/ri/vaults/Obsidian 0700 ri users -"
+    "d /home/ri/vaults/Obsidian/OpenBot 0700 ri users -"
   ];
 
   virtualisation.oci-containers = {
@@ -22,7 +22,7 @@ in
       networks = [ "host" ];
       volumes = [ "openbot-data:/data" ];
       extraOptions = [
-        "--mount=type=bind,source=/home/ri/vault/Obsidian/OpenBot,target=/data/OpenBot/Shared/Obsidian"
+        "--mount=type=bind,source=/home/ri/vaults/Obsidian/OpenBot,target=/data/OpenBot/Shared/Obsidian"
         "--security-opt=seccomp=${seccompProfile}"
         "--security-opt=no-new-privileges:true"
         "--shm-size=1g"
