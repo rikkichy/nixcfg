@@ -10,6 +10,7 @@
     ./modules/system/services.nix
     ./modules/system/hysteria.nix
     ./modules/system/attic.nix
+    ./modules/system/openbot.nix
   ];
 
   networking.hostName = "nixos-server";

@@ -136,6 +136,53 @@ It needs no `/etc/mihomo` inputs or VPN age identity.
 
 OMP is installed and updated through the [shared Bun launcher](shared.md#shared-shell-and-editor), not the system package cache.
 
+## OpenBot agent server
+
+`hosts/nixos-server/modules/system/openbot.nix` runs the
+[upstream headless container](https://github.com/nightly-labs/openbot/blob/main/docs/docker.md)
+as `docker-openbot.service`. The image is pinned by version and digest; the
+Electron seccomp profile comes from the locked `openbot` flake input.
+Systemd starts it at boot and restarts it after exit. No desktop login is needed.
+Encrypted root still requires console unlock after a reboot.
+
+The container includes its virtual displays and keyring. Electron's sandbox
+stays enabled through the upstream seccomp profile and `no-new-privileges`.
+Chromium gets 1 GiB of shared memory, and Docker allows 60 seconds for graceful
+shutdown. No ports are published or opened in the firewall. Remote clients use
+OpenBot's account, Signal and TURN services through outbound connections;
+the container does not serve a browser UI on the server's LAN address.
+
+After pulling the configuration, activate on the server with separate approval:
+
+```sh
+nh os switch path:/etc/nixos --hostname nixos-server
+docker exec -it openbot openbot login --name nixos-server
+docker exec openbot openbot status
+```
+
+Use the same account in the desktop app or at <https://openbot.run/app>, select
+`nixos-server`, and connect providers there. Desktop provider credentials are
+not copied to the server. Queue work or configure routines for recurring tasks.
+Provider quotas and expired authentication can still interrupt agents.
+
+Manage lifecycle through systemd, not `docker restart`, because NixOS owns the
+container. Logs are available with `journalctl -u docker-openbot -f`.
+For phone pairing, run `docker exec -it openbot openbot mobile-connect`.
+
+The named Docker volume `openbot-data`, mounted at `/data`, survives container
+replacement. It contains workspaces, databases, browser state, provider sign-ins,
+and the keyring with its password file. Keep this entire recovery unit together.
+Before upgrades, stop `docker-openbot.service` and back up the volume securely.
+No automatic backup or image updater is configured. Update the image version and
+digest deliberately, review the matching upstream seccomp profile, and activate
+the revised configuration. Never roll an older image back onto a migrated database.
+
+Agents have full access inside the container. No host home or Docker socket is
+mounted, but normal Docker networking still permits access to reachable LAN hosts.
+No CPU or memory cap is imposed; set limits before sharing the server with
+resource-sensitive workloads. Credentials belong in interactive provider setup
+or separately provisioned runtime files, never in this repository or the Nix store.
+
 ## Public package cache (Attic)
 
 `hosts/nixos-server/modules/system/attic.nix` is **disabled until provisioned**.
