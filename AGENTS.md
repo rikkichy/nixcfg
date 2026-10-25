@@ -74,7 +74,6 @@ This checkout only pins and exposes the plugin package.
 | Disk unlock, Limine recovery, sudo fallback, SOPS/PIV | [Security](docs/nix-security.md) |
 | macOS bootstrap, apps, recovery | [macOS](docs/ne.md) |
 | Server SSH, remote sudo, Hysteria2 | [Server](docs/nixos-server.md) |
-| Minecraft deployment, administration, restoration | [Minecraft](docs/minecraft.md) |
 | Shared shell, editor, rebuilds, Spotify | [Shared configuration](docs/shared.md) |
 
 ## Completion and publication

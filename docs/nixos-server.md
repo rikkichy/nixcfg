@@ -1,6 +1,6 @@
 # nixos-server — headless NixOS
 
-Related: [Installation](install.md) · [Shared configuration](shared.md) · [Minecraft](minecraft.md)
+Related: [Installation](install.md) · [Shared configuration](shared.md)
 
 The normal system uses NetworkManager-managed DHCP, console login, and key-only
 SSH on port 22. Normal SSH password/keyboard-interactive authentication and root
@@ -9,12 +9,12 @@ No desktop session is enabled.
 
 Recovery: [SSH access and sudo password fallback](#ssh-and-remote-sudo) ·
 [Encrypted-root console unlock](#encrypted-root-console-unlock) ·
-[Bootloader checkpoints](#bootloader-migration) ·
-[Minecraft restoration](minecraft.md#minecraft-backups-and-recovery)
+[Bootloader checkpoints](#bootloader-migration)
 
-Minecraft automatic backups are disabled. Existing archives and inventory snapshots
-remain available for the [retained-data recovery procedures](minecraft.md#minecraft-backups-and-recovery).
-CoreProtect continues recording block and container history, not full-world backups.
+Minecraft hosting is not configured: there is no game container, backup timer,
+service account or TCP 25565 firewall allowance. Applying this configuration
+does not erase existing `/var/lib/minecraft` or `/var/backup/minecraft` data.
+Router port forwarding and external DNS records are managed separately.
 
 ## SSH and remote sudo
 

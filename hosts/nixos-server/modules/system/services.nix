@@ -22,6 +22,7 @@
   };
 
   virtualisation.docker = {
+    enable = true;
     autoPrune.enable = true;
   };
   users.users.ri.extraGroups = [ "docker" "networkmanager" ];

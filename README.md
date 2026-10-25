@@ -122,9 +122,6 @@ Resolve the [signing-key prerequisite](docs/nix-security.md#secure-boot-with-lim
 
    The desktop Secure Boot helper does not support this host. Do not run it here.
 
-8. Before exposing Minecraft, complete its [deployment and authentication checks](docs/minecraft.md#minecraft-deployment-and-access).
-   Restore existing worlds only through the [backup recovery procedure](docs/minecraft.md#minecraft-backups-and-recovery).
-
 ### macOS (`ne`)
 
 1. Use the existing `rii` account on Apple Silicon.
