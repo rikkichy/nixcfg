@@ -13,6 +13,7 @@ in
     containers.openbot = {
       image = "ghcr.io/nightly-labs/openbot:0.49.0@sha256:82359ce7029a03084c67ff4fd7c54a5f70053a74c5911837c1e89a02d983766a";
       autoStart = true;
+      networks = [ "host" ];
       volumes = [ "openbot-data:/data" ];
       extraOptions = [
         "--security-opt=seccomp=${seccompProfile}"

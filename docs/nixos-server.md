@@ -149,9 +149,11 @@ Encrypted root still requires console unlock after a reboot.
 The container includes its virtual displays and keyring. Electron's sandbox
 stays enabled through the upstream seccomp profile and `no-new-privileges`.
 Chromium gets 1 GiB of shared memory, and Docker allows 60 seconds for graceful
-shutdown. No ports are published or opened in the firewall. Remote clients use
-OpenBot's account, Signal and TURN services through outbound connections;
-the container does not serve a browser UI on the server's LAN address.
+shutdown. Host networking shares the server's network namespace, routes and
+loopback instead of Docker bridge/NAT. No port mappings or firewall allowances
+are added. Remote clients use OpenBot's account, Signal and TURN services through
+outbound connections; the container does not serve a browser UI on the server's
+LAN address.
 
 After pulling the configuration, activate on the server with separate approval:
 
@@ -179,7 +181,8 @@ digest deliberately, review the matching upstream seccomp profile, and activate
 the revised configuration. Never roll an older image back onto a migrated database.
 
 Agents have full access inside the container. No host home or Docker socket is
-mounted, but normal Docker networking still permits access to reachable LAN hosts.
+mounted, but host networking exposes host-local listeners to agents and lets
+their processes bind host ports. It does not isolate agents from the LAN.
 No CPU or memory cap is imposed; set limits before sharing the server with
 resource-sensitive workloads. Credentials belong in interactive provider setup
 or separately provisioned runtime files, never in this repository or the Nix store.
