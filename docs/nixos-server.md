@@ -145,19 +145,29 @@ and publishes vaults without the desktop app; it is not a web notes editor.
 Run it as `ri`, not root. Account credentials and vault contents remain
 application-owned and must stay outside this checkout and the Nix store.
 
-After approved activation, sign in and connect the existing `Obsidian` remote
-vault to the host directory created by the OpenBot module:
+`obsidian-sync.service` runs `ob sync --continuous` as `ri`, using
+`/home/ri/vault/Obsidian` and the account credentials under `/home/ri`.
+It starts at boot without an SSH login and restarts after exit with a 10-second
+delay. Changes are watched continuously, not on a timer; network availability
+and Obsidian Sync determine propagation latency.
+
+Stop any manually running continuous sync before approved activation so only
+one process owns the vault. If the vault is not yet configured, perform initial
+setup after activation with the service stopped:
 
 ```sh
+sudo systemctl stop obsidian-sync
 ob login
 ob sync-list-remote
 ob sync-setup --vault "Obsidian" --path ~/vault/Obsidian --device-name nixos-server
-ob sync --path ~/vault/Obsidian
+sudo systemctl start obsidian-sync
 ```
 
 Enter account and vault encryption passwords at the interactive prompts,
-not in command arguments. `ob sync --path ~/vault/Obsidian --continuous` watches
-for changes while that process runs; no automatic sync service is configured.
+not in command arguments. Check synchronization with
+`journalctl -u obsidian-sync -f`. For account or vault changes, stop the service
+first and start it again after setup. Authentication failures require operator
+attention; automatic restarts do not replace login.
 The CLI and credentials remain on the host. Only the vault's `OpenBot` subfolder
 is shared with the container, as described below.
 
@@ -209,8 +219,9 @@ The bind mount refuses to start if its source is missing.
 The rest of the host vault, its `.obsidian` settings and the host's Obsidian
 credentials are not mounted. This limits access to host vault files, not to the
 container's own persistent `/data` or its network access. Changes in the shared
-folder are immediately visible on the host; remote Obsidian Sync still requires
-`ob sync` to run on the host. Existing vaults at other paths are not moved.
+folder are immediately visible on the host; `obsidian-sync.service` continuously
+synchronizes the host vault with Obsidian Sync. Existing vaults at other paths
+are not moved.
 The shared notes are outside the `openbot-data` volume and need their own backup.
 
 ### Persistent data and isolation

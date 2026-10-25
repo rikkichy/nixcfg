@@ -9,6 +9,22 @@
     obsidian-headless
   ];
 
+  systemd.services.obsidian-sync = {
+    description = "Continuous Obsidian vault sync";
+    wantedBy = [ "multi-user.target" ];
+    wants = [ "network-online.target" ];
+    after = [ "network-online.target" ];
+    environment.HOME = "/home/ri";
+    serviceConfig = {
+      User = "ri";
+      WorkingDirectory = "/home/ri/vault/Obsidian";
+      ExecStart = "${lib.getExe pkgs.obsidian-headless} sync --path /home/ri/vault/Obsidian --continuous";
+      Restart = "always";
+      RestartSec = "10s";
+      UMask = "0077";
+    };
+  };
+
   services.pcscd.enable = true;
   services.udev.packages = [ pkgs.yubikey-personalization ];
   security.polkit = {
