@@ -168,8 +168,8 @@ not in command arguments. Check synchronization with
 `journalctl -u obsidian-sync -f`. For account or vault changes, stop the service
 first and start it again after setup. Authentication failures require operator
 attention; automatic restarts do not replace login.
-The CLI and credentials remain on the host. Only the vault's `OpenBot` subfolder
-is shared with the container, as described below.
+The CLI and credentials remain on the host. Only the vault's `OpenBot` and
+`Studies` subfolders are shared with the container, as described below.
 
 ## OpenBot agent server
 
@@ -209,17 +209,22 @@ For phone pairing, run `docker exec -it openbot openbot mobile-connect`.
 
 ### Obsidian notes access
 
-The only host vault directory mounted into OpenBot is
-`/home/ri/vaults/Obsidian/OpenBot`, read/write at
-`/data/OpenBot/Shared/Obsidian`. Point agents at this container path.
-Systemd tmpfiles creates the host directory and its two vault parents with mode
-`0700`, owned by `ri`; the container's UID 1000 matches `ri` for write access.
-The bind mount refuses to start if its source is missing.
+Only these host vault directories are mounted into OpenBot, both read/write:
+
+| Host directory | Container path |
+|---|---|
+| `/home/ri/vaults/Obsidian/OpenBot` | `/data/OpenBot/Shared/Obsidian` |
+| `/home/ri/vaults/Obsidian/Studies` | `/data/OpenBot/Shared/Studies` |
+
+Point agents at the container paths. Systemd tmpfiles creates the host directories
+and their two vault parents with mode `0700`, owned by `ri`; the container's
+UID 1000 matches `ri` for write access. Each bind mount refuses to start if its
+source is missing.
 
 The rest of the host vault, its `.obsidian` settings and the host's Obsidian
 credentials are not mounted. This limits access to host vault files, not to the
 container's own persistent `/data` or its network access. Changes in the shared
-folder are immediately visible on the host; `obsidian-sync.service` continuously
+folders are immediately visible on the host; `obsidian-sync.service` continuously
 synchronizes the host vault with Obsidian Sync. Existing vaults at other paths
 are not moved.
 The shared notes are outside the `openbot-data` volume and need their own backup.
@@ -235,7 +240,7 @@ digest deliberately, review the matching upstream seccomp profile, and activate
 the revised configuration. Never roll an older image back onto a migrated database.
 
 Agents have full access inside the container. Apart from the scoped Obsidian
-folder, no host home is mounted, and the Docker socket is not exposed.
+folders, no host home is mounted, and the Docker socket is not exposed.
 Host networking exposes host-local listeners to agents and lets their processes
 bind host ports. It does not isolate agents from the LAN.
 No CPU or memory cap is imposed; set limits before sharing the server with

@@ -12,6 +12,7 @@ in
     "d /home/ri/vaults 0700 ri users -"
     "d /home/ri/vaults/Obsidian 0700 ri users -"
     "d /home/ri/vaults/Obsidian/OpenBot 0700 ri users -"
+    "d /home/ri/vaults/Obsidian/Studies 0700 ri users -"
   ];
 
   virtualisation.oci-containers = {
@@ -23,6 +24,7 @@ in
       volumes = [ "openbot-data:/data" ];
       extraOptions = [
         "--mount=type=bind,source=/home/ri/vaults/Obsidian/OpenBot,target=/data/OpenBot/Shared/Obsidian"
+        "--mount=type=bind,source=/home/ri/vaults/Obsidian/Studies,target=/data/OpenBot/Shared/Studies"
         "--security-opt=seccomp=${seccompProfile}"
         "--security-opt=no-new-privileges:true"
         "--shm-size=1g"
