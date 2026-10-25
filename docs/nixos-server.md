@@ -145,22 +145,21 @@ and publishes vaults without the desktop app; it is not a web notes editor.
 Run it as `ri`, not root. Account credentials and vault contents remain
 application-owned and must stay outside this checkout and the Nix store.
 
-After approved activation, sign in and select an existing Obsidian Sync vault.
-Replace `My Vault` with its name from `ob sync-list-remote`:
+After approved activation, sign in and connect the existing `Obsidian` remote
+vault to the host directory created by the OpenBot module:
 
 ```sh
 ob login
 ob sync-list-remote
-mkdir -p ~/vaults/notes
-ob sync-setup --vault "My Vault" --path ~/vaults/notes --device-name nixos-server
-ob sync --path ~/vaults/notes
+ob sync-setup --vault "Obsidian" --path ~/vault/Obsidian --device-name nixos-server
+ob sync --path ~/vault/Obsidian
 ```
 
 Enter account and vault encryption passwords at the interactive prompts,
-not in command arguments. `ob sync --path ~/vaults/notes --continuous` watches
+not in command arguments. `ob sync --path ~/vault/Obsidian --continuous` watches
 for changes while that process runs; no automatic sync service is configured.
-This installs the CLI on the host only. OpenBot's container does not inherit
-the command, credentials or vault, even with host networking.
+The CLI and credentials remain on the host. Only the vault's `OpenBot` subfolder
+is shared with the container, as described below.
 
 ## OpenBot agent server
 
@@ -198,6 +197,24 @@ Manage lifecycle through systemd, not `docker restart`, because NixOS owns the
 container. Logs are available with `journalctl -u docker-openbot -f`.
 For phone pairing, run `docker exec -it openbot openbot mobile-connect`.
 
+### Obsidian notes access
+
+The only host vault directory mounted into OpenBot is
+`/home/ri/vault/Obsidian/OpenBot`, read/write at
+`/data/OpenBot/Shared/Obsidian`. Point agents at this container path.
+Systemd tmpfiles creates the host directory and its two vault parents with mode
+`0700`, owned by `ri`; the container's UID 1000 matches `ri` for write access.
+The bind mount refuses to start if its source is missing.
+
+The rest of the host vault, its `.obsidian` settings and the host's Obsidian
+credentials are not mounted. This limits access to host vault files, not to the
+container's own persistent `/data` or its network access. Changes in the shared
+folder are immediately visible on the host; remote Obsidian Sync still requires
+`ob sync` to run on the host. Existing vaults at other paths are not moved.
+The shared notes are outside the `openbot-data` volume and need their own backup.
+
+### Persistent data and isolation
+
 The named Docker volume `openbot-data`, mounted at `/data`, survives container
 replacement. It contains workspaces, databases, browser state, provider sign-ins,
 and the keyring with its password file. Keep this entire recovery unit together.
@@ -206,9 +223,10 @@ No automatic backup or image updater is configured. Update the image version and
 digest deliberately, review the matching upstream seccomp profile, and activate
 the revised configuration. Never roll an older image back onto a migrated database.
 
-Agents have full access inside the container. No host home or Docker socket is
-mounted, but host networking exposes host-local listeners to agents and lets
-their processes bind host ports. It does not isolate agents from the LAN.
+Agents have full access inside the container. Apart from the scoped Obsidian
+folder, no host home is mounted, and the Docker socket is not exposed.
+Host networking exposes host-local listeners to agents and lets their processes
+bind host ports. It does not isolate agents from the LAN.
 No CPU or memory cap is imposed; set limits before sharing the server with
 resource-sensitive workloads. Credentials belong in interactive provider setup
 or separately provisioned runtime files, never in this repository or the Nix store.
