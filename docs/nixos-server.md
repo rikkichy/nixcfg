@@ -229,6 +229,30 @@ synchronizes the host vault with Obsidian Sync. Existing vaults at other paths
 are not moved.
 The shared notes are outside the `openbot-data` volume and need their own backup.
 
+### Declarative humanizer skills
+
+`hosts/nixos-server/dotfiles/openbot/skills/` owns the compact English
+`humanizer-en` and Russian `humanizer-ru` skills and their upstream MIT licenses.
+The OpenBot module mounts each skill directory read-only from the Nix store into
+both `/data/.agents/skills/<name>` and `/data/.claude/skills/<name>`.
+Only these two names are mounted, leaving other skills and provider settings
+writable. No Downloads directory, installer, credentials, or package download
+is involved at container startup.
+
+These are native provider-global skills, not OpenBot local-library entries:
+OpenBot does not list home-directory skills in its Skills UI. Codex, Grok and
+OpenCode support the global `.agents` directory; Claude Code uses `.claude`.
+A provider with a separate account configuration directory or without global
+skill discovery needs its own workspace installation instead. The mounts do
+not modify OpenBot's library database or copy files into agent workspaces.
+
+After approved activation, start a fresh agent session and ask it to use
+`humanizer-en` or `humanizer-ru` for the supplied text. Edit the tracked sources
+and rebuild to update them; agent-side edits to these mounted skills are denied.
+The source path changes with their contents, so activation recreates the
+container with the new skill versions. The original Downloads copies are not
+the deployment source.
+
 ### Persistent data and isolation
 
 The named Docker volume `openbot-data`, mounted at `/data`, survives container

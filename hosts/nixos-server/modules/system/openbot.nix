@@ -1,6 +1,7 @@
 { lib, pkgs, ... }:
 
 let
+  humanizerSkills = ../../dotfiles/openbot/skills;
   seccompProfile = pkgs.fetchurl {
     name = "openbot-seccomp.json";
     url = "https://raw.githubusercontent.com/nightly-labs/openbot/4b39c9a497cfd4af7a718cfdeab52e2059ca6b91/docker/seccomp.json";
@@ -25,6 +26,10 @@ in
       extraOptions = [
         "--mount=type=bind,source=/home/ri/vaults/Obsidian/OpenBot,target=/data/OpenBot/Shared/Obsidian/OpenBot"
         "--mount=type=bind,source=/home/ri/vaults/Obsidian/Studies,target=/data/OpenBot/Shared/Obsidian/Studies"
+        "--mount=type=bind,source=${humanizerSkills}/humanizer-en,target=/data/.agents/skills/humanizer-en,readonly"
+        "--mount=type=bind,source=${humanizerSkills}/humanizer-ru,target=/data/.agents/skills/humanizer-ru,readonly"
+        "--mount=type=bind,source=${humanizerSkills}/humanizer-en,target=/data/.claude/skills/humanizer-en,readonly"
+        "--mount=type=bind,source=${humanizerSkills}/humanizer-ru,target=/data/.claude/skills/humanizer-ru,readonly"
         "--security-opt=seccomp=${seccompProfile}"
         "--security-opt=no-new-privileges:true"
         "--shm-size=1g"
