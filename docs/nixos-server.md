@@ -213,8 +213,8 @@ Only these host vault directories are mounted into OpenBot, both read/write:
 
 | Host directory | Container path |
 |---|---|
-| `/home/ri/vaults/Obsidian/OpenBot` | `/data/OpenBot/Shared/Obsidian` |
-| `/home/ri/vaults/Obsidian/Studies` | `/data/OpenBot/Shared/Studies` |
+| `/home/ri/vaults/Obsidian/OpenBot` | `/data/OpenBot/Shared/Obsidian/OpenBot` |
+| `/home/ri/vaults/Obsidian/Studies` | `/data/OpenBot/Shared/Obsidian/Studies` |
 
 Point agents at the container paths. Systemd tmpfiles creates the host directories
 and their two vault parents with mode `0700`, owned by `ri`; the container's

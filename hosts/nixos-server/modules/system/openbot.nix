@@ -23,8 +23,8 @@ in
       networks = [ "host" ];
       volumes = [ "openbot-data:/data" ];
       extraOptions = [
-        "--mount=type=bind,source=/home/ri/vaults/Obsidian/OpenBot,target=/data/OpenBot/Shared/Obsidian"
-        "--mount=type=bind,source=/home/ri/vaults/Obsidian/Studies,target=/data/OpenBot/Shared/Studies"
+        "--mount=type=bind,source=/home/ri/vaults/Obsidian/OpenBot,target=/data/OpenBot/Shared/Obsidian/OpenBot"
+        "--mount=type=bind,source=/home/ri/vaults/Obsidian/Studies,target=/data/OpenBot/Shared/Obsidian/Studies"
         "--security-opt=seccomp=${seccompProfile}"
         "--security-opt=no-new-privileges:true"
         "--shm-size=1g"
