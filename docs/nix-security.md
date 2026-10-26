@@ -130,6 +130,8 @@ An initrd-only `ExecStartPost` drop-in for `systemd-cryptsetup@cryptroot.service
 atomically publishes `/run/plymouth/cryptroot-unlocked.png` and sends the
 Plymouth status notification asynchronously. It runs only after cryptsetup
 succeeds, for either YubiKey or passphrase authentication.
+The helper is explicitly included through `boot.initrd.systemd.storePaths`;
+referencing a script in the drop-in's `ExecStartPost` does not copy it into the initrd.
 Password submission, token detection, and boot progress do not signal success.
 Notification failure cannot fail unlock or wait for the splash to respond.
 The runtime image marker lets the native theme recognize success after late
