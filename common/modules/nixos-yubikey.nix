@@ -1,7 +1,6 @@
 { config, ... }:
 
 {
-  boot.initrd.systemd.enable = true;
   boot.initrd.systemd.fido2.enable = true;
   boot.initrd.luks.devices.cryptroot.crypttabExtraOpts = [
     "fido2-device=auto"

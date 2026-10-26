@@ -15,7 +15,6 @@
   '';
 
   boot.consoleLogLevel = 3;
-  boot.initrd.verbose = false;
   boot.initrd.kernelModules = [ "nvidia" "nvidia_modeset" "nvidia_drm" ];
 
   boot.initrd.luks.devices."cryptroot" = {

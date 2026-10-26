@@ -16,8 +16,10 @@ Another attribute name targeting the same backing partition creates a second
 mapping, not an override.
 Two cryptsetup units race, and losing `cryptroot` strands root unlock.
 
-The systemd initrd enables FIDO2 and sets `fido2-device=auto` and
-`token-timeout=10s`. This bounds token discovery, not every touch interaction.
+NixOS uses a systemd-only initrd. The shared YubiKey module enables FIDO2 and
+sets `fido2-device=auto` and `token-timeout=10s`. Boot message visibility is
+controlled by kernel/systemd settings, not scripted-stage verbosity.
+The timeout bounds token discovery, not every touch interaction.
 Keep password fallback, existing passphrase slots, and USB/HID support. Never
 add `headless` or a SOPS dependency. `/var/lib/sops-nix/key.txt` is inside the
 locked root and cannot bootstrap it.
