@@ -16,6 +16,7 @@ and [existing-system manual recovery](install.md#manual-installation--recovery-r
 
 - [Installation](#installation)
 - [Rebuilds and desktop tools](#rebuilds-and-desktop-tools)
+- [Login theme preview](#login-theme-preview)
 - [Printing](#printing)
 - [Notes and passwords](#notes-and-passwords)
 - [Wallpapers and colours](#wallpapers-and-colours)
@@ -257,6 +258,36 @@ Install the local archive from OpenDeck's Plugins page. Follow the upstream
 model/hotkey setup, credential locations, and troubleshooting. Existing
 plugins and profiles remain application-owned. No installation or migration
 runs during NixOS activation.
+
+## Login theme preview
+
+`hosts/nix/dotfiles/ricing/tuigreet/nix-frost.toml` is the standalone **Nix Frost**
+theme: Fastfetch's compact `NixOS_small` snowflake, ice-blue text, a dark panel
+and blue fire. Its compact layout fits tuigreet's initial 80×24 buffer; the
+full-size logo overflows that buffer. No Fastfetch process runs in the greeter.
+This asset is not enabled in greetd; boot autologin and PAM remain unchanged.
+
+Open the actual greeter in a separate terminal without authenticating:
+
+```sh
+nix shell path:.#nixosConfigurations.nix.pkgs.tuigreet -c \
+  foot --config=/dev/null --app-id=nix-frost-preview \
+  --title='Nix Frost — LOGIN PREVIEW (no authentication)' \
+  --font='DepartureMono Nerd Font:size=16' \
+  --override=colors-dark.background=0b1220 \
+  --override=colors-dark.foreground=d6ebff \
+  --override=main.pad=18x12 \
+  tuigreet --config /etc/nixos/hosts/nix/dotfiles/ricing/tuigreet/nix-frost.toml \
+  --mock --user ri --cmd 'uwsm start hyprland-uwsm.desktop' \
+  --power-shutdown /run/current-system/sw/bin/false \
+  --power-reboot /run/current-system/sw/bin/false
+```
+
+Mock mode does not connect to greetd. The power-command overrides also prevent
+preview shutdown/reboot actions. Do not enter a real password. **F4** selects
+another background or **None** for reduced motion; switching effects uses
+upstream default colours. Close this terminal to leave the preview.
+Terminal rendering is not proof of Linux-console font or colour support.
 
 ## Printing
 

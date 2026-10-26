@@ -1,0 +1,58 @@
+# Nix Frost — native tuigreet theme; not enabled on the real greeter.
+# Logo: Fastfetch's NixOS_small artwork; compact enough for an 80x24 terminal.
+[display]
+show_time = true
+time_format = "%A  /  %d %B  /  %H:%M"
+show_title = false
+align_greeting = "center"
+greeting = """
+\u001b[38;2;182;233;255m  ▗▄   ▗▄ ▄▖  \u001b[0m
+\u001b[38;2;182;233;255m ▄▄🬸█▄▄▄🬸█▛ ▃ \u001b[0m
+\u001b[38;2;182;233;255m   ▟▛    ▜▃▟🬕 \u001b[0m
+\u001b[38;2;126;186;255m🬋🬋🬫█      █🬛🬋🬋\u001b[0m
+\u001b[38;2;126;186;255m 🬷▛🮃▙    ▟▛   \u001b[0m
+\u001b[38;2;126;186;255m 🮃 ▟█🬴▀▀▀█🬴▀▀ \u001b[0m
+\u001b[38;2;126;186;255m  ▝▀ ▀▘   ▀▘  \u001b[0m
+
+\u001b[1;38;2;214;235;255mN I X O S\u001b[0m
+\u001b[38;2;126;155;184mH Y P R L A N D   /   U W S M\u001b[0m
+"""
+
+[layout]
+width = 44
+container_padding = 1
+prompt_padding = 1
+
+[layout.widgets]
+time_position = "top"
+status_position = "bottom"
+
+[layout.widgets.status_bar]
+show_command = false
+show_session = false
+show_session_status = false
+show_power = false
+show_background = true
+
+[theme]
+container = "#0b1220"
+border = "#42698f"
+text = "#d6ebff"
+time = "#8daac4"
+title = "#7ebaff"
+greet = "#7ebaff"
+prompt = "#7ebaff"
+input = "#e6f5ff"
+action = "#8daac4"
+button = "#7ebaff"
+
+[background]
+kind = "doom"
+fps = 15
+
+[background.doom]
+height = 3
+spread = 2
+top_color = "#18304d"
+middle_color = "#42698f"
+bottom_color = "#7ebaff"
