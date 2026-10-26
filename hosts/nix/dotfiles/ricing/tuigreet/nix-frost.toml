@@ -25,18 +25,11 @@ prompt_padding = 1
 
 [layout.widgets]
 time_position = "top"
-status_position = "bottom"
-
-[layout.widgets.status_bar]
-show_command = false
-show_session = false
-show_session_status = false
-show_power = false
-show_background = true
+status_position = "hidden"
 
 [theme]
 container = "#0b1220"
-border = "#42698f"
+border = "#0b1220"
 text = "#d6ebff"
 time = "#8daac4"
 title = "#7ebaff"

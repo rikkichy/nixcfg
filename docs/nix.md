@@ -262,9 +262,10 @@ runs during NixOS activation.
 ## Login theme preview
 
 `hosts/nix/dotfiles/ricing/tuigreet/nix-frost.toml` is the standalone **Nix Frost**
-theme: Fastfetch's compact `NixOS_small` snowflake, ice-blue text, a dark panel
-and blue fire. Its compact layout fits tuigreet's initial 80×24 buffer; the
-full-size logo overflows that buffer. No Fastfetch process runs in the greeter.
+theme: Fastfetch's compact `NixOS_small` snowflake, ice-blue text, an outline-free
+dark panel, no shortcut footer, and blue fire. Its compact layout fits tuigreet's
+initial 80×24 buffer; the full-size logo overflows that buffer.
+No Fastfetch process runs in the greeter.
 This asset is not enabled in greetd; boot autologin and PAM remain unchanged.
 
 Open the actual greeter in a separate terminal without authenticating:
@@ -277,6 +278,7 @@ nix shell path:.#nixosConfigurations.nix.pkgs.tuigreet -c \
   --override=colors-dark.background=0b1220 \
   --override=colors-dark.foreground=d6ebff \
   --override=main.pad=18x12 \
+  env LANGUAGE=ru_RU \
   tuigreet --config /etc/nixos/hosts/nix/dotfiles/ricing/tuigreet/nix-frost.toml \
   --mock --user ri --cmd 'uwsm start hyprland-uwsm.desktop' \
   --power-shutdown /run/current-system/sw/bin/false \
@@ -288,6 +290,12 @@ preview shutdown/reboot actions. Do not enter a real password. **F4** selects
 another background or **None** for reduced motion; switching effects uses
 upstream default colours. Close this terminal to leave the preview.
 Terminal rendering is not proof of Linux-console font or colour support.
+
+The preview's `LANGUAGE=ru_RU` selects the bundled Russian interface and date
+names without changing the desktop locale. The outline colour matches the panel;
+`status_position = "hidden"` removes the entire shortcut footer. Upstream's mock
+password prompt is hardcoded in English, and untranslated menu items fall back
+to English. Real authentication prompts come from PAM, not this theme.
 
 ## Printing
 
