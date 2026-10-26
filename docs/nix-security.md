@@ -75,9 +75,18 @@ generation or remove fallback slots until all paths work.
 ### Native disk unlock and desktop login
 
 Disk unlock uses systemd's console prompt, without Plymouth, splash assets or
-unlock-notification hooks. `hosts/nix/boot.nix` retains early NVIDIA modules;
+unlock-notification hooks. `hosts/nix/boot.nix` retains early NVIDIA modules and
+sets `fbcon=nodefer`: the framebuffer console binds when a display becomes
+available instead of waiting for later console output.
 `hosts/nix/modules/system/session.nix` supplies the Cyrillic console font and
-palette. Quiet boot settings do not disable password recovery or the journal.
+palette.
+
+FIDO2 insertion/touch cues are systemd journal notices, not password-agent
+prompts. An initrd-only `journald.conf.d/console.conf` enables
+`ForwardToConsole=yes` and `MaxLevelConsole=notice`, displaying those cues and
+more severe messages while leaving informational boot chatter in the journal.
+Structured journal records and password recovery remain intact. This does not
+change normal userspace logging, authentication, token enrollment or autologin.
 
 After either successful YubiKey disk unlock **or the recovery passphrase**,
 greetd's `initial_session` starts `ri` in UWSM/Hyprland automatically.

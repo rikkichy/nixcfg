@@ -21,11 +21,18 @@
   boot.initrd.luks.devices."cryptroot" = {
     allowDiscards = true;
   };
+  # FIDO2 touch cues are journal notices, not password-agent prompts.
+  boot.initrd.systemd.contents."/etc/systemd/journald.conf.d/console.conf".text = ''
+    [Journal]
+    ForwardToConsole=yes
+    MaxLevelConsole=notice
+  '';
   boot.kernelPackages = pkgs.linuxPackages_latest;
   hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.stable;
 
   boot.kernelParams = [
     "quiet"
+    "fbcon=nodefer"
     "rd.udev.log_level=3"
     "rd.systemd.show_status=auto"
     "amd_iommu=force_isolation"
