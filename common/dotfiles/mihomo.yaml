@@ -24,6 +24,14 @@ tun:
 dns:
   enable: false
 
+sniffer:
+  enable: true
+  parse-pure-ip: true
+  override-destination: false
+  sniff:
+    TLS:
+      ports: [443]
+
 proxy-providers:
   primary:
     type: http
@@ -94,6 +102,8 @@ profile:
   store-selected: true
 
 rules:
+  - DOMAIN,ota.waydro.id,PROXY
+  - DOMAIN,ota.waydro.id,REJECT
   # Observed Krypton startup endpoints; update if the service moves.
   - AND,((DST-PORT,6700),(IP-CIDR,162.19.224.212/32,no-resolve)),PROXY
   - AND,((DST-PORT,6700),(IP-CIDR,162.19.224.212/32,no-resolve)),REJECT

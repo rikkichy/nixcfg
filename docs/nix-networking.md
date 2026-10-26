@@ -29,16 +29,20 @@ authentication. Browser origins are restricted to that localhost origin.
 
 ### Split routing and server selection
 
-Scoped mode proxies only the observed Krypton startup endpoints on
-`162.19.224.212`: loader port `6700` and subsequent initialization port `3030`.
-All other destinations and ports use `DIRECT`, including loopback and private
-LAN addresses. The IP-and-port rules do not depend on DNS or protocol sniffing.
+Scoped mode proxies the observed Krypton startup endpoints on
+`162.19.224.212` (loader port `6700` and initialization port `3030`) and the
+exact `ota.waydro.id` hostname for Waydroid OTA traffic. All other destinations
+and ports use `DIRECT`, including loopback and private LAN addresses. The
+Krypton IP-and-port rules do not depend on DNS or protocol sniffing.
 `vps-c35938de.vps.ovh.net` is the server's reverse-DNS hostname, not a confirmed
 hostname used by the loader. Update the rules if Krypton's endpoints move.
 
-There are no domain, geosite, ASN or application-process routing rules.
-Sniffing and process lookup are disabled; the service does not request
-cross-user process-inspection privileges.
+The Waydroid rule uses TLS SNI sniffing on port 443. Sniffing changes neither
+DNS resolution nor the connection destination. Traffic without a visible
+`ota.waydro.id` hostname, including ECH-hidden SNI, cannot match the rule.
+There are no geosite, ASN or application-process routing rules. Process lookup
+is disabled; the service does not request cross-user process-inspection
+privileges.
 
 Empty subscriptions reject traffic instead of falling back to a direct connection.
 Each endpoint's proxy rule has a matching rejection rule so an unsupported flow
@@ -54,7 +58,7 @@ It does not increase bandwidth. The TUN retains its gVisor stack.
 opens only the active subscription's live nodes, fastest first. Dismissing
 either submenu leaves the selection unchanged. **Switch to global** routes traffic
 handled by Mihomo through the selected subscription/server. **Switch to scoped**
-restores the Krypton-only rule. The prompt shows the current mode.
+restores the scoped rules. The prompt shows the current mode.
 Switching routing mode closes existing Mihomo connections so applications
 reconnect using the new policy. Downloads, calls and games can be interrupted.
 Server and subscription changes do not close existing connections.
@@ -70,7 +74,7 @@ vpn                              # show the selected server
 vpn status                       # show the selected server
 vpn mode                         # show global or scoped routing
 vpn mode global                  # proxy Mihomo traffic through the selected server
-vpn mode scoped                  # proxy only the Krypton loader endpoint
+vpn mode scoped                  # apply the scoped routing rules
 vpn subscription                 # active subscription name
 vpn subscription primary         # select Primary's remembered server
 vpn subscription quattro         # select Quattro's remembered server
