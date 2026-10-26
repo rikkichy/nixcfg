@@ -1,6 +1,7 @@
 # Boot, authentication, and SOPS safety — host nix
 
 Sources: `hosts/nix/hardware.nix`, `hosts/nix/boot.nix`,
+`common/modules/nixos-yubikey.nix`, `hosts/nix/modules/system/session.nix`,
 `hosts/nix/modules/system/security.nix`, `.secrets/nix/sops.nix`, and the Linux
 module imports in `flake.nix`. Operator commands and recovery checkpoints are
 in [docs/nix-security.md](../../../../docs/nix-security.md).
@@ -9,9 +10,10 @@ No enrollment or boot test is implied by a source edit.
 ## One root mapping, independent password recovery
 
 `hosts/nix/hardware.nix` declares `boot.initrd.luks.devices."cryptroot"` and
-mounts `/dev/mapper/cryptroot` as root. `hosts/nix/boot.nix` extends **that same
-mapping** with discard and FIDO2 options. Another attribute name targeting the
-same backing partition creates a second mapping, not an override.
+mounts `/dev/mapper/cryptroot` as root. `hosts/nix/boot.nix` adds discard support;
+`common/modules/nixos-yubikey.nix` adds FIDO2 options to **that same mapping**.
+Another attribute name targeting the same backing partition creates a second
+mapping, not an override.
 Two cryptsetup units race, and losing `cryptroot` strands root unlock.
 
 The systemd initrd enables FIDO2 and sets `fido2-device=auto` and
@@ -67,11 +69,20 @@ Nix rollback restores boot configuration, **not LUKS enrollment or keyslots**.
 
 ## Sudo touch with password fallback
 
-sudo-rs uses PAM services `sudo` and `sudo-i`, not `sudo-rs`. Only those two
-services enable U2F as `sufficient`. `wheelNeedsPassword = true`, Unix password,
-and account/session checks remain. Global U2F, NOPASSWD, `nouserok`, or
-`alwaysok` are not substitutes. Leave desktop authentication and timestamp
-policy unchanged.
+sudo-rs uses PAM services `sudo` and `sudo-i`, not `sudo-rs`. Both enable U2F
+as `sufficient`. `wheelNeedsPassword = true`, Unix password and account/session
+checks remain. Global U2F, NOPASSWD, `nouserok`, or `alwaysok` are not substitutes.
+Leave sudo timestamp policy unchanged.
+
+Desktop `session.nix` adds an explicit sufficient U2F rule to greetd before its
+`login` substack, reusing the same mapping and numeric policy. The pinned greetd
+module disables default PAM rules, so `greetd.u2f.enable` alone is ineffective.
+Preserve the delegated account/session checks and password fallback. The
+Russian cue is service-local. Boot autologin follows either successful LUKS
+unlock method; it does not prove which factor unlocked root. No Plymouth hook
+or authentication handoff is involved. Never restart greetd to test login:
+its initial session can run again. Activation does not restart the existing
+daemon; plan an approved reboot and physical logout/relogin acceptance checks.
 
 `security.pam.u2f.settings` uses `/etc/u2f-mappings`, origin **and** appid
 `pam://nix`, a cue, and integers `userpresence=1`, `pinverification=0`, and

@@ -1,21 +1,21 @@
-# Nix Frost — native tuigreet theme; not enabled on the real greeter.
-# Logo: Fastfetch's NixOS_small artwork; compact enough for an 80x24 terminal.
+# Nix Frost — native Linux-console theme.
+# Fastfetch's nixos_old_small logo fits 80x24 without unsupported Unicode glyphs.
 [display]
 show_time = true
 time_format = "%A  /  %d %B  /  %H:%M"
 show_title = false
 align_greeting = "center"
 greeting = """
-\u001b[38;2;182;233;255m  ▗▄   ▗▄ ▄▖  \u001b[0m
-\u001b[38;2;182;233;255m ▄▄🬸█▄▄▄🬸█▛ ▃ \u001b[0m
-\u001b[38;2;182;233;255m   ▟▛    ▜▃▟🬕 \u001b[0m
-\u001b[38;2;126;186;255m🬋🬋🬫█      █🬛🬋🬋\u001b[0m
-\u001b[38;2;126;186;255m 🬷▛🮃▙    ▟▛   \u001b[0m
-\u001b[38;2;126;186;255m 🮃 ▟█🬴▀▀▀█🬴▀▀ \u001b[0m
-\u001b[38;2;126;186;255m  ▝▀ ▀▘   ▀▘  \u001b[0m
+\u001b[96m  \\\\  \\\\ //  \u001b[0m
+\u001b[96m ==\\\\__\\\\/ //\u001b[0m
+\u001b[96m   //   \\\\// \u001b[0m
+\u001b[94m==//     //==\u001b[0m
+\u001b[94m //\\\\___//   \u001b[0m
+\u001b[94m// /\\\\  \\\\==\u001b[0m
+\u001b[94m  // \\\\  \\\\ \u001b[0m
 
-\u001b[1;38;2;214;235;255mN I X O S\u001b[0m
-\u001b[38;2;126;155;184mH Y P R L A N D   /   U W S M\u001b[0m
+\u001b[97mN I X O S\u001b[0m
+\u001b[36mH Y P R L A N D   /   U W S M\u001b[0m
 """
 
 [layout]
@@ -28,16 +28,16 @@ time_position = "top"
 status_position = "hidden"
 
 [theme]
-container = "#0b1220"
-border = "#0b1220"
-text = "#d6ebff"
-time = "#8daac4"
-title = "#7ebaff"
-greet = "#7ebaff"
-prompt = "#7ebaff"
-input = "#e6f5ff"
-action = "#8daac4"
-button = "#7ebaff"
+container = "black"
+border = "black"
+text = "gray"
+time = "cyan"
+title = "lightblue"
+greet = "lightblue"
+prompt = "lightblue"
+input = "white"
+action = "cyan"
+button = "lightblue"
 
 [background]
 kind = "doom"
@@ -46,6 +46,6 @@ fps = 15
 [background.doom]
 height = 3
 spread = 2
-top_color = "#18304d"
-middle_color = "#42698f"
-bottom_color = "#7ebaff"
+top_color = "darkgray"
+middle_color = "blue"
+bottom_color = "lightblue"

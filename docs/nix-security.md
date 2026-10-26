@@ -72,95 +72,51 @@ Test boot without the token using the retained passphrase. Test no-touch/wrong-t
 fallback. Record waits and results. Do not garbage-collect the recovery
 generation or remove fallback slots until all paths work.
 
-### Graphical disk unlock
+### Native disk unlock and desktop login
 
-`hosts/nix/boot.nix` selects the unmodified Nixpkgs Plymouth package.
-The host-owned `hosts/nix/pkgs/ricing/plymouth/` theme uses Plymouth's native
-`script` plugin. It changes presentation, not cryptsetup or password handling.
-Plymouth supplies masked character counts to the theme, never password characters.
+Disk unlock uses systemd's console prompt, without Plymouth, splash assets or
+unlock-notification hooks. `hosts/nix/boot.nix` retains early NVIDIA modules;
+`hosts/nix/modules/system/session.nix` supplies the Cyrillic console font and
+palette. Quiet boot settings do not disable password recovery or the journal.
 
-The theme shows a [Material Symbols Rounded lock](https://github.com/google/material-design-icons/blob/49d4db35df873165d6bd6ba09b063c7dafbac2f4/symbols/web/lock/materialsymbolsrounded/lock_wght600_48px.svg)
-and the two-line heading “System is encrypted.” / “Verify your identity.”
-The official [Google Sans Flex font](https://github.com/google/fonts/tree/d4c1d3820c9bb17ec1a7a526967b1cdafb0885ad/ofl/googlesansflex)
-uses native Pango variations for Semibold weight and rounded outlines.
-The font is embedded in the initrd and
-registered for shutdown rendering.
+After either successful YubiKey disk unlock **or the recovery passphrase**,
+greetd's `initial_session` starts `ri` in UWSM/Hyprland automatically.
+This uses encrypted-root access as the boot authentication boundary, not a
+transfer of FIDO2 authentication into PAM. It is not YubiKey-only autologin.
+Restarting greetd can trigger its initial session again; do not use a service
+restart to test logout authentication.
 
-The password field is centered independently beneath the watermark lock.
-Its outline is thicker and its corners are rounder than the stock field.
-The real prompt sits above it, with the declared console layout and live
-Caps Lock indicator below. There is no field-side lock.
-Masked feedback uses seven randomly selected Material 3 expressive shapes.
-New positions pop into place, while existing positions keep their shapes.
-Long input scrolls within the field. Backspace and clear do not replay existing
-shapes or change authentication.
+After logout, greetd runs the Russian **Nix Frost** tuigreet on VT1. The
+store-deployed theme uses Fastfetch's console-compatible ASCII snowflake,
+the 16-colour console palette, and Terminus with Cyrillic/line-drawing coverage.
+No extra compositor, terminal emulator or Fastfetch process runs at login.
+The panel outline and shortcut footer are hidden.
 
-The checked-in asset archive contains the PNG frames and font.
-Upstream licenses accompany the archive and are installed with the theme.
-Theme assembly extracts these files and installs the native script.
-It does not compile Plymouth, HarfBuzz, Qt, or a custom renderer.
-Stock Plymouth and its text-rendering dependencies retain their Nixpkgs
-derivations and remain eligible for binary substitution.
-Nix still assembles the theme, configuration files, and initrd locally.
-Cache availability depends on the selected Nixpkgs revision.
+Only greetd's authentication stack gains a `sufficient` pam-u2f rule before its
+existing `login` substack. Nixpkgs' greetd sets `useDefaultRules = false`, so
+setting its `u2f.enable` alone would not add this rule. Account, password-change
+and session handling still delegate to `login`; other TTY logins are unchanged.
+The rule reuses the root-controlled `/etc/u2f-mappings` and `pam://nix` origin/appid
+already used by sudo. Disk enrollment alone does not populate this PAM mapping.
+No registration or secret is added by this configuration.
 
-The spinner assets come from the pinned Quickshell
-[`DLoadingIndicator.qml`](https://github.com/duxlabs-dev/dux-qml-common/blob/3cf182586c6c948a6ae61b15df13ff1365c0dab0/DCommon/Widgets/DLoadingIndicator.qml),
-its AndroidX shape geometry and its fragment shader.
-The export contains 1092 transparent 96px PNG frames sampled at 240Hz.
-It preserves the seven shapes and spring implementation, without image interpolation.
-The steady rotation period is 3640ms for a three-turn, 4.55-second loop.
-The spring settlement threshold is 0.001 to avoid an abrupt rotation snap.
-Geometry attribution and MIT/Apache licenses accompany the assets.
-Field feedback uses seven shapes with twelve pre-rendered pop frames each.
+Select `ri` and submit the username. With an enrolled key, the cue is
+“Прикоснитесь к YubiKey”; a successful touch needs no password or PIN.
+If hardware authentication fails, the normal account-password path remains.
+No-touch waits depend on pam-u2f/the token; the disk's `token-timeout=10s` does
+not bound login authentication. PAM fallback prompts can use the system language.
+Hardware login supplies no password for an encrypted GNOME login keyring;
+the existing empty-keyring-password setup remains protected at rest by LUKS.
 
-The script requests 240 updates per second during the spinner animation.
-Password pops target 180ms. Successful unlock crossfades the current spinner
-frame to a checkmark over a target 300ms.
-The native script timer drives these animations. Delayed callbacks can extend
-their duration. The initrd needs no Qt, QML, Mesa, Xvfb, or font-generation helper.
-
-The update target is not a display refresh guarantee. Plymouth's DRM renderer
-prefers a user-defined mode, then the monitor's preferred mode, rather than the
-highest refresh rate. This monitor advertises 1920×1080 at 60Hz as preferred;
-Hyprland's 240Hz setting applies only after login. No boot display mode is forced.
-Actual presentation remains limited by the early display mode, driver and load.
-
-An initrd-only `ExecStartPost` drop-in for `systemd-cryptsetup@cryptroot.service`
-atomically publishes `/run/plymouth/cryptroot-unlocked.png` and sends the
-Plymouth status notification asynchronously. It runs only after cryptsetup
-succeeds, for either YubiKey or passphrase authentication.
-The helper is explicitly included through `boot.initrd.systemd.storePaths`;
-referencing a script in the drop-in's `ExecStartPost` does not copy it into the initrd.
-Password submission, token detection, and boot progress do not signal success.
-Notification failure cannot fail unlock or wait for the splash to respond.
-The runtime image marker lets the native theme recognize success after late
-display startup or Escape/details. It survives switch-root, but not reboot.
-Shutdown and reboot ignore it. No service waits for the crossfade to finish.
-
-Systemd's FIDO2 touch cue and other messages remain visible.
-PIN/passphrase entry replaces the static heading with the real prompt and masked
-input. Shutdown and reboot omit the encryption heading.
-Escape toggles between graphics and boot details.
-Quiet console settings do not disable the journal or password fallback.
-
-NVIDIA's display modules load in the initrd in parallel with disk unlock.
-Plymouth uses its upstream udev/vconsole ordering, without waiting for
-`systemd-modules-load.service`. Its daemon can retain the one-shot FIDO2 touch
-cue before a display is available, then attach to NVIDIA through native udev
-discovery. Do not serialize cryptsetup behind the splash or graphics loading.
-Greetd uses its native Plymouth quit-wait ordering.
-
-Build without activation with
-`nix build --no-link 'path:.#nixosConfigurations.nix.config.system.build.initialRamdisk'`.
-A build or isolated graphical preview does not prove NVIDIA early display,
-physical YubiKey unlock, or greeter handoff. Before a separately approved boot
-test, follow the [Limine recovery procedure](#limine-recovery-with-a-zero-timeout)
-and retain the working generation. Check the splash, touch/no-PIN unlock,
-no-token/passphrase and wrong-token/no-touch fallback, masked input/backspace,
-the checkmark only after successful unlock, Escape/details restoration, and
-handoff to the desktop at the physical console. Do not change enrollment or
-keyslots to troubleshoot appearance.
+Activation and reboot remain separate operator actions. Greetd's NixOS module
+has `restartIfChanged = false`, so switching does not replace the already-running
+daemon; plan a reboot rather than killing a live session. Retain the working
+generation and [Limine recovery procedure](#limine-recovery-with-a-zero-timeout).
+At the physical console, test disk touch/no-PIN and no-token/passphrase boot,
+then logout/relogin with key+touch, no key+correct password, wrong password,
+unregistered key and no touch. Keep an authenticated recovery shell until
+password fallback and negative cases work. Build success is not proof of
+physical unlock, console appearance or hardware login.
 
 ### Limine recovery with a zero timeout
 
@@ -419,14 +375,15 @@ not prove these runtime or firmware properties.
 
 ## Touch-only sudo with password fallback
 
-Only PAM services `sudo` and `sudo-i` use U2F as `sufficient`, before the Unix
+PAM services `sudo` and `sudo-i` use U2F as `sufficient`, before the Unix
 password path. sudo-rs authorization and `wheelNeedsPassword = true` remain.
 This is not a NOPASSWD grant. Touch is requested with `userpresence=1`,
 `pinverification=0`, `userverification=0`, and a cue. The central mapping is
 `/etc/u2f-mappings`, root-controlled, with origin **and** appid `pam://nix`.
 It contains public registration metadata, not an exported private key, and
-does not depend on SOPS. Desktop login, autologin, locker, keyring, and polkit
-authentication are not part of this setup.
+does not depend on SOPS. Desktop greetd reuses this registration through its
+[separate login rule](#native-disk-unlock-and-desktop-login); locker and polkit
+authentication are unchanged.
 
 Keep a working authenticated root shell open throughout registration and
 testing. As `ri`, check `pamu2fcfg --help`.

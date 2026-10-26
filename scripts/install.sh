@@ -422,7 +422,7 @@ main() {
   nixos-enter --root /mnt -c 'chown -R ri:users /etc/nixos'
   password_status=$(nixos-enter --root /mnt -c 'passwd --status root')
   [[ $password_status == 'root P '* ]] || fail 'Root does not have an unlocked password.'
-  printf '\nSet a nonempty RI password (required for sudo fallback):\n'
+  printf '\nSet a nonempty RI password (required for password recovery):\n'
   nixos-enter --root /mnt -c 'passwd ri'
   password_status=$(nixos-enter --root /mnt -c 'passwd --status ri')
   [[ $password_status == 'ri P '* ]] || fail 'ri does not have an unlocked password.'
@@ -437,7 +437,7 @@ Installation commands completed. The target stays mounted at /mnt; no reboot.
 The Git checkout at /etc/nixos belongs to ri and tracks the public origin/main.
 Generated hardware and reviewed local edits remain uncommitted; preserve them.
 Keep the root shell, tested recovery ISO and passphrases.
-Boot/sudo authentication is NOT proven by installation.
+Boot/sudo/desktop authentication is NOT proven by installation.
 Before an operator-approved reboot inspect the target crypttab/initrd: exactly
 one cryptroot mapping, FIDO2/USB/HID support, no headless/passwordless fallback.
 From a separate ri terminal in the target, test sudo AND sudo -i with fresh
@@ -445,6 +445,9 @@ sudo -k before EACH attempt: touch/no PIN, no token/correct password, wrong
 password, no touch, and an unregistered key. Keep root until failures reject
 access and password fallback works. Plan cold-boot token/no-token/no-touch
 checks and recovery before leaving the KVM. Do not retire any recovery slot.
+On desktop nix, also test logout/relogin with key+touch and no-key/password,
+and rejection of invalid credentials. Boot autologin follows either successful
+disk-unlock method; disk enrollment does not enroll the separate PAM credential.
 Unlock root at the local console with the server-side FIDO2 token or LUKS
 passphrase. Ordinary SSH is available only after boot.
 SOPS/PIV identities, private service data and VPN provisioning are separate;

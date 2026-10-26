@@ -261,12 +261,20 @@ runs during NixOS activation.
 
 ## Login theme preview
 
-`hosts/nix/dotfiles/ricing/tuigreet/nix-frost.toml` is the standalone **Nix Frost**
-theme: Fastfetch's compact `NixOS_small` snowflake, ice-blue text, an outline-free
-dark panel, no shortcut footer, and blue fire. Its compact layout fits tuigreet's
-initial 80×24 buffer; the full-size logo overflows that buffer.
+`hosts/nix/dotfiles/ricing/tuigreet/nix-frost.toml` is the **Nix Frost** theme
+deployed by greetd: Fastfetch's compact `nixos_old_small` ASCII snowflake,
+ice-blue text, an outline-free dark panel, no shortcut footer, and blue fire.
+Its compact layout fits tuigreet's initial 80×24 buffer. Supplementary-plane
+glyphs from Fastfetch's newer logo are unsuitable for the Linux console.
+`session.nix` owns the 16-colour console palette and the 32-pixel Terminus
+KOI8-R font with Unicode mappings for Cyrillic, box drawing and animation.
 No Fastfetch process runs in the greeter.
-This asset is not enabled in greetd; boot autologin and PAM remain unchanged.
+
+Boot autologin remains: the themed screen appears after logout, not after disk
+unlock. Greetd's service does not restart during activation; an approved reboot
+loads its new command without terminating the current desktop. See
+[native disk unlock and desktop login](nix-security.md#native-disk-unlock-and-desktop-login)
+for YubiKey authentication, password fallback and acceptance checks.
 
 Open the actual greeter in a separate terminal without authenticating:
 
@@ -277,6 +285,14 @@ nix shell path:.#nixosConfigurations.nix.pkgs.tuigreet -c \
   --font='DepartureMono Nerd Font:size=16' \
   --override=colors-dark.background=0b1220 \
   --override=colors-dark.foreground=d6ebff \
+  --override=colors-dark.regular0=0b1220 \
+  --override=colors-dark.regular4=42698f \
+  --override=colors-dark.regular6=8daac4 \
+  --override=colors-dark.regular7=d6ebff \
+  --override=colors-dark.bright0=18304d \
+  --override=colors-dark.bright4=7ebaff \
+  --override=colors-dark.bright6=b6e9ff \
+  --override=colors-dark.bright7=e6f5ff \
   --override=main.pad=18x12 \
   env LANGUAGE=ru_RU \
   tuigreet --config /etc/nixos/hosts/nix/dotfiles/ricing/tuigreet/nix-frost.toml \
@@ -291,11 +307,12 @@ another background or **None** for reduced motion; switching effects uses
 upstream default colours. Close this terminal to leave the preview.
 Terminal rendering is not proof of Linux-console font or colour support.
 
-The preview's `LANGUAGE=ru_RU` selects the bundled Russian interface and date
-names without changing the desktop locale. The outline colour matches the panel;
-`status_position = "hidden"` removes the entire shortcut footer. Upstream's mock
-password prompt is hardcoded in English, and untranslated menu items fall back
-to English. Real authentication prompts come from PAM, not this theme.
+`LANGUAGE=ru_RU` selects the bundled Russian interface and date names for both
+the preview and real greeter without changing the desktop locale. The outline
+colour matches the panel; `status_position = "hidden"` removes the shortcut
+footer. Upstream's mock password prompt is hardcoded in English, and
+untranslated menu items fall back to English. Real authentication prompts come
+from PAM; greetd's U2F rule supplies the Russian touch cue.
 
 ## Printing
 

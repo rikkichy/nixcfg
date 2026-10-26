@@ -1,17 +1,5 @@
 { config, pkgs, ... }:
 
-let
-  expressivePlymouth = pkgs.callPackage ./pkgs/ricing/plymouth {
-    keymap = config.console.keyMap;
-  };
-  cryptrootUnlocked = pkgs.writeShellScript "cryptroot-unlocked" ''
-    set -e
-    mkdir -p /run/plymouth
-    cp /etc/plymouth/themes/expressive/unlock-success.png /run/plymouth/cryptroot-unlocked.png.new
-    mv /run/plymouth/cryptroot-unlocked.png.new /run/plymouth/cryptroot-unlocked.png
-    ${config.boot.plymouth.package}/bin/plymouth update --status=cryptroot-unlocked &
-  '';
-in
 {
   imports = [ ../../common/modules/nixos-limine.nix ];
 
@@ -26,27 +14,12 @@ in
     measured_boot: yes
   '';
 
-  boot.plymouth = {
-    enable = true;
-    # Keep the stock derivation eligible for the NixOS binary cache.
-    package = pkgs.plymouth;
-    theme = "expressive";
-    themePackages = [ expressivePlymouth ];
-    font = expressivePlymouth.font;
-  };
-  fonts.packages = [ expressivePlymouth ];
   boot.consoleLogLevel = 3;
   boot.initrd.verbose = false;
   boot.initrd.kernelModules = [ "nvidia" "nvidia_modeset" "nvidia_drm" ];
 
   boot.initrd.luks.devices."cryptroot" = {
     allowDiscards = true;
-  };
-  boot.initrd.systemd.storePaths = [ cryptrootUnlocked ];
-  boot.initrd.systemd.services."systemd-cryptsetup@cryptroot" = {
-    overrideStrategy = "asDropin";
-    # Cosmetic notification: never fail or hold up unlock for an unresponsive splash.
-    serviceConfig.ExecStartPost = "-${cryptrootUnlocked}";
   };
   boot.kernelPackages = pkgs.linuxPackages_latest;
   hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.stable;

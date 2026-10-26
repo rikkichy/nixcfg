@@ -285,8 +285,9 @@ It prompts for a **root** password at the end. Set one you remember.
 ### 7. Set a password for `ri` — you cannot sudo without it
 
 The config declares `users.users.ri` with no password, so the account has none
-after install. Autologin still works (greetd needs no password), but `sudo`
-will reject you. Before rebooting, while still in the installer:
+after install. Boot autologin still works (greetd needs no password), but `sudo`
+will reject you and desktop password fallback will be unavailable. Before
+rebooting, while still in the installer:
 
 ```
 nixos-enter --root /mnt -c 'passwd ri'
@@ -313,7 +314,8 @@ Autologin supplies no password, so a nonempty keyring password would leave the k
 LUKS protects it at rest.
 
 Before relying on token authentication, complete the separately approved
-[disk](nix-security.md#touch-only-disk-unlock) and
+[disk](nix-security.md#touch-only-disk-unlock),
+[desktop logout/relogin](nix-security.md#native-disk-unlock-and-desktop-login) and
 [sudo](nix-security.md#touch-only-sudo-with-password-fallback) acceptance checks.
 SOPS private inputs require their own
 [first provisioning and isolated-decryption checks](nix-security.md#private-inputs-and-first-provisioning).
