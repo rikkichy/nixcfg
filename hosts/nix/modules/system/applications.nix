@@ -95,6 +95,8 @@
     autoPrune.enable = true;
   };
 
+  virtualisation.waydroid.enable = true;
+
   services.printing.enable = false;
 
 }

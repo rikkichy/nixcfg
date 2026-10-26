@@ -285,6 +285,10 @@ The first client starts the daemon. Restart-policy containers do not start merel
 because the machine boots. Weekly automatic pruning can also start Docker, and
 the daemon does not automatically exit when idle.
 
+Waydroid is enabled through `virtualisation.waydroid.enable` in the desktop
+applications module. Android images and container/session data remain
+application-owned rather than managed by this checkout.
+
 The desktop session disables Speech Dispatcher, including its user socket,
 and desktop networking disables ModemManager. Speech Dispatcher-based screen
 readers/text-to-speech and ModemManager-managed cellular/WWAN or modem GPS are
