@@ -22,15 +22,9 @@
   };
 
   console = {
-    # KOI8-R's Unicode map covers Cyrillic, box drawing and the fire glyphs.
+    # Keep the Russian PAM touch cue readable on the plain console.
     font = "${pkgs.terminus_font}/share/consolefonts/ter-k32n.psf.gz";
     earlySetup = true;
-    colors = [
-      "0b1220" "e78284" "a6d189" "e5c890"
-      "42698f" "babbf1" "8daac4" "d6ebff"
-      "18304d" "ea999c" "b5df9c" "f1d8a5"
-      "7ebaff" "c8c4ff" "b6e9ff" "e6f5ff"
-    ];
   };
 
   services.greetd = {
@@ -43,7 +37,7 @@
       };
 
       default_session = {
-        command = "${pkgs.coreutils}/bin/env LANGUAGE=ru_RU ${pkgs.tuigreet}/bin/tuigreet --config ${../../dotfiles/ricing/tuigreet/nix-frost.toml} --user ri --cmd 'uwsm start hyprland-uwsm.desktop'";
+        command = "${config.services.greetd.package}/bin/agreety --cmd 'uwsm start hyprland-uwsm.desktop'";
         user = "greeter";
       };
     };

@@ -78,8 +78,7 @@ Disk unlock uses systemd's console prompt, without Plymouth, splash assets or
 unlock-notification hooks. `hosts/nix/boot.nix` retains early NVIDIA modules and
 sets `fbcon=nodefer`: the framebuffer console binds when a display becomes
 available instead of waiting for later console output.
-`hosts/nix/modules/system/session.nix` supplies the Cyrillic console font and
-palette.
+`hosts/nix/modules/system/session.nix` supplies the Cyrillic console font.
 
 FIDO2 insertion/touch cues are systemd journal notices, not password-agent
 prompts. An initrd-only `journald.conf.d/console.conf` enables
@@ -95,11 +94,9 @@ transfer of FIDO2 authentication into PAM. It is not YubiKey-only autologin.
 Restarting greetd can trigger its initial session again; do not use a service
 restart to test logout authentication.
 
-After logout, greetd runs the Russian **Nix Frost** tuigreet on VT1. The
-store-deployed theme uses Fastfetch's console-compatible ASCII snowflake,
-the 16-colour console palette, and Terminus with Cyrillic/line-drawing coverage.
-No extra compositor, terminal emulator or Fastfetch process runs at login.
-The panel outline and shortcut footer are hidden.
+After logout, greetd runs its built-in plain `agreety` on VT1, without a
+separate greeter package or theme. Terminus provides Cyrillic coverage for
+the PAM touch cue. No extra compositor or terminal emulator runs at login.
 
 Only greetd's authentication stack gains a `sufficient` pam-u2f rule before its
 existing `login` substack. Nixpkgs' greetd sets `useDefaultRules = false`, so
@@ -109,7 +106,7 @@ The rule reuses the root-controlled `/etc/u2f-mappings` and `pam://nix` origin/a
 already used by sudo. Disk enrollment alone does not populate this PAM mapping.
 No registration or secret is added by this configuration.
 
-Select `ri` and submit the username. With an enrolled key, the cue is
+Enter `ri` at the login prompt. With an enrolled key, the cue is
 “Прикоснитесь к YubiKey”; a successful touch needs no password or PIN.
 If hardware authentication fails, the normal account-password path remains.
 No-touch waits depend on pam-u2f/the token; the disk's `token-timeout=10s` does
