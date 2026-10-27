@@ -119,7 +119,6 @@ hl.bind(vars.kbSystemMonitorWs, toggle_ws("sysmon", { { "btop", vars.terminal ..
 hl.bind(vars.kbMusicWs, toggle_ws("music", { { "spotify", "spotify" } }))
 hl.bind(vars.kbCommunicationWs, toggle_ws("communication", {
     { "discord", "discord" },
-    { "org.telegram.desktop", "Telegram" },
 }))
 hl.bind(vars.kbTodoWs, toggle_ws("todo"))
 
