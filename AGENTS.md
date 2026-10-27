@@ -21,7 +21,7 @@ Host-oriented Nix configuration:
 ## Safety
 
 - This repository is public. Never store plaintext secrets, private keys, identity descriptors, tokens, or private subscription URLs here, even ignored.
-  `.secrets/` may contain encrypted SOPS documents and public recipient rules. Never print production secrets or invent recipients/ciphertext to bypass provisioning.
+  Retained encrypted recovery material under `.secrets/` is not active configuration. Never print production secrets or delete recovery material without separate approval.
 - Activation, service/app restarts, secret provisioning/changes, PIV/FIDO enrollment, keyslot removal, and reboot require separate operator approval.
   Editing, publication, and runbooks do not grant it. Preserve safety and recovery procedures.
 - Approved activation uses `nh os switch` on Linux or `nh darwin switch` on macOS. Follow the applicable host runbook before consequential actions.
@@ -54,14 +54,13 @@ Darwin must not import Linux overlays or system modules. Do not reuse desktop ha
 | `hosts/nix/dotfiles/ricing/{hypr,quickshell}/` | Live Hyprland config, store-deployed Quickshell |
 | `common/{modules,pkgs,dotfiles}/` | Genuinely shared policy, packages, assets |
 | `install.nix`, `scripts/install.sh` | Guided Linux installer and dependencies |
-| `.secrets/.sops.yaml`, `.secrets/<host>/` | Public recipient policy, declarations, encrypted ciphertext |
 
 `hosts/nix/hardware.nix` is intentionally tracked and machine-specific.
 Portable shell configuration belongs in `common/`. Keep Linux modules Linux-only. Linux themes, Foot, and systemd user services stay host-owned.
 Skills identify precise source owners and runtime pitfalls.
 
 External projects own their toolchains.
-Edit Vhelper and the native VTube Studio OpenDeck plugin in `rikkichy/vhelper` and `rikkichy/vts-opendeck`, respectively.
+Edit the native VTube Studio OpenDeck plugin in `rikkichy/vts-opendeck`.
 This checkout only pins and exposes the plugin package.
 
 ## Runbooks
@@ -71,7 +70,7 @@ This checkout only pins and exposes the plugin package.
 | Linux installation, desktop recovery, checkout adoption | [Installation](docs/install.md) |
 | Desktop apps, shell, themes, maintenance | [Desktop Linux](docs/nix.md) |
 | Desktop Mihomo routing, Telegram proxy | [Networking](docs/nix-networking.md) |
-| Disk unlock, Limine recovery, sudo fallback, SOPS/PIV | [Security](docs/nix-security.md) |
+| Disk unlock, Limine recovery, sudo fallback, private VPN inputs | [Security](docs/nix-security.md) |
 | macOS bootstrap, apps, recovery | [macOS](docs/ne.md) |
 | Server SSH, remote sudo, Hysteria2 | [Server](docs/nixos-server.md) |
 | Shared shell, editor, rebuilds, Spotify | [Shared configuration](docs/shared.md) |
