@@ -17,9 +17,9 @@
   networking.useDHCP = false; # NetworkManager owns DHCP.
   networking.firewall.enable = true;
 
-  services.avahi.publish = {
-    enable = true;
-    addresses = true;
+  services.avahi.settings.publish = {
+    disable-publishing = false;
+    publish-addresses = true;
   };
 
   services.openssh = {

@@ -23,6 +23,9 @@ in `hosts/nixos-server/default.nix`. Local edits on another machine are not
 included by cloning GitHub. The shared SSH module on `ne` and `nix` connects
 as `ri` to `nixos-server.local`, advertised by the server through mDNS. The SSH
 host-key identity stays `nixos-server.local` for both LAN and tunneled access.
+Avahi address advertisement uses `services.avahi.settings.publish`, with
+`disable-publishing = false` and `publish-addresses = true`; user-service
+publishing remains disabled.
 After activating the client configuration, connect with:
 
 ```sh
