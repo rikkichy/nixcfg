@@ -292,9 +292,9 @@ PanelWindow {
                             height: 48
                             ClippingRectangle {
                                 anchors.centerIn: parent
-                                width: appIcon.paintedWidth
-                                height: appIcon.paintedHeight
-                                radius: Theme.radiusSmall
+                                width: 48
+                                height: 48
+                                radius: width / 2
                                 color: "transparent"
                                 visible: appIcon.status === Image.Ready
                                 Image {
@@ -304,7 +304,7 @@ PanelWindow {
                                     height: 48
                                     source: tile.modelData.icon ? Quickshell.iconPath(tile.modelData.icon, true) : ""
                                     sourceSize: Qt.size(48, 48)
-                                    fillMode: Image.PreserveAspectFit
+                                    fillMode: Image.PreserveAspectCrop
                                     asynchronous: true
                                 }
                             }
