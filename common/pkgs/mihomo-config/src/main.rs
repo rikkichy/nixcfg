@@ -11,38 +11,37 @@ const FAILURE: &str =
     "Mihomo configuration rendering failed; check private inputs and runtime paths";
 const FIELDS: [&str; 5] = ["primary", "quattro", "hwid", "hostname", "token"];
 
-pub fn normalize_newlines(value: String) -> String {
-    if !value.contains('\r') {
-        return value;
-    }
-    // Match Python's universal-newline text reader without trimming SOPS values.
-    let mut output = String::with_capacity(value.len());
-    let mut chars = value.chars().peekable();
-    while let Some(c) = chars.next() {
-        if c == '\r' {
-            output.push('\n');
-            chars.next_if_eq(&'\n');
-        } else {
-            output.push(c);
-        }
-    }
-    output
-}
-
 fn read_text(path: &Path) -> Result<String, ()> {
-    fs::read_to_string(path).map(normalize_newlines).map_err(|_| ())
+    fs::read_to_string(path).map_err(|_| ())
 }
 
-pub fn normalize_input(mode: &str, mut value: String) -> Result<String, ()> {
-    match mode {
-        "legacy" => {
-            // Python str.split also treats these four C0 separators as whitespace.
-            value.retain(|c| !c.is_whitespace() && !matches!(c, '\u{1c}'..='\u{1f}'));
-        }
-        "sops" => {}
-        _ => return Err(()),
-    }
+pub fn normalize_input(mut value: String) -> Result<String, ()> {
+    // Preserve Python str.split's whitespace handling, including its four C0 separators.
+    value.retain(|c| !c.is_whitespace() && !matches!(c, '\u{1c}'..='\u{1f}'));
     if value.is_empty() { Err(()) } else { Ok(value) }
+}
+
+pub fn normalize_hwid(value: String) -> Result<String, ()> {
+    let value = normalize_input(value)?;
+    if value.len() != 36 {
+        return Err(());
+    }
+    let mut all_zero = true;
+    let mut all_f = true;
+    for (index, byte) in value.bytes().enumerate() {
+        if matches!(index, 8 | 13 | 18 | 23) {
+            if byte != b'-' {
+                return Err(());
+            }
+        } else {
+            if !byte.is_ascii_hexdigit() {
+                return Err(());
+            }
+            all_zero &= byte == b'0';
+            all_f &= matches!(byte, b'f' | b'F');
+        }
+    }
+    if all_zero || all_f { Err(()) } else { Ok(value) }
 }
 
 fn scalar(value: &str) -> Result<String, ()> {
@@ -127,19 +126,15 @@ fn run() -> Result<(), ()> {
     // SAFETY: this executable is single-threaded and sets its mask before file creation.
     unsafe { libc::umask(0o077) };
     let args: Vec<_> = std::env::args_os().skip(1).collect();
-    if args.len() != 9 {
+    if args.len() != 7 {
         return Err(());
     }
-    let mode = args[0].to_str().ok_or(())?;
-    if !matches!(mode, "legacy" | "sops") {
-        return Err(());
-    }
-    let hostname = args[1].to_str().ok_or(())?;
-    let template = read_text(Path::new(&args[2]))?;
-    let primary = normalize_input(mode, read_text(Path::new(&args[3]))?)?;
-    let quattro = normalize_input(mode, read_text(Path::new(&args[4]))?)?;
-    let hwid = normalize_input(mode, read_text(Path::new(&args[5]))?)?;
-    let username = CString::new(args[8].as_os_str().as_bytes()).map_err(|_| ())?;
+    let hostname = args[0].to_str().ok_or(())?;
+    let template = read_text(Path::new(&args[1]))?;
+    let primary = normalize_input(read_text(Path::new(&args[2]))?)?;
+    let quattro = normalize_input(read_text(Path::new(&args[3]))?)?;
+    let hwid = normalize_hwid(read_text(Path::new("/sys/class/dmi/id/product_uuid"))?)?;
+    let username = CString::new(args[6].as_os_str().as_bytes()).map_err(|_| ())?;
     // SAFETY: the C string is terminated, and no other thread can invalidate getpwnam's storage.
     let account = unsafe { libc::getpwnam(username.as_ptr()) };
     if account.is_null() {
@@ -152,14 +147,48 @@ fn run() -> Result<(), ()> {
     let token = URL_SAFE_NO_PAD.encode(random);
     let result = render(&template, &primary, &quattro, &hwid, hostname, &token)?;
     // Publish authentication first. Any failure prevents the dependent service from starting.
-    publish(Path::new(&args[7]), &format!("Authorization: Bearer {token}\n"), 0o400, uid)?;
+    publish(Path::new(&args[5]), &format!("Authorization: Bearer {token}\n"), 0o400, uid)?;
     // SAFETY: getuid has no preconditions.
-    publish(Path::new(&args[6]), &result, 0o600, unsafe { libc::getuid() })
+    publish(Path::new(&args[4]), &result, 0o600, unsafe { libc::getuid() })
 }
 
 fn main() {
     if run().is_err() {
         eprintln!("{FAILURE}");
         std::process::exit(1);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn runtime_inputs_and_template() {
+        let uuid = "01234567-89AB-cdef-0123-456789abcdef";
+        assert_eq!(normalize_input(" \r\nhttps://example.invalid/\u{a0}x\u{1c}\t".into()).unwrap(), "https://example.invalid/x");
+        assert_eq!(normalize_hwid(format!("\r\n {uuid}\u{2003}")).unwrap(), uuid);
+        for invalid in [
+            "",
+            " \r\n\u{1f}",
+            "00000000-0000-0000-0000-000000000000",
+            "ffffffff-ffff-FFFF-ffff-ffffffffffff",
+            "0123456789abcdef0123456789abcdef",
+            "01234567_89ab-cdef-0123-456789abcdef",
+            "g1234567-89ab-cdef-0123-456789abcdef",
+        ] {
+            assert!(normalize_hwid(invalid.into()).is_err());
+        }
+        assert!(normalize_input(" \r\n\u{a0}\u{1c}\u{1f}".into()).is_err());
+        let template = "${primary}\n${quattro}\n${hwid}\n${hostname}\n${token}\n$$";
+        let primary = "https://example.invalid/\"\\\u{85}\u{2028}";
+        let output = render(template, primary, "quattro", uuid, "host", "token").unwrap();
+        let mut lines = output.lines();
+        for expected in [primary, "quattro", uuid, "host", "token"] {
+            assert_eq!(serde_json::from_str::<String>(lines.next().unwrap()).unwrap(), expected);
+        }
+        assert_eq!(lines.next(), Some("$"));
+        assert!(render("${unknown}", primary, "quattro", uuid, "host", "token").is_err());
+        assert!(render("${primary}", primary, "quattro", uuid, "host", "token").is_err());
     }
 }

@@ -9,7 +9,7 @@ subscription changes or live application/network tests. Obtain operator approval
 
 For missing private inputs, use
 [first provisioning](nix-security.md#private-inputs-and-first-provisioning)
-or [replacement and rollback](nix-security.md#reinstall-replacement-revocation-and-rollback).
+or [subscription recovery](nix-security.md#subscription-recovery-and-retained-identities).
 
 ## LAN face tracking
 
@@ -115,6 +115,13 @@ Edit the public template `common/dotfiles/mihomo.yaml`. The compiled Rust
 supplies private strings at runtime, outside Nix evaluation and build inputs.
 The service and its restart trigger use the same renderer package.
 Never put credentials in the template. Mihomo's private provider/state files must also stay outside Git.
+Provision only root-owned mode-`0600` `/etc/mihomo/subscription.url` and
+`/etc/mihomo/quattro.url`, under root-owned mode-`0700` `/etc/mihomo`.
+The renderer reads `/sys/class/dmi/id/product_uuid` at runtime for both
+providers' `x-hwid`; no dedicated HWID file is used. The private
+`/run/mihomo/config.yaml` contains both subscription URLs and that UUID.
+Firmware UUIDs do not universally match provider-registered IDs: cutover or
+hardware replacement may require provider authorization or consume device slots.
 
 The renderer also generates a fresh controller token on each service start.
 It publishes `/run/mihomo-api.header` atomically, owned by desktop user `ri`
@@ -122,7 +129,7 @@ with mode `0400`, under the root-owned `/run` directory. The file contains only
 the controller authorization header, never subscription URLs or HWID. CLI and
 recovery requests use `curl --header @/run/mihomo-api.header` so the token is not
 placed in process arguments. Do not copy it into Git, logs, shell history or
-application profiles. No new age key or SOPS input is required.
+application profiles.
 
 Other controller clients must read that header at request time and authenticate.
 OpenDeck should invoke the host `vpn` command rather than access the controller
@@ -139,8 +146,8 @@ needed. Changing the template does not reroute an already established loader
 connection: restart the instance after approved activation.
 
 
-Private input provisioning and SOPS/PIV administration are in
-[the security guide](nix-security.md#private-inputs-and-first-provisioning).
+File-only subscription provisioning and retained-identity recovery boundaries
+are in [the security guide](nix-security.md#private-inputs-and-first-provisioning).
 
 ### Tunnel diagnosis
 

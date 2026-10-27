@@ -2,20 +2,22 @@
 
 Sources: `hosts/nix/modules/system/networking.nix`,
 `common/modules/nixos-mihomo-secrets.nix`, `common/dotfiles/mihomo.yaml`,
-`common/pkgs/{mihomo-config,vpn.nix}`, and `.secrets/nix/sops.nix`.
+`common/pkgs/{mihomo-config,vpn.nix}`.
 Mihomo, the `vpn` command and tunnel-specific network rules are desktop-only.
 `nixos-server` imports neither the VPN service nor its secret renderer.
 Operator procedures: [VPN in docs/nix-networking.md](../../../../docs/nix-networking.md#vpn-mihomo).
-Read [SOPS safety](boot-auth-secrets.md#sops-authoring-and-identity-boundaries)
-before changing secret inputs.
+Read [private-input safety](boot-auth-secrets.md#subscription-provisioning-and-retained-identity-boundaries)
+before changing subscription inputs.
 
 ## Public template, private runtime rendering
 
 The NixOS Mihomo module runs a `DynamicUser` service, with `CAP_NET_ADMIN` from
 `tunMode`, and consumes `/run/mihomo/config.yaml` through `LoadCredential`.
 The repository template is public. The compiled Rust `mihomo-config` command takes
-a public hostname for `x-device-model` and fills the template with JSON-serialized
-scalars at runtime. Unicode line separators and YAML-sensitive controls are
+seven arguments: hostname, template path, Primary URL path, Quattro URL path,
+output path, header path and username. There is no mode or HWID-path argument.
+It uses the public hostname for `x-device-model` and fills the template with
+JSON-serialized scalars at runtime. Unicode line separators and YAML-sensitive controls are
 escaped so quotes, backslashes, newlines, and Unicode retain their decoded values.
 Missing or unknown runtime placeholder fields fail before either output is published.
 Keep runtime placeholders `${name}` unquoted in the public template. The renderer
@@ -27,27 +29,26 @@ directory. All temporary files are created privately before publication.
 Never substitute raw secret text. Never put secret strings into Nix, `writeText`,
 derivation inputs, command arguments, logs, or documentation.
 
-The desktop wrapper uses SOPS only when `.secrets/nix/personal.yaml` exists.
-Keys are `mihomo/primary_url`, `mihomo/quattro_url`, and `mihomo/hwid`.
-Without ciphertext the legacy files are the inputs:
-`/etc/mihomo/subscription.url`, `/etc/mihomo/quattro.url`, and
-`/etc/mihomo/hwid`. Keep those root-owned mode `0600` files for rollback even
-when SOPS is active. All inputs must exist and be nonempty. A missing HWID causes
-failure, never generation of a replacement identity.
+The only subscription inputs are `/etc/mihomo/subscription.url` and
+`/etc/mihomo/quattro.url`, root-owned mode `0600`, with a root-owned mode-`0700`
+parent. The renderer reads `/sys/class/dmi/id/product_uuid` directly at runtime
+for both providers' `x-hwid`. It does not read, generate or persist a dedicated
+HWID file, and has no machine-id fallback.
 
-Both modes require UTF-8 and convert CRLF and CR to LF before rendering.
-SOPS strings otherwise remain raw. Legacy mode removes Unicode whitespace to preserve
-its established effective values. Unsupported modes fail. Import the exact meaningful
-HWID privately. Distinguish file framing from identity. Do not otherwise normalize
-SOPS strings or derive HWID from machine-id. Decryption success does not establish
-provider acceptance or simultaneous-device-limit compatibility.
+Inputs must be UTF-8. Unicode whitespace and U+001C–U+001F are removed, retaining
+the subscription files' established normalization; empty results fail.
+The firmware UUID must have the standard 8-4-4-4-12 hexadecimal form; letter case
+is preserved, and all-zero/all-f UUIDs fail. Missing or invalid firmware data
+fails startup, never invents a replacement identity.
+Firmware identity is not universally the provider's registered device ID.
+Cutover from an old HWID or hardware replacement can change authorization or
+consume a provider device slot. Provider acceptance must be checked separately.
 
-Secret installation uses sops-nix systemd activation. In SOPS mode, `mihomo-config`
-requires and runs after `sops-install-secrets.service`. It runs before each
-Mihomo start and intentionally has no `RemainAfterExit`. Root-owned decrypted
-inputs are mode `0400`. The runtime directory is `0700`.
-Rendered output is `0600`, written through a temporary file and atomic replacement. SOPS updates
-request a Mihomo restart so a new `LoadCredential` receives the new rendering.
+`mihomo-config` runs as root before each Mihomo start and intentionally has no
+`RemainAfterExit`. It has no secret-decryption service dependency. The runtime
+directory is `0700`. Rendered output is `0600`, written through a temporary file
+and atomic replacement. `/run/mihomo/config.yaml` contains both subscription
+URLs **and the firmware UUID**; treat it as private runtime material.
 The service executes the compiled package, which is also a Mihomo restart trigger.
 Changes to renderer source or dependencies therefore replace the next runtime rendering.
 The API header is published before the rendered config. Failure prevents service

@@ -1,8 +1,8 @@
-# Boot, authentication, and SOPS safety — host nix
+# Boot, authentication, and private-input safety — host nix
 
 Sources: `hosts/nix/hardware.nix`, `hosts/nix/boot.nix`,
 `common/modules/nixos-yubikey.nix`, `hosts/nix/modules/system/session.nix`,
-`hosts/nix/modules/system/security.nix`, `.secrets/nix/sops.nix`, and the Linux
+`hosts/nix/modules/system/security.nix`, and the Linux
 module imports in `flake.nix`. Operator commands and recovery checkpoints are
 in [docs/nix-security.md](../../../../docs/nix-security.md).
 No enrollment or boot test is implied by a source edit.
@@ -21,8 +21,8 @@ sets `fido2-device=auto` and `token-timeout=10s`. Boot message visibility is
 controlled by kernel/systemd settings, not scripted-stage verbosity.
 The timeout bounds token discovery, not every touch interaction.
 Keep password fallback, existing passphrase slots, and USB/HID support. Never
-add `headless` or a SOPS dependency. `/var/lib/sops-nix/key.txt` is inside the
-locked root and cannot bootstrap it.
+add `headless` or a dependency on private keys inside the locked root;
+those keys cannot bootstrap its unlock.
 
 Enrollment is a separate, approved operator mutation:
 
@@ -93,7 +93,7 @@ daemon; plan an approved reboot and physical logout/relogin acceptance checks.
 
 Before approved registration, activation or recovery, read [Touch-only sudo](../../../../docs/nix-security.md#touch-only-sudo-with-password-fallback).
 Keep an authenticated root shell until fresh good-password and negative tests pass.
-The mapping is root-controlled public metadata outside SOPS, not a private key.
+The mapping is root-controlled public metadata, not a private key.
 Register ordinary non-resident credentials with matching origin/appid `pam://nix`.
 Do not use PIN/UV/no-presence flags. Use protected temporary storage outside the checkout.
 Install mode `0600` only for first enrollment. Back up and merge existing mappings,
@@ -101,87 +101,49 @@ preserving every other user/key. Never reset the token or clear its FIDO PIN.
 Invalidate timestamps before each `sudo` and `sudo -i` test. Absence/failure must
 not unconditionally succeed. Record waits. Cached authorization is not touch proof.
 Restore mappings separately from Nix rollback, then repeat fresh password tests.
-Revoke only targeted sudo/LUKS/SOPS access after replacement and fallback checks.
+Revoke only targeted sudo/LUKS access after replacement and fallback checks.
 
-## SOPS authoring and identity boundaries
+## Subscription provisioning and retained identity boundaries
 
-`flake.nix` imports upstream sops-nix and `.secrets/nix/sops.nix` for the
-desktop only, not through a second Home Manager instance. The server has no
-SOPS import. The desktop wrapper selects the consumer module. SOPS activates
-only when `.secrets/nix/personal.yaml` exists. Adding ciphertext
-therefore changes the next evaluation. Finish key provisioning and independent
-decryption checks **before activation**.
-[Mihomo rendering](mihomo.md) describes the secret consumers and legacy fallback.
+Mihomo reads only root-owned mode-`0600` `/etc/mihomo/subscription.url` and
+`/etc/mihomo/quattro.url` for subscriptions. Keep their parent root-owned mode
+`0700`. Provision or restore them only with separate operator approval, using
+protected transfer/editing outside the checkout/store. Never print their
+contents or put values in arguments, logs or editor recovery files.
+See [private-input provisioning](../../../../docs/nix-security.md#private-inputs-and-first-provisioning)
+and [Mihomo rendering](mihomo.md) before changing inputs.
 
-Only public module/policy and encrypted ciphertext belong in Git. Never inspect
-private keys/ciphertext for routine repository exploration, and never print
-plaintext. Ignoring plaintext is insufficient: `path:` includes ignored files.
-Author/edit plaintext only in protected temporary storage outside the checkout
-and store, preferably tmpfs with a private `0700` directory.
-Disable editor backup, swap, and persistent undo. Remove temporary material after the editor
-exits and recovery copies are no longer needed. Never put values into Nix,
-`writeText`, derivation inputs, command arguments, logs, or documentation.
+The renderer reads `/sys/class/dmi/id/product_uuid` at runtime for both
+providers' `x-hwid`; no dedicated HWID file is read or written. The private
+`/run/mihomo/config.yaml` contains the UUID as well as both subscription URLs.
+A firmware UUID is not necessarily the provider's previously registered ID.
+Cutover or hardware replacement can change identity, require provider
+authorization or consume device slots. Never substitute machine-id or promise
+provider acceptance from a successful render.
 
-The nested `.secrets/.sops.yaml` rule matches `^nix/personal\.yaml$` relative to
-its directory. From repository root use
-`sops --config .secrets/.sops.yaml edit .secrets/nix/personal.yaml`.
-SOPS discovers config upward, not inside child directories. Set
-`SOPS_AGE_KEY_FILE` to the external administrator descriptor
-`~/.config/sops/age/yubikey.txt`. Do not run as root merely to borrow the host key.
+Historical ciphertext, recipient policy, host age private keys and PIV
+identity descriptors are recovery-only, not active service inputs. Do not
+inspect them during routine source work, delete them, or rotate/revoke their
+identities without separate approval. Removal of service integration is not
+revocation, and old revisions/backups can remain decryptable.
 
-The two real recipients are alternatives in **one group**: administrator PIV
-and the dedicated native root age key `/var/lib/sops-nix/key.txt`. There is no
-independent recovery recipient by operator choice. Losing both keys loses
-access. Login and LUKS passwords are not SOPS identities. Preserve established
-keys. The host key/parent are root-owned `0600`/`0700`. Automatic generation and
-SSH/GPG host-key discovery are disabled. Never fabricate recipients.
+PIV identities are independent of boot/sudo FIDO enrollment:
 
-PIV via age-plugin-yubikey is independent of boot/sudo FIDO enrollment:
+- Preserve existing keys and descriptors outside the checkout with restrictive
+  permissions. Passwords do not reconstruct lost private identities.
+- Inspect model, firmware/FIPS constraints, management setup and occupied
+  slots before any separately approved change. No certificate does not mean an
+  unused slot. Never overwrite an existing key as recovery.
+- PIN/touch policies are fixed at generation/import. Do not edit descriptors
+  to claim changed policy, silently weaken policy, reset applets, clear PINs
+  or mutate PIN/PUK/management settings as part of source changes.
+- Recover a lost descriptor for the existing serial/slot, never generate a
+  replacement key in its place. Touch proves presence, not identity.
 
-- Inspect model, firmware/FIPS constraints, management setup, and occupied
-  compatible slots. Absence of a certificate does not prove that a slot is unused.
-- For an approved **new** key in a confirmed-unused slot, check installed help.
-  Request PIN `never`, touch `always`. Policies are immutable at generation
-  or import. Do not substitute `once`/cached touch or edit a descriptor to claim
-  changed policy. Incompatible hardware requires an explicit decision.
-- Generation can update default PIN/PUK/management settings. Inspect and obtain
-  approval first. No applet reset, PIN clearing, or management mutation is
-  implied by a repository edit. Keep descriptors outside the checkout with
-  restrictive permissions.
-- Reconstruct a lost descriptor with `--identity` for the existing serial/slot,
-  never `--generate`. Touch proves presence, not identity. The host and
-  secret-consuming processes still receive plaintext.
-
-Independently test administrator and host decryption without displaying values.
-An explicit `SOPS_AGE_KEY_FILE` alone does not isolate identities.
-Exclude other age identities, SOPS key variables/commands, SSH keys, and GPG keyrings.
-Leave unused variables unset, not empty. Replug for the administrator-only check:
-touch/no routine PIN succeeds, no-touch must not complete. Then test only the
-host key with no token. Record operator tests as pending until performed.
-
-## Replacement, revocation, and rollback
-
-On replacement, retain/reconstruct the administrator PIV identity.
-Provision a new root host key and add its real public recipient.
-Use an already-authorized identity to run
-`sops --config .secrets/.sops.yaml updatekeys .secrets/nix/personal.yaml`.
-Policy edits alone do not rewrap ciphertext. Test the new host independently
-without a token before activation. Retain the old recipient until explicit
-retirement. Hardware configuration, disk enrollment, and sudo mapping must
-independently match the new machine. Restore the established URLs and exact
-meaningful HWID. Never derive a new HWID from machine-id.
-Decryption alone does not prove provider acceptance or device-limit compatibility.
-
-Recipient removal, SOPS data-key rotation, and provider credential rotation are
-three separate operations. Removing a recipient does not revoke old Git
-ciphertext. Compromise requires reviewing all three and separately removing
-only the lost token's exact sudo/LUKS access after fallback/replacement tests.
-If either decryption identity is lost, the remaining authorized identity must
-provision its replacement. A rebuild cannot regenerate access if both are lost.
-
-Retain private keys and root-owned mode `0600` legacy `/etc/mihomo` inputs for
-cutover rollback. Restore a matched module, policy/ciphertext, renderer, and
-imports with the intended generation. Deleting ciphertext is not revocation.
-A layout-only move preserves ciphertext bytes/metadata, key paths, and
-enrollments. Compare checksums and adapt paths. Do not rotate or reenroll.
-Full procedures: [SOPS recovery](../../../../docs/nix-security.md#reinstall-replacement-revocation-and-rollback).
+On replacement, restore subscription files privately and review provider
+device registration against the new firmware UUID. Disk enrollment and sudo
+mappings are independent. Keep working generations and recovery material:
+rollback does not restore out-of-store inputs, keys, enrollment or provider
+registration. An older generation may still require historical ciphertext
+and identities. Review these dependencies before activation.
+See [subscription recovery and retained identities](../../../../docs/nix-security.md#subscription-recovery-and-retained-identities).

@@ -450,8 +450,10 @@ and rejection of invalid credentials. Boot autologin follows either successful
 disk-unlock method; disk enrollment does not enroll the separate PAM credential.
 Unlock root at the local console with the server-side FIDO2 token or LUKS
 passphrase. Ordinary SSH is available only after boot.
-SOPS/PIV identities, private service data and VPN provisioning are separate;
+PIV identities, private service data and VPN subscription provisioning are separate;
 this installer never copies private live-system secrets into the target.
+Desktop Mihomo reads two root-only /etc/mihomo/*.url files and the firmware UUID
+at runtime; it does not provision or persist an HWID file.
 DONE
 }
 

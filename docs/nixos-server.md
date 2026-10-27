@@ -131,8 +131,8 @@ network migration belongs at the console/KVM. It replaces dhcpcd ownership and
 disables IPv6, so an existing SSH connection can drop. Verify addressing, DNS
 and SSH before leaving that console. No network activation is automatic here.
 
-`nixos-server` has no Mihomo service, configuration renderer or SOPS import.
-It needs no `/etc/mihomo` inputs or VPN age identity.
+`nixos-server` has no Mihomo service or configuration renderer.
+It needs no `/etc/mihomo` inputs.
 
 OMP is installed and updated through the [shared Bun launcher](shared.md#shared-shell-and-editor), not the system package cache.
 
@@ -293,12 +293,10 @@ retention before the disk fills.
 
 ### Targets and publication boundary
 
-`flake.nix` exports `cacheTargets.x86_64-linux` and the same named `packages`.
+`flake.nix` exports exactly `google-sans-rounded`, `tg-ws-proxy` and `vpn`
+as `cacheTargets.x86_64-linux`, with matching named `packages`.
 The desktop packages and custom wrappers/assets come from the
 **desktop's final pkgs**, not a second import with approximate overlays.
-Vhelper remains installed on the desktop but is not a cache publication target.
-`sops-install-secrets` uses the desktop's exact `config.sops.package`; only the
-helper's runtime closure is published, never secret manifests or secret files.
 Quickshell, Hyprland, Filen, Fuzzel and the Spicetify CLI use unmodified Nixpkgs packages
 and are not custom cache targets. Spotify's theme patches run during app
 packaging. Static Bibata Modern Ice assets are fetched from their publisher,
@@ -424,10 +422,10 @@ Local uncommitted input updates do not match published derivations until deliber
 Wait for publication before expecting matching downloads. Evaluation alone is not a populated cache.
 
 ```bash
-gh workflow run package-cache.yml --repo rikkichy/nixcfg -f target=quickshell
+gh workflow run package-cache.yml --repo rikkichy/nixcfg -f target=vpn
 gh run list --repo rikkichy/nixcfg --workflow package-cache.yml
 # After provisioning/publication, use the desktop's authenticated trust settings:
-nix build --no-link --max-jobs 0 'path:/etc/nixos#quickshell'
+nix build --no-link --max-jobs 0 'path:/etc/nixos#vpn'
 ```
 
 Manual `target=all` publishes every explicit target. An unknown target fails

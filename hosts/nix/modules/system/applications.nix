@@ -1,4 +1,4 @@
-{ pkgs, inputs, ... }:
+{ pkgs, ... }:
 
 {
   programs.git.enable = true;
@@ -14,7 +14,6 @@
         })} "$out/opt/brave.com/brave-origin/initial_preferences"
       '';
     }))
-    inputs.vhelper.packages.${pkgs.stdenv.hostPlatform.system}.default
 
     filen-desktop
     lan-mouse

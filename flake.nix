@@ -21,15 +21,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    sops-nix = {
-      url = "github:Mic92/sops-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    vhelper = {
-      url = "github:rikkichy/vhelper";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     vts-opendeck = {
       url = "github:rikkichy/vts-opendeck";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -53,7 +44,6 @@
       desktopPkgs = self.nixosConfigurations.nix.pkgs;
       cacheTargets = {
         inherit (desktopPkgs) tg-ws-proxy google-sans-rounded vpn;
-        sops-install-secrets = self.nixosConfigurations.nix.config.sops.package;
       };
     in
     {
@@ -111,8 +101,7 @@
         specialArgs = { inherit inputs nixcfgPath; };
         modules = [
           ./hosts/nix
-          inputs.sops-nix.nixosModules.sops
-          ./.secrets/nix/sops.nix
+          ./common/modules/nixos-mihomo-secrets.nix
 
           { nixpkgs.overlays = [ commonOverlay overlay ]; }
           { nix.extraOptions = "!include /etc/nix/attic.conf"; }

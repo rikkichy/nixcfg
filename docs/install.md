@@ -97,7 +97,7 @@ passphrases, account-password fallback and server SSH-agent sudo remain enabled.
 `common/modules/nixos-yubikey.nix` provides both Linux hosts' systemd-initrd
 FIDO2 discovery and touch-only sudo policy. Sudo registration is host-specific
 (`pam://<hostname>`), stored root-owned at `/etc/u2f-mappings`, and keeps
-password fallback. No token reset, recovery-slot removal, SOPS provisioning,
+password fallback. No token reset, recovery-slot removal, VPN provisioning,
 or automatic reboot is performed. On failure, keep the recovery shell and
 inspect `/mnt` and `cryptroot`. Do not rerun the erasing installer as recovery.
 Use the [disk](nix-security.md#touch-only-disk-unlock) and
@@ -317,6 +317,6 @@ Before relying on token authentication, complete the separately approved
 [disk](nix-security.md#touch-only-disk-unlock),
 [desktop logout/relogin](nix-security.md#native-disk-unlock-and-desktop-login) and
 [sudo](nix-security.md#touch-only-sudo-with-password-fallback) acceptance checks.
-SOPS private inputs require their own
-[first provisioning and isolated-decryption checks](nix-security.md#private-inputs-and-first-provisioning).
+Mihomo subscription files require their own
+[private provisioning and provider checks](nix-security.md#private-inputs-and-first-provisioning).
 Neither installation nor FIDO2 enrollment provisions them.

@@ -9,7 +9,7 @@ unless an installation step specifies otherwise.
 Recovery: [disk unlock](nix-security.md#touch-only-disk-unlock),
 [zero-timeout boot menu](nix-security.md#limine-recovery-with-a-zero-timeout),
 [sudo fallback](nix-security.md#touch-only-sudo-with-password-fallback),
-[SOPS identity recovery](nix-security.md#reinstall-replacement-revocation-and-rollback),
+[subscription recovery](nix-security.md#subscription-recovery-and-retained-identities),
 and [existing-system manual recovery](install.md#manual-installation--recovery-reference).
 
 ## Contents
@@ -556,7 +556,7 @@ Matching substitutes avoid compilation; cache misses can still build the
 kernel or external modules locally.
 
 The optional signed Attic cache at `https://cache.kror.net/nixcfg` supplies
-explicit patched/custom package targets through
+only `google-sans-rounded`, `tg-ws-proxy` and `vpn` through
 `.github/workflows/package-cache.yml`. Follow the
 [server cache provisioning and desktop trust procedure](nixos-server.md#public-package-cache-attic)
 before enabling it. An absent `/etc/nix/attic.conf` leaves only the configured

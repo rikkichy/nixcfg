@@ -79,31 +79,9 @@
         "nix-darwin": "nix-darwin",
         "nixpkgs": "nixpkgs",
         "nixpkgs-nh": "nixpkgs-nh",
-        "sops-nix": "sops-nix",
         "spicetify-nix": "spicetify-nix",
         "tg-ws-proxy": "tg-ws-proxy",
-        "vhelper": "vhelper",
         "vts-opendeck": "vts-opendeck"
-      }
-    },
-    "sops-nix": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1792056300,
-        "narHash": "sha256-YU1LjDe1o2Ymg5zEiCHbmMXLkDCtxHQRiVqZ3nC5GGk=",
-        "owner": "Mic92",
-        "repo": "sops-nix",
-        "rev": "44931708c62937c2b1bf7953902989fa5bb9ee1b",
-        "type": "github"
-      },
-      "original": {
-        "owner": "Mic92",
-        "repo": "sops-nix",
-        "type": "github"
       }
     },
     "spicetify-nix": {
@@ -155,26 +133,6 @@
       "original": {
         "owner": "Flowseal",
         "repo": "tg-ws-proxy",
-        "type": "github"
-      }
-    },
-    "vhelper": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1788553103,
-        "narHash": "sha256-2ygHl0LXzd3N6SbhBHWhnkMsF9cUSVjBajCntSDJubQ=",
-        "owner": "rikkichy",
-        "repo": "vhelper",
-        "rev": "16aaf66ddd8efaf100fe360508ee222ef65921ce",
-        "type": "github"
-      },
-      "original": {
-        "owner": "rikkichy",
-        "repo": "vhelper",
         "type": "github"
       }
     },

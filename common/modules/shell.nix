@@ -16,7 +16,7 @@ in
 {
   home.packages = with pkgs; [
     omp
-    sops age
+    age
     btop git gh wget
     eza bat ripgrep lazygit jq fastfetch
     file unzip
