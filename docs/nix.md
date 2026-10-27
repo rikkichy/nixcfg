@@ -451,6 +451,7 @@ palette and Google Sans Flex. Search ranks name prefixes, contiguous matches and
 subsequences, with desktop ID, generic name, executable and keywords as fallback.
 Down from search enters the grid; arrows select, Enter launches, and Escape closes.
 Tab/Backtab moves between controls. Outside clicks and a second META tap dismiss it.
+Hover highlights app tiles without showing tooltips.
 App names are plain text. App icons use a 48px circular clip with center-cropped
 artwork and a live Matugen tint: primary normally, on-secondary-container when
 selected. Native colorization preserves shading and transparency.

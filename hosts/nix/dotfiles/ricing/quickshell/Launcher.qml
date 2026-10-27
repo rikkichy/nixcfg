@@ -335,9 +335,6 @@ PanelWindow {
                             textFormat: Text.PlainText
                         }
                     }
-                    ToolTip.visible: hovered
-                    ToolTip.delay: 600
-                    ToolTip.text: modelData.name
                 }
                 Text {
                     anchors.centerIn: parent
