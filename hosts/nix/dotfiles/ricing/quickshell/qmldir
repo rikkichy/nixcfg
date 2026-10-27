@@ -6,6 +6,7 @@ BoxIcon 1.0 BoxIcon.qml
 MenuStyle 1.0 MenuStyle.qml
 TrayMenu 1.0 TrayMenu.qml
 Bar 1.0 Bar.qml
+Launcher 1.0 Launcher.qml
 ControlCenter 1.0 ControlCenter.qml
 CalendarPanel 1.0 CalendarPanel.qml
 NotificationCenter 1.0 NotificationCenter.qml

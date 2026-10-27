@@ -88,7 +88,7 @@ uses newer API spelling; keep `dampening` for this installed version.
 Wallpaper, animated wallpaper, emoji, blue-light filter, VPN and session tools
 are available through META+ALT.
 Short commands such as `wpp`, `awpp` and `vpnp` remain searchable there.
-Bare META opens the apps-only launcher.
+Bare META toggles the apps-only Material 3 Expressive grid in Quickshell.
 **META + ALT** opens Fuzzel on a directory containing only these tools and their
 native actions. Search starts empty and matches tool names normally. Press the
 chord again to dismiss it. Tools and desktop actions stay hidden from the main
@@ -410,8 +410,8 @@ so a configuration rebuild updates the unit as well as its files. After separate
 activation approval, apply with `nh os switch --no-nom`. No manual notification daemon
 or wallpaper daemon should run alongside the managed ones.
 
-The left rail groups a folded tray toggle, notifications, the centered
-clock/calendar, and occupied workspaces, in that order. Empty workspaces are
+The left rail places the application launcher above a folded tray toggle,
+notifications, the centered clock/calendar, and occupied workspaces. Empty workspaces are
 hidden. Occupied ordinary and special workspaces appear beneath the clock.
 Tray icons expand vertically upward without moving the clock or overlapping
 the notification button. Escape or the toggle collapses them.
@@ -445,7 +445,24 @@ above a full-width slider. On means unmuted. Long device names are truncated.
 Wallpaper, night-light and power remain available through the launcher tools
 `wpp`, `awpp`, `sunp` and `powermenu`. DND is available in notification history.
 
+The app launcher opens on the focused monitor (or the clicked rail's monitor).
+It uses a 56px pill-shaped search field, responsive tonal tiles, the current Matugen
+palette and Google Sans Flex. Search ranks name prefixes, contiguous matches and
+subsequences, with desktop ID, generic name, executable and keywords as fallback.
+Down from search enters the grid; arrows select, Enter launches, and Escape closes.
+Tab/Backtab moves between controls. Outside clicks and a second META tap dismiss it.
+App names are plain text; icons retain their application-provided appearance.
+
+`Launcher.qml` uses Quickshell's desktop index and change signals, storing only
+plain metadata snapshots. The private `expressive-apps` helper uses GIO to filter
+desktop visibility and launch by desktop ID: Quickshell 0.3.2 does not expose
+`OnlyShowIn`/`NotShowIn`, and its execution API ignores terminal flags and field codes.
+GIO preserves desktop-file launch semantics; `xdg-terminal-exec` selects Foot through
+the managed `xdg-terminals.list`. Launch failures remain visible in the launcher.
+Fuzzel still owns META+ALT and all utility pickers; no command runner is exposed here.
+
 ```sh
+quickshell -c expressive ipc call desktop toggle launcher
 quickshell -c expressive ipc call desktop toggle microphone
 quickshell -c expressive ipc call desktop toggle sound
 quickshell -c expressive ipc call desktop toggle network
@@ -498,6 +515,11 @@ contrast, ungrouped information, and too many hero moments. Controls provide
 Qt dimensions and spring coefficients are desktop adaptations, not claims of
 pixel-identical Android tokens. The shell uses relevant components rather than
 inserting every FAB/loading shape into a desktop that has no use for it.
+
+The launcher's search geometry and tonal/pressed states use
+[M3E's search and button source](https://github.com/matraic/m3e/tree/d9cfac9c91f3957ee4698aa6e984721921ef8b36/packages/web/src)
+as a design reference. This is a native QML implementation reusing the shell's
+theme and buttons, not a WebView or a dependency on the community web library.
 
 Tray motion adapts Material's [Expressive spring tokens](https://raw.githubusercontent.com/androidx/androidx/androidx-main/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/ExpressiveMotionTokens.kt)
 to Qt's native spring integrator. It uses default spatial for expansion/shape,

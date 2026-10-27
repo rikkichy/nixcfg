@@ -1,5 +1,18 @@
 { config, pkgs, lib, nixcfgPath, ... }:
 
+let
+  desktopApps = pkgs.writeShellApplication {
+    name = "expressive-apps";
+    runtimeInputs = [
+      (pkgs.python3.withPackages (python: [ python.pygobject3 ]))
+      pkgs.xdg-terminal-exec
+      pkgs.foot
+    ];
+    text = ''
+      exec python3 ${../../dotfiles/ricing/quickshell/desktop-apps.py} "$@"
+    '';
+  };
+in
 {
   home.packages = with pkgs; [ quickshell blueman ];
 
@@ -16,7 +29,7 @@
       RestartSec = "2s";
       Slice = "session.slice";
       Environment = [
-        "PATH=${lib.makeBinPath [ pkgs.networkmanager pkgs.foot pkgs.pavucontrol pkgs.blueman ]}:/etc/profiles/per-user/ri/bin:/run/current-system/sw/bin"
+        "PATH=${lib.makeBinPath [ desktopApps pkgs.networkmanager pkgs.foot pkgs.pavucontrol pkgs.blueman ]}:/etc/profiles/per-user/ri/bin:/run/current-system/sw/bin"
         "QT_QUICK_CONTROLS_STYLE=Basic"
       ];
     };
@@ -24,6 +37,7 @@
   };
 
   xdg.configFile = {
+    "xdg-terminals.list".text = "foot.desktop\n";
     "autostart/blueman.desktop".text = ''
       [Desktop Entry]
       Type=Application

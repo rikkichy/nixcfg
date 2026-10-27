@@ -3,7 +3,7 @@ local fn   = require("hyprland.functions")
 
 hl.bind(
     "SUPER + SUPER_L",
-    hl.dsp.exec_cmd("pkill -x fuzzel || fuzzel"),
+    hl.dsp.exec_cmd("quickshell -c expressive ipc call desktop toggle launcher"),
     { release = true }
 )
 

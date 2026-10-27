@@ -16,6 +16,7 @@ ShellRoot {
     property rect origin: Qt.rect(12, 12, 56, 48)
     property bool barsVisible: true
     property alias notifications: notificationCenter
+    property alias launcher: appLauncher
 
     onPanelWindowChanged: if (!panelWindow && popover)
         closePanel()
@@ -23,8 +24,21 @@ ShellRoot {
         closePanel()
 
     function togglePanel(name, targetScreen, trigger) {
+        if (name === "launcher") {
+            const screen = targetScreen || Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) || Quickshell.screens[0];
+            if (!screen)
+                return;
+            if (appLauncher.opened && appLauncher.screen === screen) {
+                closePanel();
+            } else {
+                closePanel();
+                appLauncher.open(screen);
+            }
+            return;
+        }
         if (!["microphone", "sound", "network", "bluetooth", "notifications", "calendar"].includes(name))
             return;
+        appLauncher.close();
         const screen = targetScreen || Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) || Quickshell.screens[0];
         const rail = bars.instances.find(instance => instance.screen === screen);
         if (!rail)
@@ -49,6 +63,11 @@ ShellRoot {
 
     function closePanel() {
         panel = "";
+        appLauncher.close();
+    }
+
+    Launcher {
+        id: appLauncher
     }
 
     NotificationCenter {
@@ -98,7 +117,7 @@ ShellRoot {
         }
         function status(): string {
             return JSON.stringify({
-                panel: desktop.panel,
+                panel: appLauncher.opened ? "launcher" : desktop.panel,
                 barsVisible: desktop.barsVisible,
                 notifications: notificationCenter.count,
                 dnd: notificationCenter.dnd
@@ -109,7 +128,7 @@ ShellRoot {
     HyprlandFocusGrab {
         active: desktop.panel !== "" && popover.backingWindowVisible
         windows: [popover]
-        onCleared: desktop.closePanel()
+        onCleared: desktop.panel = ""
     }
     PanelWindow {
         id: popover

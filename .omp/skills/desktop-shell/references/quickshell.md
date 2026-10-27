@@ -8,7 +8,7 @@
 
 Quickshell is a toolkit, not a preconfigured desktop. `ShellRoot` owns singleton services and IPC. `Variants` creates a `PanelWindow` per screen. Use native `Quickshell.Hyprland`, `Services.Pipewire`, `Services.Mpris`, `Services.SystemTray`, `Services.Notifications`, `Networking` and `Bluetooth` models. Read the pinned package's `.qmltypes` or matching upstream tag rather than relying on older API examples.
 
-The `desktop` IPC target exposes `toggle microphone|sound|network|bluetooth|notifications|calendar`, `close`, `dismissAll`, `dnd`, `hide`, `reveal` and `status`. Super+K opens Sound.
+The `desktop` IPC target exposes `toggle launcher|microphone|sound|network|bluetooth|notifications|calendar`, `close`, `dismissAll`, `dnd`, `hide`, `reveal` and `status`. Bare Super toggles the app launcher; Super+K opens Sound.
 
 ```sh
 quickshell -c expressive ipc call desktop toggle sound
@@ -36,6 +36,8 @@ Hyprland alone animates `expressive-panel` with `popin 96%` and the configured l
 Popovers use on-demand layer keyboard focus and a `HyprlandFocusGrab` limited to the mapped popover. Outside clicks dismiss it, including empty rail space. Escape also closes it. Exclusive layer focus redirects outside pointer input into the popup and prevents the grab from clearing. Popover/OSD windows reserve no space. Fullscreen behavior remains compositor-owned.
 
 Use Qt Controls' `visualFocus`, not `activeFocus`, for outlines. Mouse clicks retain active focus after the pointer leaves but must not leave keyboard rings. Keep `Qt.StrongFocus` and Tab/Backtab navigation, accessible action labels and reduced-motion behavior. Native controls use the Basic style so custom backgrounds are supported.
+
+`Launcher.qml` is a separate centered, screen-bounded panel using the same compositor animation and focus-grab policy. It is mutually exclusive with the rail popovers. A popover's cleared grab dismisses only that popover, never a newly opened launcher. The app grid uses native `GridView` navigation; the search `TextField` uses `focusReason` for keyboard-only rings because it has no `visualFocus` property. GIO visibility and launch semantics live in `desktop-apps.py`; see [Launchers](launchers.md). Keep Fuzzel for utility pickers.
 
 ## Shared component contracts
 
