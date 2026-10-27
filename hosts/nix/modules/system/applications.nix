@@ -15,7 +15,6 @@
       '';
     }))
     inputs.vhelper.packages.${pkgs.stdenv.hostPlatform.system}.default
-    inputs.openbot.packages.${pkgs.stdenv.hostPlatform.system}.default
 
     filen-desktop
     lan-mouse
