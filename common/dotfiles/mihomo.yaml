@@ -102,6 +102,12 @@ profile:
   store-selected: true
 
 rules:
+  - DOMAIN,noko.chat,PROXY
+  - DOMAIN,noko.chat,REJECT
+  - DOMAIN,api.noko.chat,PROXY
+  - DOMAIN,api.noko.chat,REJECT
+  - DOMAIN,cdn.noko.chat,PROXY
+  - DOMAIN,cdn.noko.chat,REJECT
   - DOMAIN,spype.pages.dev,PROXY
   - DOMAIN,spype.pages.dev,REJECT
   - DOMAIN,ota.waydro.id,PROXY

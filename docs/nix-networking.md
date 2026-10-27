@@ -31,14 +31,14 @@ authentication. Browser origins are restricted to that localhost origin.
 
 Scoped mode proxies the observed Krypton startup endpoints on
 `162.19.224.212` (loader port `6700` and initialization port `3030`) and the
-exact `spype.pages.dev` and `ota.waydro.id` hostnames for Spype and Waydroid
-OTA traffic. All other destinations
-and ports use `DIRECT`, including loopback and private LAN addresses. The
+exact `noko.chat`, `api.noko.chat`, `cdn.noko.chat`, `spype.pages.dev` and
+`ota.waydro.id` hostnames for Noko, Spype and Waydroid OTA traffic. All other
+destinations and ports use `DIRECT`, including loopback and private LAN addresses. The
 Krypton IP-and-port rules do not depend on DNS or protocol sniffing.
 `vps-c35938de.vps.ovh.net` is the server's reverse-DNS hostname, not a confirmed
 hostname used by the loader. Update the rules if Krypton's endpoints move.
 
-The Spype and Waydroid rules use TLS SNI sniffing on port 443. Sniffing changes
+The Noko, Spype and Waydroid rules use TLS SNI sniffing on port 443. Sniffing changes
 neither DNS resolution nor the connection destination. Traffic without a visible
 matching hostname, including ECH-hidden SNI, cannot match these rules.
 There are no geosite, ASN or application-process routing rules. Process lookup
