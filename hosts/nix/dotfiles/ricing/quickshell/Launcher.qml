@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
 import Quickshell.Wayland
+import Quickshell.Widgets
 
 PanelWindow {
     id: launcher
@@ -289,15 +290,23 @@ PanelWindow {
                         Item {
                             width: parent.width
                             height: 48
-                            Image {
-                                id: appIcon
+                            ClippingRectangle {
                                 anchors.centerIn: parent
-                                width: 48
-                                height: 48
-                                source: tile.modelData.icon ? Quickshell.iconPath(tile.modelData.icon, true) : ""
-                                sourceSize: Qt.size(48, 48)
-                                fillMode: Image.PreserveAspectFit
-                                asynchronous: true
+                                width: appIcon.paintedWidth
+                                height: appIcon.paintedHeight
+                                radius: Theme.radiusSmall
+                                color: "transparent"
+                                visible: appIcon.status === Image.Ready
+                                Image {
+                                    id: appIcon
+                                    anchors.centerIn: parent
+                                    width: 48
+                                    height: 48
+                                    source: tile.modelData.icon ? Quickshell.iconPath(tile.modelData.icon, true) : ""
+                                    sourceSize: Qt.size(48, 48)
+                                    fillMode: Image.PreserveAspectFit
+                                    asynchronous: true
+                                }
                             }
                             BoxIcon {
                                 anchors.centerIn: parent
