@@ -293,10 +293,12 @@ server() {
 }
 
 ssh_server() {
+  # SSH uses the login shell; quote for Fish/POSIX and run the payload with sh.
+  local command=${1//\'/\'\"\'\"\'}
   local -a terminal=()
   [[ ${2:-} != interactive ]] || terminal=(-t)
   ssh "${terminal[@]}" -o IdentitiesOnly=yes -o StrictHostKeyChecking=ask -o HostKeyAlias=nixos-server.local \
-    -o ForwardAgent=no -o ClearAllForwardings=yes -i "$identity" -l ri -- "$ssh_host" "$1"
+    -o ForwardAgent=no -o ClearAllForwardings=yes -i "$identity" -l ri -- "$ssh_host" "sh -c '$command'"
 }
 
 fetch_identity() {

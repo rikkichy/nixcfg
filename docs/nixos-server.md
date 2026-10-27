@@ -377,6 +377,9 @@ Verify the server host fingerprint through its console before accepting a new
 SSH identity. SSH agent forwarding is disabled for these transfers. The helper
 retrieves the saved public key over SSH and compares it to the HTTPS cache
 identity before installing trust or publishing credentials.
+Remote checks and token cleanup explicitly run through `sh`, independent of the
+server account's login shell (including Fish); interactive cleanup retains its TTY
+for sudo.
 
 `client` asks before writing root-owned `/etc/nix/attic.conf` and separately
 before desktop activation/daemon restart. An identical existing file is reused.
