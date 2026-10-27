@@ -52,9 +52,8 @@
       # Reuse the host's final package set, including both overlays and policy.
       desktopPkgs = self.nixosConfigurations.nix.pkgs;
       cacheTargets = {
-        inherit (desktopPkgs)
-          quickshell hyprland tg-ws-proxy
-          google-sans-rounded vpn;
+        inherit (desktopPkgs) tg-ws-proxy google-sans-rounded vpn;
+        sops-install-secrets = self.nixosConfigurations.nix.config.sops.package;
         vhelper = inputs.vhelper.packages.${system}.default;
       };
     in

@@ -297,7 +297,9 @@ retention before the disk fills.
 The desktop packages and custom wrappers/assets come from the
 **desktop's final pkgs**, not a second import with approximate overlays.
 `vhelper` uses the exact locked input output consumed by the desktop.
-Filen, Fuzzel and the Spicetify CLI use unmodified Nixpkgs packages
+`sops-install-secrets` uses the desktop's exact `config.sops.package`; only the
+helper's runtime closure is published, never secret manifests or secret files.
+Quickshell, Hyprland, Filen, Fuzzel and the Spicetify CLI use unmodified Nixpkgs packages
 and are not custom cache targets. Spotify's theme patches run during app
 packaging. Static Bibata Modern Ice assets are fetched from their publisher,
 not republished through this cache.
