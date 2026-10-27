@@ -160,11 +160,11 @@ Spout/OBS frame-rate settings remain independent.
 WirePlumber policy. The Wave XLR MK1 (`0fd9:007d`) runs capture and playback
 at 48 kHz without idle pause or suspension. Other Wave models are not covered.
 
-**Wave DX - Velvet Voice** is the mono microphone filter: a headroom preamp
+**Shure Nexadyne** is the mono microphone filter: a headroom preamp
 followed by six native parametric EQ filters. Its coefficients and graph ports
 live in the audio module. Select the Wave XLR input in recording applications.
 WirePlumber's smart-filter policy inserts the voice processing for that device.
-The **Blessing 3 EQ** is a separate stereo headphone filter on the same card.
+The **BriseAudio Fugaku** is a separate stereo headphone filter on the same card.
 Both smart-filter targets match the card name and media class: the voice filter
 uses `Audio/Source`, and the headphone filter uses `Audio/Sink`. Matching only the
 card name is ambiguous and can route the voice filter from the playback monitor.

@@ -26,8 +26,8 @@
         {
           name = "libpipewire-module-filter-chain";
           args = {
-            "node.description" = "Blessing 3 EQ";
-            "media.name" = "Blessing 3 EQ";
+            "node.description" = "BriseAudio Fugaku";
+            "media.name" = "BriseAudio Fugaku";
 
             "filter.graph" = {
               nodes = [
@@ -64,7 +64,7 @@
 
             "capture.props" = {
               "node.name" = "blessing3_eq";
-              "node.description" = "Blessing 3 EQ";
+              "node.description" = "BriseAudio Fugaku";
               "media.class" = "Audio/Sink";
               "filter.smart" = true;
               "filter.smart.name" = "blessing3-eq";
@@ -91,8 +91,8 @@
         {
           name = "libpipewire-module-filter-chain";
           args = {
-            "node.description" = "Wave DX - Velvet Voice";
-            "media.name" = "Wave DX - Velvet Voice";
+            "node.description" = "Shure Nexadyne";
+            "media.name" = "Shure Nexadyne";
 
             "filter.graph" = {
               nodes = [
@@ -139,7 +139,7 @@
 
             "playback.props" = {
               "node.name" = "wave_dx_velvet_voice";
-              "node.description" = "Wave DX - Velvet Voice";
+              "node.description" = "Shure Nexadyne";
               "media.class" = "Audio/Source";
               "filter.smart" = true;
               "filter.smart.name" = "wave-dx-velvet-voice";
