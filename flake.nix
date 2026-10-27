@@ -54,7 +54,6 @@
       cacheTargets = {
         inherit (desktopPkgs) tg-ws-proxy google-sans-rounded vpn;
         sops-install-secrets = self.nixosConfigurations.nix.config.sops.package;
-        vhelper = inputs.vhelper.packages.${system}.default;
       };
     in
     {

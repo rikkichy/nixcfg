@@ -296,7 +296,7 @@ retention before the disk fills.
 `flake.nix` exports `cacheTargets.x86_64-linux` and the same named `packages`.
 The desktop packages and custom wrappers/assets come from the
 **desktop's final pkgs**, not a second import with approximate overlays.
-`vhelper` uses the exact locked input output consumed by the desktop.
+Vhelper remains installed on the desktop but is not a cache publication target.
 `sops-install-secrets` uses the desktop's exact `config.sops.package`; only the
 helper's runtime closure is published, never secret manifests or secret files.
 Quickshell, Hyprland, Filen, Fuzzel and the Spicetify CLI use unmodified Nixpkgs packages
@@ -306,9 +306,8 @@ not republished through this cache.
 
 These roots are redistributable according to their pinned package metadata:
 desktop packages retain upstream free licenses, the custom packages are
-MIT/Apache/GPL/OFL, and Vhelper is GPL.
-The upload includes runtime closures, not build dependencies. Vhelper references Protontricks, whose
-pinned package uses `steam.run-free`, **not the proprietary Steam client**.
+MIT/Apache/GPL/OFL.
+The upload includes runtime closures, not build dependencies.
 Wrappers/fonts reference ordinary free tools/libraries.
 Preserve this boundary when adding roots or updating runtime dependencies.
 Attic skips paths already signed by the official `cache.nixos.org-1` key.
