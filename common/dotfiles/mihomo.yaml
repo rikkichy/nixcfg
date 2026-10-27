@@ -102,6 +102,8 @@ profile:
   store-selected: true
 
 rules:
+  - DOMAIN,spype.pages.dev,PROXY
+  - DOMAIN,spype.pages.dev,REJECT
   - DOMAIN,ota.waydro.id,PROXY
   - DOMAIN,ota.waydro.id,REJECT
   # Observed Krypton startup endpoints; update if the service moves.
