@@ -451,8 +451,9 @@ palette and Google Sans Flex. Search ranks name prefixes, contiguous matches and
 subsequences, with desktop ID, generic name, executable and keywords as fallback.
 Down from search enters the grid; arrows select, Enter launches, and Escape closes.
 Tab/Backtab moves between controls. Outside clicks and a second META tap dismiss it.
-App names are plain text. Original app icons retain their colours and use a 48px
-circular clip; non-square artwork is center-cropped without stretching.
+App names are plain text. App icons use a 48px circular clip with center-cropped
+artwork and a live Matugen tint: primary normally, on-secondary-container when
+selected. Native colorization preserves shading and transparency.
 
 `Launcher.qml` uses Quickshell's desktop index and change signals, storing only
 plain metadata snapshots. The private `expressive-apps` helper uses GIO to filter

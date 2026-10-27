@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
@@ -306,6 +307,11 @@ PanelWindow {
                                     sourceSize: Qt.size(48, 48)
                                     fillMode: Image.PreserveAspectCrop
                                     asynchronous: true
+                                    layer.enabled: visible && status === Image.Ready
+                                    layer.effect: MultiEffect {
+                                        colorization: 1
+                                        colorizationColor: tile.checked ? Theme.textOnSecondaryContainer : Theme.primary
+                                    }
                                 }
                             }
                             BoxIcon {
@@ -314,7 +320,7 @@ PanelWindow {
                                 height: 40
                                 visible: appIcon.status !== Image.Ready
                                 name: "boxicons-layers-filled"
-                                tint: tile.checked ? Theme.textOnSecondaryContainer : Theme.textOnSurfaceVariant
+                                tint: tile.checked ? Theme.textOnSecondaryContainer : Theme.primary
                             }
                         }
                         Text {
