@@ -1,4 +1,4 @@
-# Fuzzel and desktop tools
+# Launchers and desktop tools
 
 [Skill routing](../SKILL.md) · [Host desktop-tools guide](../../../../docs/nix.md#rebuilds-and-desktop-tools)
 
@@ -7,15 +7,16 @@
 - `hosts/nix/modules/home/fuzzel.nix`: static Fuzzel settings, general desktop entries, shared `desktop-picker`, VPN/power/night-light pickers and Nix maintenance entries.
 - `hosts/nix/modules/home/matugen.nix`: wallpaper entries/pickers and theming dependencies. See [wallpaper-theming](../../wallpaper-theming/SKILL.md).
 - `hosts/nix/dotfiles/ricing/hypr/hyprland/keybinds.lua`: launcher release bindings. `hosts/nix/dotfiles/ricing/quickshell/Bar.qml`: symbolic rail launcher.
-- `hosts/nix/dotfiles/ricing/quickshell/Launcher.qml` and `desktop-apps.py`: app grid, native index integration and GIO visibility/launch bridge. `hosts/nix/modules/home/quickshell.nix` packages the helper and configures Foot as the XDG terminal.
+- `hosts/nix/dotfiles/ricing/quickshell/Launcher.qml` and `desktop-apps.py`: shared app/tool grid, native index integration and GIO visibility/launch bridge. `hosts/nix/modules/home/quickshell.nix` packages the helper and configures Foot as the XDG terminal.
+- `hosts/nix/pkgs/ricing/mignon-icon-theme.nix`: pinned Mignon icon package. `applications.nix` selects `Mignon-pastel-dark` for GTK and Qt; Fuzzel follows `config.gtk.iconTheme.name`. Broken upstream aliases are omitted, preserving inherited icon fallback.
 
-`programs.fuzzel.settings` owns static `fuzzel/fuzzel.ini` under the user's config directory. Matugen writes only its included writable `colors.ini`. The tools menu uses font17, 40px rows and five lines. `Papirus-Dark` is case-sensitive. Icons scale with row height. Meta+Alt uses `pkill -x fuzzel || … fuzzel --show-actions` to dismiss on a second tap. Fuzzel also has its own single-instance lock.
+`programs.fuzzel.settings` owns static `fuzzel/fuzzel.ini` under the user's config directory. Matugen writes only its included writable `colors.ini`. Fuzzel serves individual utility pickers, not either launcher chord.
 
-Bare Meta calls `quickshell -c expressive ipc call desktop toggle launcher`; the rail opens the same app-only grid on its own monitor. Quickshell supplies desktop metadata and change signals. GIO supplies visible IDs and performs launches because Quickshell 0.3.2 does not expose desktop visibility restrictions or fully implement desktop-file execution. Metadata snapshots must not retain native objects. The helper receives the exact desktop ID as one argv item; it rechecks visibility at launch and preserves terminal, working-directory and field-code semantics. `xdg-terminal-exec` uses the managed `foot.desktop` preference.
+Bare Meta calls `quickshell -c expressive ipc call desktop toggle launcher`; the rail opens the same apps-only grid on its own monitor. Meta+Alt calls `desktop toggle tools`. The same chord dismisses its mode; the other chord changes modes. Quickshell supplies desktop metadata and change signals. GIO supplies separate app/tool visibility sets and performs launches because Quickshell 0.3.2 does not expose desktop visibility restrictions or fully implement desktop-file execution. Metadata snapshots must not retain native objects. The helper receives mode, exact desktop ID and optional action ID as separate argv items; it rechecks visibility and action membership at launch. GIO preserves terminal, working-directory and field-code semantics. `xdg-terminal-exec` uses the managed `foot.desktop` preference.
 
-Tool entries declare `OnlyShowIn=X-DesktopTools;`. Meta+Alt sets `XDG_CURRENT_DESKTOP=X-DesktopTools` and points both XDG data directories at the managed `desktop-tools` directory. This directory contains marked tool desktop files and Papirus icons. Search starts empty with normal matching, not an injected keyword. The tools view enables native actions and uses the Fuzzel configuration. Release bindings handle either modifier-release order and left/right keys. Another Meta+Alt shortcut shadows those bindings.
+Tool entries declare `OnlyShowIn=X-DesktopTools;`. The helper checks that marker and native desktop visibility without changing the session's desktop identity or XDG directories. Native tool actions appear as additional tiles. Search starts empty with normal matching, not an injected keyword. Release bindings handle either modifier-release order and left/right keys. Another Meta+Alt shortcut shadows those bindings.
 
-Fuzzel restricts launcher theme lookup to Applications/Apps/Legacy contexts. Entries using Actions or Devices glyphs must reference existing Papirus SVG store paths directly. Picker mode has no such restriction. Public pickers each have a desktop entry. Search includes filename, name, generic name, Exec and keywords. PATH-wide executable listing stays disabled.
+Tool entries use icon names backed by Mignon artwork. Native theme inheritance supplies missing icons; app-provided artwork remains valid. Public pickers each have a desktop entry. Search includes filename, name, generic name, Exec and keywords. PATH-wide executable listing stays disabled.
 
 ## Picker input safety
 

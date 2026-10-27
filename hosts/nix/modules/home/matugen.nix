@@ -143,7 +143,7 @@ in
     wpp = {
       name = "Wallpaper";
       exec = "wpp";
-      icon = "preferences-desktop-wallpaper";
+      icon = "accessories-image-viewer";
       terminal = false;
       categories = [ "System" ];
       settings.OnlyShowIn = "X-DesktopTools;";
@@ -151,7 +151,7 @@ in
     awpp = {
       name = "Animated wallpaper";
       exec = "awpp";
-      icon = "applications-multimedia";
+      icon = "totem";
       terminal = false;
       categories = [ "System" ];
       settings.OnlyShowIn = "X-DesktopTools;";

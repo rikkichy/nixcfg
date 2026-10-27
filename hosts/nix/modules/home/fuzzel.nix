@@ -9,15 +9,6 @@ let
         --font 'Google Sans Flex Rounded:size=15' --line-height=32px "$@"
     '';
   };
-
-  toolEntryNames = lib.mapAttrsToList (name: _: "${name}.desktop")
-    (lib.filterAttrs (_: entry: (entry.settings.OnlyShowIn or "") == "X-DesktopTools;")
-      config.xdg.desktopEntries);
-  desktopTools = pkgs.symlinkJoin {
-    name = "desktop-tools";
-    paths = builtins.filter (package: builtins.elem (package.name or "") toolEntryNames)
-      config.home.packages ++ [ pkgs.papirus-icon-theme ];
-  };
 in
 {
   _module.args.desktopPicker = desktopPicker;
@@ -30,7 +21,7 @@ in
         font = "Google Sans Flex Rounded:size=17";
         line-height = "40px";
         lines = 5;
-        icon-theme = "Papirus-Dark";
+        icon-theme = config.gtk.iconTheme.name;
         terminal = "foot -e";
         prompt = "> ";
         layer = "overlay";
@@ -49,10 +40,8 @@ in
     };
   };
   xdg.configFile."fuzzel/fuzzel.ini".force = true;
-  xdg.dataFile."desktop-tools".source = "${desktopTools}/share";
 
   xdg.desktopEntries = let
-    papirus = "${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark";
     terminalEntry = name: command: icon: {
       inherit name icon;
       exec = "${pkgs.foot}/bin/foot --app-id=nix-menu --title=Nix --hold ${command}";
@@ -64,7 +53,7 @@ in
     bemoji = {
       name = "Emoji";
       exec = "bemoji";
-      icon = "face-smile";
+      icon = "accessories-character-map";
       terminal = false;
       categories = [ "System" ];
       settings.OnlyShowIn = "X-DesktopTools;";
@@ -72,7 +61,7 @@ in
     sunp = {
       name = "Blue-light filter";
       exec = "sunp";
-      icon = "redshift";
+      icon = "indicator-weather";
       terminal = false;
       categories = [ "System" ];
       settings.OnlyShowIn = "X-DesktopTools;";
@@ -80,7 +69,7 @@ in
     vpnp = {
       name = "VPN server";
       exec = "vpnp";
-      icon = "${papirus}/32x32/devices/network-vpn.svg";
+      icon = "network-vpn";
       terminal = false;
       categories = [ "System" ];
       settings.OnlyShowIn = "X-DesktopTools;";
@@ -101,7 +90,7 @@ in
       "system-software-install";
     nix-clean = terminalEntry "Garbage collection — nh clean all"
       "nh clean all"
-      "${papirus}/24x24/actions/trash-empty.svg";
+      "user-trash";
   };
 
   home.packages = lib.mkAfter (with pkgs; [

@@ -17,4 +17,6 @@ final: prev: {
 
   google-sans-rounded =
     final.callPackage ./ricing/google-sans-rounded.nix { };
+  mignon-icon-theme =
+    final.callPackage ./ricing/mignon-icon-theme.nix { };
 }

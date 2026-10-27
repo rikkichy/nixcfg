@@ -10,12 +10,7 @@ hl.bind(
 for _, key in ipairs({ "Alt_L", "Alt_R", "Super_L", "Super_R" }) do
     hl.bind(
         "SUPER + ALT + " .. key,
-        hl.dsp.exec_cmd(
-            "pkill -x fuzzel || "
-                .. "XDG_DATA_DIRS=\"${XDG_DATA_HOME:-$HOME/.local/share}/desktop-tools\" "
-                .. "XDG_DATA_HOME=\"${XDG_DATA_HOME:-$HOME/.local/share}/desktop-tools\" "
-                .. "XDG_CURRENT_DESKTOP=X-DesktopTools fuzzel --show-actions"
-        ),
+        hl.dsp.exec_cmd("quickshell -c expressive ipc call desktop toggle tools"),
         { release = true }
     )
 end

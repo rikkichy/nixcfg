@@ -69,12 +69,16 @@ in
   dconf.settings."org/gnome/desktop/interface" = {
     gtk-theme = "adw-gtk3-dark";
     color-scheme = "prefer-dark";
-    icon-theme = "Papirus-Dark";
+    icon-theme = config.gtk.iconTheme.name;
   };
 
   gtk = {
     enable = true;
     gtk2.enable = false;
+    iconTheme = {
+      name = "Mignon-pastel-dark";
+      package = pkgs.mignon-icon-theme;
+    };
     gtk3 = {
       extraConfig.gtk-application-prefer-dark-theme = 0;
       bookmarks = [
@@ -199,7 +203,7 @@ in
       text = builtins.toJSON {
         theme = {
           colorScheme = "${config.home.homeDirectory}/.config/qtengine/scheme.colors";
-          iconTheme = "Papirus-Dark";
+          iconTheme = config.gtk.iconTheme.name;
           style = "Darkly";
           font = { family = "Google Sans Flex"; size = 12; weight = -1; };
           fontFixed = { family = "DepartureMono Nerd Font"; size = 12; weight = -1; };

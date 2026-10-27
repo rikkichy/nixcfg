@@ -134,7 +134,7 @@ PanelWindow {
                 implicitHeight: 56
                 iconName: "boxicons-layers-filled"
                 prominent: true
-                checked: shell.launcher.opened && shell.launcher.screen === bar.screen
+                checked: shell.launcher.opened && shell.launcher.mode === "apps" && shell.launcher.screen === bar.screen
                 description: "Open applications"
                 onClicked: shell.togglePanel("launcher", bar.screen, launcherButton)
             }

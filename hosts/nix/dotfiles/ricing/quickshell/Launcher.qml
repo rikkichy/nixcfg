@@ -13,17 +13,30 @@ PanelWindow {
     id: launcher
 
     property bool opened: false
-    property var visibleIds: new Set()
+    property string mode: "apps"
+    property var visibleIds: ({ apps: new Set(), tools: new Set() })
     property string errorMessage: ""
     readonly property var applications: DesktopEntries.applications.values
-        .filter(entry => entry && !entry.noDisplay && visibleIds.has(entry.id + ".desktop"))
-        .map(entry => ({
-            id: entry.id,
-            name: entry.name,
-            icon: entry.icon,
-            nameKey: entry.name.toLocaleLowerCase(),
-            keywords: [entry.id, entry.genericName, entry.execString, ...entry.keywords].join(" ").toLocaleLowerCase()
-        }))
+        .filter(entry => entry && !entry.noDisplay && visibleIds[mode].has(entry.id + ".desktop"))
+        .reduce((apps, entry) => {
+            const app = {
+                id: entry.id,
+                action: "",
+                name: entry.name,
+                icon: entry.icon,
+                nameKey: entry.name.toLocaleLowerCase(),
+                keywords: [entry.id, entry.genericName, entry.execString, ...entry.keywords].join(" ").toLocaleLowerCase()
+            };
+            apps.push(app, ...(mode === "tools" ? [...entry.actions].filter(action => action).map(action => ({
+                id: app.id,
+                keywords: app.keywords,
+                action: action.id,
+                name: entry.name + " · " + action.name,
+                nameKey: (entry.name + " " + action.name).toLocaleLowerCase(),
+                icon: action.icon || entry.icon
+            })) : []));
+            return apps;
+        }, [])
         .sort((a, b) => a.name.localeCompare(b.name))
     readonly property string query: search.text.trim().toLocaleLowerCase()
     readonly property var results: {
@@ -50,8 +63,9 @@ PanelWindow {
         return 2;
     }
 
-    function open(targetScreen) {
+    function open(targetScreen, targetMode) {
         screen = targetScreen;
+        mode = targetMode;
         search.text = "";
         errorMessage = "";
         grid.currentIndex = results.length ? 0 : -1;
@@ -70,7 +84,7 @@ PanelWindow {
         if (!opened || launchProcess.running || !app)
             return;
         errorMessage = "";
-        launchProcess.exec(["expressive-apps", app.id + ".desktop"]);
+        launchProcess.exec(["expressive-apps", mode, app.id + ".desktop", ...(app.action ? [app.action] : [])]);
     }
 
     onQueryChanged: {
@@ -102,9 +116,9 @@ PanelWindow {
             onStreamFinished: {
                 try {
                     const ids = JSON.parse(text);
-                    if (!Array.isArray(ids) || !ids.every(id => typeof id === "string"))
-                        throw new Error("Invalid desktop-entry list");
-                    launcher.visibleIds = new Set(ids);
+                    if (!ids || !["apps", "tools"].every(mode => Array.isArray(ids[mode]) && ids[mode].every(id => typeof id === "string")))
+                        throw new Error("Invalid desktop-entry lists");
+                    launcher.visibleIds = { apps: new Set(ids.apps), tools: new Set(ids.tools) };
                 } catch (error) {
                     launcher.errorMessage = "Could not read installed applications.";
                     console.warn(error);
@@ -161,7 +175,7 @@ PanelWindow {
                 spacing: 12
                 Text {
                     Layout.fillWidth: true
-                    text: "Applications"
+                    text: launcher.mode === "tools" ? "Desktop tools" : "Applications"
                     color: Theme.textOnSurface
                     font.family: Theme.fontFamily
                     font.styleName: "Bold Rounded"
@@ -189,7 +203,7 @@ PanelWindow {
                 Layout.preferredHeight: 56
                 leftPadding: 24
                 rightPadding: clearSearch.visible ? 64 : 24
-                placeholderText: "Search applications"
+                placeholderText: launcher.mode === "tools" ? "Search desktop tools" : "Search applications"
                 placeholderTextColor: Theme.textOnSurfaceVariant
                 color: Theme.textOnSurface
                 selectionColor: Theme.primary
@@ -197,7 +211,7 @@ PanelWindow {
                 font.family: Theme.fontFamily
                 font.pixelSize: 18
                 selectByMouse: true
-                Accessible.name: "Search applications"
+                Accessible.name: placeholderText
                 background: Rectangle {
                     radius: height / 2
                     color: Theme.surfaceContainerHigh
@@ -235,7 +249,7 @@ PanelWindow {
 
             Text {
                 Layout.fillWidth: true
-                text: launcher.errorMessage || (launcher.query ? "Search results" : "All apps") + " · " + launcher.results.length
+                text: launcher.errorMessage || (launcher.query ? "Search results" : launcher.mode === "tools" ? "All tools" : "All apps") + " · " + launcher.results.length
                 color: launcher.errorMessage ? Theme.error : Theme.textOnSurfaceVariant
                 font.family: Theme.fontFamily
                 font.pixelSize: 14
@@ -339,7 +353,7 @@ PanelWindow {
                 Text {
                     anchors.centerIn: parent
                     visible: grid.count === 0
-                    text: visibilityProcess.running ? "Loading applications…" : launcher.query ? "No matching applications" : "No applications available"
+                    text: visibilityProcess.running ? "Loading…" : launcher.query ? "No matching entries" : "No entries available"
                     color: Theme.textOnSurfaceVariant
                     font.family: Theme.fontFamily
                     font.pixelSize: 18

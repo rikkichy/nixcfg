@@ -24,15 +24,16 @@ ShellRoot {
         closePanel()
 
     function togglePanel(name, targetScreen, trigger) {
-        if (name === "launcher") {
+        if (name === "launcher" || name === "tools") {
+            const mode = name === "tools" ? "tools" : "apps";
             const screen = targetScreen || Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) || Quickshell.screens[0];
             if (!screen)
                 return;
-            if (appLauncher.opened && appLauncher.screen === screen) {
+            if (appLauncher.opened && appLauncher.mode === mode && appLauncher.screen === screen) {
                 closePanel();
             } else {
                 closePanel();
-                appLauncher.open(screen);
+                appLauncher.open(screen, mode);
             }
             return;
         }
@@ -117,7 +118,7 @@ ShellRoot {
         }
         function status(): string {
             return JSON.stringify({
-                panel: appLauncher.opened ? "launcher" : desktop.panel,
+                panel: appLauncher.opened ? (appLauncher.mode === "tools" ? "tools" : "launcher") : desktop.panel,
                 barsVisible: desktop.barsVisible,
                 notifications: notificationCenter.count,
                 dnd: notificationCenter.dnd

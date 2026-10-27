@@ -26,7 +26,6 @@
   };
 
   home.packages = with pkgs; [
-    papirus-icon-theme
     adw-gtk3
 
     libnotify

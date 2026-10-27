@@ -89,10 +89,10 @@ Wallpaper, animated wallpaper, emoji, blue-light filter, VPN and session tools
 are available through META+ALT.
 Short commands such as `wpp`, `awpp` and `vpnp` remain searchable there.
 Bare META toggles the apps-only Material 3 Expressive grid in Quickshell.
-**META + ALT** opens Fuzzel on a directory containing only these tools and their
-native actions. Search starts empty and matches tool names normally. Press the
-chord again to dismiss it. Tools and desktop actions stay hidden from the main
-launcher using native desktop-entry visibility.
+**META + ALT** opens the same Expressive launcher in Desktop tools mode, including
+native desktop actions. Search starts empty and matches tool names normally.
+Press the same chord again to dismiss it; META switches back to applications.
+Tools and desktop actions stay hidden from the main app grid.
 
 Hyprland has no global audio or media hotkeys. Use the sound panel (**META + K**)
 or application controls. Manual window resizing uses **META + right mouse drag**
@@ -456,16 +456,28 @@ App names are plain text. App icons use a 48px circular clip with center-cropped
 artwork and a live Matugen tint: primary normally, on-secondary-container when
 selected. Native colorization preserves shading and transparency.
 
+GTK, Qt and Fuzzel use [Mignon-pastel-dark](https://github.com/igorfmoraes/Mignon-icon-theme).
+The host packages a pinned upstream revision in `pkgs/ricing/mignon-icon-theme.nix`;
+aliases to absent upstream artwork are omitted so normal theme inheritance works.
+Missing themed icons fall back to Adwaita/hicolor or application-provided artwork.
+Launcher artwork retains the circular clip and Matugen tint rather than Mignon's
+original pastel colours.
+
 `Launcher.qml` uses Quickshell's desktop index and change signals, storing only
 plain metadata snapshots. The private `expressive-apps` helper uses GIO to filter
 desktop visibility and launch by desktop ID: Quickshell 0.3.2 does not expose
 `OnlyShowIn`/`NotShowIn`, and its execution API ignores terminal flags and field codes.
-GIO preserves desktop-file launch semantics; `xdg-terminal-exec` selects Foot through
-the managed `xdg-terminals.list`. Launch failures remain visible in the launcher.
-Fuzzel still owns META+ALT and all utility pickers; no command runner is exposed here.
+GIO returns separate app/tool visibility sets and rechecks the selected mode at
+launch. Tool entries require `OnlyShowIn=X-DesktopTools;`; their desktop actions
+appear as additional tiles. The session's desktop identity and XDG data paths stay
+unchanged. GIO preserves desktop-file launch semantics; `xdg-terminal-exec` selects
+Foot through the managed `xdg-terminals.list`. Reported launch failures remain
+visible in the launcher. Fuzzel serves the individual utility pickers only; no
+command runner is exposed.
 
 ```sh
 quickshell -c expressive ipc call desktop toggle launcher
+quickshell -c expressive ipc call desktop toggle tools
 quickshell -c expressive ipc call desktop toggle microphone
 quickshell -c expressive ipc call desktop toggle sound
 quickshell -c expressive ipc call desktop toggle network
