@@ -496,8 +496,9 @@ GIO returns separate app/tool visibility sets and rechecks the selected mode at
 launch. Tool entries require `OnlyShowIn=X-DesktopTools;`; their desktop actions
 appear as additional tiles. The session's desktop identity and XDG data paths stay
 unchanged. GIO preserves desktop-file launch semantics; `xdg-terminal-exec` selects
-Foot through the managed `xdg-terminals.list`. Reported launch failures remain
-visible in the launcher. Fuzzel serves the individual utility pickers only; no
+Foot through the managed `xdg-terminals.list`. Child stdout and stderr are detached
+from the helper's short-lived pipes, while reported launch failures remain visible
+in the launcher. Fuzzel serves the individual utility pickers only; no
 command runner is exposed.
 
 ```sh

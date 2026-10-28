@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 
 import gi
@@ -31,13 +32,23 @@ try:
         if app is None or not visible(app, mode):
             raise ValueError("This entry is no longer available in this launcher")
         # GIO owns field-code expansion, working directories and Terminal=true.
-        if len(sys.argv) == 4:
-            action = sys.argv[3]
-            if mode != "tools" or action not in app.list_actions():
-                raise ValueError("This desktop action is no longer available")
-            app.launch_action(action, None)
-        elif not app.launch([], None):
-            raise ValueError("The application could not be started")
+        # Children must not retain helper pipes that close when this process exits.
+        saved = [(fd, os.dup(fd)) for fd in (1, 2)]
+        try:
+            with open(os.devnull, "wb") as null:
+                for fd, _ in saved:
+                    os.dup2(null.fileno(), fd)
+                if len(sys.argv) == 4:
+                    action = sys.argv[3]
+                    if mode != "tools" or action not in app.list_actions():
+                        raise ValueError("This desktop action is no longer available")
+                    app.launch_action(action, None)
+                elif not app.launch([], None):
+                    raise ValueError("The application could not be started")
+        finally:
+            for fd, copy in saved:
+                os.dup2(copy, fd)
+                os.close(copy)
     else:
         raise ValueError("Expected no arguments, or apps/tools followed by a desktop ID and optional action")
 except (GLib.Error, ValueError) as error:
