@@ -118,13 +118,12 @@ source in its private mount namespace. The bounded root-only
 It releases boot targets without waiting for lighting completion. Its detector allowlist comes
 from the package registry at build time. See [RGB lighting](../../../../docs/nix.md#rgb-lighting) for devices/actions and permission boundaries.
 
-`hosts/nix/boot.nix` selects the cached CachyOS kernel and its matching NVIDIA branch.
-Keep the provider's independent Nixpkgs pin and pinned overlay for cache reuse.
-NCT6687 and v4l2loopback also use the selected kernel package set.
-Do not replace these packages with modules built for the host's default Nixpkgs kernel.
+`hosts/nix/boot.nix` selects the stock Nixpkgs kernel and its stable NVIDIA branch for official cache reuse.
+NCT6687 and v4l2loopback also use that kernel package set.
+The Lantian cache remains configured, but no CachyOS kernel input or overlay is active.
 No explicit lockdown or module-signature enforcement is configured. Limine Secure Boot is unchanged.
 Read the [kernel policy and recovery checks](../../../../docs/nix-security.md#local-module-signing-and-integrity-lockdown)
-and [initial cache trust procedure](../../../../docs/nix.md#updates-and-prebuilt-systems) before the first Linux build.
+and [cache trust procedure](../../../../docs/nix.md#updates-and-prebuilt-systems) before using additional caches.
 Boot parameters retain `vsyscall=none`, `slab_nomerge`, and `page_alloc.shuffle=1`.
 `init_on_free` is deliberately absent because of its gaming cost.
 

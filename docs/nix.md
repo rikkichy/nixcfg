@@ -245,10 +245,8 @@ runs during NixOS activation.
 
 ## Desktop hardware performance
 
-`hosts/nix/boot.nix` selects the cached CachyOS x86-64-v4 ThinLTO kernel for the 9950X3D.
-The CPU supports that instruction baseline. This is not a portable kernel choice for arbitrary x86 machines.
-The provider's pinned package set keeps kernel and module toolchains aligned without rebuilding all system packages for a custom CPU target.
-Use the [cache procedure below](#updates-and-prebuilt-systems) before the first build.
+`hosts/nix/boot.nix` selects the stock Nixpkgs kernel for official binary-cache reuse.
+Kernel and external modules use the same package set. No CPU-specific kernel build is selected.
 The [kernel security section](nix-security.md#local-module-signing-and-integrity-lockdown) owns NVIDIA compatibility and boot acceptance.
 
 `hosts/nix/hardware-policy.nix` retains the cache-rich CCD preference and performance EPP under `amd_pstate=active`.
@@ -612,8 +610,8 @@ Review and commit `flake.lock` after a successful build.
 The desktop configures the NixOS cache endpoints and the CachyOS maintainer's signed binary cache.
 Endpoint and public-key declarations live in `hosts/nix/modules/system/nix.nix`.
 The latter adds trust in a third-party publisher, not an official NixOS build service.
-`nix-cachyos-kernel` tracks the provider's [release branch](https://github.com/xddxdd/nix-cachyos-kernel/tree/release), which publishes built kernels.
-Keep its own Nixpkgs input and pinned overlay. A `follows` override or custom kernel options can lose cache matches.
+The stock kernel comes from the main Nixpkgs pin. No separate CachyOS kernel input or overlay is active.
+The Lantian cache and its signing key remain configured independently of kernel selection.
 NVIDIA, NCT6687, and v4l2loopback remain separate matching packages and can require local compilation.
 
 Before the cache settings are active, an ordinary user's key override can be rejected by the Nix daemon.

@@ -26,10 +26,9 @@
     ForwardToConsole=yes
     MaxLevelConsole=notice
   '';
-  # The 9950X3D supports x86-64-v4; use the cached ThinLTO build, not a native rebuild.
-  boot.kernelPackages = pkgs.cachyosKernels.linuxPackages-cachyos-latest-lto-x86_64-v4;
-  # The provider applies its NVIDIA open-module compatibility fixes to this branch.
-  hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.latest;
+  # Use the stock kernel for official NixOS binary-cache reuse.
+  boot.kernelPackages = pkgs.linuxPackages_latest;
+  hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.stable;
 
   boot.kernelParams = [
     "quiet"

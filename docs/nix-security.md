@@ -342,19 +342,19 @@ and [boot-menu recovery path](#limine-recovery-with-a-zero-timeout).
 
 ## Local module signing and integrity lockdown
 
-The desktop selects CachyOS through the provider's pinned kernel package set in `hosts/nix/boot.nix`.
-Its CPU-target and cache policy are documented under [desktop hardware performance](nix.md#desktop-hardware-performance).
+The desktop selects the stock Nixpkgs kernel in `hosts/nix/boot.nix` for official binary-cache reuse.
+Hardware tuning is documented under [desktop hardware performance](nix.md#desktop-hardware-performance).
 Explicit integrity lockdown and module-signature enforcement are not configured.
 Do not assume that the running kernel enforces either policy merely because Secure Boot is enabled.
 
 NVIDIA open modules, the NCT6687 sensor driver, and OBS's v4l2loopback match the selected kernel.
-The NVIDIA package uses the provider's `latest` branch, where its open-module compatibility patches are applied.
+The NVIDIA package uses the selected kernel package set's `stable` branch.
 Keep `hardware.nvidia.open = true` for the RTX 3090.
 Cache misses can compile external modules locally, even when the kernel itself is cached.
 Build and boot-check this combination on the actual desktop before relying on it.
 
-Use the [first-build cache procedure](nix.md#updates-and-prebuilt-systems) before the new trust settings are active.
-Later, `nh os build --no-nom path:/etc/nixos --hostname nix --no-update-lock-file` builds without activation.
+`nh os build --no-nom path:/etc/nixos --hostname nix --no-update-lock-file` builds without activation.
+The stock kernel uses existing NixOS cache trust. The retained Lantian cache has its own [first-build trust procedure](nix.md#updates-and-prebuilt-systems).
 No content-addressed-derivation bootstrap or persistent daemon override is required.
 
 Limine Secure Boot signing, configuration/artifact hash authentication and TPM

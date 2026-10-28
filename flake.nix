@@ -5,8 +5,6 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     # Keep Darwin nh on an officially cached build of the same release.
     nixpkgs-nh.url = "github:NixOS/nixpkgs/b4fd65b198c599cbe814fcb9f42d25d021595ec9";
-    # Keep the provider's Nixpkgs pin: its release branch has prebuilt kernels.
-    nix-cachyos-kernel.url = "github:xddxdd/nix-cachyos-kernel/release";
 
     nix-darwin = {
       url = "github:nix-darwin/nix-darwin/master";
@@ -107,7 +105,7 @@
           ./hosts/nix
           ./common/modules/nixos-mihomo-secrets.nix
 
-          { nixpkgs.overlays = [ commonOverlay overlay inputs.nix-cachyos-kernel.overlays.pinned ]; }
+          { nixpkgs.overlays = [ commonOverlay overlay ]; }
           { nix.extraOptions = "!include /etc/nix/attic.conf"; }
 
           home-manager.nixosModules.home-manager
