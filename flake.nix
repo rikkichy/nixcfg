@@ -84,6 +84,7 @@
       darwinConfigurations.ne = inputs.nix-darwin.lib.darwinSystem {
         specialArgs = { inherit inputs nixcfgPath; };
         modules = [
+          { nixpkgs.overlays = [ commonOverlay ]; }
           ./hosts/ne
           home-manager.darwinModules.home-manager
           {

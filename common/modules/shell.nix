@@ -23,7 +23,7 @@ let
       diagnosticsOnWrite: true
   '';
   omp = pkgs.writeShellScriptBin "omp" ''
-    exec "$HOME/.bun/bin/bun" x --bun --package @oh-my-pi/pi-coding-agent@latest omp --config ${ompTooling} "$@"
+    exec ${lib.getExe pkgs.bun} x --bun --package @oh-my-pi/pi-coding-agent@latest omp --config ${ompTooling} "$@"
   '';
 in
 
