@@ -10,10 +10,8 @@ No enrollment or boot test is implied by a source edit.
 ## One root mapping, independent password recovery
 
 `hosts/nix/hardware.nix` declares `boot.initrd.luks.devices."cryptroot"` and
-mounts `/dev/mapper/cryptroot` at `/persist`. The desktop impermanence module owns
-tmpfs root and persistent state. `hosts/nix/boot.nix` adds discard support;
+mounts `/dev/mapper/cryptroot` as root. `hosts/nix/boot.nix` adds discard support;
 `common/modules/nixos-yubikey.nix` adds FIDO2 options to **that same mapping**.
-Use the [offline conversion procedure](../../../../docs/install.md#offline-desktop-conversion-without-formatting) for the initial cutover, not a live switch.
 Another attribute name targeting the same backing partition creates a second
 mapping, not an override.
 Two cryptsetup units race, and losing `cryptroot` strands root unlock.
@@ -96,7 +94,6 @@ daemon; plan an approved reboot and physical logout/relogin acceptance checks.
 Before approved registration, activation or recovery, read [Touch-only sudo](../../../../docs/nix-security.md#touch-only-sudo-with-password-fallback).
 Keep an authenticated root shell until fresh good-password and negative tests pass.
 The mapping is root-controlled public metadata, not a private key.
-For desktop provisioning, use the backing-file procedure in that runbook, not the volatile consumer symlink.
 Register ordinary non-resident credentials with matching origin/appid `pam://nix`.
 Do not use PIN/UV/no-presence flags. Use protected temporary storage outside the checkout.
 Install mode `0600` only for first enrollment. Back up and merge existing mappings,

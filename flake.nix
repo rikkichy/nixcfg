@@ -16,8 +16,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    preservation.url = "github:nix-community/preservation/00be7f7dd1a11ae0605386f2272288de7cf33abe";
-
     spicetify-nix = {
       url = "github:Gerg-L/spicetify-nix";
       inputs.nixpkgs.follows = "nixpkgs";

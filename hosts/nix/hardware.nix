@@ -10,7 +10,7 @@
   boot.kernelModules = [ "kvm-amd" ];
   boot.extraModulePackages = [ ];
 
-  fileSystems."/persist" =
+  fileSystems."/" =
     { device = "/dev/mapper/cryptroot";
       fsType = "xfs";
     };
