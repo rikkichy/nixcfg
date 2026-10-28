@@ -4,6 +4,10 @@
     substituters = [
       "https://mirror.yandex.ru/nixos/?priority=10"
       "https://cache.nixos.org/"
+      "https://cache.lantian.pub/lantian"
+    ];
+    trusted-public-keys = [
+      "lantian:WVGO7vsRMSEN+h7Lp7kv6SAmrkEXgUGbbXm7jMDjBuQ="
     ];
     max-jobs = 2;
     cores = 8;

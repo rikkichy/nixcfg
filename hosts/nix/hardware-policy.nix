@@ -1,6 +1,9 @@
 { pkgs, lib, ... }:
 
 {
+  # amd-pstate-epp stays dynamic; the performance EPP below still permits boosting.
+  powerManagement.cpuFreqGovernor = "powersave";
+
   services.udev.extraRules = ''
     ACTION!="remove", SUBSYSTEM=="platform", DRIVER=="amd_x3d_vcache", \
       ATTR{amd_x3d_mode}="cache"

@@ -75,6 +75,9 @@ With `amd_pstate=active`, EPP is the bias, not the governor. amd-pstate-epp's
 sets `cpufreq/energy_performance_preference=performance` on CPU devices. The
 `performance` governor instead pins minimum performance at the maximum and
 makes EPP inert. Do not conflate the two.
+Both host policy and GameMode select the dynamic governor explicitly.
+GameMode's native L3 detection handles participating games without hard-coded core lists.
+For operating checks and NTSync behavior, read [desktop hardware performance](../../../../docs/nix.md#desktop-hardware-performance).
 
 Do not re-enable scx_lavd as a generic performance tweak. A runnable-task stall
 can freeze the whole desktop until the sched_ext watchdog ejects the scheduler.
@@ -115,13 +118,13 @@ source in its private mount namespace. The bounded root-only
 It releases boot targets without waiting for lighting completion. Its detector allowlist comes
 from the package registry at build time. See [RGB lighting](../../../../docs/nix.md#rgb-lighting) for devices/actions and permission boundaries.
 
-`hosts/nix/boot.nix` selects stock `pkgs.linuxPackages_latest`; matching
-substitutes avoid a local kernel build. NVIDIA open modules, NCT6687 and
-v4l2loopback are separate packages and may compile on cache misses.
-The custom signing/lockdown policy is commented out, with its implementation
-retained but dormant. No explicit lockdown or module-signature enforcement is
-configured; Limine Secure Boot is unchanged. See the
-[kernel policy and recovery checks](../../../../docs/nix-security.md#local-module-signing-and-integrity-lockdown).
+`hosts/nix/boot.nix` selects the cached CachyOS kernel and its matching NVIDIA branch.
+Keep the provider's independent Nixpkgs pin and pinned overlay for cache reuse.
+NCT6687 and v4l2loopback also use the selected kernel package set.
+Do not replace these packages with modules built for the host's default Nixpkgs kernel.
+No explicit lockdown or module-signature enforcement is configured. Limine Secure Boot is unchanged.
+Read the [kernel policy and recovery checks](../../../../docs/nix-security.md#local-module-signing-and-integrity-lockdown)
+and [initial cache trust procedure](../../../../docs/nix.md#updates-and-prebuilt-systems) before the first Linux build.
 Boot parameters retain `vsyscall=none`, `slab_nomerge`, and `page_alloc.shuffle=1`.
 `init_on_free` is deliberately absent because of its gaming cost.
 

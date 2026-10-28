@@ -58,6 +58,9 @@
     rulesProvider = pkgs.ananicy-rules-cachyos;
   };
 
+  # Native NT synchronization for Wine/Proton versions that support it.
+  boot.kernelModules = [ "ntsync" ];
+
   programs.steam = {
     enable = true;
     gamescopeSession.enable = true;
@@ -68,5 +71,9 @@
     extraCompatPackages = [ pkgs.proton-ge-bin ];
   };
 
-  programs.gamemode.enable = true;
+  programs.gamemode = {
+    enable = true;
+    # Keep amd-pstate-epp dynamic rather than pinning every core's minimum clock.
+    settings.general.desiredgov = "powersave";
+  };
 }

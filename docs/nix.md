@@ -16,6 +16,7 @@ and [existing-system manual recovery](install.md#manual-installation--recovery-r
 
 - [Installation](#installation)
 - [Rebuilds and desktop tools](#rebuilds-and-desktop-tools)
+- [Desktop hardware performance](#desktop-hardware-performance)
 - [Console login](#console-login)
 - [Printing](#printing)
 - [Notes and passwords](#notes-and-passwords)
@@ -44,7 +45,7 @@ is desktop-only. Fresh-install disk erasure is never an existing-system recovery
 After separate activation approval, apply configuration changes with
 `nh os switch --no-nom --no-update-lock-file`. See [shared rebuild behavior](shared.md#rebuild-commands)
 for checkout selection, environment precedence and elevation.
-`--no-nom` selects native Nix output; the stock kernel does not require it.
+`--no-nom` selects native Nix output, independent of the selected kernel.
 META+ALT exposes three Nix commands in held terminals:
 - **nh os switch**
 - **nh os switch --update** (update all inputs, rebuild and switch)
@@ -241,6 +242,35 @@ Install the local archive from OpenDeck's Plugins page. Follow the upstream
 model/hotkey setup, credential locations, and troubleshooting. Existing
 plugins and profiles remain application-owned. No installation or migration
 runs during NixOS activation.
+
+## Desktop hardware performance
+
+`hosts/nix/boot.nix` selects the cached CachyOS x86-64-v4 ThinLTO kernel for the 9950X3D.
+The CPU supports that instruction baseline. This is not a portable kernel choice for arbitrary x86 machines.
+The provider's pinned package set keeps kernel and module toolchains aligned without rebuilding all system packages for a custom CPU target.
+Use the [cache procedure below](#updates-and-prebuilt-systems) before the first build.
+The [kernel security section](nix-security.md#local-module-signing-and-integrity-lockdown) owns NVIDIA compatibility and boot acceptance.
+
+`hosts/nix/hardware-policy.nix` retains the cache-rich CCD preference and performance EPP under `amd_pstate=active`.
+The explicit `powersave` governor permits dynamic frequency selection and boosting, rather than fixing every core's minimum performance level.
+GameMode keeps that governor instead of overriding it.
+Its native [L3-topology detection](https://github.com/FeralInteractive/gamemode/blob/1.8.2/daemon/gamemode-cpu.c) selects the larger-cache cores for participating games.
+No CPU numbers are hard-coded, and the other CCD remains available for background work.
+Use `gamemoderun %command%` in a game's Steam launch options when it does not request GameMode itself.
+Ananicy retains ownership of process-priority rules. No sched_ext daemon is enabled.
+
+`hosts/nix/modules/system/gaming.nix` loads NTSync for Wine/Proton builds that support the kernel synchronization interface.
+Loading the module does not force an unsupported game runtime to use it.
+The [Wave XLR policy](#wave-xlr-mk1-and-wave-dx-audio), Wave DX processing, and Blessing III headphone filter remain unchanged.
+Wooting retains its native device-access rules. No global USB polling or audio-buffer override is imposed on the Razer mouse or audio interface.
+DDR5-6000 EXPO, firmware settings, voltages, and GPU clocks are not changed by this configuration.
+
+After an approved boot, check `cpupower frequency-info` and the per-policy `energy_performance_preference` values in `/sys/devices/system/cpu/cpufreq/`.
+Confirm the X3D cache preference through the bound driver's `amd_x3d_mode` attribute.
+For a game started with GameMode, inspect `gamemodelist` and its actual process affinity rather than assuming a core-number layout.
+As `ri`, check `test -r /dev/ntsync && test -w /dev/ntsync`.
+Compare the same game's frame times and audio xruns before claiming a performance improvement.
+Retain a working generation. A successful build on another PC does not prove this hardware's boot or driver behavior.
 
 ## Console login
 
@@ -579,22 +609,36 @@ Update selected pins with `nix flake update nixpkgs home-manager --flake /etc/ni
 **nh os switch --update** updates all inputs, rebuilds and switches.
 Review and commit `flake.lock` after a successful build.
 
-The desktop configures the Yandex NixOS cache mirror with priority 10 and
-`https://cache.nixos.org/`. Local package patches require an
-exact matching cached build. Otherwise they build locally.
-Ananicy uses the unmodified Nixpkgs package. The desktop uses stock
-`pkgs.linuxPackages_latest`, with NVIDIA open modules, NCT6687 and v4l2loopback
-built as separate matching packages. The
-[custom signing policy is disabled](nix-security.md#local-module-signing-and-integrity-lockdown).
-Matching substitutes avoid compilation; cache misses can still build the
-kernel or external modules locally.
+The desktop configures the NixOS cache endpoints and the CachyOS maintainer's signed binary cache.
+Endpoint and public-key declarations live in `hosts/nix/modules/system/nix.nix`.
+The latter adds trust in a third-party publisher, not an official NixOS build service.
+`nix-cachyos-kernel` tracks the provider's [release branch](https://github.com/xddxdd/nix-cachyos-kernel/tree/release), which publishes built kernels.
+Keep its own Nixpkgs input and pinned overlay. A `follows` override or custom kernel options can lose cache matches.
+NVIDIA, NCT6687, and v4l2loopback remain separate matching packages and can require local compilation.
+
+Before the cache settings are active, an ordinary user's key override can be rejected by the Nix daemon.
+For a separately approved first build on the desktop or Linux builder, use a root invocation with the reviewed configuration's cache settings:
+
+```bash
+cache=$(nix eval --no-update-lock-file --json \
+  path:/etc/nixos#nixosConfigurations.nix.config.nix.settings \
+  --apply 's: { inherit (s) substituters trusted-public-keys; }')
+sudo nix build --no-link --no-update-lock-file \
+  --option extra-substituters "$(jq -r '.substituters | join(" ")' <<<"$cache")" \
+  --option extra-trusted-public-keys "$(jq -r '.["trusted-public-keys"] | join(" ")' <<<"$cache")" \
+  path:/etc/nixos#nixosConfigurations.nix.config.system.build.toplevel
+```
+
+This permits downloads for the build without activating services or disabling signature checks.
+After approved activation installs the cache settings, ordinary builds use them without these command-line overrides.
+Cache misses can still compile locally. Do not bypass signatures to avoid a build.
 
 The optional signed Attic cache at `https://cache.kror.net/nixcfg` supplies
 only `google-sans-rounded`, `tg-ws-proxy` and `vpn` through
 `.github/workflows/package-cache.yml`. Follow the
 [server cache provisioning and desktop trust procedure](nixos-server.md#public-package-cache-attic)
-before enabling it. An absent `/etc/nix/attic.conf` leaves only the configured
-NixOS cache endpoints. CI builds the committed lock file and publishes exact derivation outputs.
+before enabling it. An absent `/etc/nix/attic.conf` leaves only the declared
+NixOS and CachyOS cache endpoints. CI builds the committed lock file and publishes exact derivation outputs.
 Commit input updates and wait for successful publication before expecting matching downloads.
 Proprietary application and full-host closures are not public cache targets.
 A binary cache moves compilation to CI. It does
@@ -619,8 +663,7 @@ nh os build --no-nom path:/etc/nixos --hostname nix --no-update-lock-file \
 
 With no remote builders, `--max-jobs 0` rejects uncached ordinary packages.
 Derivations marked `preferLocalBuild`, such as small configuration generators,
-can still run locally. The stock kernel no longer has the custom signing
-build's local-only restriction.
+can still run locally. The kernel has no custom local-only signing requirement.
 This command is therefore not a no-compilation guarantee. Binary AppImage
 wrapping and Python/script packaging are distinct from native compilation.
 The normal build below permits local work with bounded parallelism.
