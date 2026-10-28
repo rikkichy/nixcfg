@@ -1,6 +1,20 @@
-{ config, osConfig, lib, pkgs, nixcfgPath, ... }:
+{
+  config,
+  osConfig,
+  lib,
+  pkgs,
+  nixcfgPath,
+  ...
+}:
 let
-  tooling = import ./language-servers.nix { inherit lib pkgs osConfig nixcfgPath; };
+  tooling = import ./language-servers.nix {
+    inherit
+      lib
+      pkgs
+      osConfig
+      nixcfgPath
+      ;
+  };
   ompTooling = pkgs.writeText "omp-tooling.yml" ''
     astGrep:
       enabled: true
@@ -9,7 +23,7 @@ let
       diagnosticsOnWrite: true
   '';
   omp = pkgs.writeShellScriptBin "omp" ''
-    exec ${lib.getExe pkgs.bun} x --bun --package @oh-my-pi/pi-coding-agent@latest omp --config ${ompTooling} "$@"
+    exec "$HOME/.bun/bin/bun" x --bun --package @oh-my-pi/pi-coding-agent@latest omp --config ${ompTooling} "$@"
   '';
 in
 
@@ -17,9 +31,18 @@ in
   home.packages = with pkgs; [
     omp
     age
-    btop git gh wget
-    eza bat ripgrep lazygit jq fastfetch
-    file unzip
+    btop
+    git
+    gh
+    wget
+    eza
+    bat
+    ripgrep
+    lazygit
+    jq
+    fastfetch
+    file
+    unzip
     matugen
     nerd-fonts.departure-mono
   ];
@@ -34,28 +57,42 @@ in
 
     - Local configured host: ${osConfig.networking.hostName} (${pkgs.stdenv.hostPlatform.system})
     - Configured primary user: ${config.home.username}
-    - Configuration model: ${if pkgs.stdenv.hostPlatform.isDarwin then "nix-darwin" else "NixOS"} + Home Manager
-    - Configured desktop: ${if pkgs.stdenv.hostPlatform.isDarwin then "macOS desktop" else if osConfig.programs.hyprland.enable then "Hyprland (Wayland)" else "none"}
+    - Configuration model: ${
+      if pkgs.stdenv.hostPlatform.isDarwin then "nix-darwin" else "NixOS"
+    } + Home Manager
+    - Configured desktop: ${
+      if pkgs.stdenv.hostPlatform.isDarwin then
+        "macOS desktop"
+      else if osConfig.programs.hyprland.enable then
+        "Hyprland (Wayland)"
+      else
+        "none"
+    }
 
     These values identify the local installed Nix configuration, not the current
     process user, session working directory or a remote SSH target. Verify live
     identity when an operation depends on it.
   '';
 
-  home.file.".omp/agent/extensions/nixcfg-execution.js".source =
-    ../dotfiles/omp/nixcfg-execution.js;
+  home.file.".omp/agent/extensions/nixcfg-execution.js".source = ../dotfiles/omp/nixcfg-execution.js;
 
   home.file.".omp/agent/lsp.json".text = builtins.toJSON {
-    servers = lib.mapAttrs (_: server: server // {
-      settings = server.settings or { };
-    }) tooling.servers // {
-      # Use the same selected servers as Zed, even when alternatives are on PATH.
-      nil.disabled = true;
-      pyright.disabled = true;
-      pylsp.disabled = true;
-      ty.disabled = true;
-      typescript-native.disabled = true;
-    };
+    servers =
+      lib.mapAttrs (
+        _: server:
+        server
+        // {
+          settings = server.settings or { };
+        }
+      ) tooling.servers
+      // {
+        # Use the same selected servers as Zed, even when alternatives are on PATH.
+        nil.disabled = true;
+        pyright.disabled = true;
+        pylsp.disabled = true;
+        ty.disabled = true;
+        typescript-native.disabled = true;
+      };
   };
 
   programs.direnv = {
