@@ -144,10 +144,12 @@ through the checkout and regenerate/sign the bootloader.
 Alternatively, restore the matching EFI image and configuration from the protected backup with Secure Boot disabled.
 Preserve the kernel/initrd files referenced by that backup.
 
-If no generation unlocks root, use the ISO to open the verified backing partition with its retained passphrase as `cryptroot`.
-Mount root and ESP, enter via `nixos-enter`, and repair the configuration.
-Do not format anything. A NixOS
-rollback changes boot configuration, not LUKS enrollment or keyslots.
+If no generation unlocks root, use the ISO and the retained passphrase.
+For the current tmpfs-root layout, follow [offline desktop assembly and repair](install.md#offline-desktop-conversion-without-formatting).
+Mount tmpfs, the retained XFS at `/persist`, the ESP, and all declared state before installing a repaired generation.
+Do not format, regenerate hardware, or initialize fresh accounts during recovery.
+For rollback to the preconversion layout, boot its retained generation with XFS as `/`, not a live root reversal.
+Nix rollback does not restore account databases, LUKS enrollment, keyslots, or out-of-store secrets.
 
 ## EFI partition permissions
 
@@ -198,7 +200,9 @@ disabled.
 The interactive installer does not provision these keys. The helper above
 requires existing installed Limine files, so it cannot bootstrap a blank target.
 Before desktop installation, arrange separately approved provisioning or restoration
-of the target's root-only `/var/lib/sbctl` keys and retain an encrypted offline backup.
+of the target's root-only sbctl keys and retain an encrypted offline backup.
+The persistent target is `/mnt/persist/var/lib/sbctl`, bound at `/mnt/var/lib/sbctl` before installation.
+Both `keys/db/db.key` and `keys/db/db.pem` must exist.
 Do not defer this prerequisite until the first reboot or disable signing to bypass it.
 
 The desktop uses native Limine signing, not a different bootloader.
@@ -384,6 +388,9 @@ This is not a NOPASSWD grant. Touch is requested with `userpresence=1`,
 `pinverification=0`, `userverification=0`, and a cue. The central mapping is
 `/etc/u2f-mappings`, root-controlled, with origin **and** appid `pam://nix`.
 It contains public registration metadata, not an exported private key.
+On desktop `nix`, this consumer path is a volatile symlink to `/persist/etc/u2f-mappings`.
+Provision, back up, merge, and restore the backing file, not the symlink.
+The server retains its ordinary `/etc/u2f-mappings` file.
 Desktop greetd reuses this registration through its
 [separate login rule](#native-disk-unlock-and-desktop-login); locker and polkit
 authentication are unchanged.
@@ -402,8 +409,9 @@ pamu2fcfg --username=ri --origin=pam://nix --appid=pam://nix > "$mapping"
 Do not add `--resident`, `--pin-verification`, `--user-verification`, or
 `--no-user-presence`. In the retained root shell, inspect the result privately.
 For **first enrollment only**, install it with
-`install -o root -g root -m 0600 /the/verified/temporary/file /etc/u2f-mappings`.
-If the file already exists, back it up.
+`install -o root -g root -m 0600 /the/verified/temporary/file /persist/etc/u2f-mappings`.
+For an offline desktop target, use `/mnt/persist/etc/u2f-mappings`.
+If the backing file already exists, back it up.
 Merge the new registration into `ri`'s existing colon-separated entry, preserving every other user/key.
 Do not overwrite it. Remove the temporary file afterward. Do not reset FIDO or clear
 its existing PIN. The [pamu2fcfg manual](https://developers.yubico.com/pam-u2f/Manuals/pamu2fcfg.1.html)
@@ -427,9 +435,9 @@ Run `sudo -k; sudo true`, and separately `sudo -k; sudo -i` (then `exit` the acq
   unconditional success. Password fallback still works.
 
 Keep the root shell until the good-password and negative tests pass.
-If PAM fails, use it to restore the saved mapping and switch to the known-working configuration.
-Use `nixos-rebuild switch --rollback` when that previous generation is the intended one.
-Repeat fresh password tests before closing the shell.
+If PAM fails, use the retained root shell to restore `/persist/etc/u2f-mappings`.
+For a known-working generation with the same storage layout, apply the separately approved rollback and repeat fresh password tests.
+A preconversion generation requires an offline rollback boot as described in [conversion recovery](install.md#first-boot-acceptance-and-recovery), not a live switch.
 Mapping edits are outside Nix generations and need their own restoration.
 For a lost token, remove only its reviewed registration after replacement/
 fallback tests. Separately review its disk and PIV access.

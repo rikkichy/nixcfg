@@ -397,9 +397,11 @@ Wallpaper changes do not recolor or replace it. Home Manager owns the cursor
 package and GTK/Xcursor settings; Hyprland uses the same theme and size.
 See the [cursor contract](../.omp/skills/wallpaper-theming/references/cursors.md).
 
-The desktop keeps its encrypted, persistent XFS root. There is no tmpfs-root
-reset or separate preservation allowlist. Wallpaper state belongs to
-`hosts/nix/modules/home/matugen.nix`: `~/.local/state/wallpaper/{current,animated}`
+The desktop resets only `/` at boot with a tmpfs root.
+Encrypted XFS remains mounted at `/persist`; all of `/home` and explicit system state persist through Preservation.
+The writable checkout also persists, so wallpaper records, generated palettes, app sessions, and user collections remain available.
+Use the [offline conversion procedure](install.md#offline-desktop-conversion-without-formatting), not a live switch, for the initial cutover.
+Wallpaper state belongs to `hosts/nix/modules/home/matugen.nix`: `~/.local/state/wallpaper/{current,animated}`
 records selections, while `~/.cache/{wallpaper-picker,animated-wallpaper}` holds
 rebuildable thumbnails and frames. Back up the records together with the image
 and video collections if restoring the same selections matters. Generated
