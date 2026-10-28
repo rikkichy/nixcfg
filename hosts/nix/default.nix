@@ -5,6 +5,7 @@
     ../../common/modules/nh.nix
     ./hardware.nix
     ./storage.nix
+    ./modules/system/impermanence.nix
     ./modules/system/nix.nix
     ./boot.nix
     ./hardware-policy.nix

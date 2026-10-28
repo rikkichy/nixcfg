@@ -25,7 +25,9 @@ UEFI live ISO, with networking and a root KVM terminal:
 REPOSITORY    Defaults to the current directory.
 
 Installation ERASES ONE WHOLE DISK after a single ERASE confirmation. It creates
-GPT, a 4 GiB FAT32 EFI partition, and a passphrase-protected LUKS2/XFS root.
+GPT, a 4 GiB FAT32 EFI partition, and passphrase-protected LUKS2/XFS storage.
+Desktop nix uses a volatile tmpfs root with persistent system state and /home.
+The server keeps its persistent XFS root.
 The source checkout is never modified. Its reviewed HEAD and working files
 become an independent ri-owned checkout tracking the public origin/main.
 Local edits, deletions and nonignored new files are retained, including .omp.
@@ -45,13 +47,17 @@ plan() {
   cat <<'PLAN'
 Plan: select host -> snapshot and evaluate build plan -> select unused disk
 -> select required YubiKey -> approve mandatory sudo/boot enrollment
--> ERASE confirmation -> recheck disk -> GPT/EFI/LUKS2/XFS -> mount /mnt
--> copy repository and generate hosts/HOST/hardware.nix from actual hardware
--> nixos-install -> set root and ri passwords -> approved FIDO2 enrollments
+-> ERASE confirmation -> recheck disk -> GPT/EFI/LUKS2/XFS
+-> mount target root and ESP -> generate hosts/HOST/hardware.nix
+-> desktop: bind persistent state -> copy repository -> require signing keys
+-> nixos-install -> desktop: initialize Userborn -> set root and ri passwords
+-> approved FIDO2 enrollments
 -> retain mounted system and recovery shell; NEVER auto-reboot.
 
 nix is the repository's AMD 9950X3D/NVIDIA desktop, NOT a generic desktop.
 nixos-server is the generic headless/KVM host. Both use user ri.
+Desktop root is volatile tmpfs; its backing storage is encrypted XFS.
+Server root remains persistent XFS.
 A build plan is not a completed build or a boot/authentication test. Network,
 build, hardware, or token failures can still require recovery after erase.
 PLAN
@@ -278,6 +284,7 @@ enroll_boot() {
 
 enroll_sudo() {
   local mapping=/mnt/etc/u2f-mappings registration
+  if [[ $host == nix ]]; then mapping=/mnt/persist/etc/u2f-mappings; fi
   [[ ! -e $mapping && ! -L $mapping ]] || fail 'Existing /etc/u2f-mappings must be backed up and merged manually, never overwritten.'
   printf '\nSudo enrollment: leave only the intended YubiKey connected; touch it when requested.\n'
   pamu2fcfg --username=ri --origin="pam://$host" --appid="pam://$host" >"$work/u2f-mapping"
@@ -338,15 +345,29 @@ verify_boot_devices() {
   devices=$("${nixcmd[@]}" eval --json --no-update-lock-file \
     "path:/mnt/etc/nixos#nixosConfigurations.$host.config" --apply \
     'c: { luks = builtins.mapAttrs (_: v: v.device) c.boot.initrd.luks.devices;
-          root = c.fileSystems."/".device; esp = c.fileSystems."/boot".device; }')
-  jq -e --arg luks "/dev/disk/by-uuid/$luks_uuid" --arg esp "/dev/disk/by-uuid/$esp_uuid" \
-    '. == {luks: {cryptroot: $luks}, root: "/dev/mapper/cryptroot", esp: $esp}' \
-    <<<"$devices" >/dev/null ||
+          mounts = builtins.mapAttrs (_: v: {
+            inherit (v) device fsType neededForBoot options;
+          }) c.fileSystems; }')
+  jq -e --arg host "$host" --arg luks "/dev/disk/by-uuid/$luks_uuid" --arg esp "/dev/disk/by-uuid/$esp_uuid" '
+    .luks == {cryptroot: $luks} and .mounts."/boot".device == $esp and
+    (if $host == "nix" then
+      .mounts."/" as $root | .mounts."/persist" as $persist |
+      $root.device == "tmpfs" and $root.fsType == "tmpfs" and
+      $persist.device == "/dev/mapper/cryptroot" and $persist.fsType == "xfs" and
+      $persist.neededForBoot == true and
+      .mounts."/nix".device == "/persist/nix" and .mounts."/home".device == "/persist/home" and
+      ([.mounts."/nix", .mounts."/home"] | all(
+        .fsType == "none" and .neededForBoot == true and
+        (.options | index("bind") != null and index("x-gvfs-hide") != null and
+          index("X-fstrim.notrim") != null and index("nofail") == null)))
+    else .mounts."/".device == "/dev/mapper/cryptroot" end)
+  ' <<<"$devices" >/dev/null ||
     fail 'Boot configuration does not match the freshly formatted disk UUIDs; refusing installation.'
 }
 
 main() {
   local mode=install selection identity current seq esp row password_status
+  local directories directory mode_bits backing target userborn command post_commands
   local -a nixcmd=(nix --extra-experimental-features 'nix-command flakes')
   if [[ ${1:-} == --help || ${1:-} == -h ]]; then usage; return; fi
   if [[ ${1:-} == --list-disks || ${1:-} == --plan ]]; then mode=${1#--}; shift; fi
@@ -408,18 +429,61 @@ main() {
   cryptsetup open "$rootpart" cryptroot
   mkfs.xfs -L nixos /dev/mapper/cryptroot
   install -d -m 0755 /mnt
-  mount /dev/mapper/cryptroot /mnt
-  install -d -m 0755 /mnt/boot /mnt/etc /mnt/etc/nixos
-  mount "$esp" /mnt/boot
+  if [[ $host == nix ]]; then
+    mount -t tmpfs -o mode=0755,size=4G tmpfs /mnt
+    install -d -m 0755 /mnt/persist /mnt/boot
+    mount /dev/mapper/cryptroot /mnt/persist
+    mount -o fmask=0077,dmask=0077 "$esp" /mnt/boot
+    # The generator must not see store, home or Preservation bind mounts.
+    generate_hardware_config /mnt
+    for directory in /nix /home; do
+      install -d -m 0755 "/mnt/persist$directory" "/mnt$directory"
+      mount --bind "/mnt/persist$directory" "/mnt$directory"
+    done
+    directories=$("${nixcmd[@]}" eval --json --no-update-lock-file \
+      "path:$work/repo#nixosConfigurations.nix.config.preservation.preserveAt.\"/persist\".directories" |
+      jq -r '.[] | [.directory, .mode] | @tsv')
+    while IFS=$'\t' read -r directory mode_bits; do
+      [[ $mode_bits != - ]] || mode_bits=0755
+      backing="/mnt/persist$directory"
+      target="/mnt$directory"
+      [[ -d $backing ]] || install -d -m "$mode_bits" "$backing"
+      [[ -d $target ]] || install -d -m "$mode_bits" "$target"
+      mount --bind "$backing" "$target"
+    done <<<"$directories"
+  else
+    mount /dev/mapper/cryptroot /mnt
+    install -d -m 0755 /mnt/boot /mnt/etc /mnt/etc/nixos
+    mount "$esp" /mnt/boot
+  fi
   cp -a "$work/repo/." /mnt/etc/nixos/
-  # Generate only after the real target root and ESP are mounted. Never edit source.
-  generate_hardware_config /mnt
+  if [[ $host != nix ]]; then generate_hardware_config /mnt; fi
   rm -- "/mnt/etc/nixos/hosts/$host/hardware.nix"
   install -m 0644 "$work/hardware.nix" "/mnt/etc/nixos/hosts/$host/hardware.nix"
   verify_boot_devices
-  printf '\nThe installer will prompt for a nonempty ROOT recovery password:\n'
-  nixos-install --root /mnt --flake "path:/mnt/etc/nixos#$host" --no-update-lock-file
+  if [[ $host == nix ]]; then
+    [[ -s /mnt/var/lib/sbctl/keys/db/db.key && -s /mnt/var/lib/sbctl/keys/db/db.pem ]] ||
+      fail 'Desktop signing key/certificate missing in /mnt/persist/var/lib/sbctl; provision separately before manual installation. No keys generated.'
+    nixos-install --root /mnt --flake path:/mnt/etc/nixos#nix --no-update-lock-file --no-root-passwd
+    # nixos-install's boot action does not run the native account service.
+    userborn=$("${nixcmd[@]}" eval --json --no-update-lock-file \
+      path:/mnt/etc/nixos#nixosConfigurations.nix.config.systemd.services.userborn.serviceConfig)
+    command=$(jq -er '.ExecStart' <<<"$userborn")
+    nixos-enter --root /mnt -c \
+      "USERBORN_MUTABLE_USERS=true USERBORN_PREVIOUS_CONFIG=/var/lib/userborn/previous-userborn.json $command"
+    post_commands=$(jq -er '.ExecStartPost[]' <<<"$userborn")
+    while IFS= read -r command; do
+      nixos-enter --root /mnt -c "$command"
+    done <<<"$post_commands"
+  else
+    printf '\nThe installer will prompt for a nonempty ROOT recovery password:\n'
+    nixos-install --root /mnt --flake "path:/mnt/etc/nixos#$host" --no-update-lock-file
+  fi
   nixos-enter --root /mnt -c 'chown -R ri:users /etc/nixos'
+  if [[ $host == nix ]]; then
+    printf '\nSet a nonempty ROOT recovery password:\n'
+    nixos-enter --root /mnt -c 'passwd root'
+  fi
   password_status=$(nixos-enter --root /mnt -c 'passwd --status root')
   [[ $password_status == 'root P '* ]] || fail 'Root does not have an unlocked password.'
   printf '\nSet a nonempty RI password (required for password recovery):\n'

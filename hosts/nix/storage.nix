@@ -39,7 +39,7 @@ in
     ];
   };
 
-  fileSystems."/".options = [ "x-gvfs-show" "x-gvfs-name=NixOS" ];
+  fileSystems."/persist".options = [ "x-gvfs-show" "x-gvfs-name=NixOS" ];
 
   systemd.timers.xfs_scrub_all.wantedBy = [ "timers.target" ];
 
