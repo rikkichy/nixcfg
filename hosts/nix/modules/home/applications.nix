@@ -1,19 +1,6 @@
-{ config, pkgs, lib, terminalColours, ... }:
+{ config, pkgs, lib, ... }:
 
 let
-  yaziSession = pkgs.writeShellScript "yazi-session" ''
-    palette=${lib.escapeShellArg "${dirOf terminalColours}/sequences.txt"}
-    if [ -r "$palette" ]; then
-      ${pkgs.coreutils}/bin/cat -- "$palette"
-    fi
-    exec ${lib.getExe config.programs.yazi.finalPackage} "$@"
-  '';
-  yaziOpen = pkgs.writeShellApplication {
-    name = "yazi-open";
-    text = ''
-      exec ${lib.getExe config.programs.foot.package} --app-id=yazi --title=Yazi -- ${yaziSession} "$@"
-    '';
-  };
   waveXlrKeepalive = pkgs.runCommandCC "wave-xlr-keepalive" {
     nativeBuildInputs = [ pkgs.pkg-config ];
     buildInputs = [ pkgs.json_c ];
@@ -92,25 +79,12 @@ in
 
   services.mpris-proxy.enable = true;
 
-  programs.yazi = {
-    enable = true;
-    enableFishIntegration = true;
-    shellWrapperName = "y";
-    keymap.mgr.prepend_keymap = [
-      { on = [ "g" "s" ]; run = "cd ~/Pictures/Screenshots"; desc = "Screenshots"; }
-      { on = [ "g" "D" ]; run = "cd ~/Documents"; desc = "Documents"; }
-      { on = [ "g" "d" ]; run = "cd ~/Downloads"; desc = "Downloads"; }
+  xfconf.settings.thunar = {
+    last-menubar-visible = false;
+    hidden-bookmarks = [
+      "file://${config.home.homeDirectory}/Desktop"
+      "recent:///"
     ];
-  };
-
-  home.packages = [ yaziOpen ];
-  xdg.desktopEntries.yazi = {
-    name = "Yazi File Manager";
-    icon = "yazi";
-    exec = "${lib.getExe yaziOpen} %f";
-    terminal = false;
-    categories = [ "System" "FileManager" "FileTools" ];
-    mimeType = [ "inode/directory" ];
   };
 
   xdg.mimeApps = {
@@ -121,7 +95,7 @@ in
       "x-scheme-handler/https" = "brave-origin.desktop";
       "x-scheme-handler/about" = "brave-origin.desktop";
       "x-scheme-handler/unknown" = "brave-origin.desktop";
-      "inode/directory" = "yazi.desktop";
+      "inode/directory" = "thunar.desktop";
       "video/mp4" = "mpv.desktop";
       "video/x-matroska" = "mpv.desktop";
       "audio/mpeg" = "mpv.desktop";

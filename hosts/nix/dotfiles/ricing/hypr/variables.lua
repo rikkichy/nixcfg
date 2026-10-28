@@ -5,7 +5,7 @@ return {
 
     browser                    = "brave-origin",
     editor                     = "zeditor",
-    fileExplorer               = "yazi-open",
+    fileExplorer               = "thunar",
     audioSettings              = "pavucontrol",
 
     touchpadDisableTyping      = true,

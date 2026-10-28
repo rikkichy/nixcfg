@@ -114,18 +114,9 @@ HTML files and web links. Its profile remains application-owned under
 OpenBot is not installed on the desktop. Its independent
 [server container](nixos-server.md#openbot-agent-server) is managed on `nixos-server`.
 
-**META + E** opens Yazi in Foot. The Yazi launcher and default folder handler
-use the same `yazi-open` command, which applies the current terminal palette.
-In Fish, `y` opens Yazi and changes the shell's directory when it exits.
-Yazi quick locations are `g s` for Screenshots, `g D` for Documents, and `g d`
-for Downloads. Foot supports native image previews through Sixel.
-
-GTK Open/Save dialogs, their bookmarks, GVFS, File Roller and Catfish remain.
-Yazi does not provide `org.freedesktop.FileManager1`. “Show in folder” can fall
-back to opening the parent directory without selecting the file. Applications
-without a fallback may fail. No D-Bus bridge or terminal file-picker portal is installed.
-After approved activation, check META+E, `xdg-open "$HOME"`, image previews,
-and a browser download's “Show in folder” action.
+**META + E** opens Thunar, the default folder handler. Tumbler provides
+thumbnails, and xfconf stores its preferences. File Roller and Catfish remain
+available as standalone applications.
 
 LabyMod Launcher (`pkgs.labymod-launcher`) is installed alongside Prism Launcher
 by `hosts/nix/modules/system/gaming.nix`. Nixpkgs supplies its AppImage runtime,
@@ -399,6 +390,9 @@ See [palette ownership](../.omp/skills/wallpaper-theming/references/palettes.md#
 **Edit templates, not generated files**, which are replaced at the next wallpaper.
 Shared templates live in `common/dotfiles/matugen/templates/`. Linux-only ones
 live in `hosts/nix/dotfiles/ricing/matugen/templates/`.
+Thunar uses the base GTK theme's keyboard-focus indicators. Its file view and
+sidebar stay visible without animations. Selection text uses the generated
+`accent_color`, not an undefined inherited `primary` color.
 Use `wpp`/`awpp` after editing: bare Matugen renders palettes, not the complete
 wallpaper, terminal and wallpaper-record application.
 
