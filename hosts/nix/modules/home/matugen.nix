@@ -1,4 +1,4 @@
-{ config, pkgs, lib, desktopPicker, equicordDataDir, spotifyPaletteTemplate, ... }:
+{ config, pkgs, lib, equicordDataDir, spotifyPaletteTemplate, ... }:
 
 let
   terminalColours = "${config.xdg.stateHome}/theme/terminal-colors.conf";
@@ -10,7 +10,6 @@ let
   matugenConfig = (pkgs.formats.toml {}).generate "matugen-config.toml" {
     config.source_color_index = 0;
     templates = let cfg = config.xdg.configHome; in {
-      fuzzel = template ../../dotfiles/ricing/matugen/templates/fuzzel.ini "${cfg}/fuzzel/colors.ini";
       quickshell = template ../../dotfiles/ricing/matugen/templates/quickshell.json "${cfg}/quickshell/colors.json";
       gtk3 = template ../../dotfiles/ricing/matugen/templates/gtk.css "${cfg}/gtk-3.0/gtk.css";
       gtk4 = template ../../dotfiles/ricing/matugen/templates/gtk.css "${cfg}/gtk-4.0/gtk.css";
@@ -106,10 +105,10 @@ let
       mkdir -p "$(dirname "$output")"
       tmp=$(mktemp "$(dirname "$output")/.frame.XXXXXX.png")
       trap 'rm -f -- "$tmp"' EXIT
-      ffmpeg -y -loglevel error -ss 3 -i "$video" -frames:v 1 "$@" "$tmp" \
+      ffmpeg -y -loglevel error -filter_threads 1 -ss 3 -threads 1 -i "$video" -frames:v 1 -threads 1 "$@" "$tmp" \
         < /dev/null || exit 1
       if [ ! -s "$tmp" ]; then
-        ffmpeg -y -loglevel error -i "$video" -frames:v 1 "$@" "$tmp" \
+        ffmpeg -y -loglevel error -filter_threads 1 -threads 1 -i "$video" -frames:v 1 -threads 1 "$@" "$tmp" \
           < /dev/null || exit 1
       fi
       [ -s "$tmp" ] || exit 1
@@ -119,12 +118,13 @@ let
 
   awpApply = pkgs.writeShellApplication {
     name = "awp-apply";
-    runtimeInputs = [ wallpaperFrame pkgs.systemd pkgs.awww themeApply ];
+    runtimeInputs = [ wallpaperFrame pkgs.coreutils pkgs.systemd pkgs.awww themeApply ];
     text = ''
       video="''${1:?usage: awp-apply <video>}"
       record=${animatedRecord}
       cache=${animatedCache}
-      frame="$cache/''${video##*/}.png"
+      key=$(printf '%s' "$video" | sha256sum)
+      frame="$cache/''${key%% *}.png"
 
       wallpaper-frame "$video" "$frame"
 
@@ -164,52 +164,54 @@ in
     (writeShellApplication {
       name = "wpp";
       runtimeInputs = [
-        desktopPicker
+        quickshell
+        jq
         coreutils
         findutils
-        libnotify
         systemd
         awww
         themeApply
       ];
       text = ''
-        dir="''${WALLPAPER_DIR:-$HOME/Pictures/Wallpapers}"
-        cache="''${XDG_CACHE_HOME:-$HOME/.cache}/wallpaper-picker"
+        case "$#:''${1-}" in
+          0:) dir="''${WALLPAPER_DIR:-$HOME/Pictures/Wallpapers}" ;;
+          2:--list) dir="$2" ;;
+          3:--apply) chosen="$2"; dir="$3" ;;
+          *) printf 'usage: wpp [--list DIRECTORY | --apply PATH DIRECTORY]\n' >&2; exit 2 ;;
+        esac
+        IFS= read -r -d "" dir < <(realpath -m -z -- "$dir")
+        if [ "$#" -eq 0 ]; then
+          exec quickshell -c expressive ipc call desktop wallpaper wallpapers "$dir"
+        fi
 
-        mapfile -t files < <(find "$dir" -maxdepth 1 -type f \
+        mapfile -d "" -t files < <(find "$dir" -maxdepth 1 -type f \
           \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) \
-          2>/dev/null | sort)
-
+          -printf '%p\0%T@:%s\0' 2>/dev/null)
+        empty=false
         if [ "''${#files[@]}" -eq 0 ]; then
-          notify-send -a wpp "Wallpaper" \
-            "No images in $dir — applied the built-in default" 2>/dev/null || true
-          chosen=${defaultWallpaper}
-        else
-          mkdir -p "$cache"
-          for f in "''${files[@]}"; do
-            base="''${f##*/}"
-            thumb="$cache/$base.png"
-            if [ ! -s "$thumb" ] || [ "$f" -nt "$thumb" ]; then
-              printf '%s\0%s\0' "$f" "$thumb"
-            fi
-          done | xargs -0 -r -n 2 -P 4 ${pkgs.writeShellScript "wallpaper-thumbnail" ''
-            ${pkgs.gdk-pixbuf}/bin/gdk-pixbuf-thumbnailer -s 128 "$1" "$2" || true
-          ''}
+          empty=true
+          files=(${defaultWallpaper} builtin)
+        fi
 
-        idx=$(
-          for f in "''${files[@]}"; do
-            base="''${f##*/}"
-            printf '%s\x00icon\x1f%s\n' "$base" "$cache/$base.png"
-          done | desktop-picker --index --prompt "wp> " \
-            --font "Google Sans Flex Rounded:size=17" --line-height=64px --lines 8
-        ) || exit 0
+        if [ "$1" = --list ]; then
+          printf '%s\0' "''${files[@]}" | jq -Rs --argjson builtin "$empty" '
+            [split("\u0000") | .[:-1] | range(0; length; 2) as $i |
+              {name: (if $builtin then "Built-in default" else .[$i] | split("/")[-1] end),
+               path: .[$i], preview: .[$i], revision: .[$i + 1]}] | sort_by(.path)'
+          exit 0
+        fi
 
-        count=''${#files[@]}
-        [[ "$idx" =~ ^(0|[1-9][0-9]*)$ ]] || exit 0
-        (( ''${#idx} <= ''${#count} )) || exit 0
-        (( idx < count )) || exit 0
-
-        chosen="''${files[$idx]}"
+        valid=false
+        for ((i = 0; i < ''${#files[@]}; i += 2)); do
+          f="''${files[$i]}"
+          if [ "$chosen" = "$f" ] && [ -f "$f" ] && [ ! -L "$f" ]; then
+            valid=true
+            break
+          fi
+        done
+        if ! "$valid"; then
+          printf 'wpp: Selection is no longer in %s\n' "$dir" >&2
+          exit 1
         fi
 
         awww img --resize crop --transition-type none "$chosen"
@@ -222,54 +224,61 @@ in
     (writeShellApplication {
       name = "awpp";
       runtimeInputs = [
-        desktopPicker
+        quickshell
+        jq
         coreutils
         findutils
-        libnotify
         awpApply
       ];
       text = ''
-        dir="''${ANIMATED_WALLPAPER_DIR:-$HOME/Videos/Animated Wallpapers}"
-        cache=${animatedCache}/thumbs
+        case "$#:''${1-}" in
+          0:) dir="''${ANIMATED_WALLPAPER_DIR:-$HOME/Videos/Animated Wallpapers}" ;;
+          2:--list) dir="$2" ;;
+          3:--apply|3:--preview) chosen="$2"; dir="$3" ;;
+          *) printf 'usage: awpp [--list DIRECTORY | --preview PATH DIRECTORY | --apply PATH DIRECTORY]\n' >&2; exit 2 ;;
+        esac
+        IFS= read -r -d "" dir < <(realpath -m -z -- "$dir")
+        if [ "$#" -eq 0 ]; then
+          exec quickshell -c expressive ipc call desktop wallpaper animated-wallpapers "$dir"
+        fi
 
         die() {
           echo "awpp: $1" >&2
-          notify-send -a awpp "Animated wallpaper" "$1" 2>/dev/null || true
           exit 1
         }
 
-        mapfile -t files < <(find "$dir" -maxdepth 1 -type f \
+        mapfile -d "" -t files < <(find "$dir" -maxdepth 1 -type f \
           \( -iname '*.mp4' -o -iname '*.webm' -o -iname '*.mkv' \
              -o -iname '*.mov' -o -iname '*.gif' \) \
-          2>/dev/null | sort)
+          -printf '%p\0%T@:%s\0' 2>/dev/null)
 
         [ "''${#files[@]}" -gt 0 ] || die "No videos in $dir"
 
-        mkdir -p "$cache"
+        if [ "$1" = --list ]; then
+          printf '%s\0' "''${files[@]}" | jq -Rs '
+            [split("\u0000") | .[:-1] | range(0; length; 2) as $i |
+              {name: (.[$i] | split("/")[-1] | sub("\\.[^.]*$"; "")),
+               path: .[$i], preview: "", revision: .[$i + 1]}] | sort_by(.path)'
+          exit 0
+        fi
 
-        for f in "''${files[@]}"; do
-          thumb="$cache/''${f##*/}.png"
-          if [ ! -s "$thumb" ] || [ "$f" -nt "$thumb" ]; then
-            printf '%s\0%s\0' "$f" "$thumb"
+        for ((i = 0; i < ''${#files[@]}; i += 2)); do
+          f="''${files[$i]}"
+          if [ "$chosen" = "$f" ] && [ -f "$f" ] && [ ! -L "$f" ]; then
+            if [ "$1" = --preview ]; then
+              cache="''${XDG_CACHE_HOME:-${config.xdg.cacheHome}}/animated-wallpaper/thumbs/640"
+              IFS= read -r -d "" cache < <(realpath -m -z -- "$cache")
+              key=$(printf '%s\0%s' "$chosen" "''${files[$((i + 1))]}" | sha256sum)
+              preview="$cache/''${key%% *}.png"
+              ${wallpaperFrame}/bin/wallpaper-frame "$chosen" "$preview" -vf scale=640:-2 \
+                || die "Could not preview $chosen"
+              jq -n --arg preview "$preview" '{preview: $preview}'
+              exit 0
+            fi
+            exec awp-apply "$chosen"
           fi
-        done | xargs -0 -r -n 2 -P 4 ${pkgs.writeShellScript "animated-wallpaper-thumbnail" ''
-          ${wallpaperFrame}/bin/wallpaper-frame "$1" "$2" -vf scale=256:-2 || true
-        ''}
-
-        idx=$(
-          for f in "''${files[@]}"; do
-            base="''${f##*/}"
-            printf '%s\x00icon\x1f%s\n' "''${base%.*}" "$cache/$base.png"
-          done | desktop-picker --index --prompt "awp> " \
-            --font "Google Sans Flex Rounded:size=17" --line-height=64px --lines 8
-        ) || exit 0
-
-        count=''${#files[@]}
-        [[ "$idx" =~ ^(0|[1-9][0-9]*)$ ]] || exit 0
-        (( ''${#idx} <= ''${#count} )) || exit 0
-        (( idx < count )) || exit 0
-
-        awp-apply "''${files[$idx]}"
+        done
+        die "Selection is no longer in $dir"
       '';
     })
   ]);
@@ -332,7 +341,9 @@ in
         record=${wallpaperRecord}
         wallpaper=${defaultWallpaper}
         if [ -r "$record" ]; then
-          saved=$(cat "$record")
+          saved=$(cat "$record" && printf '.')
+          saved=''${saved%.}
+          saved=''${saved%$'\n'}
           [ ! -e "$saved" ] || wallpaper="$saved"
         fi
         ${pkgs.awww}/bin/awww img --resize crop --transition-type none "$wallpaper"
@@ -357,7 +368,9 @@ in
     Service = {
       ExecStart = toString (pkgs.writeShellScript "animated-wallpaper" ''
         set -eu
-        video=$(cat ${animatedRecord})
+        video=$(cat ${animatedRecord} && printf '.')
+        video=''${video%.}
+        video=''${video%$'\n'}
         [ -e "$video" ] || exit 0
         exec ${pkgs.mpvpaper}/bin/mpvpaper -p -l bottom \
           -o "no-audio loop-file=inf hwdec=auto panscan=1.0" '*' "$video"

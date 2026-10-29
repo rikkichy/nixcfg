@@ -14,7 +14,7 @@ Read the applicable [host operator section](../../../docs/nix.md) before consequ
 - `hosts/nix/modules/system/applications.nix`: package inventory and app services.
 - `hosts/nix/modules/home/applications.nix`: browser MIME defaults, Thunar and absent-only osu! seeds.
 - `common/modules/discord.nix`: writable Equicord settings and static theme for Linux and Darwin.
-- `hosts/nix/modules/home/fuzzel.nix`: desktop entries. [desktop-shell](../desktop-shell/SKILL.md) owns launcher/keybind behavior.
+- `hosts/nix/modules/home/desktop-tools.nix`: desktop entries. [desktop-shell](../desktop-shell/SKILL.md) owns launcher/keybind behavior.
 - `hosts/nix/modules/system/{gaming,flatpak}.nix`: gaming integration and user Flatpak lifecycle.
 - `hosts/nix/pkgs/overlay.nix`: local wiring for `ricing/` and `bypasses/` under `hosts/nix/pkgs/`.
 - [darwin-host](../darwin-host/SKILL.md): macOS apps. [shared-home](../shared-home/SKILL.md): common Zed, shell and toolchains.

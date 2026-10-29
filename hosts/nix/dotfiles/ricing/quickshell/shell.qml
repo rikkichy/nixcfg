@@ -24,8 +24,8 @@ ShellRoot {
         closePanel()
 
     function togglePanel(name, targetScreen, trigger) {
-        if (name === "launcher" || name === "tools") {
-            const mode = name === "tools" ? "tools" : "apps";
+        if (["launcher", "tools", "night-light", "vpn", "power", "emoji"].includes(name)) {
+            const mode = name === "launcher" ? "apps" : name;
             const screen = targetScreen || Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) || Quickshell.screens[0];
             if (!screen)
                 return;
@@ -99,6 +99,15 @@ ShellRoot {
         function toggle(name: string): void {
             desktop.togglePanel(name, null, null);
         }
+        function wallpaper(mode: string, directory: string): void {
+            if (!["wallpapers", "animated-wallpapers"].includes(mode))
+                return;
+            const screen = Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) || Quickshell.screens[0];
+            if (!screen)
+                return;
+            desktop.panel = "";
+            appLauncher.open(screen, mode, directory);
+        }
         function close(): void {
             desktop.closePanel();
         }
@@ -118,7 +127,7 @@ ShellRoot {
         }
         function status(): string {
             return JSON.stringify({
-                panel: appLauncher.opened ? (appLauncher.mode === "tools" ? "tools" : "launcher") : desktop.panel,
+                panel: appLauncher.opened ? (appLauncher.mode === "apps" ? "launcher" : appLauncher.mode) : desktop.panel,
                 barsVisible: desktop.barsVisible,
                 notifications: notificationCenter.count,
                 dnd: notificationCenter.dnd

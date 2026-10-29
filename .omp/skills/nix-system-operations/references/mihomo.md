@@ -124,7 +124,7 @@ upstream sandbox.
 `vpn` is a `writeShellApplication` installed in `environment.systemPackages`,
 not an alias: fish, Hyprland, and the Stream Deck use the same command.
 `vpn subscription` selects Primary/Quattro, each retaining its manual server
-selection. `vpn mode [global|scoped]` reads or changes routing. The Fuzzel VPN
+selection. `vpn mode [global|scoped]` reads or changes routing. The Quickshell VPN
 menu offers the opposite mode. There are no AUTO groups or separate selection-state
 files. Bare `vpn` reports the server. `vpn use PATTERN` searches live
 active-subscription nodes by regex because provider names change. It makes a

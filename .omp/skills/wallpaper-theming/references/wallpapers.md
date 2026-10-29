@@ -5,8 +5,17 @@ Owner: `hosts/nix/modules/home/matugen.nix`. The built-in image is
 `hosts/nix/dotfiles/ricing/quickshell/` and deployment is in
 `hosts/nix/modules/home/quickshell.nix`.
 
-`wpp` is the picker: fuzzel in dmenu mode over `~/Pictures/Wallpapers`.
-It displays the still through awww and stops animated playback.
+`wpp` opens the Quickshell launcher gallery over `~/Pictures/Wallpapers`.
+`wpp` and `awpp` use `desktop wallpaper MODE DIRECTORY` IPC, where MODE is
+`wallpapers` or `animated-wallpapers`. Their `--list DIRECTORY` mode returns
+metadata-only JSON `{name,path,preview,revision}` entries without decoding images
+or writing caches. Still previews point at the source; animated previews are empty.
+`awpp --preview PATH DIRECTORY` validates and generates one cached frame, returning
+JSON `{preview}`. `--apply PATH DIRECTORY` rechecks collection membership before
+any side effects. Paths travel as argv and preview URLs are
+encoded by QML. Missing still collections offer the built-in default; opening
+the gallery never applies it automatically.
+Selecting a still displays it through awww and stops animated playback.
 It then calls private `theme-apply`, which runs these steps in order:
 1. Generate Matugen application palettes, including Quickshell semantic roles.
 2. Deliver terminal OSC sequences.
@@ -19,7 +28,7 @@ Home Manager's `services.awww` owns `awww-daemon` independently of Quickshell.
 Its extended `ExecStartPost` waits for a successful `awww query`, with a bounded
 timeout. `wallpaper-restore.service` requires and starts after that ready service.
 Restoration always regenerates all palettes from the recorded image, so template
-changes and missing outputs are not hidden by existing Fuzzel/Quickshell files.
+changes and missing outputs are not hidden by existing Quickshell palette files.
 Missing or broken records use the built-in default. State/cache paths follow
 Home Manager's configured XDG locations. Collection overrides remain supported.
 The checked application steps stay outside Matugen's wallpaper command and hooks:
@@ -28,13 +37,16 @@ version 4.2 logs nonzero command exits but returns success.
 Matugen owns `quickshell/colors.json`.
 Follow the [Quickshell writable-consumer contract](../../desktop-shell/references/quickshell.md#palette-and-native-crash-boundary).
 
-Thumbnails are pre-rendered to `~/.cache/wallpaper-picker` with
-`gdk-pixbuf-thumbnailer`. Fuzzel builds with `+png +svg` only, so JPEG sources
-display no thumbnails. Using originals would also decode up to 15 MB per row
-while the menu opens.
-Both wallpaper pickers queue only missing, empty or stale thumbnails through
-`xargs -0 -n 2 -P 4`. Filename/output pairs are NUL-delimited. Four workers bound
-CPU use. Thumbnail errors remain nonfatal, and the menu opens after workers finish.
+Qt asynchronously decodes still sources at a bounded 640×360 preview size;
+there is no still-thumbnail subprocess or disk cache. The launcher requests
+video previews only for visible rows plus one prefetch row, with four workers
+and one FFmpeg decode/filter/encode thread per worker. It derives pending work
+from the current viewport rather than accumulating an offscreen queue.
+Video frames are cached under `~/.cache/animated-wallpaper/thumbs/640`.
+URL revisions use source mtime and size, preventing Qt from showing old pixels
+after a changed file is reopened. A bounded 128-entry video URL cache avoids
+helper calls on warm opens; Qt owns decoded-image caching. Failed previews show
+“Preview unavailable” and can retry on reopening without blocking selection.
 
 #### awww daemon sandbox
 
@@ -123,6 +135,7 @@ are fatal and retain the animated record.
   It replaces the cache only after successful nonempty extraction.
   Failed regeneration preserves an existing usable frame.
   Full-frame failures are fatal. Thumbnail failures remain nonfatal.
-- Like `wpp`'s cache, the thumbnail cache uses the full filename, including
-  extension, as its key. Only the Fuzzel label omits the extension, because
-  these names are sentences.
+- Animated thumbnail keys hash the absolute source path and its mtime/size
+  revision; full-frame keys hash the absolute path. Collections with identical
+  filenames cannot collide. Animated labels omit the extension; selection always
+  uses the complete path.

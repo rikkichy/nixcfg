@@ -29,8 +29,10 @@ in
       RestartSec = "2s";
       Slice = "session.slice";
       Environment = [
-        "PATH=${lib.makeBinPath [ desktopApps pkgs.networkmanager pkgs.foot pkgs.pavucontrol pkgs.blueman ]}:/etc/profiles/per-user/ri/bin:/run/current-system/sw/bin"
+        "PATH=${lib.makeBinPath [ desktopApps pkgs.networkmanager pkgs.foot pkgs.pavucontrol pkgs.blueman pkgs.hyprland pkgs.systemd pkgs.zed-editor pkgs.wl-clipboard ]}:/etc/profiles/per-user/ri/bin:/run/current-system/sw/bin"
         "QT_QUICK_CONTROLS_STYLE=Basic"
+        "QS_EMOJI_DATA=${pkgs.unicode-emoji.emoji-test}/share/unicode/emoji/emoji-test.txt"
+        "QS_VPN_CONFIG=${nixcfgPath}/common/dotfiles/mihomo.yaml"
       ];
     };
     Install.WantedBy = [ "graphical-session.target" ];

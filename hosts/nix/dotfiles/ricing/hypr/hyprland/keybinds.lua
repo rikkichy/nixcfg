@@ -15,7 +15,7 @@ for _, key in ipairs({ "Alt_L", "Alt_R", "Super_L", "Super_R" }) do
     )
 end
 
-hl.bind(vars.kbSession, hl.dsp.exec_cmd("powermenu"))
+hl.bind(vars.kbSession, hl.dsp.exec_cmd("quickshell -c expressive ipc call desktop toggle power"))
 hl.bind(vars.kbClearNotifs, hl.dsp.exec_cmd("quickshell -c expressive ipc call desktop dismissAll"), { locked = true })
 hl.bind(vars.kbShowPanels, hl.dsp.exec_cmd("quickshell -c expressive ipc call desktop toggle sound"))
 
@@ -122,7 +122,7 @@ hl.bind(vars.kbBrowser, hl.dsp.exec_cmd(vars.browser))
 hl.bind(vars.kbEditor, hl.dsp.exec_cmd(vars.editor))
 hl.bind(vars.kbFileExplorer, hl.dsp.exec_cmd(vars.fileExplorer))
 hl.bind("CTRL + ALT + V", hl.dsp.exec_cmd(vars.audioSettings))
-hl.bind(vars.kbVpnPicker, hl.dsp.exec_cmd("vpnp"))
+hl.bind(vars.kbVpnPicker, hl.dsp.exec_cmd("quickshell -c expressive ipc call desktop toggle vpn"))
 
 local screenshotDir = "$HOME/Pictures/Screenshots"
 
@@ -137,7 +137,7 @@ hl.bind("SUPER + SHIFT + C", hl.dsp.exec_cmd("hyprpicker -a"))
 
 hl.bind("SUPER + SHIFT + L", hl.dsp.exec_cmd(vars.sleepGestureCmd), { locked = true })
 
-hl.bind("SUPER + Period", hl.dsp.exec_cmd("pkill fuzzel || bemoji"))
+hl.bind("SUPER + Period", hl.dsp.exec_cmd("quickshell -c expressive ipc call desktop toggle emoji"))
 
 hl.bind(
     "SUPER + ALT + F12",

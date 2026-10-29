@@ -47,10 +47,10 @@ After separate activation approval, apply configuration changes with
 for checkout selection, environment precedence and elevation.
 `--no-nom` selects native Nix output, independent of the selected kernel.
 META+ALT exposes three Nix commands in held terminals:
-- **nh os switch**
-- **nh os switch --update** (update all inputs, rebuild and switch)
-- **Garbage collection — nh clean all**
-Both rebuild entries pass `--no-nom` automatically.
+- **Switch** (`nh os switch`)
+- **Update** (`nh os switch --update`; update all inputs, rebuild and switch)
+- **Clean** (`nh clean all`)
+Both rebuild entries use NH's default Nix Output Monitor display.
 
 The live `~/.config/hypr` symlink targets `hosts/nix/dotfiles/ricing/hypr/`.
 If it points elsewhere, switch the host configuration before reloading Hyprland.
@@ -90,10 +90,13 @@ Wallpaper, animated wallpaper, emoji, blue-light filter, VPN and session tools
 are available through META+ALT.
 Short commands such as `wpp`, `awpp` and `vpnp` remain searchable there.
 Bare META toggles the apps-only Material 3 Expressive grid in Quickshell.
-**META + ALT** opens the same Expressive launcher in Desktop tools mode, including
+**META + ALT** opens the same Expressive launcher in Settings mode, including
 native desktop actions. Search starts empty and matches tool names normally.
 Press the same chord again to dismiss it; META switches back to applications.
 Tools and desktop actions stay hidden from the main app grid.
+Settings labels the maintenance tools **Switch**, **Update** and **Clean**.
+Power actions are separate **Reboot** and **Shutdown** tiles; either opens the
+Quickshell power chooser. Selecting an action there executes it.
 
 Hyprland has no global audio or media hotkeys. Use the sound panel (**META + K**)
 or application controls. Manual window resizing uses **META + right mouse drag**
@@ -360,10 +363,9 @@ snippet controls.
 
 ## Wallpapers and colours
 
-Runtime palettes are generated from a wallpaper: `fuzzel/colors.ini`, both
+Runtime palettes are generated from a wallpaper: `quickshell/colors.json`, both
 `gtk.css`, the btop theme, terminal colours and `hypr/scheme/current.lua`.
 Their templates are tracked, but generated destinations must remain writable.
-Fuzzel's static `fuzzel.ini` is managed separately and includes its palette.
 
 A fresh installation generates its initial theme from a gradient in
 `hosts/nix/dotfiles/ricing/`. The `wallpaper-restore` user unit applies this theme
@@ -374,8 +376,14 @@ Restoration regenerates every palette from the recorded image, so existing
 palette files do not hide template changes or missing outputs.
 
 **Wallpaper collections are user data — restore them from a backup.**
-`wpp` reads `~/Pictures/Wallpapers`. A missing or empty directory applies the
-shipped gradient. Collection directories are not created by the configuration.
+`wpp` opens the shell launcher's wallpaper gallery over `~/Pictures/Wallpapers`;
+`awpp` opens its animated-wallpaper gallery. Settings tiles use these same views.
+Large landscape previews, filename search and arrow-key navigation replace
+wallpaper menus. Click a tile or press Enter to apply it; Escape cancels, and
+**Settings** returns to the tools. Animated previews are still frames, not playback.
+A missing or empty still collection offers the shipped gradient for selection.
+Collection directories are not created by the configuration; `WALLPAPER_DIR`
+and `ANIMATED_WALLPAPER_DIR` override them when invoking the helpers.
 
 The awww daemon runs with a read-only home/system, no capabilities or new
 privileges, and UNIX-only sockets. Its cache and user runtime directory remain
@@ -390,8 +398,13 @@ A theme-generation failure is reported but does not stop the selected video.
 Picking a still with `wpp` displays the image and stops the video before theming.
 At login, animated playback does not wait for theme restoration.
 
-Both pickers generate missing thumbnails with at most four workers and reuse
-fresh cache entries. The cursor is the static **Bibata Modern Ice** theme:
+Gallery lists contain metadata only, so opening never waits for thumbnail batches.
+Qt decodes still images asynchronously at preview resolution, only near the visible
+rows. Animated previews use at most four single-frame workers for visible rows
+and one prefetch row; scrolling does not queue the rest of the collection.
+Revision-aware caches refresh changed files. Reopening reuses video preview URLs
+and Qt's image cache. VPN, blue-light, power and emoji use native Quickshell views.
+The cursor is the static **Bibata Modern Ice** theme:
 a white pointer with a black outline and rounded edges, at size 24.
 Wallpaper changes do not recolor or replace it. Home Manager owns the cursor
 package and GTK/Xcursor settings; Hyprland uses the same theme and size.
@@ -402,8 +415,8 @@ Encrypted XFS remains mounted at `/persist`; all of `/home` and explicit system 
 The writable checkout also persists, so wallpaper records, generated palettes, app sessions, and user collections remain available.
 Use the [offline conversion procedure](install.md#offline-desktop-conversion-without-formatting), not a live switch, for the initial cutover.
 Wallpaper state belongs to `hosts/nix/modules/home/matugen.nix`: `~/.local/state/wallpaper/{current,animated}`
-records selections, while `~/.cache/{wallpaper-picker,animated-wallpaper}` holds
-rebuildable thumbnails and frames. Back up the records together with the image
+records selections, while `~/.cache/animated-wallpaper` holds rebuildable video
+thumbnails and backing frames. Back up the records together with the image
 and video collections if restoring the same selections matters. Generated
 palettes can be reconstructed from their tracked inputs and the selected
 wallpaper. They are not substitutes for collection backups.
@@ -467,8 +480,12 @@ PipeWire, MPRIS, NetworkManager and Bluetooth models. Network credentials use
 Right-clicking microphone or sound toggles mute. Super+K opens Sound.
 Audio popovers place the device dropdown beside the mute switch in the header,
 above a full-width slider. On means unmuted. Long device names are truncated.
-Wallpaper, night-light and power remain available through the launcher tools
-`wpp`, `awpp`, `sunp` and `powermenu`. DND is available in notification history.
+Wallpaper, night-light, VPN and emoji remain available through the launcher tools.
+Blue-light offers schedule, off, 4000K, 3400K and 2700K; VPN offers subscriptions,
+exact server selection with latency, routing mode and public config editing.
+Emoji searches pinned Unicode data and copies the selected character to the clipboard.
+Utility views return to Settings; VPN submenus return to VPN.
+DND is available in notification history.
 
 The app launcher opens on the focused monitor (or the clicked rail's monitor).
 It uses a 56px pill-shaped search field, responsive tonal tiles, the current Matugen
@@ -481,7 +498,7 @@ App names are plain text. App icons use a 48px circular clip with center-cropped
 artwork and a live Matugen tint: primary normally, on-secondary-container when
 selected. Native colorization preserves shading and transparency.
 
-GTK, Qt and Fuzzel use [Mignon-pastel-dark](https://github.com/igorfmoraes/Mignon-icon-theme).
+GTK and Qt use [Mignon-pastel-dark](https://github.com/igorfmoraes/Mignon-icon-theme).
 The host packages a pinned upstream revision in `pkgs/ricing/mignon-icon-theme.nix`;
 aliases to absent upstream artwork are omitted so normal theme inheritance works.
 Missing themed icons fall back to Adwaita/hicolor or application-provided artwork.
@@ -498,8 +515,12 @@ appear as additional tiles. The session's desktop identity and XDG data paths st
 unchanged. GIO preserves desktop-file launch semantics; `xdg-terminal-exec` selects
 Foot through the managed `xdg-terminals.list`. Child stdout and stderr are detached
 from the helper's short-lived pipes, while reported launch failures remain visible
-in the launcher. Fuzzel serves the individual utility pickers only; no
-command runner is exposed.
+in the launcher. Utility command failures also remain visible in the launcher.
+No command runner is exposed. Utility desktop IDs remain searchable, but the old
+`sunp`, `vpnp`, `powermenu` and `bemoji` executable wrappers are not installed.
+Use `quickshell -c expressive ipc call desktop toggle MODE`, where MODE is
+`night-light`, `vpn`, `power` or `emoji`. Async results are scoped to the opened
+view so an earlier request cannot overwrite or close a newer one.
 
 ```sh
 quickshell -c expressive ipc call desktop toggle launcher

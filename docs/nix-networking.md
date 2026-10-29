@@ -59,7 +59,7 @@ It does not increase bandwidth. The TUN retains its gVisor stack.
 opens only the active subscription's live nodes, fastest first. Dismissing
 either submenu leaves the selection unchanged. **Switch to global** routes traffic
 handled by Mihomo through the selected subscription/server. **Switch to scoped**
-restores the scoped rules. The prompt shows the current mode.
+restores the scoped rules. The view shows the current mode, subscription and server.
 Switching routing mode closes existing Mihomo connections so applications
 reconnect using the new policy. Downloads, calls and games can be interrupted.
 Server and subscription changes do not close existing connections.
@@ -68,7 +68,7 @@ The mode is a runtime choice. Mihomo starts in scoped mode from the template.
 is unavailable. It never opens the private rendered configuration. Saving edits
 does not activate them: apply them with an approved NixOS rebuild.
 There are no DIRECT, AUTO or on/off controls. The picker is also available as
-`vpnp` and as **VPN server** in desktop tools:
+**VPN** in Settings or `quickshell -c expressive ipc call desktop toggle vpn`:
 
 ```
 vpn                              # show the selected server
@@ -102,8 +102,8 @@ the first available member. Runtime state does not need to be deleted.
 Changing servers does not change routing policy. Direct destinations still
 pass through the TUN, but Mihomo connects through the physical interface.
 Stopping Mihomo removes the tunnel. It is not a routing toggle.
-External shortcuts can invoke `vpnp`, `vpn mode global`, `vpn mode scoped`,
-or `vpn select <name>`.
+External shortcuts can invoke `quickshell -c expressive ipc call desktop toggle vpn`,
+`vpn mode global`, `vpn mode scoped`, or `vpn select <name>`.
 
 After approved activation, launch Krypton and confirm that its connections to
 `162.19.224.212` on ports `6700` and `3030` select `PROXY`, while an unrelated

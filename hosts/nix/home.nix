@@ -3,7 +3,7 @@
 {
   imports = [
     ./modules/home/quickshell.nix
-    ./modules/home/fuzzel.nix
+    ./modules/home/desktop-tools.nix
     ./modules/home/matugen.nix
     ./modules/home/applications.nix
     ../../common/modules/discord.nix
@@ -29,8 +29,6 @@
     adw-gtk3
 
     libnotify
-
-    bemoji
 
     hyprshot
   ];

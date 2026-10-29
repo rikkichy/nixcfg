@@ -300,7 +300,7 @@ retention before the disk fills.
 as `cacheTargets.x86_64-linux`, with matching named `packages`.
 The desktop packages and custom wrappers/assets come from the
 **desktop's final pkgs**, not a second import with approximate overlays.
-Quickshell, Hyprland, Filen, Fuzzel and the Spicetify CLI use unmodified Nixpkgs packages
+Quickshell, Hyprland, Filen and the Spicetify CLI use unmodified Nixpkgs packages
 and are not custom cache targets. Spotify's theme patches run during app
 packaging. Static Bibata Modern Ice assets are fetched from their publisher,
 not republished through this cache.

@@ -57,7 +57,7 @@ Counterintuitive daemon semantics to preserve:
 - A temperature request clears identity itself: from `identity true`, `temperature 4000` applies 4000K without a preliminary call.
 - Connect failure is written to stdout, not stderr, and exits 3. Validate temperature readings as digits. Redirecting stderr does not remove the error sentence.
 
-`sunp` in `hosts/nix/modules/home/fuzzel.nix` offers schedule, off and three warmth levels, each as one request. Its desktop entry is searchable by name or `sunp`. Treat anything other than `ok` as failure. Notify after the menu closes. An invalid request can reply `invalid command` yet exit 0. Never trust only the exit status.
+The Quickshell `night-light` view offers schedule, off and three warmth levels, each as one request. Its desktop entry is searchable by name or `sunp`. Treat anything other than `ok` as failure and leave the failure visible. An invalid request can reply `invalid command` yet exit 0. Never trust only the exit status.
 
 ## Screenshots
 

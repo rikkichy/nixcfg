@@ -32,7 +32,7 @@ shape. Use absent-only seeding if a declarative initial profile is needed.
 Two built-in actions exist that no plugin manifest lists: `opendeck.multiaction`
 and `opendeck.toggleaction` (the two-state toggle).
 
-A key's command is written plainly: `vpnp`. The Run Command action checks
+A key's command is written plainly: `quickshell -c expressive ipc call desktop toggle vpn`. The Run Command action checks
 `FLATPAK_ID`/`CONTAINER_ID`. It wraps commands in `flatpak-spawn --host`
 (or `distrobox-host-exec`), so they already run on the host.
 

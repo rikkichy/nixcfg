@@ -24,7 +24,7 @@ outputs belong to [darwin-host](../../darwin-host/SKILL.md).
 Palettes are generated only after display acceptance. See the canonical
 [wallpaper state machine](wallpapers.md) for apply ordering, failures and success-record semantics.
 Matugen writes `hypr/scheme/current.lua`,
-`quickshell/colors.json`, `fuzzel/colors.ini`, both GTK and Thunar styles,
+`quickshell/colors.json`, both GTK and Thunar styles,
 btop/nvtop/Qt palettes, Equicord QuickCSS and terminal colours.
 GTK3/GTK4 outputs remain separate entries: this matugen pin loses earlier paths
 in multi-output templates.
@@ -76,14 +76,14 @@ Preserve both live updates and initialization for newly opened terminals.
 The parser reads assignments once as data and accepts only known keys with six
 hex digits. It preserves the first duplicate and validates before writing any output.
 Foot palette includes and SIGUSR1/SIGUSR2 do not reload arbitrary palette files.
-`theme-apply`, `awp-apply`, `term-sequences`, `desktop-picker` and
+`theme-apply`, `awp-apply`, `term-sequences` and
 `wallpaper-frame` are private runtime dependencies. Use public `wpp`/`awpp`.
 
 Two more things the pipeline depends on:
 
 - The btop template's nonfatal post-hook sends SIGUSR2 after its file is written.
   Do not move success-critical steps into hooks: matugen logs hook failures but
-  returns success. GTK watches files. Fuzzel reads its palette on launch.
+  returns success. GTK and Quickshell watch their palette files.
 - Preserve [Hyprland override creation and Lua-load ordering](../../desktop-shell/references/hyprland.md#source-and-live-configuration).
 
 ## Fonts

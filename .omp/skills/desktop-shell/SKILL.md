@@ -1,6 +1,6 @@
 ---
 name: desktop-shell
-description: Linux desktop-shell engineering for host nix, including Hyprland Lua, Quickshell native services and accessible controls, Fuzzel launchers and pickers, hyprsunset, screenshots and tearing. Use for hosts/nix/modules/home shell modules and hosts/nix/dotfiles/ricing/{hypr,quickshell}; not macOS or shared shell/Zed settings.
+description: Linux desktop-shell engineering for host nix, including Hyprland Lua, Quickshell native services, accessible controls, launchers and utility pickers, hyprsunset, screenshots and tearing. Use for hosts/nix/modules/home shell modules and hosts/nix/dotfiles/ricing/{hypr,quickshell}; not macOS or shared shell/Zed settings.
 ---
 
 # Desktop shell — host `nix` only
@@ -12,14 +12,14 @@ This skill owns the Linux desktop shell, not host `ne`. Load only the relevant r
 | Change | Reference | Source ownership |
 | --- | --- | --- |
 | Rail, popovers, workspaces, audio, notifications, tray, QML controls and preview isolation | [Quickshell](references/quickshell.md) | `hosts/nix/modules/home/quickshell.nix`, `hosts/nix/dotfiles/ricing/quickshell/`, commented socket workaround in `hosts/nix/pkgs/overlay.nix` |
-| Fuzzel, desktop tools, clipboard, VPN/power pickers and maintenance actions | [Launchers](references/launchers.md) | `hosts/nix/modules/home/fuzzel.nix`, wallpaper pickers in `hosts/nix/modules/home/matugen.nix` |
+| Desktop tools, clipboard, VPN/power pickers and maintenance actions | [Launchers](references/launchers.md) | `hosts/nix/modules/home/desktop-tools.nix`, `hosts/nix/dotfiles/ricing/quickshell/UtilityPicker.qml`, wallpaper pickers in `hosts/nix/modules/home/matugen.nix` |
 | Lua config, keybindings, monitors, tearing, screenshots and hyprsunset | [Hyprland](references/hyprland.md) | `hosts/nix/dotfiles/ricing/hypr/`, session services in `hosts/nix/modules/system/session.nix`, screenshot package in `hosts/nix/home.nix` |
 
 ## Mandatory rules
 
 - Use native Quickshell service models and Qt controls, not subprocess polling or replacement input stacks. Read the pinned package's `.qmltypes` before assuming an API. Preserve keyboard navigation, accessible action names, keyboard-only focus rings and reduced motion.
 - Treat native objects as disposable. Guard null/ready state. Pass external data as argv. Never interpolate titles, SSIDs or device names into shell commands.
-- Generated palettes remain writable. Home Manager owns static sources, never generated Quickshell/Fuzzel colours or the generated Hyprland scheme. The Hyprland directory is a live out-of-store symlink. QML is store-deployed with a service restart trigger.
+- Generated palettes remain writable. Home Manager owns static sources, never generated Quickshell colours or the generated Hyprland scheme. The Hyprland directory is a live out-of-store symlink. QML is store-deployed with a service restart trigger.
 - Never replace the running notification daemon or alter live audio/network state to test a candidate. Quickshell previews need a separate compositor **and** D-Bus session. Snapshot and restore the user-manager and D-Bus activation environments around nested Hyprland. Details are in the Quickshell reference.
 
 ## Adjacent ownership

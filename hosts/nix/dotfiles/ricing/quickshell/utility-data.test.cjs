@@ -1,0 +1,33 @@
+// Run with: node hosts/nix/dotfiles/ricing/quickshell/utility-data.test.cjs
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const vm = require("node:vm");
+const path = require("node:path");
+const data = {};
+vm.runInNewContext(fs.readFileSync(path.join(__dirname, "UtilityData.js"), "utf8"), data);
+
+const subscriptions = data.vpnRows("primary-id\tPrimary subscription\nsecondary-id\tSecondary subscription\n", true);
+assert.equal(subscriptions[0].value, "primary-id");
+assert.equal(subscriptions[1].value, "secondary-id");
+const exactName = "  node.* [HK]\tbackup  ";
+const nodes = data.vpnRows("37\t" + exactName + "\n0\tUnknown latency\n", false);
+assert.equal(nodes[0].value, exactName);
+assert.equal(nodes[0].action, "select");
+assert.equal(nodes[0].name, exactName + " · 37 ms");
+assert.equal(nodes[1].name, "Unknown latency · --");
+assert.throws(() => data.vpnRows("not-a-latency\tnode\n", false));
+assert.throws(() => data.vpnRows("missing separator\n", true));
+assert.equal(data.succeeded(0, 0, "ok\n", true), true);
+assert.equal(data.succeeded(0, 0, "invalid command", true), false);
+assert.equal(data.succeeded(1, 0, "ok", true), false);
+assert.equal(data.succeeded(0, 1, "ok", true), false);
+assert.equal(data.current(true, 3, 3, 4, 4), true);
+assert.equal(data.current(false, 3, 3, 4, 4), false);
+assert.equal(data.current(true, 4, 3, 4, 4), false);
+assert.equal(data.current(true, 3, 3, 5, 4), false);
+const emoji = data.emojis("1F600 ; fully-qualified # 😀 E1.0 grinning face\n263A ; unqualified # ☺ E0.6 smiling face\n");
+assert.equal(emoji.length, 1);
+assert.equal(emoji[0].value, "😀");
+assert.equal(emoji[0].nameKey, "grinning face");
+assert.throws(() => data.emojis("unrecognized data"));
+console.log("Utility parsing, command acceptance and request scoping passed.");
