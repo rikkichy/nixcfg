@@ -96,20 +96,40 @@ let
     name = "wallpaper-frame";
     runtimeInputs = [ pkgs.ffmpeg pkgs.coreutils ];
     text = ''
-      video="''${1:?usage: wallpaper-frame VIDEO OUTPUT [FFMPEG_OUTPUT_ARGUMENT ...]}"
-      output="''${2:?usage: wallpaper-frame VIDEO OUTPUT [FFMPEG_OUTPUT_ARGUMENT ...]}"
-      shift 2
+      mode=full
+      case "''${1-}" in
+        --preview-image|--preview-video) mode="$1"; shift ;;
+      esac
+      video="''${1:?usage: wallpaper-frame [--preview-image|--preview-video] SOURCE OUTPUT}"
+      output="''${2:?usage: wallpaper-frame [--preview-image|--preview-video] SOURCE OUTPUT}"
+      seek=(-ss 3)
+      decode=()
+      encode=()
+      extension=png
+      if [ "$mode" != full ]; then
+        extension=jpg
+        encode=(-vf scale=640:360:force_original_aspect_ratio=decrease:out_range=full -pix_fmt yuvj420p -q:v 3)
+        if [ "$mode" = --preview-image ]; then
+          seek=()
+        else
+          decode=(-skip_frame nokey)
+        fi
+      fi
       if [ -s "$output" ] && [ ! "$video" -nt "$output" ]; then
         exit 0
       fi
-      mkdir -p "$(dirname "$output")"
-      tmp=$(mktemp "$(dirname "$output")/.frame.XXXXXX.png")
+      parent="''${output%/*}"
+      mkdir -p -- "$parent"
+      tmp=$(mktemp "$parent/.frame.XXXXXX.$extension")
       trap 'rm -f -- "$tmp"' EXIT
-      ffmpeg -y -loglevel error -filter_threads 1 -ss 3 -threads 1 -i "$video" -frames:v 1 -threads 1 "$@" "$tmp" \
-        < /dev/null || exit 1
+      if ! ffmpeg -y -loglevel error -filter_threads 1 "''${decode[@]}" "''${seek[@]}" \
+        -threads 1 -i "$video" -frames:v 1 -threads 1 "''${encode[@]}" "$tmp" < /dev/null; then
+        [ "$mode" = --preview-video ] || exit 1
+        rm -f -- "$tmp"
+      fi
       if [ ! -s "$tmp" ]; then
-        ffmpeg -y -loglevel error -filter_threads 1 -threads 1 -i "$video" -frames:v 1 -threads 1 "$@" "$tmp" \
-          < /dev/null || exit 1
+        ffmpeg -y -loglevel error -filter_threads 1 -threads 1 -i "$video" \
+          -frames:v 1 -threads 1 "''${encode[@]}" "$tmp" < /dev/null || exit 1
       fi
       [ -s "$tmp" ] || exit 1
       mv -- "$tmp" "$output"
@@ -176,8 +196,8 @@ in
         case "$#:''${1-}" in
           0:) dir="''${WALLPAPER_DIR:-$HOME/Pictures/Wallpapers}" ;;
           2:--list) dir="$2" ;;
-          3:--apply) chosen="$2"; dir="$3" ;;
-          *) printf 'usage: wpp [--list DIRECTORY | --apply PATH DIRECTORY]\n' >&2; exit 2 ;;
+          3:--apply|3:--preview) chosen="$2"; dir="$3" ;;
+          *) printf 'usage: wpp [--list DIRECTORY | --preview PATH DIRECTORY | --apply PATH DIRECTORY]\n' >&2; exit 2 ;;
         esac
         IFS= read -r -d "" dir < <(realpath -m -z -- "$dir")
         if [ "$#" -eq 0 ]; then
@@ -193,11 +213,22 @@ in
           files=(${defaultWallpaper} builtin)
         fi
 
+        cache="''${XDG_CACHE_HOME:-${config.xdg.cacheHome}}/wallpaper/thumbs/v2"
+        IFS= read -r -d "" cache < <(realpath -m -z -- "$cache")
+        key=$(printf '%s' "$dir" | sha256sum)
+        cache="$cache/''${key%% *}"
+
         if [ "$1" = --list ]; then
-          printf '%s\0' "''${files[@]}" | jq -Rs --argjson builtin "$empty" '
-            [split("\u0000") | .[:-1] | range(0; length; 2) as $i |
+          for ((i = 0; i < ''${#files[@]}; i += 2)); do
+            f="''${files[$i]}"
+            revision="''${files[$((i + 1))]}"
+            preview="$cache/''${f##*/}/$revision.jpg"
+            if [ ! -s "$preview" ] || [ "$f" -nt "$preview" ]; then preview=""; fi
+            printf '%s\0%s\0%s\0' "$f" "$revision" "$preview"
+          done | jq -Rs --argjson builtin "$empty" '
+            [split("\u0000") | .[:-1] | range(0; length; 3) as $i |
               {name: (if $builtin then "Built-in default" else .[$i] | split("/")[-1] end),
-               path: .[$i], preview: .[$i], revision: .[$i + 1]}] | sort_by(.path)'
+               path: .[$i], preview: .[$i + 2], revision: .[$i + 1]}] | sort_by(.path)'
           exit 0
         fi
 
@@ -212,6 +243,12 @@ in
         if ! "$valid"; then
           printf 'wpp: Selection is no longer in %s\n' "$dir" >&2
           exit 1
+        fi
+        if [ "$1" = --preview ]; then
+          preview="$cache/''${chosen##*/}/''${files[$((i + 1))]}.jpg"
+          ${wallpaperFrame}/bin/wallpaper-frame --preview-image "$chosen" "$preview"
+          jq -n --arg preview "$preview" '{preview: $preview}'
+          exit 0
         fi
 
         awww img --resize crop --transition-type none "$chosen"
@@ -254,11 +291,22 @@ in
 
         [ "''${#files[@]}" -gt 0 ] || die "No videos in $dir"
 
+        cache="''${XDG_CACHE_HOME:-${config.xdg.cacheHome}}/animated-wallpaper/thumbs/v2"
+        IFS= read -r -d "" cache < <(realpath -m -z -- "$cache")
+        key=$(printf '%s' "$dir" | sha256sum)
+        cache="$cache/''${key%% *}"
+
         if [ "$1" = --list ]; then
-          printf '%s\0' "''${files[@]}" | jq -Rs '
-            [split("\u0000") | .[:-1] | range(0; length; 2) as $i |
+          for ((i = 0; i < ''${#files[@]}; i += 2)); do
+            f="''${files[$i]}"
+            revision="''${files[$((i + 1))]}"
+            preview="$cache/''${f##*/}/$revision.jpg"
+            if [ ! -s "$preview" ] || [ "$f" -nt "$preview" ]; then preview=""; fi
+            printf '%s\0%s\0%s\0' "$f" "$revision" "$preview"
+          done | jq -Rs '
+            [split("\u0000") | .[:-1] | range(0; length; 3) as $i |
               {name: (.[$i] | split("/")[-1] | sub("\\.[^.]*$"; "")),
-               path: .[$i], preview: "", revision: .[$i + 1]}] | sort_by(.path)'
+               path: .[$i], preview: .[$i + 2], revision: .[$i + 1]}] | sort_by(.path)'
           exit 0
         fi
 
@@ -266,11 +314,8 @@ in
           f="''${files[$i]}"
           if [ "$chosen" = "$f" ] && [ -f "$f" ] && [ ! -L "$f" ]; then
             if [ "$1" = --preview ]; then
-              cache="''${XDG_CACHE_HOME:-${config.xdg.cacheHome}}/animated-wallpaper/thumbs/640"
-              IFS= read -r -d "" cache < <(realpath -m -z -- "$cache")
-              key=$(printf '%s\0%s' "$chosen" "''${files[$((i + 1))]}" | sha256sum)
-              preview="$cache/''${key%% *}.png"
-              ${wallpaperFrame}/bin/wallpaper-frame "$chosen" "$preview" -vf scale=640:-2 \
+              preview="$cache/''${chosen##*/}/''${files[$((i + 1))]}.jpg"
+              ${wallpaperFrame}/bin/wallpaper-frame --preview-video "$chosen" "$preview" \
                 || die "Could not preview $chosen"
               jq -n --arg preview "$preview" '{preview: $preview}'
               exit 0

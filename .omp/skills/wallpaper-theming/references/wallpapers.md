@@ -9,9 +9,9 @@ Owner: `hosts/nix/modules/home/matugen.nix`. The built-in image is
 `wpp` and `awpp` use `desktop wallpaper MODE DIRECTORY` IPC, where MODE is
 `wallpapers` or `animated-wallpapers`. Their `--list DIRECTORY` mode returns
 metadata-only JSON `{name,path,preview,revision}` entries without decoding images
-or writing caches. Still previews point at the source; animated previews are empty.
-`awpp --preview PATH DIRECTORY` validates and generates one cached frame, returning
-JSON `{preview}`. `--apply PATH DIRECTORY` rechecks collection membership before
+or writing caches. Preview is a fresh cached thumbnail path or an empty string.
+Both helpers support `--preview PATH DIRECTORY`, validating and generating one
+cached thumbnail and returning JSON `{preview}`. `--apply PATH DIRECTORY` rechecks collection membership before
 any side effects. Paths travel as argv and preview URLs are
 encoded by QML. Missing still collections offer the built-in default; opening
 the gallery never applies it automatically.
@@ -37,16 +37,16 @@ version 4.2 logs nonzero command exits but returns success.
 Matugen owns `quickshell/colors.json`.
 Follow the [Quickshell writable-consumer contract](../../desktop-shell/references/quickshell.md#palette-and-native-crash-boundary).
 
-Qt asynchronously decodes still sources at a bounded 640×360 preview size;
-there is no still-thumbnail subprocess or disk cache. The launcher requests
-video previews only for visible rows plus one prefetch row, with four workers
-and one FFmpeg decode/filter/encode thread per worker. It derives pending work
-from the current viewport rather than accumulating an offscreen queue.
-Video frames are cached under `~/.cache/animated-wallpaper/thumbs/640`.
-URL revisions use source mtime and size, preventing Qt from showing old pixels
-after a changed file is reopened. A bounded 128-entry video URL cache avoids
-helper calls on warm opens; Qt owns decoded-image caching. Failed previews show
-“Preview unavailable” and can retry on reopening without blocking selection.
+Both galleries use bounded 640×360 JPEG thumbnails rather than decoding originals
+in Qt. Four workers serve visible rows before one prefetch row; only visible
+thumbnails enter Qt's async image loader. Each FFmpeg worker uses one decode,
+filter and encode thread. Pending work comes from the current viewport, not an
+accumulated queue; in-flight jobs finish naturally.
+Still/video thumbnails live under `~/.cache/{wallpaper,animated-wallpaper}/thumbs/v2`,
+keyed by collection-directory hash, source basename and mtime/size revision.
+Lists return fresh cached paths directly, including after a shell restart.
+A bounded 128-entry URL cache retains metadata; Qt owns decoded-image caching.
+Failed previews show “Preview unavailable” without blocking selection.
 
 #### awww daemon sandbox
 
@@ -128,14 +128,16 @@ are fatal and retain the animated record.
   "swww-daemon is running. This may block mpvpaper from being seen".
   `-l bottom` places playback above the still and below every window,
   regardless of creation order.
-- `wallpaper-frame VIDEO OUTPUT [FFMPEG_OUTPUT_ARGUMENT ...]` seeks three seconds
-  past opening fades. For short videos, it retries empty output from the start.
-  It reuses nonempty output when the source is not newer.
-  It stages extraction into a temporary PNG beside the destination.
-  It replaces the cache only after successful nonempty extraction.
-  Failed regeneration preserves an existing usable frame.
-  Full-frame failures are fatal. Thumbnail failures remain nonfatal.
-- Animated thumbnail keys hash the absolute source path and its mtime/size
-  revision; full-frame keys hash the absolute path. Collections with identical
-  filenames cannot collide. Animated labels omit the extension; selection always
-  uses the complete path.
+- `wallpaper-frame VIDEO OUTPUT` extracts the full-resolution backing PNG using
+  accurate three-second seeking, retrying empty output from the start.
+  `--preview-image` and `--preview-video` select bounded full-range JPEG output;
+  video previews use keyframe-only decoding near three seconds and retry from
+  the start when no usable frame is produced.
+  Nonempty outputs are reused when the source is not newer. Extraction stages
+  beside the destination and replaces it only after successful nonempty output.
+  Failed regeneration preserves the previous file. Full-frame failures are fatal;
+  thumbnail failures remain nonfatal.
+- Thumbnail cache paths include a collection hash and source revision; identical
+  filenames in different collections cannot collide. Full-frame keys hash the
+  absolute source path. Animated labels omit the extension; selection uses the
+  complete path.

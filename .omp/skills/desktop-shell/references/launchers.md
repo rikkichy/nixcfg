@@ -23,10 +23,10 @@ Tool entries use icon names backed by Mignon artwork. Native theme inheritance s
 
 Wallpaper tiles open the same launcher's gallery through `wpp`/`awpp` and
 `desktop wallpaper MODE DIRECTORY` IPC. The gallery has large 16:9 previews,
-filename search and a Settings return button. Metadata-only lists let Qt decode
-visible still images asynchronously; four bounded workers generate video previews
-only around the viewport. Source revisions invalidate image caches, while warm
-opens reuse preview URLs. Helpers revalidate selections before applying; process
+filename search and a Settings return button. Metadata-only lists include cached
+thumbnail paths. Four bounded workers generate small JPEG previews for either
+gallery, serving visible rows before prefetch. Qt decodes only visible thumbnails.
+Source revisions invalidate caches. Helpers revalidate selections before applying; process
 completions are scoped to the opened view so an old request cannot close or
 overwrite a newer one.
 Utility tiles and shortcuts use `desktop toggle night-light|vpn|power|emoji`.

@@ -398,12 +398,13 @@ A theme-generation failure is reported but does not stop the selected video.
 Picking a still with `wpp` displays the image and stops the video before theming.
 At login, animated playback does not wait for theme restoration.
 
-Gallery lists contain metadata only, so opening never waits for thumbnail batches.
-Qt decodes still images asynchronously at preview resolution, only near the visible
-rows. Animated previews use at most four single-frame workers for visible rows
-and one prefetch row; scrolling does not queue the rest of the collection.
-Revision-aware caches refresh changed files. Reopening reuses video preview URLs
-and Qt's image cache. VPN, blue-light, power and emoji use native Quickshell views.
+Gallery lists return metadata and existing cached thumbnail paths without decoding.
+Four workers create bounded 640×360 JPEG previews, prioritizing visible tiles
+before one prefetch row. Only visible thumbnails enter Qt's image decode queue;
+full-size originals are never decoded by the gallery. Video previews seek to
+a keyframe near three seconds, falling back to the start for short clips.
+Revision-aware disk caches survive shell restarts and refresh changed files.
+VPN, blue-light, power and emoji use native Quickshell views.
 The cursor is the static **Bibata Modern Ice** theme:
 a white pointer with a black outline and rounded edges, at size 24.
 Wallpaper changes do not recolor or replace it. Home Manager owns the cursor

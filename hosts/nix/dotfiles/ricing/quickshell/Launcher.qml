@@ -126,36 +126,48 @@ PanelWindow {
             refresh.restart();
     }
 
+    function previewKey(path, revision) {
+        return JSON.stringify([mode, path, revision]);
+    }
+
     function loadPreviews() {
-        if (!opened || mode !== "animated-wallpapers" || grid.height <= 0)
+        if (!opened || !wallpaperMode || grid.height <= 0)
             return;
-        // Recompute candidates from the viewport; scrolling never queues offscreen work.
-        for (let index = grid.previewStart; index < grid.previewEnd; index++) {
+        let end = grid.visibleEnd;
+        // Only prefetch after every visible tile has a thumbnail or a settled failure.
+        let visiblePending = false;
+        for (let index = grid.previewStart; index < grid.visibleEnd; index++) {
             const entry = results[index];
-            if (entry.preview || previewStates.has(entry.path))
-                continue;
-            const cached = previewCache.get(entry.path);
-            if (cached && cached.revision === entry.revision) {
-                previewStates.set(entry.path, cached.preview);
-                previewStatesChanged();
-                continue;
+            const state = previewStates.get(entry.previewKey);
+            if (!entry.preview && state !== null && !state) {
+                visiblePending = true;
+                break;
             }
+        }
+        if (!visiblePending)
+            end = grid.previewEnd;
+        // Finish the four short-lived jobs, then select from the latest viewport; never queue old rows.
+        for (let index = grid.previewStart; index < end; index++) {
+            const entry = results[index];
+            if (entry.preview || previewStates.has(entry.previewKey))
+                continue;
             let worker = null;
             for (let slot = 0; slot < previewWorkers.count; slot++) {
                 const candidate = previewWorkers.objectAt(slot);
-                if (candidate && !candidate.path && !candidate.running) {
+                if (candidate && !candidate.key && !candidate.running) {
                     worker = candidate;
                     break;
                 }
             }
             if (!worker)
                 break;
-            previewStates.set(entry.path, "");
+            previewStates.set(entry.previewKey, "");
+            worker.key = entry.previewKey;
             worker.path = entry.path;
             worker.revision = entry.revision;
             worker.generation = generation;
             worker.preview = "";
-            worker.exec(["awpp", "--preview", entry.path, directory]);
+            worker.exec([wallpaperHelper, "--preview", entry.path, directory]);
         }
     }
 
@@ -200,6 +212,7 @@ PanelWindow {
         grid.currentIndex = results.length ? Math.max(0, Math.min(grid.currentIndex, results.length - 1)) : -1;
         Qt.callLater(loadPreviews);
     }
+    onOpenedChanged: Qt.callLater(loadPreviews)
     onBackingWindowVisibleChanged: if (backingWindowVisible)
         search.forceActiveFocus(Qt.ShortcutFocusReason)
     onScreenChanged: if (!screen)
@@ -272,7 +285,7 @@ PanelWindow {
                             && typeof entry.name === "string"
                             && typeof entry.path === "string" && entry.path.startsWith("/")
                             && typeof entry.preview === "string"
-                            && (entry.preview.startsWith("/") || (launcher.mode === "animated-wallpapers" && entry.preview === ""))
+                            && (entry.preview.startsWith("/") || entry.preview === "")
                             && typeof entry.revision === "string"))
                         throw new Error("Invalid wallpaper list");
                     launcher.wallpapers = entries.map(entry => ({
@@ -281,7 +294,9 @@ PanelWindow {
                         keywords: "",
                         path: entry.path,
                         revision: entry.revision,
-                        preview: entry.preview ? launcher.fileUrl(entry.preview, entry.revision) : ""
+                        previewKey: launcher.previewKey(entry.path, entry.revision),
+                        preview: entry.preview ? launcher.fileUrl(entry.preview, entry.revision)
+                            : launcher.previewCache.get(launcher.previewKey(entry.path, entry.revision)) || ""
                     }));
                 } catch (error) {
                     launcher.errorMessage = "Could not read wallpapers.";
@@ -305,6 +320,7 @@ PanelWindow {
         model: 4
         delegate: Process {
             id: previewWorker
+            property string key: ""
             property string path: ""
             property string revision: ""
             property int generation: -1
@@ -327,19 +343,20 @@ PanelWindow {
             onExited: (exitCode, exitStatus) => {
                 if (launcher.opened && generation === launcher.generation) {
                     const success = exitCode === 0 && exitStatus === 0 && preview;
-                    launcher.previewStates.set(path, success ? preview : null);
+                    launcher.previewStates.set(key, success ? preview : null);
                     if (success) {
-                        launcher.previewCache.delete(path);
-                        launcher.previewCache.set(path, { revision, preview });
+                        launcher.previewCache.delete(key);
+                        launcher.previewCache.set(key, preview);
                         // Retain only small URL metadata; decoded images use Qt's bounded cache.
                         if (launcher.previewCache.size > 128)
                             launcher.previewCache.delete(launcher.previewCache.keys().next().value);
                     } else {
-                        launcher.previewCache.delete(path);
+                        launcher.previewCache.delete(key);
                         console.warn(previewErrors.text.trim() || "Wallpaper preview unavailable: " + path);
                     }
                     launcher.previewStatesChanged();
                 }
+                key = "";
                 path = "";
                 Qt.callLater(launcher.loadPreviews);
             }
@@ -499,7 +516,9 @@ PanelWindow {
                 cellWidth: width / columns
                 cellHeight: launcher.wallpaperMode ? (cellWidth - 32) * 9 / 16 + 64 : 116
                 readonly property int previewStart: Math.max(0, Math.floor((contentY - originY) / cellHeight)) * columns
-                readonly property int previewEnd: Math.min(count, (Math.ceil((contentY - originY + height) / cellHeight) + 1) * columns)
+                readonly property int visibleEnd: Math.min(count, Math.max(0, Math.ceil((contentY - originY + height) / cellHeight)) * columns)
+                readonly property int previewEnd: Math.min(count, visibleEnd + columns)
+                onVisibleEndChanged: Qt.callLater(launcher.loadPreviews)
                 onPreviewStartChanged: Qt.callLater(launcher.loadPreviews)
                 onPreviewEndChanged: Qt.callLater(launcher.loadPreviews)
                 model: launcher.results
@@ -519,7 +538,7 @@ PanelWindow {
                     id: tile
                     required property var modelData
                     required property int index
-                    readonly property var previewState: launcher.previewStates.get(modelData.path)
+                    readonly property var previewState: launcher.previewStates.get(modelData.previewKey)
                     width: grid.cellWidth - 8
                     height: grid.cellHeight - 8
                     checked: GridView.isCurrentItem
@@ -556,8 +575,9 @@ PanelWindow {
                                     Binding {
                                         target: wallpaperPreview
                                         property: "source"
-                                        value: launcher.wallpaperMode && tile.index >= grid.previewStart && tile.index < grid.previewEnd
-                                            ? tile.modelData.preview || tile.previewState || "" : ""
+                                        // Prefetch files, not Images: Qt's LIFO loader must only see visible tiles.
+                                        value: launcher.wallpaperMode && tile.index >= grid.previewStart && tile.index < grid.visibleEnd
+                                            && tile.previewState !== null ? tile.modelData.preview || tile.previewState || "" : ""
                                         when: launcher.opened
                                         // Keep the presented image for the compositor's closing snapshot.
                                         restoreMode: Binding.RestoreNone
@@ -565,11 +585,12 @@ PanelWindow {
                                     sourceSize: Qt.size(640, 360)
                                     fillMode: Image.PreserveAspectCrop
                                     asynchronous: true
+                                    cache: true
                                     autoTransform: true
                                     onStatusChanged: {
-                                        if (status === Image.Error && launcher.opened && launcher.mode === "animated-wallpapers") {
-                                            launcher.previewCache.delete(tile.modelData.path);
-                                            launcher.previewStates.set(tile.modelData.path, null);
+                                        if (status === Image.Error && launcher.opened && launcher.wallpaperMode) {
+                                            launcher.previewCache.delete(tile.modelData.previewKey);
+                                            launcher.previewStates.set(tile.modelData.previewKey, null);
                                             launcher.previewStatesChanged();
                                         }
                                     }
