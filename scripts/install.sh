@@ -34,6 +34,10 @@ Local edits, deletions and nonignored new files are retained, including .omp.
 Source Git hooks/configuration, result links and Python caches are not copied.
 Never keep plaintext secrets, private keys or identities in this checkout:
 path: flakes include ignored files even before this program starts.
+Desktop installation requires a protected backup of the existing /var/lib/sbctl.
+Its path is requested and its keys are checked/copied into root-only /run BEFORE
+erase, then restored to the target. No signing keys or firmware trust are created.
+The private staging directory is retained on failure; remove it after recovery.
 
 Numbered menus select the host, disk and YubiKey. USB/removable targets are
 hidden until "Show external disks"; --list-disks includes all exclusion reasons.
@@ -45,11 +49,12 @@ HELP
 
 plan() {
   cat <<'PLAN'
-Plan: select host -> snapshot and evaluate build plan -> select unused disk
+Plan: select host -> snapshot and evaluate build plan
+-> desktop: validate and stage existing sbctl backup -> select unused disk
 -> select required YubiKey -> approve mandatory sudo/boot enrollment
 -> ERASE confirmation -> recheck disk -> GPT/EFI/LUKS2/XFS
 -> mount target root and ESP -> generate hosts/HOST/hardware.nix
--> desktop: bind persistent state -> copy repository -> require signing keys
+-> desktop: bind persistent state -> copy repository -> restore signing keys
 -> nixos-install -> desktop: initialize Userborn -> set root and ri passwords
 -> approved FIDO2 enrollments
 -> retain mounted system and recovery shell; NEVER auto-reboot.
@@ -258,6 +263,46 @@ check_mount_target() {
   if findmnt --mountpoint /mnt --noheadings >/dev/null; then fail '/mnt is already mounted.'; fi
 }
 
+validate_signing_state() {
+  local directory=$1 invalid key public_key public_certificate guid
+  [[ -d $directory && ! -L $directory ]] || fail 'Signing backup must be a real directory.'
+  invalid=$(find "$directory" \( ! -type d ! -type f -o ! -uid "$EUID" -o -perm /022 \) -print -quit)
+  [[ -z $invalid ]] || fail 'Signing backup must contain only owned, non-group/world-writable regular files and directories.'
+  [[ -s $directory/GUID ]] || fail 'Signing backup GUID missing.'
+  guid=$(<"$directory/GUID")
+  [[ $guid =~ ^[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}$ ]] ||
+    fail 'Signing backup GUID is invalid.'
+  for key in PK KEK db; do
+    [[ -s $directory/keys/$key/$key.key && -s $directory/keys/$key/$key.pem ]] ||
+      fail "Signing backup is missing the $key key/certificate."
+    [[ -z $(find "$directory/keys/$key/$key.key" -perm /077 -print) ]] ||
+      fail 'Private signing keys must not be accessible to group/others.'
+    public_key=$(openssl pkey -in "$directory/keys/$key/$key.key" -passin pass: -pubout 2>/dev/null) ||
+      fail "Cannot read the $key signing key."
+    public_certificate=$(openssl x509 -in "$directory/keys/$key/$key.pem" -pubkey -noout 2>/dev/null) ||
+      fail "Cannot read the $key signing certificate."
+    [[ $public_key == "$public_certificate" ]] || fail "The $key key and certificate do not match."
+    openssl x509 -in "$directory/keys/$key/$key.pem" -checkend 0 -noout >/dev/null ||
+      fail "The $key signing certificate has expired."
+  done
+}
+
+prepare_signing_state() {
+  local backup
+  printf '\nRestore existing Secure Boot identity; firmware enrollment is NOT changed.\nAbsolute path to protected sbctl backup directory (outside the checkout): '
+  IFS= read -r backup || fail 'Input closed; cancelled before erase.'
+  [[ $backup == /* ]] || fail 'An absolute backup directory is required.'
+  backup=$(realpath -e -- "$backup") || fail 'Signing backup does not exist.'
+  [[ $backup != "$source" && $backup != "$source/"* && $backup != "$work" && $backup != "$work/"* ]] ||
+    fail 'Signing backup must be outside the source checkout and installer workspace.'
+  validate_signing_state "$backup"
+  mkdir -m 0700 "$work/sbctl"
+  cp -a -- "$backup/." "$work/sbctl/"
+  chmod 0700 "$work/sbctl"
+  validate_signing_state "$work/sbctl"
+  printf 'Signing backup staged privately before erase. Firmware trust and cold boot remain untested.\n'
+}
+
 plan_enrollment() {
   select_fido
   approve 'Approve required YubiKey enrollment for sudo?' || fail 'Sudo enrollment is required; installation cancelled before erase.'
@@ -400,6 +445,7 @@ main() {
   prepare_checkout
   printf '\nEvaluating the selected build plan BEFORE erase (not a full build):\n'
   "${nixcmd[@]}" build --dry-run --no-link --no-update-lock-file "path:$work/repo#nixosConfigurations.$host.config.system.build.toplevel"
+  if [[ $host == nix ]]; then prepare_signing_state; fi
   disks=$(scan_disks) || fail 'Cannot establish device usage; refusing erase.'
   select_disk
   [[ -b $disk ]] || fail 'Selected disk is not a block device.'
@@ -462,9 +508,12 @@ main() {
   install -m 0644 "$work/hardware.nix" "/mnt/etc/nixos/hosts/$host/hardware.nix"
   verify_boot_devices
   if [[ $host == nix ]]; then
-    [[ -s /mnt/var/lib/sbctl/keys/db/db.key && -s /mnt/var/lib/sbctl/keys/db/db.pem ]] ||
-      fail 'Desktop signing key/certificate missing in /mnt/persist/var/lib/sbctl; provision separately before manual installation. No keys generated.'
+    cp -a -- "$work/sbctl/." /mnt/persist/var/lib/sbctl/
+    chmod 0700 /mnt/persist/var/lib/sbctl
+    validate_signing_state /mnt/persist/var/lib/sbctl
     nixos-install --root /mnt --flake path:/mnt/etc/nixos#nix --no-update-lock-file --no-root-passwd
+    sbverify --cert /mnt/persist/var/lib/sbctl/keys/db/db.pem /mnt/boot/efi/limine/BOOTX64.EFI ||
+      fail 'Installed Limine signature does not verify against the restored db certificate; do not reboot.'
     # nixos-install's boot action does not run the native account service.
     userborn=$("${nixcmd[@]}" eval --json --no-update-lock-file \
       path:/mnt/etc/nixos#nixosConfigurations.nix.config.systemd.services.userborn.serviceConfig)
@@ -514,8 +563,8 @@ and rejection of invalid credentials. Boot autologin follows either successful
 disk-unlock method; disk enrollment does not enroll the separate PAM credential.
 Unlock root at the local console with the server-side FIDO2 token or LUKS
 passphrase. Ordinary SSH is available only after boot.
-PIV identities, private service data and VPN subscription provisioning are separate;
-this installer never copies private live-system secrets into the target.
+PIV identities, private service data and VPN subscription provisioning are separate.
+Only the explicitly supplied sbctl backup is restored; other private state is not copied.
 Desktop Mihomo reads two root-only /etc/mihomo/*.url files and the firmware UUID
 at runtime; it does not provision or persist an HWID file.
 DONE

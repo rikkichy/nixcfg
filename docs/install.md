@@ -11,11 +11,13 @@ For a desktop that cannot boot,
 start with [Limine / live-ISO recovery](nix-security.md#limine-recovery-with-a-zero-timeout),
 not an erasing installer.
 
-**Fresh desktop `nix` installation has an unresolved signing-key prerequisite.**
-The current configuration requires target sbctl keys, but neither installation path provisions them.
-The post-install helper requires existing Limine boot files.
-Resolve the [signing-key prerequisite](nix-security.md#secure-boot-with-limine) before erasing a desktop disk.
-This restriction does not apply to `nixos-server`.
+**Fresh desktop `nix` installation requires a protected backup of the existing sbctl identity.**
+The guided installer requests its absolute directory path, validates the GUID and matching
+PK/KEK/db keys and certificates, and stages it in root-only `/run` before offering disk erasure.
+It restores that identity through the persistent sbctl mount and verifies the installed EFI
+signature against the restored db certificate. It neither generates keys nor changes firmware trust.
+For a genuinely new machine without an existing identity, arrange separate Secure Boot provisioning;
+the post-install helper cannot bootstrap an empty target. This requirement does not apply to `nixos-server`.
 
 ## Interactive Linux installer
 
@@ -91,7 +93,16 @@ match the mapper and UUIDs read directly from the new filesystems/LUKS header.
 Evaluation is not a full build, and post-erase failures require manual recovery.
 Desktop hardware generation runs before any bind mounts.
 The installer then mounts every directory from the evaluated Preservation manifest, including the checkout and signing keys.
-It refuses installation without the existing db signing key and certificate.
+Before disk selection, supply a root-owned sbctl backup directory outside the checkout.
+Its tree must contain only regular files/directories, with no group/world write access;
+private keys must have no group/other permissions. The complete PK/KEK/db pairs and GUID are required.
+For SSD replacement on the same motherboard, restore the existing identity rather than generating new keys.
+Decrypt/extract backups into a root-only directory outside the checkout (for example `/run/ssd-restore/sbctl`).
+The installer retains its private `/run/nixcfg-install.*/sbctl` staging copy on failure for recovery.
+Remove that specific staging directory after successful recovery/installation, or let the live ISO reboot clear `/run`.
+Keep a separate encrypted backup: `/run` is volatile. Validation does not prove firmware trusts these certificates.
+After installation, an EFI signature mismatch stops the installer before account/password enrollment.
+Do not rerun the erasing installer after any post-erase failure; inspect the mounted target and recover manually.
 After desktop installation, it runs the evaluated Userborn command and completion commands before setting either password.
 The server retains the native root-password prompt and account flow.
 

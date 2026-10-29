@@ -194,16 +194,19 @@ It parses TPM event-log YAML with `serde-saphyr` and rejects revoked measured EF
 Other formats stop for review rather than skipping validation.
 The helper has no post-install bootloader hash/signature verifier and cannot prove physical firmware rejection of untrusted images.
 
-**Fresh-install prerequisite:** the desktop configuration already requires local
-sbctl signing keys when installing its bootloader. Automatic key generation is
-disabled.
-The interactive installer does not provision these keys. The helper above
-requires existing installed Limine files, so it cannot bootstrap a blank target.
-Before desktop installation, arrange separately approved provisioning or restoration
-of the target's root-only sbctl keys and retain an encrypted offline backup.
-The persistent target is `/mnt/persist/var/lib/sbctl`, bound at `/mnt/var/lib/sbctl` before installation.
-Both `keys/db/db.key` and `keys/db/db.pem` must exist.
-Do not defer this prerequisite until the first reboot or disable signing to bypass it.
+**Fresh-install prerequisite:** the desktop configuration requires local sbctl signing
+keys; automatic generation and firmware enrollment remain disabled.
+The guided installer restores an explicitly supplied protected sbctl backup. Before
+disk selection it checks ownership/permissions, GUID, all PK/KEK/db key-certificate pairs
+and certificate expiry, then stages the backup privately under `/run`.
+After mounting the target, it restores the state at `/mnt/persist/var/lib/sbctl`,
+bound at `/mnt/var/lib/sbctl`, and verifies the installed Limine EFI signature using
+the restored db certificate. This does not verify firmware enrollment, the enrolled
+configuration hash, or physical cold boot. Keep an encrypted offline backup.
+The manual installation path still requires restoring this state before `nixos-install`.
+The helper above requires existing installed Limine files and cannot bootstrap a blank target.
+No existing identity means separate provisioning is required; do not disable signing
+or reset firmware trust merely to bypass this prerequisite.
 
 The desktop uses native Limine signing, not a different bootloader.
 `boot.loader.limine.secureBoot.enable` signs the EFI image with the local
