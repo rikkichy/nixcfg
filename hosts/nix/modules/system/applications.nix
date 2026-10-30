@@ -4,16 +4,7 @@
   programs.git.enable = true;
 
   environment.systemPackages = with pkgs; [
-    (brave-origin.overrideAttrs (old: {
-      postInstall = (old.postInstall or "") + ''
-        cp ${pkgs.writeText "brave-origin-initial-preferences" (builtins.toJSON {
-          brave.new_tab_page = {
-            show_stats = false;
-            show_background_image = false;
-          };
-        })} "$out/opt/brave.com/brave-origin/initial_preferences"
-      '';
-    }))
+    brave-origin
 
     filen-desktop
     lan-mouse
@@ -96,6 +87,16 @@
       TranslateEnabled = false;
       PasswordManagerEnabled = false;
       DefaultSearchProviderName = "Google";
+      NewTabPageLocation = "file://${pkgs.writeText "brave-new-tab.html" ''
+        <!doctype html>
+        <html lang="en">
+        <meta charset="utf-8">
+        <meta name="color-scheme" content="dark">
+        <title>New Tab</title>
+        <style>html { background: #000; }</style>
+        <body></body>
+        </html>
+      ''}";
     };
   };
 

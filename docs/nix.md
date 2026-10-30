@@ -120,6 +120,14 @@ activation follow the same focus policy.
 Brave Origin (`pkgs.brave-origin`) is the default browser for the browser shortcut,
 HTML files and web links. Its profile remains application-owned under
 `~/.config/BraveSoftware/Brave-Origin`. No extensions are force-installed.
+Normal new tabs use a Nix-store HTML page with a solid black (`#000`) background,
+enforced by `NewTabPageLocation` in the managed Brave policies. The dashboard is
+replaced entirely: no top sites, clock, Stats cards, or search widget. Search in
+the address bar remains available. This applies to existing profiles without
+rewriting their preferences; dashboard customization toggles are not changed.
+The page and policy are declared in `hosts/nix/modules/system/applications.nix`.
+After activating the configuration, restart Brave; `brave://policy` shows the
+loaded policy. Private windows retain Brave's private new-tab page.
 
 OpenBot is not installed on the desktop. Its independent
 [server container](nixos-server.md#openbot-agent-server) is managed on `nixos-server`.
