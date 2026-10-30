@@ -19,7 +19,7 @@
       show-recents = false;
       launchanim = false;
     };
-    universalaccess.reduceMotion = true;
+    universalaccess.reduceMotion = false;
     finder.FXPreferredViewStyle = "Nlsv";
     WindowManager.EnableTiledWindowMargins = false;
     trackpad = {
