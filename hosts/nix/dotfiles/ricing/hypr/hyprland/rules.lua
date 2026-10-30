@@ -140,8 +140,8 @@ hl.on("window.open", function(opened)
     end
 end)
 
--- 65% transparent, including inactive/fullscreen special windows; removing the tag restores normal rules.
-hl.window_rule({ match = { tag = "special_over_fullscreen" }, opacity = "0.35 override" })
+-- Keep inactive/fullscreen special windows readable too; removing the tag restores normal rules.
+hl.window_rule({ match = { tag = "special_over_fullscreen" }, opacity = "0.75 override" })
 
 local function update_special_opacity()
     for _, w in ipairs(hl.get_windows()) do

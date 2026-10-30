@@ -10,6 +10,14 @@
       settings.OnlyShowIn = "X-DesktopTools;";
     };
   in {
+    hyprpicker = {
+      name = "Color picker";
+      exec = "${pkgs.hyprpicker}/bin/hyprpicker -a";
+      icon = "applications-graphics";
+      terminal = false;
+      categories = [ "Utility" ];
+      settings.OnlyShowIn = "X-DesktopTools;";
+    };
     bemoji = {
       name = "Emoji";
       exec = "quickshell -c expressive ipc call desktop toggle emoji";

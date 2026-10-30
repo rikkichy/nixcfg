@@ -133,7 +133,6 @@ hl.bind(
 )
 hl.bind("SUPER + SHIFT + S", hl.dsp.exec_cmd("hyprshot -m region -z -o " .. screenshotDir))
 hl.bind("SUPER + SHIFT + ALT + S", hl.dsp.exec_cmd("hyprshot -m window -o " .. screenshotDir))
-hl.bind("SUPER + SHIFT + C", hl.dsp.exec_cmd("hyprpicker -a"))
 
 hl.bind("SUPER + SHIFT + L", hl.dsp.exec_cmd(vars.sleepGestureCmd), { locked = true })
 

@@ -75,7 +75,7 @@ workspaces use a vertical slide-fade with 15% travel over 240ms in both directio
 Opacity uses non-bouncing curves. Existing shell reduced-motion layer rules
 remain unchanged.
 
-Special-workspace windows become 65% transparent (35% opacity) when their
+Special-workspace windows become 25% transparent (75% opacity) when their
 monitor's active numbered workspace contains a fullscreen app. Maximized apps,
 named workspaces and fullscreen apps on other monitors do not trigger it.
 `hyprland/rules.lua` maintains a conditional tag through native compositor events;
@@ -91,7 +91,7 @@ Tune stiffness for spring responsiveness and damping ratio for bounce.
 The [current animation wiki](https://wiki.hypr.land/configuring/core/animations/)
 uses newer API spelling; keep `dampening` for this installed version.
 
-Wallpaper, animated wallpaper, emoji, blue-light filter, VPN and session tools
+Wallpaper, animated wallpaper, color picker, emoji, blue-light filter, VPN and session tools
 are available through META+ALT.
 Short commands such as `wpp`, `awpp` and `vpnp` remain searchable there.
 Bare META toggles the apps-only Material 3 Expressive grid in Quickshell.
@@ -99,6 +99,7 @@ Bare META toggles the apps-only Material 3 Expressive grid in Quickshell.
 native desktop actions. Search starts empty and matches tool names normally.
 Press the same chord again to dismiss it; META switches back to applications.
 Tools and desktop actions stay hidden from the main app grid.
+**Color picker** runs Hyprpicker and copies the selected color to the clipboard.
 Settings labels the maintenance tools **Switch**, **Update** and **Clean**.
 Power actions are separate **Reboot** and **Shutdown** tiles; either opens the
 Quickshell power chooser. Selecting an action there executes it.
