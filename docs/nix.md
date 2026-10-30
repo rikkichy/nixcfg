@@ -334,6 +334,8 @@ first-client/pairing acceptance require separate operator approval.
 
 Obsidian and Bitwarden are native desktop packages in
 `hosts/nix/modules/system/applications.nix`, with their packaged launcher entries.
+Obsidian uses XWayland with GPU acceleration retained as a workaround for its
+reported black window on NVIDIA/Wayland. Runtime confirmation is still required.
 Bitwarden uses normal window placement. Hyprland does not force its size or floating state.
 Application data and vault settings remain user-owned. No Obsidian vault is created
 by the configuration, and existing Anytype data is left untouched.

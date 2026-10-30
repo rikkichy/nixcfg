@@ -34,7 +34,7 @@
     swayimg
     mpv
     qbittorrent
-    obsidian
+    (obsidian.override { commandLineArgs = "--ozone-platform=x11"; })
     bitwarden-desktop
     onlyoffice-desktopeditors
 
