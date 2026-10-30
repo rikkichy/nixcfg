@@ -57,6 +57,11 @@ If it points elsewhere, switch the host configuration before reloading Hyprland.
 Keep the locally generated `scheme/current.lua` in that directory. Git ignores it,
 and it must remain writable.
 
+Screen sharing defaults to allowing restore tokens through `hypr/xdph.conf`.
+The first screen/window selection remains interactive. Applications that save and
+reuse the token can restore that selection without another picker.
+After updating the checkout, log out and back in to restart the portal.
+
 Previous/next workspace keys and Super+scroll cycle existing workspaces on the
 current monitor. Closing or moving the last window off an active numbered
 workspace selects the nearest occupied numbered workspace on that monitor

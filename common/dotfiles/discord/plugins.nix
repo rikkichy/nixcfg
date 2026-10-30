@@ -128,7 +128,7 @@
     enabled = true;
   };
   NoRPC = {
-    enabled = true;
+    enabled = false;
   };
   Questify = {
     enabled = true;
