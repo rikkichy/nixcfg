@@ -106,7 +106,10 @@
     autoPrune.enable = true;
   };
 
-  virtualisation.waydroid.enable = true;
+  virtualisation.waydroid = {
+    enable = true;
+    package = pkgs.waydroid-nftables;
+  };
 
   services.printing.enable = false;
 

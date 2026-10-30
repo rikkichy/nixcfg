@@ -314,8 +314,11 @@ because the machine boots. Weekly automatic pruning can also start Docker, and
 the daemon does not automatically exit when idle.
 
 Waydroid is enabled through `virtualisation.waydroid.enable` in the desktop
-applications module. Android images and container/session data remain
-application-owned rather than managed by this checkout.
+applications module, with `pkgs.waydroid-nftables` selected explicitly. Its native
+nftables backend avoids the legacy `ip_tables` kernel dependency without changing
+the host firewall backend. Android images and container/session data remain
+application-owned rather than managed by this checkout. Applying the package
+selection requires separately approved activation.
 
 The desktop session disables Speech Dispatcher, including its user socket,
 and desktop networking disables ModemManager. Speech Dispatcher-based screen
