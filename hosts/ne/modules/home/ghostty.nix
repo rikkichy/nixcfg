@@ -9,8 +9,8 @@
       theme = "Matugen";
       command = "/run/current-system/sw/bin/fish";
       keybind = [ "global:ctrl+cmd+enter=toggle_quick_terminal" ];
-      background-opacity = 0.6;
-      background-blur-radius = 20;
+      background-opacity = 0.0;
+      background-blur-radius = 0;
       font-family = "DepartureMono Nerd Font";
       font-size = 18;
       cursor-style = "block";
