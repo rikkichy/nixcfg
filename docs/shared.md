@@ -51,10 +51,11 @@ The managed btop configuration contains theme overrides only. Other settings
 follow the packaged btop defaults.
 
 Run `larp soviet` for the red-and-ivory `soyuz-workstation` prompt and Fish colors.
+Use `larp deep-space` for the quiet, two-line Discovery prompt with red accents and the actual username and hostname.
 Run `larp` without arguments to restore the appearance from before the first switch.
 The choice is session-local and does not write universal Fish settings.
 The real hostname and terminal palette remain unchanged.
-The alternate prompt inherits the shared Starship configuration to retain project and SSH information.
+Both themes inherit the shared Starship configuration and preserve project context and the stale-devShell warning.
 
 All three hosts use a shared `omp` launcher backed by Nix-managed Bun.
 On first launch, Bun installs [`@oh-my-pi/pi-coding-agent`](https://github.com/can1357/oh-my-pi#install) into its user cache.

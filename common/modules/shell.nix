@@ -25,8 +25,9 @@ let
   omp = pkgs.writeShellScriptBin "omp" ''
     exec ${lib.getExe pkgs.bun} x --bun --package @oh-my-pi/pi-coding-agent@latest omp --config ${ompTooling} "$@"
   '';
+  starshipSettings = builtins.fromTOML (builtins.readFile ../dotfiles/starship.toml);
   sovietPrompt = (pkgs.formats.toml { }).generate "starship-soviet.toml" (
-    lib.recursiveUpdate (builtins.fromTOML (builtins.readFile ../dotfiles/starship.toml)) {
+    lib.recursiveUpdate starshipSettings {
       palette = "soyuz";
       palettes.soyuz = {
         red = "#ee6a5e";
@@ -86,6 +87,96 @@ let
     fish_pager_color_description = "ddc390";
     fish_pager_color_progress = "f2e8d5 --background=68332f";
     fish_pager_color_selected_background = "--background=68332f";
+  };
+  deepSpacePrompt = (pkgs.formats.toml { }).generate "starship-deep-space.toml" (
+    lib.recursiveUpdate starshipSettings {
+      palette = "deep-space";
+      palettes.deep-space = {
+        red = "#e87878";
+        muted = "#a3a6ad";
+        white = "#d5d7dd";
+        yellow = "#c9b589";
+      };
+      format = "[● discovery](red)  $username$hostname$fill$directory$git_branch$git_commit$git_state$git_status$time$line_break$env_var$nix_shell$container$jobs$sudo$character";
+      right_format = "";
+      continuation_prompt = "[· ](muted)";
+      username = {
+        show_always = true;
+        format = "[$user@]($style)";
+        style_user = "muted";
+        style_root = "bold red";
+      };
+      hostname = {
+        ssh_only = false;
+        format = "[$hostname]($style)";
+        style = "muted";
+      };
+      character = {
+        success_symbol = "[›](red)";
+        error_symbol = "[!](bold red)";
+        vimcmd_symbol = "[‹](red)";
+      };
+      directory = {
+        home_symbol = "~";
+        truncation_length = 3;
+        truncation_symbol = "…/";
+        truncate_to_repo = false;
+        style = "muted";
+        repo_root_style = "muted";
+        repo_root_format = "[$before_root_path]($before_repo_root_style)[$repo_root]($repo_root_style)[$path]($style)[$read_only]($read_only_style)";
+        read_only = " ro";
+        read_only_style = "red";
+      };
+      git_branch = {
+        format = "[ · $branch]($style)";
+        style = "muted";
+        ignore_branches = [ ];
+      };
+      git_commit = {
+        format = "[ · $hash]($style)";
+        style = "muted";
+      };
+      git_state.style = "red";
+      git_status = {
+        style = "muted";
+        format = "([$all_status$ahead_behind]($style))";
+        conflicted = " !$count";
+        ahead = " ↑$count";
+        behind = " ↓$count";
+        diverged = " ↑$ahead_count↓$behind_count";
+        untracked = " ?$count";
+        stashed = " *$count";
+        modified = " ~$count";
+        staged = " +$count";
+        renamed = " r$count";
+        deleted = " -$count";
+      };
+      time = {
+        format = "[ · $time]($style)";
+        style = "muted";
+      };
+    }
+  );
+  deepSpaceColors = {
+    fish_color_normal = "d5d7dd";
+    fish_color_command = "d5d7dd";
+    fish_color_param = "b9bdc6";
+    fish_color_quote = "c2b8ad";
+    fish_color_redirection = "e87878";
+    fish_color_end = "e87878";
+    fish_color_error = "ff9696 --bold --underline";
+    fish_color_comment = "9498a1";
+    fish_color_operator = "a3a6ad";
+    fish_color_escape = "e87878";
+    fish_color_autosuggestion = "9498a1";
+    fish_color_search_match = "e5e6eb --background=3f262d";
+    fish_color_selection = "e5e6eb --background=3f262d";
+    fish_color_valid_path = "--underline";
+    fish_pager_color_prefix = "e87878";
+    fish_pager_color_completion = "d5d7dd";
+    fish_pager_color_description = "a3a6ad";
+    fish_pager_color_progress = "e5e6eb --background=3f262d";
+    fish_pager_color_selected_background = "--background=3f262d";
   };
 in
 
@@ -226,16 +317,18 @@ in
     '';
 
     functions.larp = {
-      description = "Switch shell appearance: larp soviet, or larp to restore";
+      description = "Switch shell appearance, or restore with larp";
       body = ''
         if test (count $argv) -gt 1
-          printf 'Usage: larp [soviet]\n' >&2
+          printf 'Usage: larp [soviet|deep-space]\n' >&2
           return 2
         end
 
-        set -l variables STARSHIP_CONFIG ${lib.concatStringsSep " " (builtins.attrNames sovietColors)}
+        set -l variables STARSHIP_CONFIG ${lib.concatStringsSep " " (
+          builtins.attrNames (sovietColors // deepSpaceColors)
+        )}
         switch "$argv[1]"
-          case soviet
+          case soviet deep-space
             if not set -q __larp_active
               set -g __larp_exported (set --names --global --export)
               for name in $variables
@@ -245,10 +338,18 @@ in
               end
               set -g __larp_active 1
             end
-            set -gx STARSHIP_CONFIG ${sovietPrompt}
-            ${lib.concatStringsSep "\n" (
-              lib.mapAttrsToList (name: value: "set -g -- ${name} ${value}") sovietColors
-            )}
+            switch "$argv[1]"
+              case soviet
+                set -gx STARSHIP_CONFIG ${sovietPrompt}
+                ${lib.concatStringsSep "\n" (
+                  lib.mapAttrsToList (name: value: "set -g -- ${name} ${value}") sovietColors
+                )}
+              case deep-space
+                set -gx STARSHIP_CONFIG ${deepSpacePrompt}
+                ${lib.concatStringsSep "\n" (
+                  lib.mapAttrsToList (name: value: "set -g -- ${name} ${value}") deepSpaceColors
+                )}
+            end
           case '''
             if set -q __larp_active
               for name in $variables
@@ -267,9 +368,9 @@ in
               set -e __larp_exported
             end
           case -h --help
-            printf 'Usage: larp [soviet]\n\nsoviet  Soyuz workstation prompt and colors\n(no argument)  Restore this shell’s original appearance\n'
+            printf 'Usage: larp [soviet|deep-space]\n\nsoviet      Soyuz workstation prompt and colors\ndeep-space  Quiet Discovery prompt with red accents\n(no argument)  Restore this shell’s original appearance\n'
           case '*'
-            printf 'larp: unknown theme "%s"; use larp soviet or larp.\n' "$argv[1]" >&2
+            printf 'larp: unknown theme "%s"; use larp soviet, larp deep-space, or larp.\n' "$argv[1]" >&2
             return 2
         end
         return 0
@@ -290,7 +391,8 @@ in
     "starship.toml".source = ../dotfiles/starship.toml;
     "fish/completions/larp.fish".text = ''
       complete -c larp -f
-      complete -c larp -n 'not __fish_seen_subcommand_from soviet' -a soviet -d 'Soyuz workstation appearance'
+      complete -c larp -n 'not __fish_seen_subcommand_from soviet deep-space' -a soviet -d 'Soyuz workstation appearance'
+      complete -c larp -n 'not __fish_seen_subcommand_from soviet deep-space' -a deep-space -d 'Quiet Discovery appearance'
       complete -c larp -s h -l help -d 'Show usage'
     '';
     "btop/btop.conf".source = ../dotfiles/btop.conf;
