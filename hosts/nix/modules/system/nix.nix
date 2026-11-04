@@ -3,7 +3,7 @@
     experimental-features = [ "nix-command" "flakes" ];
     substituters = [
       "https://mirror.yandex.ru/nixos/?priority=10"
-      "https://cache.nixos.org/"
+      "https://cache.nixos.org/?priority=5"
       "https://cache.lantian.pub/lantian"
     ];
     trusted-public-keys = [
