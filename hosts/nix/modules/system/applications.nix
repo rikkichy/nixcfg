@@ -25,7 +25,7 @@
     swayimg
     mpv
     qbittorrent
-    (obsidian.override { electron = electron_42; })
+    obsidian
     bitwarden-desktop
     onlyoffice-desktopeditors
 
