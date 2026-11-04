@@ -53,6 +53,10 @@ an inactive subscription can show stale measurements.
 
 TCP concurrency races multiple resolved addresses for faster connection setup.
 It does not increase bandwidth. The TUN retains its gVisor stack.
+Because the TUN accepts connections locally, Nix's `connect-timeout` never sees
+an unreachable upstream. A stalled cache request would hang rebuilds for the
+default 300 s, so `hosts/nix/modules/system/nix.nix` sets
+`stalled-download-timeout = 20`, and Nix retries the request instead.
 
 **`SUPER + SHIFT + V`** opens the VPN picker. **Switch subscription** opens
 **Primary** and **Quattro**, each retaining its selected server. **Choose server**

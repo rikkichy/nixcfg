@@ -11,6 +11,8 @@
     ];
     max-jobs = 2;
     cores = 8;
+    # Mihomo TUN accepts connections locally, so stalled upstreams only fail here.
+    stalled-download-timeout = 20;
 
     auto-optimise-store = false;
 
