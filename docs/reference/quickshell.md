@@ -1,6 +1,8 @@
 # Quickshell — native UI and preview isolation
 
-[Skill routing](../SKILL.md) · [Host shell guide](../../../../docs/nix.md#expressive-desktop-shell)
+[Quickshell guidance](../../hosts/nix/dotfiles/ricing/quickshell/AGENTS.md) · [Host shell guide](../nix.md#expressive-desktop-shell)
+
+Source ownership paths below are repository-relative.
 
 ## Ownership and API boundaries
 
@@ -50,7 +52,7 @@ Use Qt Controls' `visualFocus`, not `activeFocus`, for outlines. Mouse clicks re
 
 ## Palette and native crash boundary
 
-`Theme.qml` uses `FileView` to read the writable runtime `quickshell/colors.json` under the user's config directory. It explicitly reloads on changes and preserves the last valid palette. Never deploy it as a store symlink. Matugen ownership is in `hosts/nix/modules/home/matugen.nix`. Follow [wallpaper-theming](../../wallpaper-theming/SKILL.md) for palette changes.
+`Theme.qml` uses `FileView` to read the writable runtime `quickshell/colors.json` under the user's config directory. It explicitly reloads on changes and preserves the last valid palette. Never deploy it as a store symlink. Matugen ownership is in `hosts/nix/modules/home/matugen.nix`. Follow [palette contracts](palettes.md) for palette changes.
 
 Colour properties use `textOn*`, avoiding QML's `on*` handler-name interpretation. Icon-only buttons use a centered `BoxIcon` content item and an accessible description. `AbstractButton.icon` is a final native property. Font family is `Google Sans Flex`. Emphasized text uses `Bold Rounded`, not `Rounded` plus a weight that the named style overrides.
 
@@ -63,6 +65,6 @@ sender during `channelReadyRead`, so the stock package retains that crash risk.
 
 Only one notification daemon can own the session bus. Candidate shells require a separate compositor **and** D-Bus session.
 Never displace the running desktop or change live audio/network state during a preview.
-The [host guide](../../../../docs/nix.md#expressive-desktop-shell) records the design rationale.
+The [host guide](../nix.md#expressive-desktop-shell) records the design rationale.
 
 Nested Hyprland can modify the real user-manager and D-Bus activation environment even when Quickshell uses a private bus. Before a preview, snapshot live `WAYLAND_DISPLAY`, `DISPLAY`, `HYPRLAND_INSTANCE_SIGNATURE` and compositor/cursor variables, including whether each was unset. Restore both activation environments afterward, including on failure. Check the user-manager display against `hyprctl instances` before starting real services. A deleted preview socket makes awww and Quickshell fail to start and leaves Home Manager waiting for wallpaper readiness.

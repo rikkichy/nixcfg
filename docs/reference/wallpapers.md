@@ -1,5 +1,9 @@
 # Linux wallpapers and theming
 
+[Linux theme guidance](../../hosts/nix/dotfiles/ricing/AGENTS.md) · [Host operator guide](../nix.md)
+
+Source ownership paths below are repository-relative.
+
 Owner: `hosts/nix/modules/home/matugen.nix`. The built-in image is
 `hosts/nix/dotfiles/ricing/default-wallpaper.png`. Quickshell source is
 `hosts/nix/dotfiles/ricing/quickshell/` and deployment is in
@@ -35,7 +39,7 @@ The checked application steps stay outside Matugen's wallpaper command and hooks
 version 4.2 logs nonzero command exits but returns success.
 
 Matugen owns `quickshell/colors.json`.
-Follow the [Quickshell writable-consumer contract](../../desktop-shell/references/quickshell.md#palette-and-native-crash-boundary).
+Follow the [Quickshell writable-consumer contract](quickshell.md#palette-and-native-crash-boundary).
 
 Both galleries use bounded 640×360 JPEG thumbnails rather than decoding originals
 in Qt. Four workers serve visible rows before one prefetch row; only visible
@@ -93,7 +97,7 @@ requirements. Those user-state paths remain writable outside awww.
 
 Service previews require a nested compositor/private bus and a uniquely named
 transient copy of the evaluated service. Never use the live wallpaper service.
-Follow [compositor environment isolation](../../desktop-shell/references/quickshell.md#preview-isolation).
+Follow [compositor environment isolation](quickshell.md#preview-isolation).
 Override the transient cache/runtime paths to disposable directories **outside**
 shared `/tmp`/`/var/tmp`, which `PrivateTmp` hides.
 Pass the nested Wayland socket as an absolute `WAYLAND_DISPLAY`.

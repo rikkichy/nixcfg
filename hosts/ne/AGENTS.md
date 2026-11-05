@@ -1,12 +1,7 @@
----
-name: darwin-host
-description: nix-darwin and Home Manager engineering for the Apple Silicon host ne. Use for hosts/ne/, macOS Homebrew inventory, preferences and power policy, Fish login-shell migration, BetterGlobeKey, Ghostty, wallpaper-theme, Marta, and native Zed file associations. Shared shell/editor policy belongs to shared-home; Linux desktop behavior does not apply here.
----
-
 # Darwin Host
 
 `ne` is `aarch64-darwin`, primary user `rii`, home `/Users/rii`, checkout
-`/etc/nixos`. Read the applicable operator section in [the macOS guide](../../../docs/ne.md)
+`/etc/nixos`. Read the applicable operator section in [the macOS guide](../../docs/ne.md)
 before consequential action. Paths below are repository-relative.
 
 For separately approved activation on the configured Mac, use
@@ -56,14 +51,14 @@ Keep state versions fixed unless deliberately performing a compatibility migrati
   Zed uses `pkgs.zed-editor` with automatic updates disabled.
 - Brew retains BetterGlobeKey, maigret, helium-browser, Marta, noswoosh and wallspace.
   Google Cloud CLI and Wireshark are removed from declarations, not migrated.
-- Load `shared-home` for portable CLI packages, fonts and Zed. Do not duplicate
-  them in Brew or turn editor-scoped runtimes into global project toolchains.
-- Load `shared-home` for project/toolchain boundaries. Do not add project runtimes globally.
+- Read [shared guidance](../../common/AGENTS.md) for portable CLI packages, fonts,
+  Zed, and project/toolchain boundaries. Do not duplicate them in Brew or expose
+  editor-scoped runtimes as global project toolchains.
   Rustup is Nix-managed, with mutable, project-owned toolchains. Keep its former
   `/opt/homebrew/opt/rustup/bin` path out of host shell configuration.
-  For project setup, read [project environments](../../../docs/ne.md#project-environments) and the project's guide.
+  For project setup, read [project environments](../../docs/ne.md#project-environments) and the project's guide.
 - Home Manager does not migrate existing account login shells.
-  Before approved migration, read [shell migration](../../../docs/ne.md#updates-and-shell-migration) and [bootstrap](../../../docs/ne.md#bootstrap).
+  Before approved migration, read [shell migration](../../docs/ne.md#updates-and-shell-migration) and [bootstrap](../../docs/ne.md#bootstrap).
   Verify that Nix Fish is registered and runnable. Preserve unmanaged startup files and existing backups.
 
 ## Preferences, keyboard and file handling
@@ -95,8 +90,8 @@ Keep state versions fixed unless deliberately performing a compatibility migrati
 System Events, rejects a missing image and runs Matugen with `scheme-content`.
 Dark is the default. There is no wallpaper watcher or Linux wallpaper service.
 The shared terminal template is converted to Ghostty syntax in `matugen.nix`,
-including palette slots 16–18. Load `wallpaper-theming` when changing shared
-palette math/templates, not to import its Linux runtime pipeline.
+including palette slots 16–18. Read [shared template guidance](../../common/dotfiles/matugen/AGENTS.md)
+when changing palette math/templates; do not import the Linux runtime pipeline.
 
 Generated destinations must remain writable:
 
@@ -106,11 +101,11 @@ Generated destinations must remain writable:
 - `~/Library/Application Support/Equicord/settings/quickCss.css`
 - `~/.config/spicetify/colors.css`
 
-Edit templates, not mutable outputs. Read [Ghostty and wallpaper themes](../../../docs/ne.md#ghostty-and-wallpaper-themes)
-and [Marta](../../../docs/ne.md#marta) for reload/restart and initial selection procedures.
+Edit templates, not mutable outputs. Read [Ghostty and wallpaper themes](../../docs/ne.md#ghostty-and-wallpaper-themes)
+and [Marta](../../docs/ne.md#marta) for reload/restart and initial selection procedures.
 Keep Zed's theme static.
 Use the exact family `DepartureMono Nerd Font`. Font visibility may require an app restart.
-Keep Spotify's resource link after `copyApps`. See [update-cache recovery](../../../docs/ne.md#spotify-and-spicetify)
+Keep Spotify's resource link after `copyApps`. See [update-cache recovery](../../docs/ne.md#spotify-and-spicetify)
 before changing the user-immutable updater directory.
 
 ## Live-session boundaries

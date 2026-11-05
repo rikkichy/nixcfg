@@ -4,7 +4,7 @@ argument-hint: "<goal>"
 ---
 Plan this change without modifying files: $@
 
-Inspect the current working tree and load the project skills matching the requested subsystem. Trace the source of truth, runtime ownership and dependencies before proposing edits. Preserve and account for pre-existing changes.
+Inspect the current working tree and read the applicable directory-scoped instructions listed in [AGENTS.md](../../AGENTS.md), then the relevant engineering references. Trace the source of truth, runtime ownership and dependencies before proposing edits. Preserve and account for pre-existing changes.
 
 Return:
 1. Clarifications or assumptions.

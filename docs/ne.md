@@ -193,7 +193,7 @@ Launch the Nix-managed Discord application, not an independently installed
 Existing Discord account data remains in its normal Application Support directory.
 
 Both hosts share plugin declarations, the Wallpaper color-only theme, and its
-Matugen palette. See the [Discord integration reference](../.omp/skills/wallpaper-theming/references/discord.md)
+Matugen palette. See the [Discord integration reference](reference/discord.md)
 for ownership, mutable settings and watcher requirements. Run `wallpaper-theme`
 after activation to generate the palette. Fresh Equicord settings enable Wallpaper
 and QuickCSS. Existing theme choices are preserved. Colors update through QuickCSS

@@ -1,5 +1,9 @@
 # Static Linux cursor
 
+[Linux theme guidance](../../hosts/nix/dotfiles/ricing/AGENTS.md) · [Host operator guide](../nix.md)
+
+Source ownership paths below are repository-relative.
+
 The desktop uses **Bibata Modern Ice**: a white pointer with a black outline
 and rounded edges. Wallpaper changes do not affect its color or assets.
 
@@ -26,5 +30,5 @@ prove that the requested theme was loaded.
 
 Screenshots can omit a hardware-plane cursor. Visual previews need an isolated
 compositor with software cursors. Follow
-[preview isolation](../../desktop-shell/references/quickshell.md#preview-isolation),
+[preview isolation](quickshell.md#preview-isolation),
 not the user's active pointer or session.

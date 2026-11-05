@@ -1,0 +1,12 @@
+# Linux shell and theme assets
+
+This tree belongs to host `nix`, not Darwin. Source ownership paths below are repository-relative. Read the applicable [host operator section](../../../../docs/nix.md) before consequential action.
+
+- Keep assets here; deployment, runtime commands and services belong to `hosts/nix/modules/home/{quickshell,matugen,desktop-tools}.nix`. Follow [module guidance](../../modules/home/AGENTS.md) when crossing that boundary.
+- Home Manager owns static sources, not generated palettes. Edit templates, never generated outputs. Keep `hypr/scheme/current.lua`, runtime Quickshell `colors.json`, GTK/Qt/terminal palettes and Equicord QuickCSS writable. The whole Hyprland directory is a live out-of-store symlink; QML is store-deployed with a service restart trigger.
+- Display an accepted wallpaper before palette generation, terminal OSC delivery and success recording. Preserve still/animated failure ordering: a later theme failure leaves the selected image/video visible. Critical steps cannot live in Matugen hooks, whose failure does not fail Matugen. See the [wallpaper state machine and sandbox](../../../../docs/reference/wallpapers.md).
+- Shared terminal/btop/Discord/Spotify templates live in `common/dotfiles/matugen/templates/`. Preserve both Linux and Darwin consumers; Darwin has its own lifecycle, not Linux services or OSC delivery. See [shared template guidance](../../../../common/dotfiles/matugen/AGENTS.md) and [palette contracts](../../../../docs/reference/palettes.md).
+- Bibata Modern Ice is static, immutable and Home Manager-owned, not wallpaper-generated. Keep `home.pointerCursor` and Hyprland theme/size aligned. Inspect and back up unmanaged collisions, never force-delete themes. Activation or client/session restarts need operator approval; screenshots may omit hardware cursors. See [cursor contracts](../../../../docs/reference/cursors.md).
+- Never preview on the live notification bus, wallpaper service, pointer, audio or network state. Use a separate compositor and D-Bus session; snapshot and restore both user-manager and D-Bus activation environments, including unset variables, even on failure. Follow the [complete preview procedure](../../../../docs/reference/quickshell.md#preview-isolation) before starting anything.
+
+For local API, accessibility and live-config constraints, use [Quickshell guidance](quickshell/AGENTS.md) or [Hyprland guidance](hypr/AGENTS.md). Shared shell/Zed policy stays under [common guidance](../../../../common/AGENTS.md).

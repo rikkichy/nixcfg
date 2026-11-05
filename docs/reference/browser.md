@@ -1,5 +1,7 @@
 # The browser
 
+Source ownership paths below are repository-relative. See the [desktop runbook](../nix.md) before consequential action.
+
 Brave Origin comes from `pkgs.brave-origin` in `hosts/nix/modules/system/applications.nix`.
 `hosts/nix/dotfiles/ricing/hypr/variables.lua` selects `brave-origin`, and
 `hosts/nix/modules/home/applications.nix` owns the `brave-origin.desktop` HTML
@@ -8,7 +10,7 @@ and URL-handler defaults. The browser owns its writable profile under
 over it or delete old profiles during package changes.
 Bitwarden uses the native `bitwarden-desktop` package in
 `hosts/nix/modules/system/applications.nix`. Its launcher comes from that package.
-Spotify uses the native `common/modules/spotify.nix` package. See [shared Spotify integration](../../../../docs/shared.md#spotify-and-wallpaper-colors).
+Spotify uses the native `common/modules/spotify.nix` package. See [shared Spotify integration](../shared.md#spotify-and-wallpaper-colors).
 
 `programs.chromium` in `hosts/nix/modules/system/applications.nix` installs no
 browser. It writes policy JSON, including `/etc/brave/policies/managed/`.

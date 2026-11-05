@@ -1,5 +1,9 @@
 # Palette templates and terminal colors
 
+[Shared template guidance](../../common/dotfiles/matugen/AGENTS.md) · [Linux theme guidance](../../hosts/nix/dotfiles/ricing/AGENTS.md)
+
+Source ownership paths below are repository-relative.
+
 ## Shared ownership
 
 `common/dotfiles/matugen/templates/terminal-colors.conf` and
@@ -9,11 +13,11 @@ The terminal template is an assignment format. Linux consumes it as OSC data.
 Preserve colors 0–18, including Fastfetch accents 16–18, and inspect both consumers
 when changing that format. Shared Zed uses the static captured theme under
 `common/dotfiles/zed/`, not a wallpaper-generated output. See
-[shared-home](../../shared-home/SKILL.md).
+[common guidance](../../common/AGENTS.md).
 
 Darwin has an independent `wallpaper-theme` command. It does not use the Linux
 services or OSC delivery. Its lifecycle and mutable Ghostty/Marta
-outputs belong to [darwin-host](../../darwin-host/SKILL.md).
+outputs belong to [Darwin host guidance](../../hosts/ne/AGENTS.md).
 
 ## Linux generation and write ownership
 
@@ -84,7 +88,7 @@ Two more things the pipeline depends on:
 - The btop template's nonfatal post-hook sends SIGUSR2 after its file is written.
   Do not move success-critical steps into hooks: matugen logs hook failures but
   returns success. GTK and Quickshell watch their palette files.
-- Preserve [Hyprland override creation and Lua-load ordering](../../desktop-shell/references/hyprland.md#source-and-live-configuration).
+- Preserve [Hyprland override creation and Lua-load ordering](hyprland.md#source-and-live-configuration).
 
 ## Fonts
 

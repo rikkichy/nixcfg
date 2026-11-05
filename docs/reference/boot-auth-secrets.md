@@ -4,7 +4,7 @@ Sources: `hosts/nix/hardware.nix`, `hosts/nix/boot.nix`,
 `common/modules/nixos-yubikey.nix`, `hosts/nix/modules/system/session.nix`,
 `hosts/nix/modules/system/security.nix`, and the Linux
 module imports in `flake.nix`. Operator commands and recovery checkpoints are
-in [docs/nix-security.md](../../../../docs/nix-security.md).
+in [docs/nix-security.md](../nix-security.md).
 No enrollment or boot test is implied by a source edit.
 
 ## One root mapping, independent password recovery
@@ -13,7 +13,7 @@ No enrollment or boot test is implied by a source edit.
 mounts `/dev/mapper/cryptroot` at `/persist`. The desktop impermanence module owns
 tmpfs root and persistent state. `hosts/nix/boot.nix` adds discard support;
 `common/modules/nixos-yubikey.nix` adds FIDO2 options to **that same mapping**.
-Use the [offline conversion procedure](../../../../docs/install.md#offline-desktop-conversion-without-formatting) for the initial cutover, not a live switch.
+Use the [offline conversion procedure](../install.md#offline-desktop-conversion-without-formatting) for the initial cutover, not a live switch.
 Another attribute name targeting the same backing partition creates a second
 mapping, not an override.
 Two cryptsetup units race, and losing `cryptroot` strands root unlock.
@@ -66,7 +66,7 @@ Initrd changes take effect only on reboot. Before requesting one:
 
 Limine's zero timeout gives no visible menu. Do not rely on Shift/Escape.
 Before any operator-approved boot-recovery action, read the
-[Limine recovery runbook](../../../../docs/nix-security.md#limine-recovery-with-a-zero-timeout).
+[Limine recovery runbook](../nix-security.md#limine-recovery-with-a-zero-timeout).
 Verify the installed EFI version before relying on a one-shot menu override.
 A newer checkout is not proof. Retain the passphrase and recovery ISO. Never format.
 Nix rollback restores boot configuration, **not LUKS enrollment or keyslots**.
@@ -93,7 +93,7 @@ daemon; plan an approved reboot and physical logout/relogin acceptance checks.
 `userverification=0`. Nix's PAM renderer omits boolean false: inspect generated
 `sudo` and `sudo-i` PAM arguments for literal `=0`.
 
-Before approved registration, activation or recovery, read [Touch-only sudo](../../../../docs/nix-security.md#touch-only-sudo-with-password-fallback).
+Before approved registration, activation or recovery, read [Touch-only sudo](../nix-security.md#touch-only-sudo-with-password-fallback).
 Keep an authenticated root shell until fresh good-password and negative tests pass.
 The mapping is root-controlled public metadata, not a private key.
 For desktop provisioning, use the backing-file procedure in that runbook, not the volatile consumer symlink.
@@ -113,7 +113,7 @@ Mihomo reads only root-owned mode-`0600` `/etc/mihomo/subscription.url` and
 `0700`. Provision or restore them only with separate operator approval, using
 protected transfer/editing outside the checkout/store. Never print their
 contents or put values in arguments, logs or editor recovery files.
-See [private-input provisioning](../../../../docs/nix-security.md#private-inputs-and-first-provisioning)
+See [private-input provisioning](../nix-security.md#private-inputs-and-first-provisioning)
 and [Mihomo rendering](mihomo.md) before changing inputs.
 
 The renderer reads `/sys/class/dmi/id/product_uuid` at runtime for both
@@ -149,4 +149,4 @@ mappings are independent. Keep working generations and recovery material:
 rollback does not restore out-of-store inputs, keys, enrollment or provider
 registration. An older generation may still require historical ciphertext
 and identities. Review these dependencies before activation.
-See [subscription recovery and retained identities](../../../../docs/nix-security.md#subscription-recovery-and-retained-identities).
+See [subscription recovery and retained identities](../nix-security.md#subscription-recovery-and-retained-identities).

@@ -427,7 +427,7 @@ The cursor is the static **Bibata Modern Ice** theme:
 a white pointer with a black outline and rounded edges, at size 24.
 Wallpaper changes do not recolor or replace it. Home Manager owns the cursor
 package and GTK/Xcursor settings; Hyprland uses the same theme and size.
-See the [cursor contract](../.omp/skills/wallpaper-theming/references/cursors.md).
+See the [cursor contract](reference/cursors.md).
 
 The desktop resets only `/` at boot with a tmpfs root.
 Encrypted XFS remains mounted at `/persist`; all of `/home` and explicit system state persist through Preservation.
@@ -449,7 +449,7 @@ follows Matugen. Restart Spotify after generating a new palette.
 **Runtime colour outputs must stay writable**, not Home Manager store symlinks.
 Do not put those outputs under `xdg.configFile` or configure Home Manager's
 GTK CSS options. Its GTK settings and bookmarks remain managed separately.
-See [palette ownership](../.omp/skills/wallpaper-theming/references/palettes.md#linux-generation-and-write-ownership).
+See [palette ownership](reference/palettes.md#linux-generation-and-write-ownership).
 **Edit templates, not generated files**, which are replaced at the next wallpaper.
 Shared templates live in `common/dotfiles/matugen/templates/`. Linux-only ones
 live in `hosts/nix/dotfiles/ricing/matugen/templates/`.
@@ -609,11 +609,11 @@ and opacity remain separate so transparency does not bounce. The toggle
 uses the bundled `chevron-up-filled` icon. Workspace selection retains its animated
 size and rounded-shape transition. Exact geometry and coefficients belong
 in the [Quickshell source](../hosts/nix/dotfiles/ricing/quickshell/)
-and [engineering reference](../.omp/skills/desktop-shell/references/quickshell.md).
+and [engineering reference](reference/quickshell.md).
 
 Implementation reference: [Quickshell v0.3.1](https://git.outfoxxed.me/quickshell/quickshell/src/tag/v0.3.1),
 including its native Hyprland IPC and service APIs. The
-[socket-lifetime workaround](../.omp/skills/desktop-shell/references/quickshell.md#palette-and-native-crash-boundary)
+[socket-lifetime workaround](reference/quickshell.md#palette-and-native-crash-boundary)
 is retained as commented code, not applied to the active package.
 
 

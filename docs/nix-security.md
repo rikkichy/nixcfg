@@ -493,7 +493,7 @@ Updating a subscription file does not refresh a running credential. After
 separate operator approval, `sudo systemctl restart mihomo` rerenders the files
 and rotates the controller token. Check service state, permissions and provider
 behavior without dumping private configuration. See
-[unit ordering](../.omp/skills/nix-system-operations/references/mihomo.md#public-template-private-runtime-rendering).
+[unit ordering](reference/mihomo.md#public-template-private-runtime-rendering).
 Source edits do not authorize that restart or claim these acceptance checks passed.
 
 ### Subscription recovery and retained identities

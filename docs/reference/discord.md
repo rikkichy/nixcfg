@@ -1,10 +1,14 @@
 # Discord and its theme
 
+[Shared Discord guidance](../../common/dotfiles/discord/AGENTS.md) · [Shared template guidance](../../common/dotfiles/matugen/AGENTS.md)
+
+Source ownership paths below are repository-relative.
+
 Both hosts install `discord.override { withEquicord = true; }`: Linux through
 `hosts/nix/modules/system/applications.nix`, Darwin through
 `hosts/ne/modules/home/discord.nix`. Darwin packaging selects Discord's legacy
 updater. Activation disables host/module updates and stages the pinned native
-modules for Finder launches. See [the Mac guide](../../../../docs/ne.md#discord-and-equicord)
+modules for Finder launches. See [the Mac guide](../ne.md#discord-and-equicord)
 for the native-updater compatibility constraint.
 `common/modules/discord.nix` owns the static theme, seeds theme selection and
 QuickCSS only when settings are absent, and merges plugin preferences on activation.

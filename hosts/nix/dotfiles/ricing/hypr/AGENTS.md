@@ -1,0 +1,13 @@
+# Hyprland live configuration
+
+Read the [Lua, night-light and screenshot reference](../../../../../docs/reference/hyprland.md) before changing this tree. Source ownership paths below are repository-relative.
+
+- `hosts/nix/modules/home/quickshell.nix` maps this whole directory to runtime `~/.config/hypr` through an out-of-store symlink. Source edits can affect the live session without a rebuild. Verify the link target before relying on reload; reload is an application action, not validation.
+- This is Hyprland's Lua API (≥0.55), not legacy hyprlang. Keep `current_scheme.lua`'s palette-shape validation and `scheme.default` fallback. Matugen owns writable `scheme/current.lua`; never replace it with a store symlink. Preserve `maybe_create`'s directory creation before `require`, and keep optional runtime `~/.config/hypr-user/` overrides separate from tracked sources.
+- Raw Lua errors can silently abort all subsequent configuration. When parser verification is authorized, use `--verify-config`; an empty `hyprctl configerrors` or unchanged reload log does not prove success. Native `hl.*` argument errors do not become `pcall` exceptions. Check loaded binds/options for truncation rather than trusting reload alone.
+- Window/layer rules are RE2, not Lua patterns. Monitor rules match `desc:` without the trailing port name; an unmatched rule silently uses the fallback. Do not alter the live monitor as an incidental diagnostic. Lua dispatcher syntax is required; close only intended disposable windows.
+- Keep `ELECTRON_OZONE_PLATFORM_HINT=auto` until every retained bundled Electron runtime and its Wayland launch behavior has been checked; Nixpkgs' Electron version alone is not evidence.
+- Tearing requires `general.allow_tearing`, the window's `immediate` rule and a solitary fullscreen/focused candidate. Per-frame `next frame is not torn` is not a configuration failure; direct scanout is separate.
+- `hosts/nix/modules/system/session.nix` owns the packaged hyprsunset user service. Do not add Home Manager's service inside this already whole-mapped directory or start a second daemon. Its advertised `--config` flag is unsupported. IPC gamma is a percentage, config gamma a multiplier; bare `identity` mutates state. A command requires `ok`, not just exit zero. Consult the reference before IPC changes.
+- Screenshot bindings retain explicit `-o` and Print's `-m output -m active`; `-m output` alone blocks for monitor selection. The hyprshot wrapper already supplies its tools.
+- Nested compositor/cursor previews must follow [isolated session and activation-environment restoration](../../../../../docs/reference/quickshell.md#preview-isolation). A private bus alone does not protect the real user-manager environment.

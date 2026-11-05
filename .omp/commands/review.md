@@ -2,7 +2,7 @@
 description: Review the complete working-tree diff with subsystem-specific context
 argument-hint: "[focus]"
 ---
-Review all staged, unstaged, deleted, and untracked work in this repository, including OMP resources. Identify the affected hosts and shared subsystems, and load the matching project skills before judging the changes.
+Review all staged, unstaged, deleted, and untracked work in this repository, including OMP resources. Identify the affected hosts and shared subsystems, and read their directory-scoped instructions and engineering references before judging the changes.
 
 Focus on correctness, Nix evaluation and runtime ownership boundaries, silent failure modes, and security or secret exposure. Pay special attention to documented cases where an apparently successful check proves nothing.
 

@@ -5,7 +5,7 @@ Sources: `hosts/nix/modules/system/networking.nix`,
 `common/pkgs/{mihomo-config,vpn.nix}`.
 Mihomo, the `vpn` command and tunnel-specific network rules are desktop-only.
 `nixos-server` imports neither the VPN service nor its secret renderer.
-Operator procedures: [VPN in docs/nix-networking.md](../../../../docs/nix-networking.md#vpn-mihomo).
+Operator procedures: [VPN in docs/nix-networking.md](../nix-networking.md#vpn-mihomo).
 Read [private-input safety](boot-auth-secrets.md#subscription-provisioning-and-retained-identity-boundaries)
 before changing subscription inputs.
 
@@ -130,5 +130,4 @@ files. Bare `vpn` reports the server. `vpn use PATTERN` searches live
 active-subscription nodes by regex because provider names change. It makes a
 one-time selection. `vpn select NAME` validates an exact live name for pickers.
 Keep the distinction and the two-level group selection when changing callers.
-Consult [desktop-shell](../../desktop-shell/SKILL.md) for the picker/keybind
-surface.
+Consult the [launcher reference](launchers.md) for the picker/keybind surface.

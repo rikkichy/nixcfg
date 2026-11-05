@@ -1,0 +1,13 @@
+# Shared Equicord theme and plugins
+
+This directory serves both Linux and Darwin. Source ownership paths below are repository-relative. Read [Discord ownership and watcher details](../../../docs/reference/discord.md) before changing the theme or synchronization.
+
+- `common/modules/discord.nix` deploys the static theme, seeds theme selection/QuickCSS only when settings are absent and merges declared plugin preferences on activation. Each host's `modules/home/matugen.nix` owns its writable palette output; Darwin packaging/updater lifecycle belongs to [Darwin guidance](../../../hosts/ne/AGENTS.md).
+- `theme.css` is a static Home Manager store symlink mapping palette variables to Discord's native colors. Keep native layout, icons, fonts, controls and animations: no layout/font/animation overrides, custom elements or remote imports. Do not manage/delete unrelated local themes. Exclude custom user-profile themes from theme-class overrides.
+- Wallpaper and QuickCSS work together. The palette comes from `common/dotfiles/matugen/templates/discord-palette.css`; disabling QuickCSS is not a fallback palette (disable Wallpaper too for Discord's own colors). Preserve wallpaper accent/red ramps and fixed green/yellow/purple for distinct status colors on low-chroma images.
+- Equicord watches the QuickCSS **inode**. Matugen must truncate/rewrite it in place, never atomically rename a staged palette over it. The static theme is watched through its directory; store symlinks are supported. Keep palette updates out of static-theme replacement to avoid asynchronous theme reload gaps.
+- `plugins.nix` declares plugin preferences, not private or runtime state. Close Discord before an authorized rebuild/activation so in-memory state cannot overwrite edits. Activation disables existing plugins then recursively merges declarations; omitted plugins are disabled, declared values override GUI changes, and required dependencies may reenable themselves.
+- Preserve undeclared preferences, theme selection, runtime state and private account/cloud data locally. Never publish an entire settings file. `sync-settings.sh` uses a mode-600 adjacent temporary file and renames only after successful JSON processing; invalid input leaves the existing settings intact. This settings-file atomicity is correct and **distinct from QuickCSS's in-place contract**.
+- Respect `EQUICORD_USER_DATA_DIR`; default data roots differ between Linux and Darwin. Preview changes only in an isolated or separately approved Discord session. Do not exercise activation against the user's running client for validation.
+
+Shared palette-format changes also require [Matugen guidance](../matugen/AGENTS.md) and inspection of both host consumers.

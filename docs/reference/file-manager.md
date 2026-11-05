@@ -1,5 +1,7 @@
 # The file manager
 
+Source ownership paths below are repository-relative. See the [desktop runbook](../nix.md) for operator actions.
+
 Ownership: `hosts/nix/modules/system/applications.nix` installs and integrates
 Thunar. `hosts/nix/modules/home/applications.nix` declares its bookmarks,
 xfconf settings and MIME defaults.

@@ -89,6 +89,17 @@ Nix's grammar downloads on first use, so a fresh offline installation needs a po
 AST rewrites are syntax-based, not symbol-aware. Use LSP for references and renames.
 Diagnostics and AST matches do not prove builds, activation, boot, or runtime behavior.
 See [AGENTS.md](../AGENTS.md) for repository development policy.
+
+Repository instructions use nested `AGENTS.md` files beside the source.
+OMP automatically loads the root-to-working-directory chain when a session starts.
+It does not reload that chain when a tool changes directories; when starting at
+the root or crossing into another subtree, follow the directory index in
+[AGENTS.md](../AGENTS.md) before editing. Scoped files contain the immediate rules;
+[engineering references](reference/) retain detailed contracts without loading
+unrelated domains into every session. Markdown links do not inline their targets.
+Task subagents do not inherit `AGENTS.md`, so delegation must carry the applicable
+constraints and reference paths explicitly. Existing global/plugin skills remain independent.
+
 Future Home Manager deployments require separate activation approval.
 
 The server's `hosts/nixos-server/home.nix` imports only the shared shell module.

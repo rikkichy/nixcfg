@@ -115,7 +115,7 @@ destination selects `DIRECT`. Verify that Minecraft reaches its window.
 Configuration validation does not prove connectivity or a successful game launch.
 
 Edit the public template `common/dotfiles/mihomo.yaml`. The compiled Rust
-[`mihomo-config` renderer](../.omp/skills/nix-system-operations/references/mihomo.md#public-template-private-runtime-rendering)
+[`mihomo-config` renderer](reference/mihomo.md#public-template-private-runtime-rendering)
 supplies private strings at runtime, outside Nix evaluation and build inputs.
 The service and its restart trigger use the same renderer package.
 Never put credentials in the template. Mihomo's private provider/state files must also stay outside Git.
@@ -155,7 +155,7 @@ are in [the security guide](nix-security.md#private-inputs-and-first-provisionin
 
 ### Tunnel diagnosis
 
-When renaming the TUN, preserve the [three-way device-name invariant](../.omp/skills/nix-system-operations/references/mihomo.md#tunnel-and-local-control-boundaries).
+When renaming the TUN, preserve the [three-way device-name invariant](reference/mihomo.md#tunnel-and-local-control-boundaries).
 
 If the VPN appears connected but traffic is not tunnelled, do not trust the
 controller status. Check that the interface has its IPv4 address:

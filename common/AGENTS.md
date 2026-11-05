@@ -1,14 +1,9 @@
----
-name: shared-home
-description: Portable Home Manager shell, CLI, fonts and Zed configuration shared by nix and ne. Use for common/modules/, common/dotfiles/, Fish/direnv/Starship initialization, shared package ownership, Zed settings/themes/extensions/language servers, and editor versus project toolchain boundaries. Pair with wallpaper-theming for shared palette templates or darwin-host for macOS integration.
----
-
-# Shared Home Manager
+# Shared configuration
 
 All three hosts import `common/modules/shell.nix` from their `home.nix`.
 The desktop and Mac also import `common/modules/zed.nix`. The server does not
 import editor or desktop modules. Read the applicable operator section in
-[the shared guide](../../../docs/shared.md#shared-shell-and-editor) before consequential
+[the shared guide](../docs/shared.md#shared-shell-and-editor) before consequential
 action. Paths below are repository-relative.
 
 ## Ownership
@@ -16,14 +11,14 @@ action. Paths below are repository-relative.
 - `common/modules/nh.nix`: system-level nh package and checkout default for all
   three hosts, imported from host `default.nix` files, not Home Manager.
 - `common/modules/shell.nix`: portable packages, Fish initialization and
-  [OMP startup host context](../../../docs/shared.md#omp-startup-host-context).
+  [OMP startup host context](../docs/shared.md#omp-startup-host-context).
   `common/dotfiles/` owns shared assets. Micro settings are generated in the shell module.
 - `common/dotfiles/omp/nixcfg-execution.js`: runtime execution-context extension
   deployed by the shared shell module.
 - `common/modules/zed.nix`: shared editor settings, theme and language-server commands.
 - `common/modules/spotify.nix`: build-time injection and writable palette.
   Keep zero-add-on themes loading matching rewritten JS/CSS through native theme patches.
-  Read [Spotify](../../../docs/shared.md#spotify-and-wallpaper-colors) for the operator contract.
+  Read [Spotify](../docs/shared.md#spotify-and-wallpaper-colors) for the operator contract.
 - `hosts/ne/modules/home/shell.nix`: Brew/Bun environment only.
 - `hosts/nix/modules/home/foot.nix`: Linux terminal integration. Do not move its
   OSC delivery or systemd behavior into the portable shell module.
@@ -43,7 +38,7 @@ Keep host PATH additions host-local.
 
 Fish's `ls` is an eza alias and `cd` uses zoxide. Account login-shell registration
 is a system concern, not something Home Manager's Fish configuration fixes for
-an existing account. See `darwin-host` for Mac migration and backup constraints.
+an existing account. See [Darwin guidance](../hosts/ne/AGENTS.md) for Mac migration and backup constraints.
 Use direnv/project flakes for project runtimes. This repository has no
 `devShells` output. Do not restore an external project's toolchain here.
 
@@ -53,22 +48,44 @@ Use direnv/project flakes for project runtimes. This repository has no
   not Zed's settings UI. Back up unmanaged conflicts before first activation.
 - Home Manager owns Zed on both platforms. Darwin uses `pkgs.zed-editor` with
   `auto_update = false` and existing `copyApps` deployment. Extensions remain unpinned.
-  Read [the shared guide](../../../docs/shared.md#shared-shell-and-editor) for activation/restart procedures.
+  Read [the shared guide](../docs/shared.md#shared-shell-and-editor) for activation/restart procedures.
 - `load_direnv = "direct"` supplies project environments. Zed's Node/npm are
   editor-scoped, and gopls appends a fallback Go runtime so project Go stays first.
   Do not expose those runtimes globally or override project toolchain selection.
 - Preserve Darwin's Nix-managed rustup with mutable, project-owned toolchains,
   Linux default Rust tools/sources, and shared rust-analyzer.
-  Project shells may override toolchains. Read [the shared guide](../../../docs/shared.md#shared-shell-and-editor) for rustup component setup.
+  Project shells may override toolchains. Read [the shared guide](../docs/shared.md#shared-shell-and-editor) for rustup component setup.
 - QML language-server support is Linux-only. Qt/Quickshell imports are explicit
   binary arguments. Darwin retains QML syntax support. Do not make Qt a Darwin
   dependency to satisfy a Linux editor feature.
 - nixd evaluates both system option trees and the current host's Home Manager
   options through `nixcfgPath`. Preserve the host-specific Home Manager selection.
 - Kotlin LSP uses `common/pkgs/kotlin-lsp.nix` on Darwin and desktop Linux, without a Brew fallback.
-  Read [the shared guide](../../../docs/shared.md#shared-shell-and-editor) for expired-build recovery. Do not substitute fwcd's server.
-- Native macOS file associations belong to `darwin-host`, not shared editor
+  Read [the shared guide](../docs/shared.md#shared-shell-and-editor) for expired-build recovery. Do not substitute fwcd's server.
+  Verify each platform archive against the publisher's SHA-256 before changing a pin;
+  preserve the bundled JBR/native launcher and Linux-only native patching/runtime libraries.
+- Native macOS file associations belong to [Darwin](../hosts/ne/AGENTS.md), not shared editor
   settings. The captured `common/dotfiles/zed/themes/matugen.json` does not follow
-  wallpaper changes. Shared palette changes also require `wallpaper-theming`.
+  wallpaper changes. Shared palette changes also require the [template guidance](dotfiles/matugen/AGENTS.md).
 
 Source edits do not authorize a switch or app restart against the user's live session.
+
+## Shared integrations and Linux-only modules
+
+- `common/modules/discord.nix` owns writable Equicord settings and the explicit
+  plugin-preference merge, not private/runtime state. Read the [Discord contract](../docs/reference/discord.md).
+  Static themes and in-place-written QuickCSS are separate; atomic rename breaks its watcher.
+- `common/dotfiles/matugen/` is used by Linux and Darwin. Preserve the shared
+  assignment format, writable generated palettes, and distinct ANSI hues.
+  Read the [palette contract](../docs/reference/palettes.md) before changing consumers.
+- `common/pkgs/` owns shared packages, not external projects' development environments.
+  Use the [package reference](../docs/reference/packages.md) for Kotlin LSP and runtime packaging.
+- `nixos-*.nix` modules remain Linux-only. Shared YubiKey policy adds options to
+  the existing `cryptroot` mapping, preserves password fallback, and uses each
+  host's PAM identity; never reuse desktop enrollment on the server.
+  Read the selected host's [desktop](../hosts/nix/AGENTS.md) or [server](../hosts/nixos-server/AGENTS.md) guidance.
+- Mihomo is desktop-only despite shared source placement. Changes to
+  `nixos-mihomo-secrets.nix`, `dotfiles/mihomo.yaml`, `pkgs/mihomo-config/`, or `pkgs/vpn.nix`
+  require the [networking contract](../docs/reference/mihomo.md).
+  Keep secrets and firmware identity runtime-only, serialized safely outside the store;
+  keep TUN, unmanaged-interface and firewall names synchronized, and preserve authenticated loopback control.

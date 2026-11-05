@@ -1,11 +1,13 @@
 # Launchers and desktop tools
 
-[Skill routing](../SKILL.md) · [Host desktop-tools guide](../../../../docs/nix.md#rebuilds-and-desktop-tools)
+[Quickshell guidance](../../hosts/nix/dotfiles/ricing/quickshell/AGENTS.md) · [Host desktop-tools guide](../nix.md#rebuilds-and-desktop-tools)
+
+Source ownership paths below are repository-relative.
 
 ## Ownership and launcher visibility
 
 - `hosts/nix/modules/home/desktop-tools.nix`: general desktop entries and Nix maintenance entries; utility entries call Quickshell IPC directly.
-- `hosts/nix/modules/home/matugen.nix`: wallpaper entries/pickers and theming dependencies. See [wallpaper-theming](../../wallpaper-theming/SKILL.md).
+- `hosts/nix/modules/home/matugen.nix`: wallpaper entries/pickers and theming dependencies. See [wallpapers](wallpapers.md).
 - `hosts/nix/dotfiles/ricing/hypr/hyprland/keybinds.lua`: launcher release bindings. `hosts/nix/dotfiles/ricing/quickshell/Bar.qml`: symbolic rail launcher.
 - `hosts/nix/dotfiles/ricing/quickshell/Launcher.qml` and `desktop-apps.py`: shared app/tool grid, native index integration and GIO visibility/launch bridge. `hosts/nix/modules/home/quickshell.nix` packages the helper and configures Foot as the XDG terminal.
 - `hosts/nix/pkgs/ricing/mignon-icon-theme.nix`: pinned Mignon icon package. `applications.nix` selects `Mignon-pastel-dark` for GTK and Qt. Broken upstream aliases are omitted, preserving inherited icon fallback.
@@ -36,7 +38,7 @@ Utility tiles and shortcuts use `desktop toggle night-light|vpn|power|emoji`.
 Utility selection uses model entries, not raw search input. Commands receive argv arrays.
 VPN nodes go to `vpn select` as one exact argument, never regex-based `vpn use`.
 Preserve subscription identifiers and server trailing spaces from TSV rows.
-Mihomo semantics belong to [nix-system-operations](../../nix-system-operations/SKILL.md).
+Mihomo semantics belong to [Linux host guidance](../../hosts/nix/AGENTS.md).
 
 Power desktop tiles open the power chooser. Selection invokes `systemctl poweroff`
 or `reboot`; failures remain visible in the launcher and shell log.
@@ -53,7 +55,7 @@ Exec fragments, not runtime user input.
 Rebuilds use `nh os switch` and the Git-aware checkout, with NH's default
 Nix Output Monitor display.
 Plain switching uses `--no-update-lock-file`. The update entry updates all inputs before rebuilding
-and switching. See [source inclusion and prebuilds](../../../../docs/nix.md#updates-and-prebuilt-systems).
+and switching. See [source inclusion and prebuilds](../nix.md#updates-and-prebuilt-systems).
 `nh clean all` cleans all profiles and runs garbage collection, keeping one
 generation per profile by default.
 

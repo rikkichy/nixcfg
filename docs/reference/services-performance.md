@@ -3,7 +3,7 @@
 Sources: `hosts/nix/boot.nix`, `hosts/nix/hardware-policy.nix`,
 `hosts/nix/lighting.nix`, `hosts/nix/storage.nix`, and
 `hosts/nix/modules/system/{nix,security,session,gaming,flatpak}.nix`.
-Operator procedures: [docs/nix.md](../../../../docs/nix.md).
+Operator procedures: [docs/nix.md](../nix.md).
 Any activation or disruptive runtime experiment needs operator approval.
 
 ## Polkit subjects under UWSM
@@ -77,7 +77,7 @@ sets `cpufreq/energy_performance_preference=performance` on CPU devices. The
 makes EPP inert. Do not conflate the two.
 Both host policy and GameMode select the dynamic governor explicitly.
 GameMode's native L3 detection handles participating games without hard-coded core lists.
-For operating checks and NTSync behavior, read [desktop hardware performance](../../../../docs/nix.md#desktop-hardware-performance).
+For operating checks and NTSync behavior, read [desktop hardware performance](../nix.md#desktop-hardware-performance).
 
 Do not re-enable scx_lavd as a generic performance tweak. A runnable-task stall
 can freeze the whole desktop until the sched_ext watchdog ejects the scheduler.
@@ -108,7 +108,7 @@ AppImages wrapped by `appimageTools` run under bwrap with `--tmpfs /etc` and
 only the FHS environment's own files bound back. The host preload file is
 absent there. A host allocator-provider bisect therefore cannot diagnose those
 payloads. Inspect the actual wrapper before attributing their crashes to it.
-See [desktop-applications](../../desktop-applications/SKILL.md) for package scope.
+See [desktop package guidance](../../hosts/nix/pkgs/AGENTS.md) for package scope.
 
 `hosts/nix/lighting.nix` conditionally isolates OpenRGB when a non-libc allocator
 is selected: its libusb backend uses `RTLD_DEEPBIND`, conflicting with the global
@@ -116,14 +116,14 @@ allocator preload. `openrgb-off` then bind-mounts an empty file over the preload
 source in its private mount namespace. The bounded root-only
 `Type=exec` service has no SDK server, GUI or polling.
 It releases boot targets without waiting for lighting completion. Its detector allowlist comes
-from the package registry at build time. See [RGB lighting](../../../../docs/nix.md#rgb-lighting) for devices/actions and permission boundaries.
+from the package registry at build time. See [RGB lighting](../nix.md#rgb-lighting) for devices/actions and permission boundaries.
 
 `hosts/nix/boot.nix` selects the stock Nixpkgs kernel and its stable NVIDIA branch for official cache reuse.
 NCT6687 and v4l2loopback also use that kernel package set.
 The Lantian cache remains configured, but no CachyOS kernel input or overlay is active.
 No explicit lockdown or module-signature enforcement is configured. Limine Secure Boot is unchanged.
-Read the [kernel policy and recovery checks](../../../../docs/nix-security.md#local-module-signing-and-integrity-lockdown)
-and [cache trust procedure](../../../../docs/nix.md#updates-and-prebuilt-systems) before using additional caches.
+Read the [kernel policy and recovery checks](../nix-security.md#local-module-signing-and-integrity-lockdown)
+and [cache trust procedure](../nix.md#updates-and-prebuilt-systems) before using additional caches.
 Boot parameters retain `vsyscall=none`, `slab_nomerge`, and `page_alloc.shuffle=1`.
 `init_on_free` is deliberately absent because of its gaming cost.
 
@@ -150,5 +150,5 @@ build. Before activation, pass `--max-jobs 2 --cores 8` to `nh`.
 
 Compare `/run/booted-system` with `/nix/var/nix/profiles/system` to identify pending
 activation. Preserve recovery generations, especially before boot/authentication
-changes. See [prebuilds](../../../../docs/nix.md#updates-and-prebuilt-systems)
+changes. See [prebuilds](../nix.md#updates-and-prebuilt-systems)
 and [boot recovery](boot-auth-secrets.md#boot-evidence-and-recovery).

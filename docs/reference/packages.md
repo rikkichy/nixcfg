@@ -1,7 +1,12 @@
 # Linux package boundaries
 
-See the [skill ownership map](../SKILL.md#ownership-and-routing): `hosts/nix/modules/system/applications.nix` owns inventory and `hosts/nix/pkgs/overlay.nix` owns package wiring.
-Route proxy networking and security to [nix-system-operations](../../nix-system-operations/SKILL.md), not an application-side workaround.
+Source ownership paths below are repository-relative.
+`hosts/nix/modules/system/applications.nix` owns inventory;
+`hosts/nix/pkgs/overlay.nix` owns package wiring. Follow the
+[Linux package guidance](../../hosts/nix/pkgs/AGENTS.md) and
+[desktop operator runbook](../nix.md).
+Route proxy networking and security to the [networking](../nix-networking.md)
+and [security](../nix-security.md) runbooks, not an application-side workaround.
 
 Home Manager installs `xdg.desktopEntries` as packages under
 `/etc/profiles/per-user/ri/share/applications`, including when `xdg.enable = false`.
@@ -39,4 +44,14 @@ native binaries, not only portable JVM bytecode.
 
 ## Project and editor ownership
 
-For shared Zed/toolchains and macOS apps, follow the [adjacent ownership map](../SKILL.md#ownership-and-routing).
+External projects own their toolchains. Prefer official tools and native package
+launchers rather than introducing wrapper scripts or changing shared PATH to
+repair a project's environment. Shared Zed/toolchains belong to
+[common guidance](../../common/AGENTS.md); macOS applications belong to
+[Darwin guidance](../../hosts/ne/AGENTS.md).
+
+The native VTube Studio OpenDeck plugin, property inspector, tests and static
+Linux packaging belong to [rikkichy/vts-opendeck](https://github.com/rikkichy/vts-opendeck),
+not this checkout. This repository only pins and exposes its package.
+See [OpenDeck](opendeck.md) for sandbox boundaries and the
+[plugin operator runbook](../nix.md#opendeck-vtube-studio-native) for installation.
