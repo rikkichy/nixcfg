@@ -228,6 +228,7 @@ in
   '';
 
   home.file.".omp/agent/extensions/nixcfg-execution.js".source = ../dotfiles/omp/nixcfg-execution.js;
+  home.file.".omp/agent/extensions/larp.js".source = ../dotfiles/omp/larp.js;
 
   home.file.".omp/agent/lsp.json".text = builtins.toJSON {
     servers =

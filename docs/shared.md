@@ -68,6 +68,15 @@ After activation, open a new terminal. Existing OMP settings, credentials, and s
 Homebrew cleanup remains disabled. After approved activation and runtime checks,
 remove the old formula only with separate approval: `brew uninstall can1357/tap/omp`.
 
+The shared OMP extension [`larp.js`](../common/dotfiles/omp/larp.js) adds `/larp`,
+which toggles the status-bar model label to `Claude Mythos 5.5` for the current
+session without changing the actual model or requests. Run it again to restore
+the real label. It uses OMP's existing segment layout, including hiding the
+longer label when the terminal is too narrow. Home Manager installs it on all
+three hosts; activation requires separate approval, then start a new OMP session.
+To try the source without activation, launch
+`omp -e /etc/nixos/common/dotfiles/omp/larp.js`.
+
 `common/modules/language-servers.nix` owns the server commands, arguments and
 settings shared by Zed and OMP. Both clients reference the same Nix-store
 executables without adding language runtimes to the global PATH.
