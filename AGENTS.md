@@ -37,7 +37,7 @@ Order matters; earlier priorities win ties:
 - Audits need a reachable failure path and a genuinely missing guarantee. Do not report an accepted, documented tradeoff as a bug without new evidence; label uncertain findings as needing verification.
 - Resolve questions from the repository first. Ask only for unresolved requirements or materially different tradeoffs. For UI redesigns or multi-layer features, present the proposed design and obtain agreement before implementation; never relocate existing controls unasked.
 - Enumerate every affected host and layer before changing a shared contract: system modules, Home Manager, packages, runtime consumers, tests, and docs. Update all affected consumers together.
-- Preserve unrelated and concurrent work. If asked to commit, stage only session-owned changes with explicit paths; never `git add -A` or `git add .`. Editing does not authorize committing, pushing, or deploying.
+- Preserve unrelated and concurrent work. Commit session-owned changes after verification, because flake builds read Git: stage only those changes with explicit paths or hunks; never `git add -A` or `git add .`. Editing and committing do not authorize pushing or deploying.
 
 ## Security and operational boundaries
 
