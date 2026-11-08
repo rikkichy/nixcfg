@@ -92,13 +92,13 @@ Singleton {
         easing.type: Easing.BezierSpline
         easing.bezierCurve: [0.2, 0, 0, 1, 1, 1]
     }
-    // Quick swell, then an elastic settle that bounces below rest before landing.
+    // Quick squeeze, then an elastic release that overshoots past rest before landing.
     SequentialAnimation {
         id: popAnimation
         NumberAnimation {
             target: theme
             property: "popScale"
-            to: 1.12
+            to: 0.88
             duration: 90
             easing.type: Easing.OutCubic
         }
