@@ -3,7 +3,7 @@
 This subtree owns Linux-only packages for host `nix`. Source ownership paths
 below are repository-relative. Read the [desktop runbook](../../../docs/nix.md)
 before consequential operations; [package details](../../../docs/reference/packages.md)
-cover AppImages, Filen, Telegram proxy and Kotlin LSP.
+cover AppImages, Filen and Telegram proxy.
 
 ## Ownership and package boundaries
 

@@ -60,10 +60,6 @@ Use direnv/project flakes for project runtimes. This repository has no
   dependency to satisfy a Linux editor feature.
 - nixd evaluates both system option trees and the current host's Home Manager
   options through `nixcfgPath`. Preserve the host-specific Home Manager selection.
-- Kotlin LSP uses `common/pkgs/kotlin-lsp.nix` on Darwin and desktop Linux, without a Brew fallback.
-  Read [the shared guide](../docs/shared.md#shared-shell-and-editor) for expired-build recovery. Do not substitute fwcd's server.
-  Verify each platform archive against the publisher's SHA-256 before changing a pin;
-  preserve the bundled JBR/native launcher and Linux-only native patching/runtime libraries.
 - Native macOS file associations belong to [Darwin](../hosts/ne/AGENTS.md), not shared editor
   settings. The captured `common/dotfiles/zed/themes/matugen.json` does not follow
   wallpaper changes. Shared palette changes also require the [template guidance](dotfiles/matugen/AGENTS.md).
@@ -76,7 +72,7 @@ Source edits do not authorize a switch or app restart against the user's live se
   assignment format, writable generated palettes, and distinct ANSI hues.
   Read the [palette contract](../docs/reference/palettes.md) before changing consumers.
 - `common/pkgs/` owns shared packages, not external projects' development environments.
-  Use the [package reference](../docs/reference/packages.md) for Kotlin LSP and runtime packaging.
+  Use the [package reference](../docs/reference/packages.md) for runtime packaging.
 - `nixos-*.nix` modules remain Linux-only. Shared YubiKey policy adds options to
   the existing `cryptroot` mapping, preserves password fallback, and uses each
   host's PAM identity; never reuse desktop enrollment on the server.

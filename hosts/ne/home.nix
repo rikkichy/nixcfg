@@ -17,7 +17,7 @@
   ];
 
   home.stateVersion = "26.05";
-  home.packages = [ (pkgs.callPackage ./pkgs/lan-mouse.nix { }) ] ++ (with pkgs; [
+  home.packages = with pkgs; [
     ast-grep
     cabextract
     cmake
@@ -42,5 +42,5 @@
     unar
     uv
     yt-dlp
-  ]);
+  ];
 }

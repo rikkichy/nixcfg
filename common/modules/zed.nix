@@ -41,7 +41,6 @@ in
     themes.matugen = ../dotfiles/zed/themes/matugen.json;
     extensions = [
       "nix"
-      "kotlin"
       "lua"
       "qml"
       "fish"
@@ -96,7 +95,6 @@ in
           formatter.language_server.name = "ruff";
           code_actions_on_format."source.organizeImports.ruff" = true;
         };
-        Kotlin.language_servers = [ "kotlin-lsp" ];
         Lua.formatter.external = {
           command = lib.getExe pkgs.stylua;
           arguments = [

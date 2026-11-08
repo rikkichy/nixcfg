@@ -137,10 +137,6 @@ OpenBot is not installed on the desktop. Its independent
 thumbnails, and xfconf stores its preferences. File Roller and Catfish remain
 available as standalone applications.
 
-LabyMod Launcher (`pkgs.labymod-launcher`) is installed alongside Prism Launcher
-by `hosts/nix/modules/system/gaming.nix`. Nixpkgs supplies its AppImage runtime,
-desktop entry and icon; account and game data remain application-owned.
-
 OBS Studio is built with CUDA support and uses the NixOS virtual-camera
 integration: `v4l2loopback` provides
 `/dev/video1` as **OBS Cam**, with exclusive capture capabilities for browser

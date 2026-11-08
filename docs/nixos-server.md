@@ -314,7 +314,7 @@ Preserve this boundary when adding roots or updating runtime dependencies.
 Attic skips paths already signed by the official `cache.nixos.org-1` key.
 
 No system/Home Manager aggregate closure is published. Proprietary Spotify,
-Discord and Kotlin LSP are deliberately excluded.
+Discord is deliberately excluded.
 `allowUnfree` on the desktop is not redistribution permission. VTS OpenDeck's
 separate exported package is not a cache target (the desktop uses Flatpak).
 If proprietary caching becomes necessary, first establish redistribution rights

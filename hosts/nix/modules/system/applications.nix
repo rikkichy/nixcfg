@@ -7,7 +7,6 @@
     chromium
 
     filen-desktop
-    lan-mouse
 
 
     foot

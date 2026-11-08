@@ -32,16 +32,6 @@ and HTTP/2. Wheel metadata excludes tray-only requirements. No platform tray
 entry points, UI modules or updater are shipped. The optional `--log-file`
 path retains `utils.logging_setup`.
 
-## Kotlin language server
-
-`common/pkgs/kotlin-lsp.nix` uses platform-specific Linux x64 and Darwin ARM64
-archives from the [official releases](https://github.com/Kotlin/kotlin-lsp/releases).
-Use the publisher's download URL and compare the downloaded archive's hash
-with its published SHA-256 before updating the pin.
-Preserve Linux-only `autoPatchelfHook` and native runtime libraries, plus the
-bundled JBR and native launcher on both platforms. These archives contain
-native binaries, not only portable JVM bytecode.
-
 ## Project and editor ownership
 
 External projects own their toolchains. Prefer official tools and native package

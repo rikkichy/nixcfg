@@ -81,11 +81,6 @@ in
       command = "${pkgs.vscode-langservers-extracted}/bin/vscode-json-language-server";
       args = [ "--stdio" ];
     };
-  } // lib.optionalAttrs (isDarwin || isDesktop) {
-    kotlin-lsp = {
-      command = lib.getExe (pkgs.callPackage ../pkgs/kotlin-lsp.nix { });
-      args = [ "--stdio" ];
-    };
   } // lib.optionalAttrs isDesktop {
     qml = {
       command = "${pkgs.qt6.qtdeclarative}/bin/qmlls";
