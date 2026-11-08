@@ -36,7 +36,8 @@ which resyncs each bundle on every activation. Neovim comes from the shared
 `hosts/ne/modules/system/homebrew.nix` declares BetterGlobeKey, maigret, helium-browser,
 Marta, noswoosh, and wallspace. Maigret uses Brew because the pinned Nix package is broken.
 Steam and Yubico Authenticator are casks because nixpkgs has no aarch64-darwin build;
-Homebrew Bundle adopts existing `/Applications` copies instead of replacing them.
+Homebrew Bundle adopts an existing `/Applications` copy only when its version
+matches the cask; otherwise activation fails. Move that copy aside and switch again.
 Chromium has neither a Darwin package nor an enabled cask, so Chrome fills that role;
 the desktop's Chromium policies are Linux-only and do not apply. Both browsers share
 the [profile seed](reference/browser.md#profile-seed).
