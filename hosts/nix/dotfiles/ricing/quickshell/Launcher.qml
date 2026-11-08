@@ -637,16 +637,20 @@ PanelWindow {
                                     }
                                 }
                             }
-                            Image {
-                                id: appIcon
+                            // Every app, tool and utility icon sits in the same circle; glyph-only icons show the backdrop.
+                            Rectangle {
                                 anchors.centerIn: parent
                                 width: 48
                                 height: 48
-                                visible: !launcher.wallpaperMode && status === Image.Ready
-                                source: !launcher.wallpaperMode && tile.modelData.icon ? Quickshell.iconPath(tile.modelData.icon, true) : ""
-                                sourceSize: Qt.size(48, 48)
-                                fillMode: Image.PreserveAspectCrop
-                                asynchronous: true
+                                radius: 24
+                                visible: !launcher.wallpaperMode && !tile.modelData.glyph
+                                color: Theme.surfaceContainerHighest
+                            }
+                            Item {
+                                anchors.centerIn: parent
+                                width: 48
+                                height: 48
+                                visible: !launcher.wallpaperMode && appIcon.status === Image.Ready
                                 // A single layer both tints and clips to the circle.
                                 layer.enabled: visible
                                 layer.effect: MultiEffect {
@@ -656,6 +660,17 @@ PanelWindow {
                                     maskSource: iconMask
                                     maskThresholdMin: 0.5
                                     maskSpreadAtMin: 1
+                                }
+                                // Slight zoom lets rounded-square theme icons fill the circle like full-bleed app art.
+                                Image {
+                                    id: appIcon
+                                    anchors.centerIn: parent
+                                    width: 56
+                                    height: 56
+                                    source: !launcher.wallpaperMode && tile.modelData.icon ? Quickshell.iconPath(tile.modelData.icon, true) : ""
+                                    sourceSize: Qt.size(56, 56)
+                                    fillMode: Image.PreserveAspectCrop
+                                    asynchronous: true
                                 }
                             }
                             BoxIcon {
