@@ -23,6 +23,8 @@ let
       high_efficiency_mode.state = 0;
       battery_saver_mode.state = 0;
     };
+    # Above any real milestone, so What's New never auto-opens.
+    browser.last_whats_new_version = 9999;
     optimization_guide.on_device_foundational_model_user_settings = false;
   };
 
@@ -40,6 +42,8 @@ let
     # 3 = extended preloading.
     net.network_prediction_options = 3;
     vertical_tabs.enabled = true;
+    # Past the restore-tabs infobar's show limit (3 in Chrome 157).
+    browser.session_restore_infobar_times_shown = 9999;
   };
 
   seed = pkgs.runCommand "chrome-profile-seed" { } ''

@@ -42,6 +42,8 @@ Seeded values are ordinary user settings, not policy, and stay changeable in Set
 - extended preloading (`net.network_prediction_options = 3`)
 - performance issue alerts, Memory Saver and Energy Saver off
 - vertical tabs (`vertical_tabs.enabled`)
+- What's New tab and "Continue where you left off" infobar suppressed
+  (`browser.last_whats_new_version`, `browser.session_restore_infobar_times_shown`)
 - on-device AI model off (`optimization_guide.on_device_foundational_model_user_settings`)
 
 Chrome 157 has no recommendable policy for most of these, and Mac Chrome treats
