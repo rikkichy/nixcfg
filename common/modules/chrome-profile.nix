@@ -22,8 +22,16 @@ let
       high_efficiency_mode.state = 0;
       battery_saver_mode.state = 0;
     };
-    # Above any real milestone, so What's New never auto-opens.
-    browser.last_whats_new_version = 9999;
+    browser = {
+      # Above any real milestone, so What's New never auto-opens.
+      last_whats_new_version = 9999;
+      # chrome://flags: one renderer process per origin instead of per site.
+      enabled_labs_experiments = [
+        "strict-origin-isolation@1"
+        "origin-keyed-processes-by-default@1"
+      ];
+    };
+    user_experience_metrics.reporting_enabled = false;
     optimization_guide.on_device_foundational_model_user_settings = false;
   };
 
@@ -37,8 +45,22 @@ let
         media_stream_mic = 2;
         media_stream_camera = 2;
         geolocation = 2;
+        sensors = 2;
+        background_sync = 2;
+        payment_handler = 2;
       };
+      # 1 = block third-party cookies.
+      cookie_controls_mode = 1;
     };
+    enable_a_ping = false;
+    media_router.enable_media_router = false;
+    privacy_sandbox.m1 = {
+      topics_enabled = false;
+      fledge_enabled = false;
+      ad_measurement_enabled = false;
+    };
+    # Hide local addresses from WebRTC without forcing calls through relays.
+    webrtc.ip_handling_policy = "default_public_interface_only";
     # 3 = extended preloading.
     net.network_prediction_options = 3;
     vertical_tabs.enabled = true;

@@ -42,7 +42,8 @@ the seed affects only profiles created afterwards.
 Seeded values are ordinary user settings, not policy, and stay changeable in Settings:
 
 - profile name `Default`; first-run screens skipped
-- notifications, microphone, camera and location blocked by default, with per-site exceptions possible
+- notifications, microphone, camera, location, motion sensors, background sync and payment
+  handlers blocked by default, with per-site exceptions possible
 - extended preloading (`net.network_prediction_options = 3`)
 - performance issue alerts, Memory Saver and Energy Saver off
 - vertical tabs (`vertical_tabs.enabled`)
@@ -60,6 +61,15 @@ Seeded values are ordinary user settings, not policy, and stay changeable in Set
 - New Tab page shortcuts and promo cards hidden (`ntp.shortcust_visible`,
   `in_product_help.ntp_promos.disabled`). The desktop's managed `NewTabPageLocation`
   replaces that page there.
+- third-party cookies blocked (`profile.cookie_controls_mode = 1`), hyperlink-auditing
+  pings, Cast media router, Privacy Sandbox ad APIs and usage/crash reporting off
+- WebRTC exposes only the default public interface (`webrtc.ip_handling_policy =
+  "default_public_interface_only"`), hiding local addresses without forcing relays
+- `strict-origin-isolation` and `origin-keyed-processes-by-default` enabled through
+  `browser.enabled_labs_experiments` in `Local State`. These experimental flags add
+  renderer processes and may disappear in later Chrome releases; `chrome://version`
+  shows them in `--enable-features`. DNS over HTTPS is left at Chrome's default because
+  the desktop resolves through Mihomo.
 
 Chrome 157 has no recommendable policy for most of these, and Mac Chrome treats
 plain user defaults as recommended policy only. To apply the seed to an existing
