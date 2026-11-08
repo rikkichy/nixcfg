@@ -56,6 +56,8 @@ Each search rebuilds the grid's visible tiles, so tiles stay cheap: wallpaper cl
 
 `Theme.qml` uses `FileView` to read the writable runtime `quickshell/colors.json` under the user's config directory. It explicitly reloads on changes and preserves the last valid palette. Never deploy it as a store symlink. Matugen ownership is in `hosts/nix/modules/home/matugen.nix`. Follow [palette contracts](palettes.md) for palette changes.
 
+A changed palette blends every role from the colors currently on screen over 350 ms, so consumers need no per-component colour animation. At the same time every `ExpressiveButton` pops to 1.06 scale through its shared press spring. The first load, identical reloads and `QS_REDUCED_MOTION=1` apply instantly without a pop.
+
 Colour properties use `textOn*`, avoiding QML's `on*` handler-name interpretation. Icon-only buttons use a centered `BoxIcon` content item and an accessible description. `AbstractButton.icon` is a final native property. Font family is `Google Sans Flex`. Emphasized text uses `Bold Rounded`, not `Rounded` plus a weight that the named style overrides.
 
 `hosts/nix/pkgs/overlay.nix` retains the native socket `deleteLater()` workaround

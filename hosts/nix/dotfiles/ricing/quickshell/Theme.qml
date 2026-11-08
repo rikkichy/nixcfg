@@ -6,22 +6,45 @@ import Quickshell.Io
 Singleton {
     id: theme
     property var palette: ({})
-    readonly property color surface: palette.surface || "#141218"
-    readonly property color surfaceContainer: palette.surfaceContainer || "#211f26"
-    readonly property color surfaceContainerHigh: palette.surfaceContainerHigh || "#2b2930"
-    readonly property color surfaceContainerHighest: palette.surfaceContainerHighest || "#36343b"
-    readonly property color textOnSurface: palette.onSurface || "#e6e0e9"
-    readonly property color textOnSurfaceVariant: palette.onSurfaceVariant || "#cac4d0"
-    readonly property color primary: palette.primary || "#d0bcff"
-    readonly property color textOnPrimary: palette.onPrimary || "#381e72"
-    readonly property color secondaryContainer: palette.secondaryContainer || "#4a4458"
-    readonly property color textOnSecondaryContainer: palette.onSecondaryContainer || "#e8def8"
-    readonly property color tertiary: palette.tertiary || "#efb8c8"
-    readonly property color tertiaryContainer: palette.tertiaryContainer || "#633b48"
-    readonly property color textOnTertiaryContainer: palette.onTertiaryContainer || "#ffd8e4"
-    readonly property color outline: palette.outline || "#938f99"
-    readonly property color outlineVariant: palette.outlineVariant || "#49454f"
-    readonly property color error: palette.error || "#ffb4ab"
+    // Displayed colors blend from this snapshot toward `palette` while `morph` runs to 1.
+    property var previousPalette: ({})
+    property real morph: 1
+    // Briefly true after a new palette; ExpressiveButton's scale spring turns it into a pop.
+    property bool popping: false
+    readonly property var fallbacks: ({
+            surface: "#141218",
+            surfaceContainer: "#211f26",
+            surfaceContainerHigh: "#2b2930",
+            surfaceContainerHighest: "#36343b",
+            onSurface: "#e6e0e9",
+            onSurfaceVariant: "#cac4d0",
+            primary: "#d0bcff",
+            onPrimary: "#381e72",
+            secondaryContainer: "#4a4458",
+            onSecondaryContainer: "#e8def8",
+            tertiary: "#efb8c8",
+            tertiaryContainer: "#633b48",
+            onTertiaryContainer: "#ffd8e4",
+            outline: "#938f99",
+            outlineVariant: "#49454f",
+            error: "#ffb4ab"
+        })
+    readonly property color surface: role("surface")
+    readonly property color surfaceContainer: role("surfaceContainer")
+    readonly property color surfaceContainerHigh: role("surfaceContainerHigh")
+    readonly property color surfaceContainerHighest: role("surfaceContainerHighest")
+    readonly property color textOnSurface: role("onSurface")
+    readonly property color textOnSurfaceVariant: role("onSurfaceVariant")
+    readonly property color primary: role("primary")
+    readonly property color textOnPrimary: role("onPrimary")
+    readonly property color secondaryContainer: role("secondaryContainer")
+    readonly property color textOnSecondaryContainer: role("onSecondaryContainer")
+    readonly property color tertiary: role("tertiary")
+    readonly property color tertiaryContainer: role("tertiaryContainer")
+    readonly property color textOnTertiaryContainer: role("onTertiaryContainer")
+    readonly property color outline: role("outline")
+    readonly property color outlineVariant: role("outlineVariant")
+    readonly property color error: role("error")
     readonly property string fontFamily: "Google Sans Flex"
     property bool reducedMotion: Quickshell.env("QS_REDUCED_MOTION") === "1"
     readonly property int motionDuration: reducedMotion ? 0 : 200
@@ -29,6 +52,50 @@ Singleton {
     readonly property int radiusMedium: 20
     readonly property int radiusLarge: 28
     readonly property int radiusExtraLarge: 36
+
+    function role(key) {
+        const target = Qt.color(palette[key] || fallbacks[key]);
+        if (morph >= 1)
+            return target;
+        const start = Qt.color(previousPalette[key]);
+        return Qt.rgba(start.r + (target.r - start.r) * morph, start.g + (target.g - start.g) * morph,
+                       start.b + (target.b - start.b) * morph, 1);
+    }
+
+    function show(next) {
+        const changed = JSON.stringify(next) !== JSON.stringify(palette);
+        const animate = changed && Object.keys(palette).length > 0 && !reducedMotion;
+        if (animate) {
+            // Start from what is on screen, including a morph that is still running.
+            const shown = {};
+            for (const key in fallbacks)
+                shown[key] = role(key).toString();
+            previousPalette = shown;
+        }
+        morphAnimation.stop();
+        morph = animate ? 0 : 1;
+        palette = next;
+        if (animate) {
+            morphAnimation.start();
+            popping = true;
+            popRelease.restart();
+        }
+    }
+
+    NumberAnimation {
+        id: morphAnimation
+        target: theme
+        property: "morph"
+        to: 1
+        duration: 350
+        easing.type: Easing.BezierSpline
+        easing.bezierCurve: [0.2, 0, 0, 1, 1, 1]
+    }
+    Timer {
+        id: popRelease
+        interval: 200
+        onTriggered: theme.popping = false
+    }
 
     FileView {
         id: colors
@@ -43,7 +110,7 @@ Singleton {
                     if (!/^#[0-9a-fA-F]{6}$/.test(next[key]))
                         throw new Error("Invalid color role: " + key);
                 }
-                theme.palette = next;
+                theme.show(next);
             } catch (error) {
                 console.warn("Keeping last usable shell palette:", error);
             }
