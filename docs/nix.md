@@ -119,7 +119,8 @@ activation follow the same focus policy.
 
 Chromium (`pkgs.chromium`) is the default browser for the browser shortcut,
 HTML files and web links. Its profile remains application-owned under
-`~/.config/chromium`. No extensions are force-installed.
+`~/.config/chromium` after the one-time [profile seed](reference/browser.md#profile-seed),
+which applies only when that directory is absent. No extensions are force-installed.
 Normal new tabs use a Nix-store HTML page with a solid black (`#000`) background,
 enforced by `NewTabPageLocation` in the managed Chromium policies. Address-bar
 search remains available. The page and policy are declared in

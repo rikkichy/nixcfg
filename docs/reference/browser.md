@@ -6,7 +6,7 @@ Chromium comes from `pkgs.chromium` in `hosts/nix/modules/system/applications.ni
 `hosts/nix/dotfiles/ricing/hypr/variables.lua` selects `chromium`, and
 `hosts/nix/modules/home/applications.nix` owns the `chromium-browser.desktop` HTML
 and URL-handler defaults. The browser owns its writable profile under
-`~/.config/chromium`.
+`~/.config/chromium` after the seed below.
 Do not copy another browser's profile over it or delete old profiles during package changes.
 Bitwarden uses the native `bitwarden-desktop` package in
 `hosts/nix/modules/system/applications.nix`. Its launcher comes from that package.
@@ -24,8 +24,30 @@ Other extension choices remain user-owned.
 black background. This replaces the normal new-tab content; address-bar search
 is unchanged. Managed policy
 also covers existing profiles without editing their writable preferences.
-No `initial_preferences` package override is needed. Private new tabs remain
-browser-owned.
+Private new tabs remain browser-owned.
+
+## Profile seed
+
+`common/modules/chrome-profile.nix` seeds the `Default` profile for desktop
+Chromium (`~/.config/chromium`) and Mac Chrome
+(`~/Library/Application Support/Google/Chrome`). Home Manager activation copies
+it only when that data directory does not exist, staging it as `<dir>.nix-seed`
+and renaming it into place. An existing directory is never modified, so changing
+the seed affects only profiles created afterwards.
+
+Seeded values are ordinary user settings, not policy, and stay changeable in Settings:
+
+- profile name `Default`; first-run screens skipped
+- notifications, microphone and camera blocked by default, with per-site exceptions possible
+- extended preloading (`net.network_prediction_options = 3`)
+- performance issue alerts, Memory Saver and Energy Saver off
+- on-device AI model off (`optimization_guide.on_device_foundational_model_user_settings`)
+
+Chrome 157 has no recommendable policy for most of these, and Mac Chrome treats
+plain user defaults as recommended policy only. To apply the seed to an existing
+profile, close the browser and move its data directory aside before activation.
+Chrome's `settingsPrivate` API and `navigator.permissions` in a disposable
+`--user-data-dir` confirm the effective values.
 
 No content-blocking extension is declared. Home Manager does not seed Widevine.
 

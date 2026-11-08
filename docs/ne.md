@@ -38,7 +38,8 @@ Marta, noswoosh, and wallspace. Maigret uses Brew because the pinned Nix package
 Steam and Yubico Authenticator are casks because nixpkgs has no aarch64-darwin build;
 Homebrew Bundle adopts existing `/Applications` copies instead of replacing them.
 Chromium has neither a Darwin package nor an enabled cask, so Chrome fills that role;
-the desktop's Chromium policies are Linux-only and do not apply.
+the desktop's Chromium policies are Linux-only and do not apply. Both browsers share
+the [profile seed](reference/browser.md#profile-seed).
 Bitwarden is the signed App Store build (`masApps`) for Touch ID and browser
 biometric unlock; activation needs an App Store sign-in to install it.
 Homebrew activation neither upgrades nor removes packages (`cleanup = "none"`).

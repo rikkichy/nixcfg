@@ -2,6 +2,7 @@
 
 {
   imports = [
+    ../../common/modules/chrome-profile.nix
     ../../common/modules/spotify.nix
     ./modules/home/spotify.nix
     ./modules/home/discord.nix
