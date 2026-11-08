@@ -20,8 +20,26 @@ browser. It writes the desktop's policy JSON under both `/etc/chromium/policies/
 and `/etc/opt/chrome/policies/managed/`; Chrome reads the latter. Mac Chrome has no managed policy.
 `chrome://policy` shows the loaded policies and their source.
 
-No extensions are force-installed. Translation and the browser password manager
-are disabled by policy, and Google is the managed default search engine.
+Translation and the browser password manager are disabled by policy, and Google is
+the managed default search engine.
+
+### uBlock Origin Lite
+
+uBlock Origin Lite (`ddkjiahejlhfcafbddmgiahcphecmpfh`) is the only declared extension.
+Classic uBlock Origin is Manifest V2 and unavailable in current Chrome. Lite exposes
+no fixed-URL web-accessible resources (all use `use_dynamic_url`), declares no
+`externally_connectable` and no static content scripts, so sites cannot probe for it
+by ID. Blocking itself remains observable to anti-adblock checks.
+
+- Desktop: `ExtensionSettings` installs it as `normal_installed` (can be disabled, not
+  removed). The policy's `3rdparty` section sets its managed storage:
+  `defaultFiltering = "complete"` and `disableFirstRunPage = true`. Its
+  `managed_storage.json` schema lists the other supported keys.
+- Mac: the profile seed adds `External Extensions/<id>.json` pointing at the Web Store
+  update URL. Chrome installs it disabled and asks once to enable it. Chrome applies
+  extension managed storage only at mandatory level, which on macOS needs a
+  configuration profile, so set its filtering mode in the extension's own dashboard.
+
 Other extension choices remain user-owned.
 
 `NewTabPageLocation` points normal new tabs at a Nix-store HTML page with a solid

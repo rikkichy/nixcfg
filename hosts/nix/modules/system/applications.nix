@@ -81,6 +81,16 @@
       TranslateEnabled = false;
       PasswordManagerEnabled = false;
       DefaultSearchProviderName = "Google";
+      # uBlock Origin Lite: installed (user may disable, not remove) and configured
+      # through its managed storage schema.
+      ExtensionSettings.ddkjiahejlhfcafbddmgiahcphecmpfh = {
+        installation_mode = "normal_installed";
+        update_url = "https://clients2.google.com/service/update2/crx";
+      };
+      "3rdparty".extensions.ddkjiahejlhfcafbddmgiahcphecmpfh = {
+        defaultFiltering = "complete";
+        disableFirstRunPage = true;
+      };
       NewTabPageLocation = "file://${pkgs.writeText "chromium-new-tab.html" ''
         <!doctype html>
         <html lang="en">

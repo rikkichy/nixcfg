@@ -87,12 +87,21 @@ let
     in_product_help.ntp_promos.disabled = true;
   };
 
-  seed = pkgs.runCommand "chrome-profile-seed" { } ''
-    mkdir -p "$out/Default"
-    cp ${pkgs.writeText "local-state.json" (builtins.toJSON localState)} "$out/Local State"
-    cp ${pkgs.writeText "preferences.json" (builtins.toJSON preferences)} "$out/Default/Preferences"
-    touch "$out/First Run"
-  '';
+  seed = pkgs.runCommand "chrome-profile-seed" { } (
+    ''
+      mkdir -p "$out/Default"
+      cp ${pkgs.writeText "local-state.json" (builtins.toJSON localState)} "$out/Local State"
+      cp ${pkgs.writeText "preferences.json" (builtins.toJSON preferences)} "$out/Default/Preferences"
+      touch "$out/First Run"
+    ''
+    # The Mac has no managed policy; Chrome installs per-user external extensions
+    # disabled until confirmed once. The desktop installs uBlock Origin Lite by policy.
+    + lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
+      mkdir -p "$out/External Extensions"
+      echo '{"external_update_url":"https://clients2.google.com/service/update2/crx"}' \
+        > "$out/External Extensions/ddkjiahejlhfcafbddmgiahcphecmpfh.json"
+    ''
+  );
 in
 {
   # Seed once; an existing data directory is browser-owned and never touched.
