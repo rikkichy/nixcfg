@@ -90,6 +90,17 @@
       "3rdparty".extensions.ddkjiahejlhfcafbddmgiahcphecmpfh = {
         defaultFiltering = "complete";
         disableFirstRunPage = true;
+        rulesets = [
+          "+annoyances-cookies"
+          "+annoyances-overlays"
+          "+annoyances-social"
+          "+annoyances-widgets"
+          "+annoyances-notifications"
+          "+annoyances-others"
+          "+annoyances-ai"
+          "+rus-0"
+          "+rus-1"
+        ];
       };
       NewTabPageLocation = "file://${pkgs.writeText "chromium-new-tab.html" ''
         <!doctype html>

@@ -39,6 +39,10 @@ by ID. Blocking itself remains observable to anti-adblock checks.
   update URL. Chrome installs it disabled and asks once to enable it. Chrome applies
   extension managed storage only at mandatory level, which on macOS needs a
   configuration profile, so set its filtering mode in the extension's own dashboard.
+- Both hosts should enable all `annoyances-*` rulesets plus `rus-0` and `rus-1`
+  (RU AdList). The desktop policy sets them as `rulesets`; on the Mac enable the
+  same lists in the dashboard. AdGuard and Fanboy annoyance lists from classic
+  uBlock Origin are not part of uBlock Origin Lite.
 
 Other extension choices remain user-owned.
 
