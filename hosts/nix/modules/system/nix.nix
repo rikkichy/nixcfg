@@ -3,9 +3,10 @@
 {
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
+    # Egress always leaves through the selected Mihomo node, so the Russian mirror gives no locality here.
     substituters = lib.mkForce [
-      "https://mirror.yandex.ru/nixos/?priority=10"
-      "https://cache.nixos.org/?priority=40"
+      "https://cache.nixos.org/?priority=10"
+      "https://mirror.yandex.ru/nixos/?priority=40"
     ];
     max-jobs = 2;
     cores = 8;
