@@ -60,6 +60,9 @@ let
     # Always use secure connections: warn for public and private sites.
     https_only_mode_enabled = true;
     https_first_balanced_mode_enabled = false;
+    # New Tab page: no shortcut tiles ("shortcust" is Chrome's own key) and no promo cards.
+    ntp.shortcust_visible = false;
+    in_product_help.ntp_promos.disabled = true;
   };
 
   seed = pkgs.runCommand "chrome-profile-seed" { } ''

@@ -57,6 +57,9 @@ Seeded values are ordinary user settings, not policy, and stay changeable in Set
   Chrome's malware and phishing warnings.
 - Always use secure connections, warning for public and private sites
   (`https_only_mode_enabled = true`, balanced mode off)
+- New Tab page shortcuts and promo cards hidden (`ntp.shortcust_visible`,
+  `in_product_help.ntp_promos.disabled`). The desktop's managed `NewTabPageLocation`
+  replaces that page there.
 
 Chrome 157 has no recommendable policy for most of these, and Mac Chrome treats
 plain user defaults as recommended policy only. To apply the seed to an existing
