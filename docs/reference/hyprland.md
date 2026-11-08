@@ -20,6 +20,12 @@ Nixpkgs' current Electron version does not establish the version bundled by
 every application, including Discord. Remove the hint only after checking all
 retained bundled runtimes and their Wayland launch behavior.
 
+UWSM already exports `XDG_CURRENT_DESKTOP`, `XDG_SESSION_DESKTOP` and `XDG_SESSION_TYPE=wayland`,
+so `env.lua` does not repeat them. It keeps two fallbacks: Qt 5 replaces its default with
+`wayland` alone in a Wayland session, so `QT_QPA_PLATFORM=wayland;xcb` lets Qt 5 apps without the
+Wayland plugin use XWayland. SDL fails when no listed driver exists, and Proton passes the Linux
+environment to Windows games, so `SDL_VIDEODRIVER` keeps `windows` for their SDL builds.
+
 ## Lua and monitor pitfalls
 
 A raw Lua error aborts the rest of a file without a log line. Bad `hl.*` arguments log and continue. `--verify-config` is the reliable parser check. `hyprctl configerrors` can be empty even after a broken reload.

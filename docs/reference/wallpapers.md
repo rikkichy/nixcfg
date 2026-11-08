@@ -112,9 +112,9 @@ Restore manager/bus environments even on failure, then remove disposable artifac
 #### Animated wallpapers
 
 `awpp` uses the same picker over `~/Videos/Animated Wallpapers`.
-It passes the choice to `awp-apply`. `animated-wallpaper.service` plays the video.
+`animated-wallpaper.service` plays the video.
 Neither colour engine accepts a video. Private `wallpaper-frame` extracts its
-backing still, then `awp-apply` records the video and restarts playback before
+backing still, then `awpp` records the video and restarts playback before
 theming the still. Playback must not wait for palette generation.
 At login, playback is ordered after the compositor and awww, not after
 `wallpaper-restore.service`. The bottom layer makes theme restoration independent.

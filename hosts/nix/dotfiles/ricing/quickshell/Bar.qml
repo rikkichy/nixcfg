@@ -77,30 +77,23 @@ PanelWindow {
 
     component IconRailButton: RailButton {
         id: iconButton
-        required property string iconName
         property string badgeName: ""
-        contentItem: Item {
+        Rectangle {
+            visible: iconButton.badgeName !== ""
+            z: 1
+            anchors.centerIn: parent
+            anchors.horizontalCenterOffset: 10
+            anchors.verticalCenterOffset: 10
+            width: 14
+            height: 14
+            radius: 7
+            color: iconButton.prominent ? Theme.primary : iconButton.checked ? Theme.secondaryContainer : Theme.surfaceContainerHigh
             BoxIcon {
                 anchors.centerIn: parent
-                name: iconButton.iconName
+                width: 10
+                height: 10
+                name: iconButton.badgeName
                 tint: iconButton.prominent ? Theme.textOnPrimary : iconButton.checked ? Theme.textOnSecondaryContainer : Theme.textOnSurface
-            }
-            Rectangle {
-                visible: iconButton.badgeName !== ""
-                anchors.centerIn: parent
-                anchors.horizontalCenterOffset: 10
-                anchors.verticalCenterOffset: 10
-                width: 14
-                height: 14
-                radius: 7
-                color: iconButton.prominent ? Theme.primary : iconButton.checked ? Theme.secondaryContainer : Theme.surfaceContainerHigh
-                BoxIcon {
-                    anchors.centerIn: parent
-                    width: 10
-                    height: 10
-                    name: iconButton.badgeName
-                    tint: iconButton.prominent ? Theme.textOnPrimary : iconButton.checked ? Theme.textOnSecondaryContainer : Theme.textOnSurface
-                }
             }
         }
     }
@@ -354,6 +347,7 @@ PanelWindow {
                 onClicked: shell.togglePanel("notifications", bar.screen, notificationsButton)
                 Rectangle {
                     visible: shell.notifications.count > 0
+                    z: -0.5
                     anchors.centerIn: parent
                     anchors.horizontalCenterOffset: 10
                     anchors.verticalCenterOffset: -10

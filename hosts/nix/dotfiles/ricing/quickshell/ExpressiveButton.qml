@@ -5,11 +5,12 @@ AbstractButton {
     id: control
     property bool prominent: false
     property string description: text
+    property string iconName: ""
     implicitWidth: Math.max(48, label.implicitWidth + 32)
     implicitHeight: 48
     hoverEnabled: true
     focusPolicy: Qt.StrongFocus
-    Accessible.name: description || text
+    Accessible.name: description
     opacity: enabled ? 1 : 0.38
     scale: down ? 0.96 : 1
     transform: Scale {
@@ -40,5 +41,13 @@ AbstractButton {
         verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
         textFormat: Text.PlainText
+        Loader {
+            anchors.centerIn: parent
+            active: control.iconName !== "" && control.contentItem === label
+            sourceComponent: BoxIcon {
+                name: control.iconName
+                tint: label.color
+            }
+        }
     }
 }

@@ -153,13 +153,7 @@ Item {
                 }
                 ExpressiveButton {
                     implicitWidth: 48
-                    contentItem: Item {
-                        BoxIcon {
-                            anchors.centerIn: parent
-                            name: "boxicons-x-filled"
-                            tint: Theme.textOnSurface
-                        }
-                    }
+                    iconName: "boxicons-x-filled"
                     description: "Dismiss " + (card.notification ? card.notification.summary : "notification")
                     onClicked: card.center.dismiss(card.entry)
                 }

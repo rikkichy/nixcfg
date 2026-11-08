@@ -464,13 +464,7 @@ PanelWindow {
                     implicitWidth: 48
                     description: "Close launcher"
                     onClicked: launcher.close()
-                    contentItem: Item {
-                        BoxIcon {
-                            anchors.centerIn: parent
-                            name: "boxicons-x-filled"
-                            tint: Theme.textOnSurface
-                        }
-                    }
+                    iconName: "boxicons-x-filled"
                 }
             }
 

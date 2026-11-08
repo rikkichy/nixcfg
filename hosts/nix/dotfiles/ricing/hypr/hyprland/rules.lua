@@ -1,20 +1,18 @@
 local vars = require("variables")
 
-hl.window_rule({ match = { fullscreen = false }, opacity = vars.windowOpacity .. " override" })
-
 hl.window_rule({ match = { float = true, xwayland = false }, center = true })
 
 hl.window_rule({
     match = {
         class =
-        "guifetch|yad|zenity|wev|org.gnome.FileRoller|file-roller|blueman-manager|com.github.GradienceTeam.Gradience|feh|imv|system-config-printer|org.quickshell",
+        "wev|org.gnome.FileRoller|file-roller|blueman-manager|system-config-printer|org.quickshell",
     },
     tag   = "+float",
 })
 hl.window_rule({
     match = {
         title =
-        "(Select|Open)( a)? (File|Folder)(s)?|File (Operation|Upload)( Progress)?|.* Properties|Export Image as PNG|GIMP Crash Debug|Save As|Library",
+        "(Select|Open)( a)? (File|Folder)(s)?|File (Operation|Upload)( Progress)?|.* Properties|Export Image as PNG|Save As|Library",
     },
     tag   = "+float",
 })
@@ -27,7 +25,7 @@ hl.window_rule({ match = { tag = "float" }, float = true })
 hl.window_rule({
     match = {
         class =
-        "foot|equibop|org.quickshell|imv|swappy|krita|gimp|inkscape|darktable|resolve|kdenlive|shotcut|blender|godot|(steam_app_(default|[0-9]+))|gamescope",
+        "foot|org.quickshell|(steam_app_(default|[0-9]+))|gamescope",
     },
     tag   = "+opaque_app",
 })
@@ -35,26 +33,12 @@ hl.window_rule({
 hl.window_rule({ match = { tag = "opaque_app" }, opaque = true })
 
 hl.window_rule({ match = { class = "foot", title = "nmtui" }, tag = "+float_60_70" })
-hl.window_rule({ match = { class = "org.pulseaudio.pavucontrol|yad-icon-browser" }, tag = "+float_60_70" })
-hl.window_rule({ match = { class = "org.gnome.Settings" }, tag = "+float_70_80" })
-hl.window_rule({ match = { class = "nwg-look" }, tag = "+float_50_60" })
+hl.window_rule({ match = { class = "org.pulseaudio.pavucontrol" }, tag = "+float_60_70" })
 
 hl.window_rule({
     match  = { tag = "float_60_70" },
     float  = true,
     size   = "(monitor_w*0.6) (monitor_h*0.7)",
-    center = true,
-})
-hl.window_rule({
-    match  = { tag = "float_70_80" },
-    float  = true,
-    size   = "(monitor_w*0.7) (monitor_h*0.8)",
-    center = true,
-})
-hl.window_rule({
-    match  = { tag = "float_50_60" },
-    float  = true,
-    size   = "(monitor_w*0.5) (monitor_h*0.6)",
     center = true,
 })
 
@@ -82,12 +66,7 @@ hl.window_rule({
     move              = "(monitor_w*0.98-window_w) (monitor_h*0.97-window_h)",
     pin               = true,
     float             = true,
-    keep_aspect_ratio = true,
 })
-
-hl.window_rule({ match = { class = "^(ueberzugpp_.*)$" }, float = true, no_initial_focus = true })
-
-hl.window_rule({ match = { class = "fusion360.exe", title = "Fusion360|(Marking Menu)" }, no_blur = true })
 
 hl.window_rule({ match = { xwayland = true, title = "win[0-9]+" }, tag = "+xwl_popup" })
 hl.window_rule({
@@ -104,16 +83,10 @@ hl.window_rule({
 })
 
 hl.window_rule({ match = { class = "btop" }, workspace = "special:sysmon" })
-hl.window_rule({
-    match     = {
-        class = "feishin|Spotify|Supersonic|Cider|com.github.th_ch.youtube_music|Plexamp|com-maxrave-simpmusic-MainKt",
-    },
-    workspace = "special:music",
-})
+hl.window_rule({ match = { class = "Spotify" }, workspace = "special:music" })
 hl.window_rule({ match = { initial_title = "Spotify( \\(Free\\))?" }, workspace = "special:music" })
-hl.window_rule({ match = { class = "discord|equibop|vesktop|org\\.telegram\\.desktop" }, workspace = "special:communication" })
+hl.window_rule({ match = { class = "discord|org\\.telegram\\.desktop" }, workspace = "special:communication" })
 hl.window_rule({ match = { class = "org\\.telegram\\.desktop" }, focus_on_activate = false })
-hl.window_rule({ match = { class = "Todoist" }, workspace = "special:todo" })
 
 hl.window_rule({ match = { class = "^chrome-discord\\.com.*$" }, workspace = "special:communication" })
 
@@ -225,9 +198,6 @@ hl.workspace_rule({ workspace = "w[tv1]s[false]", gaps_out = vars.singleWindowGa
 hl.workspace_rule({ workspace = "f[1]s[false]", gaps_out = vars.singleWindowGapsOut })
 
 hl.layer_rule({ match = { namespace = "hyprpicker" }, animation = "fade" })
-hl.layer_rule({ match = { namespace = "logout_dialog" }, animation = "fade" })
 hl.layer_rule({ match = { namespace = "selection" }, animation = "fade" })
-hl.layer_rule({ match = { namespace = "wayfreeze" }, animation = "fade" })
-hl.layer_rule({ match = { namespace = "launcher" }, animation = "popin 80%" })
 hl.layer_rule({ match = { namespace = "^expressive-(panel|osd)$" }, animation = "popin 96%" })
 hl.layer_rule({ match = { namespace = "^expressive-(panel|osd)-static$" }, no_anim = true })

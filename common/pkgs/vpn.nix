@@ -6,19 +6,16 @@ writeShellApplication {
   text = ''
     api=http://127.0.0.1:9090
 
-    api_get() {
-      endpoint=$(jq -rn --arg group "$1" '$group | @uri')
-      curl -fsS --noproxy '*' --header @/run/mihomo-api.header --max-time 3 "$api/proxies/$endpoint"
-    }
-    api_put() {
-      endpoint=$(jq -rn --arg group "$1" '$group | @uri')
-      curl -fsS --noproxy '*' --header @/run/mihomo-api.header --max-time 3 -X PUT "$api/proxies/$endpoint" \
-        --data "$(jq -nc --arg n "$2" '{name:$n}')"
-    }
-
-    api_provider() {
-      endpoint=$(jq -rn --arg provider "$1" '$provider | @uri')
-      curl -fsS --noproxy '*' --header @/run/mihomo-api.header --max-time 5 "$api/providers/proxies/$endpoint"
+    # api COLLECTION NAME [SELECTION]: GET the item, or PUT SELECTION into the proxy group.
+    api() {
+      url=$api/$1/$(jq -rn --arg n "$2" '$n | @uri')
+      case "$1" in proxies) timeout=3 ;; *) timeout=5 ;; esac
+      if [ $# -eq 3 ]; then
+        set -- -X PUT --data "$(jq -nc --arg n "$3" '{name:$n}')"
+      else
+        set --
+      fi
+      curl -fsS --noproxy '*' --header @/run/mihomo-api.header --max-time "$timeout" "$@" "$url"
     }
 
     say() {
@@ -26,36 +23,27 @@ writeShellApplication {
       notify-send -a VPN -i "$1" VPN "$2" 2>/dev/null || true
     }
 
-    subscription_label() {
-      case "$1" in
-        PRIMARY) printf '%s\n' Primary ;;
-        QUATTRO) printf '%s\n' Quattro ;;
-        *) return 1 ;;
-      esac
-    }
-
-    normalise_subscription() {
+    # Prints "GROUP<TAB>Label" for a case-insensitive subscription name.
+    subscription_row() {
       case "''${1,,}" in
-        primary) printf '%s\n' PRIMARY ;;
-        quattro) printf '%s\n' QUATTRO ;;
+        primary) printf 'PRIMARY\tPrimary\n' ;;
+        quattro) printf 'QUATTRO\tQuattro\n' ;;
         *) return 1 ;;
       esac
     }
 
     active_subscription() {
-      case "$current_group" in
-        PRIMARY|QUATTRO) printf '%s\n' "$current_group" ;;
-        *) echo "unexpected PROXY selection: $current_group" >&2; return 1 ;;
-      esac
+      if [ "$(subscription_row "$current_group" | cut -f1)" != "$current_group" ]; then
+        echo "unexpected PROXY selection: $current_group" >&2; return 1
+      fi
+      printf '%s\n' "$current_group"
     }
-
-    group_selection() { api_get "$1" | jq -er '.now'; }
 
     nodes() {
       active=$(active_subscription)
       jq -rn \
-        --slurpfile g <(api_get "$active") \
-        --slurpfile p <(api_provider "''${active,,}") '
+        --slurpfile g <(api proxies "$active") \
+        --slurpfile p <(api providers/proxies "''${active,,}") '
         ($p[0].testUrl // "") as $url
         | (($p[0].proxies // [])
           | map({key: .name, value: (.extra[$url]
@@ -71,24 +59,24 @@ writeShellApplication {
       '
     }
 
-    if ! current_group=$(api_get PROXY | jq -er '.now'); then
+    if ! current_group=$(api proxies PROXY | jq -er '.now'); then
       say network-error-symbolic "mihomo is not answering on $api"
       exit 1
     fi
 
     select_subscription() {
-      if ! target=$(normalise_subscription "''${1:-}"); then
+      if ! target=$(subscription_row "''${1:-}" | cut -f1); then
         echo "usage: vpn subscription <primary|quattro>" >&2
         exit 2
       fi
-      api_put PROXY "$target"
-      say network-vpn-symbolic "subscription -- $(subscription_label "$target")"
+      api proxies PROXY "$target"
+      say network-vpn-symbolic "subscription -- $(subscription_row "$target" | cut -f2)"
     }
 
     activate_selection() {
       active=$(active_subscription)
-      api_put "$active" "$1"
-      api_put PROXY "$active"
+      api proxies "$active" "$1"
+      api proxies PROXY "$active"
     }
 
     use_node() {
@@ -118,24 +106,24 @@ writeShellApplication {
     }
 
     status() {
-      group_selection "$(active_subscription)"
+      api proxies "$(active_subscription)" | jq -er '.now'
     }
 
     case "''${1:-status}" in
       use)    use_node "''${2:-}" ;;
       select) select_node "''${2:-}" ;;
-      subscriptions) printf 'PRIMARY\tPrimary\nQUATTRO\tQuattro\n' ;;
+      subscriptions) subscription_row primary; subscription_row quattro ;;
       subscription)
         if [ -n "''${2:-}" ]; then
           select_subscription "$2"
         else
-          subscription_label "$(active_subscription)"
+          subscription_row "$(active_subscription)" | cut -f2
         fi
         ;;
       nodes)  nodes ;;
       status) status ;;
       list)   printf 'subscription: %s\ncurrent: %s\n\n' \
-                "$(subscription_label "$(active_subscription)")" "$(status)"
+                "$(subscription_row "$(active_subscription)" | cut -f2)" "$(status)"
               nodes | while IFS=$'\t' read -r d n; do
                 if [ "$d" = 0 ]; then printf '   --   %s\n' "$n"; else printf '%5dms %s\n' "$d" "$n"; fi
               done ;;

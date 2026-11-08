@@ -16,6 +16,7 @@ ShellRoot {
     property rect origin: Qt.rect(12, 12, 56, 48)
     property bool barsVisible: true
     property alias notifications: notificationCenter
+    readonly property var focusedScreen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) || Quickshell.screens[0] || null
 
     onPanelWindowChanged: if (!panelWindow && popover)
         closePanel()
@@ -25,7 +26,7 @@ ShellRoot {
     function togglePanel(name, targetScreen, trigger) {
         if (["launcher", "tools", "night-light", "vpn", "power", "emoji"].includes(name)) {
             const mode = name === "launcher" ? "apps" : name;
-            const screen = targetScreen || Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) || Quickshell.screens[0];
+            const screen = targetScreen || focusedScreen;
             if (!screen)
                 return;
             if (appLauncher.opened && appLauncher.mode === mode && appLauncher.screen === screen) {
@@ -39,7 +40,7 @@ ShellRoot {
         if (!["microphone", "sound", "network", "bluetooth", "notifications", "calendar"].includes(name))
             return;
         appLauncher.close();
-        const screen = targetScreen || Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) || Quickshell.screens[0];
+        const screen = targetScreen || focusedScreen;
         const rail = bars.instances.find(instance => instance.screen === screen);
         if (!rail)
             return;
@@ -101,7 +102,7 @@ ShellRoot {
         function wallpaper(mode: string, directory: string): void {
             if (!["wallpapers", "animated-wallpapers"].includes(mode))
                 return;
-            const screen = Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) || Quickshell.screens[0];
+            const screen = desktop.focusedScreen;
             if (!screen)
                 return;
             desktop.panel = "";
@@ -220,13 +221,7 @@ ShellRoot {
                         }
                     }
                     ExpressiveButton {
-                        contentItem: Item {
-                            BoxIcon {
-                                anchors.centerIn: parent
-                                name: "boxicons-x-filled"
-                                tint: Theme.textOnSurface
-                            }
-                        }
+                        iconName: "boxicons-x-filled"
                         description: "Close panel"
                         onClicked: desktop.closePanel()
                     }

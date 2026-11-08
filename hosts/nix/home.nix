@@ -17,7 +17,7 @@
 
   home.pointerCursor = {
     enable = true;
-    package = pkgs.callPackage ./pkgs/ricing/bibata-modern-ice.nix { };
+    package = pkgs.bibata-cursors;
     name = "Bibata-Modern-Ice";
     size = 24;
     gtk.enable = true;
@@ -25,8 +25,6 @@
   };
 
   home.packages = with pkgs; [
-    adw-gtk3
-
     libnotify
 
     hyprshot

@@ -9,4 +9,3 @@ serde = { version = "1", features = ["derive"] }
 serde-saphyr = { version = "2", default-features = false, features = ["deserialize"] }
 signal-hook = "0.3"
 tempfile = "3"
-uuid = "1"

@@ -2,8 +2,6 @@
 set +x
 set -euo pipefail
 
-fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
-
 report_exit() {
   local status=$1
   if (( status != 0 )); then
@@ -177,19 +175,6 @@ choose() {
     if [[ $choice =~ ^(0|[1-9][0-9]*)$ && ${#choice} -le ${#max} ]] &&
       (( choice <= max )) && { (( choice > 0 )) || [[ -n $zero ]]; }; then return; fi
     printf 'Choose a listed number, or Ctrl+C to cancel.\n'
-  done
-}
-
-approve() {
-  local answer
-  while :; do
-    printf '%s [y/N]: ' "$1"
-    IFS= read -r answer || fail 'Input closed; cancelled.'
-    case "$answer" in
-      y|Y|yes|YES) return 0 ;;
-      ''|n|N|no|NO) return 1 ;;
-      *) printf 'Enter y or n.\n' ;;
-    esac
   done
 }
 

@@ -27,45 +27,6 @@ let
     };
   };
 
-  termSequences = pkgs.writeShellApplication {
-    name = "term-sequences";
-    runtimeInputs = [ pkgs.coreutils ];
-    text = ''
-      colours=${terminalColours}
-      [ -r "$colours" ] || exit 0
-
-      declare -A seen=()
-      out=""
-      while IFS='=' read -r key value || [[ -n "$key" ]]; do
-        case "$key" in
-          foreground) slot=10 ;;
-          background) slot=11 ;;
-          cursor) slot=12 ;;
-          selection) slot=17 ;;
-          color[0-9]|color1[0-8]) slot="4;''${key#color}" ;;
-          *) continue ;;
-        esac
-        [[ "$value" =~ ^[[:xdigit:]]{6}$ ]] || {
-          printf 'Invalid terminal colour: %s\n' "$key" >&2
-          exit 1
-        }
-        [[ -v seen[$key] ]] && continue
-        seen[$key]=1
-        printf -v sequence '\033]%s;rgb:%s/%s/%s\033\x5c' \
-          "$slot" "''${value:0:2}" "''${value:2:2}" "''${value:4:2}"
-        out+="$sequence"
-      done < "$colours"
-
-      mkdir -p "$(dirname "$colours")"
-      printf '%s' "$out" > "$(dirname "$colours")/sequences.txt"
-
-      for pt in /dev/pts/[0-9]*; do
-        [ -w "$pt" ] || continue
-        printf '%s' "$out" > "$pt" 2>/dev/null || true
-      done
-    '';
-  };
-
   defaultWallpaper = ../../dotfiles/ricing/default-wallpaper.png;
 
   wallpaperRecord = lib.escapeShellArg "${config.xdg.stateHome}/wallpaper/current";
@@ -74,7 +35,7 @@ let
 
   themeApply = pkgs.writeShellApplication {
     name = "theme-apply";
-    runtimeInputs = [ pkgs.matugen termSequences ];
+    runtimeInputs = [ pkgs.matugen pkgs.coreutils ];
     text = ''
       wallpaper="''${1:?usage: theme-apply <image>}"
       record=${wallpaperRecord}
@@ -84,7 +45,38 @@ let
         --mode dark \
         --config ${matugenConfig}
 
-      term-sequences
+      colours=${terminalColours}
+      if [ -r "$colours" ]; then
+        declare -A seen=()
+        out=""
+        while IFS='=' read -r key value || [[ -n "$key" ]]; do
+          case "$key" in
+            foreground) slot=10 ;;
+            background) slot=11 ;;
+            cursor) slot=12 ;;
+            selection) slot=17 ;;
+            color[0-9]|color1[0-8]) slot="4;''${key#color}" ;;
+            *) continue ;;
+          esac
+          [[ "$value" =~ ^[[:xdigit:]]{6}$ ]] || {
+            printf 'Invalid terminal colour: %s\n' "$key" >&2
+            exit 1
+          }
+          [[ -v seen[$key] ]] && continue
+          seen[$key]=1
+          printf -v sequence '\033]%s;rgb:%s/%s/%s\033\x5c' \
+            "$slot" "''${value:0:2}" "''${value:2:2}" "''${value:4:2}"
+          out+="$sequence"
+        done < "$colours"
+
+        mkdir -p "$(dirname "$colours")"
+        printf '%s' "$out" > "$(dirname "$colours")/sequences.txt"
+
+        for pt in /dev/pts/[0-9]*; do
+          [ -w "$pt" ] || continue
+          printf '%s' "$out" > "$pt" 2>/dev/null || true
+        done
+      fi
 
       mkdir -p "$(dirname "$record")"
       printf '%s\n' "$wallpaper" > "$record"
@@ -135,84 +127,37 @@ let
     '';
   };
 
-  awpApply = pkgs.writeShellApplication {
-    name = "awp-apply";
-    runtimeInputs = [ wallpaperFrame pkgs.coreutils pkgs.systemd pkgs.awww themeApply ];
-    text = ''
-      video="''${1:?usage: awp-apply <video>}"
-      record=${animatedRecord}
-      cache=${animatedCache}
-      key=$(printf '%s' "$video" | sha256sum)
-      frame="$cache/''${key%% *}.png"
-
-      wallpaper-frame "$video" "$frame"
-
-      mkdir -p "$(dirname "$record")"
-      printf '%s\n' "$video" > "$record"
-      systemctl --user restart animated-wallpaper.service
-
-      # Playback does not depend on palette or cursor generation.
-      awww img --resize crop --transition-type none "$frame"
-      theme-apply "$frame"
-    '';
-  };
-in
-{
-  _module.args.terminalColours = terminalColours;
-
-  xdg.desktopEntries = {
-    wpp = {
-      name = "Wallpaper";
-      exec = "wpp";
-      icon = "accessories-image-viewer";
-      terminal = false;
-      categories = [ "System" ];
-      settings.OnlyShowIn = "X-DesktopTools;";
-    };
-    awpp = {
-      name = "Animated wallpaper";
-      exec = "awpp";
-      icon = "totem";
-      terminal = false;
-      categories = [ "System" ];
-      settings.OnlyShowIn = "X-DesktopTools;";
-    };
-  };
-
-  home.packages = lib.mkAfter (with pkgs; [
-    (writeShellApplication {
-      name = "wpp";
-      runtimeInputs = [
-        quickshell
-        jq
-        coreutils
-        findutils
-        systemd
-        awww
-        themeApply
-      ];
+  # wpp and awpp share one gallery picker; arguments carry their real differences.
+  mkPicker = { name, defaultDir, ipcMode, extensions, cacheName, onEmpty, listName, preview, apply, runtimeInputs }:
+    pkgs.writeShellApplication {
+      inherit name;
+      runtimeInputs = with pkgs; [ quickshell jq coreutils findutils ] ++ runtimeInputs;
       text = ''
         case "$#:''${1-}" in
-          0:) dir="''${WALLPAPER_DIR:-$HOME/Pictures/Wallpapers}" ;;
+          0:) dir="${defaultDir}" ;;
           2:--list) dir="$2" ;;
           3:--apply|3:--preview) chosen="$2"; dir="$3" ;;
-          *) printf 'usage: wpp [--list DIRECTORY | --preview PATH DIRECTORY | --apply PATH DIRECTORY]\n' >&2; exit 2 ;;
+          *) printf 'usage: ${name} [--list DIRECTORY | --preview PATH DIRECTORY | --apply PATH DIRECTORY]\n' >&2; exit 2 ;;
         esac
         IFS= read -r -d "" dir < <(realpath -m -z -- "$dir")
         if [ "$#" -eq 0 ]; then
-          exec quickshell -c expressive ipc call desktop wallpaper wallpapers "$dir"
+          exec quickshell -c expressive ipc call desktop wallpaper ${ipcMode} "$dir"
         fi
 
+        die() {
+          echo "${name}: $1" >&2
+          exit 1
+        }
+
         mapfile -d "" -t files < <(find "$dir" -maxdepth 1 -type f \
-          \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) \
+          \( ${lib.concatMapStringsSep " -o " (ext: "-iname '*.${ext}'") extensions} \) \
           -printf '%p\0%T@:%s\0' 2>/dev/null)
         empty=false
         if [ "''${#files[@]}" -eq 0 ]; then
-          empty=true
-          files=(${defaultWallpaper} builtin)
+          ${onEmpty}
         fi
 
-        cache="''${XDG_CACHE_HOME:-${config.xdg.cacheHome}}/wallpaper/thumbs/v2"
+        cache="''${XDG_CACHE_HOME:-${config.xdg.cacheHome}}/${cacheName}/thumbs/v2"
         IFS= read -r -d "" cache < <(realpath -m -z -- "$cache")
         key=$(printf '%s' "$dir" | sha256sum)
         cache="$cache/''${key%% *}"
@@ -226,7 +171,7 @@ in
             printf '%s\0%s\0%s\0' "$f" "$revision" "$preview"
           done | jq -Rs --argjson builtin "$empty" '
             [split("\u0000") | .[:-1] | range(0; length; 3) as $i |
-              {name: (if $builtin then "Built-in default" else .[$i] | split("/")[-1] end),
+              {name: ${listName},
                path: .[$i], preview: .[$i + 2], revision: .[$i + 1]}] | sort_by(.path)'
           exit 0
         fi
@@ -240,92 +185,78 @@ in
           fi
         done
         if ! "$valid"; then
-          printf 'wpp: Selection is no longer in %s\n' "$dir" >&2
-          exit 1
+          die "Selection is no longer in $dir"
         fi
         if [ "$1" = --preview ]; then
           preview="$cache/''${chosen##*/}/''${files[$((i + 1))]}.jpg"
-          ${wallpaperFrame}/bin/wallpaper-frame --preview-image "$chosen" "$preview"
+          ${preview}
           jq -n --arg preview "$preview" '{preview: $preview}'
           exit 0
         fi
 
+        ${apply}
+      '';
+    };
+in
+{
+  _module.args.terminalColours = terminalColours;
+
+  home.packages = lib.mkAfter [
+    (mkPicker {
+      name = "wpp";
+      defaultDir = "\${WALLPAPER_DIR:-$HOME/Pictures/Wallpapers}";
+      ipcMode = "wallpapers";
+      extensions = [ "jpg" "jpeg" "png" "webp" ];
+      cacheName = "wallpaper";
+      onEmpty = ''
+        empty=true
+        files=(${defaultWallpaper} builtin)
+      '';
+      listName = ''(if $builtin then "Built-in default" else .[$i] | split("/")[-1] end)'';
+      preview = ''
+        ${wallpaperFrame}/bin/wallpaper-frame --preview-image "$chosen" "$preview"
+      '';
+      apply = ''
         awww img --resize crop --transition-type none "$chosen"
         systemctl --user stop animated-wallpaper.service
         rm -f ${animatedRecord}
         theme-apply "$chosen"
       '';
+      runtimeInputs = [ pkgs.systemd pkgs.awww themeApply ];
     })
-
-    (writeShellApplication {
+    (mkPicker {
       name = "awpp";
-      runtimeInputs = [
-        quickshell
-        jq
-        coreutils
-        findutils
-        awpApply
-      ];
-      text = ''
-        case "$#:''${1-}" in
-          0:) dir="''${ANIMATED_WALLPAPER_DIR:-$HOME/Videos/Animated Wallpapers}" ;;
-          2:--list) dir="$2" ;;
-          3:--apply|3:--preview) chosen="$2"; dir="$3" ;;
-          *) printf 'usage: awpp [--list DIRECTORY | --preview PATH DIRECTORY | --apply PATH DIRECTORY]\n' >&2; exit 2 ;;
-        esac
-        IFS= read -r -d "" dir < <(realpath -m -z -- "$dir")
-        if [ "$#" -eq 0 ]; then
-          exec quickshell -c expressive ipc call desktop wallpaper animated-wallpapers "$dir"
-        fi
-
-        die() {
-          echo "awpp: $1" >&2
-          exit 1
-        }
-
-        mapfile -d "" -t files < <(find "$dir" -maxdepth 1 -type f \
-          \( -iname '*.mp4' -o -iname '*.webm' -o -iname '*.mkv' \
-             -o -iname '*.mov' -o -iname '*.gif' \) \
-          -printf '%p\0%T@:%s\0' 2>/dev/null)
-
-        [ "''${#files[@]}" -gt 0 ] || die "No videos in $dir"
-
-        cache="''${XDG_CACHE_HOME:-${config.xdg.cacheHome}}/animated-wallpaper/thumbs/v2"
-        IFS= read -r -d "" cache < <(realpath -m -z -- "$cache")
-        key=$(printf '%s' "$dir" | sha256sum)
-        cache="$cache/''${key%% *}"
-
-        if [ "$1" = --list ]; then
-          for ((i = 0; i < ''${#files[@]}; i += 2)); do
-            f="''${files[$i]}"
-            revision="''${files[$((i + 1))]}"
-            preview="$cache/''${f##*/}/$revision.jpg"
-            if [ ! -s "$preview" ] || [ "$f" -nt "$preview" ]; then preview=""; fi
-            printf '%s\0%s\0%s\0' "$f" "$revision" "$preview"
-          done | jq -Rs '
-            [split("\u0000") | .[:-1] | range(0; length; 3) as $i |
-              {name: (.[$i] | split("/")[-1] | sub("\\.[^.]*$"; "")),
-               path: .[$i], preview: .[$i + 2], revision: .[$i + 1]}] | sort_by(.path)'
-          exit 0
-        fi
-
-        for ((i = 0; i < ''${#files[@]}; i += 2)); do
-          f="''${files[$i]}"
-          if [ "$chosen" = "$f" ] && [ -f "$f" ] && [ ! -L "$f" ]; then
-            if [ "$1" = --preview ]; then
-              preview="$cache/''${chosen##*/}/''${files[$((i + 1))]}.jpg"
-              ${wallpaperFrame}/bin/wallpaper-frame --preview-video "$chosen" "$preview" \
-                || die "Could not preview $chosen"
-              jq -n --arg preview "$preview" '{preview: $preview}'
-              exit 0
-            fi
-            exec awp-apply "$chosen"
-          fi
-        done
-        die "Selection is no longer in $dir"
+      defaultDir = "\${ANIMATED_WALLPAPER_DIR:-$HOME/Videos/Animated Wallpapers}";
+      ipcMode = "animated-wallpapers";
+      extensions = [ "mp4" "webm" "mkv" "mov" "gif" ];
+      cacheName = "animated-wallpaper";
+      onEmpty = ''
+        die "No videos in $dir"
       '';
+      listName = ''(.[$i] | split("/")[-1] | sub("\\.[^.]*$"; ""))'';
+      preview = ''
+        ${wallpaperFrame}/bin/wallpaper-frame --preview-video "$chosen" "$preview" \
+          || die "Could not preview $chosen"
+      '';
+      apply = ''
+        record=${animatedRecord}
+        frames=${animatedCache}
+        key=$(printf '%s' "$chosen" | sha256sum)
+        frame="$frames/''${key%% *}.png"
+
+        wallpaper-frame "$chosen" "$frame"
+
+        mkdir -p "$(dirname "$record")"
+        printf '%s\n' "$chosen" > "$record"
+        systemctl --user restart animated-wallpaper.service
+
+        # Playback does not depend on palette or cursor generation.
+        awww img --resize crop --transition-type none "$frame"
+        theme-apply "$frame"
+      '';
+      runtimeInputs = [ wallpaperFrame pkgs.systemd pkgs.awww themeApply ];
     })
-  ]);
+  ];
 
   services.awww.enable = true;
 

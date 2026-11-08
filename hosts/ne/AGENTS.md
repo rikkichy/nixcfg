@@ -19,8 +19,8 @@ Then bootstrap as the normal user with
 | --- | --- |
 | `hosts/ne/default.nix` | identity, user, Fish login shell, system imports, state version |
 | `hosts/ne/home.nix` | Home Manager imports, Darwin CLI packages, Prism Launcher and state version |
-| `hosts/ne/modules/system/nix.nix` | upstream Nix, flakes and content-addressed derivations |
-| `common/modules/nh.nix` | system-wide nh and NH_FLAKE, shared with both Linux hosts |
+| `hosts/ne/modules/system/nix.nix` | upstream Nix and content-addressed derivations |
+| `common/modules/nh.nix` | system-wide nh, NH_FLAKE, flakes and substituters, shared with both Linux hosts |
 | `hosts/ne/modules/system/homebrew.nix` | Brew formulae, casks, taps and BetterGlobeKey service |
 | `hosts/ne/modules/system/preferences.nix` | native preferences and per-power-source pmset activation |
 | `hosts/ne/modules/home/shell.nix` | Homebrew and Bun PATH integration |

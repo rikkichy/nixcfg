@@ -9,9 +9,10 @@ and rounded edges. Wallpaper changes do not affect its color or assets.
 
 ## Ownership
 
-- `hosts/nix/home.nix` declares `home.pointerCursor`, including GTK and Xcursor integration.
-- `hosts/nix/pkgs/ricing/bibata-modern-ice.nix` installs the hash-pinned upstream
-  release assets and GPL license. It does not run Python or render cursors.
+- `hosts/nix/home.nix` declares `home.pointerCursor` with unmodified Nixpkgs `bibata-cursors`,
+  including GTK (settings files and dconf) and Xcursor integration. The official cache
+  substitutes it, so cursors are not rendered locally; its 2.0.7 `Bibata-Modern-Ice`
+  cursor files match the upstream release assets.
 - `hosts/nix/dotfiles/ricing/hypr/variables.lua` supplies the same theme name and
   size to Hyprland's environment and startup commands. Keep these values aligned
   when changing cursor size.

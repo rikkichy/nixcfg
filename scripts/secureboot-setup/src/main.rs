@@ -1,7 +1,6 @@
 use serde::Deserialize;
 use std::collections::HashSet;
 use std::ffi::OsString;
-#[cfg(target_os = "linux")]
 use std::ffi::CString;
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, IsTerminal, Read, Write};
@@ -219,22 +218,21 @@ fn write_backup(path: &Path, data: &[u8]) -> Result<()> {
     Ok(())
 }
 
+/// Canonical hyphenated 8-4-4-4-12 hex GUID, matching the installer's check.
+fn valid_guid(guid: &str) -> bool {
+    let groups: Vec<&str> = guid.split('-').collect();
+    groups.len() == 5
+        && groups.iter().zip([8, 4, 4, 4, 12]).all(|(group, len)| group.len() == len && group.bytes().all(|b| b.is_ascii_hexdigit()))
+}
+
 fn publish_backup(source: &Path, destination: &Path) -> Result<()> {
     // Never replace even an empty pre-existing backup directory.
-    #[cfg(target_os = "linux")]
-    {
-        let source = CString::new(source.as_os_str().as_bytes())?;
-        let destination = CString::new(destination.as_os_str().as_bytes())?;
-        if unsafe { libc::renameat2(libc::AT_FDCWD, source.as_ptr(), libc::AT_FDCWD, destination.as_ptr(), libc::RENAME_NOREPLACE) } != 0 {
-            return Err(io::Error::last_os_error().into());
-        }
-        Ok(())
+    let source = CString::new(source.as_os_str().as_bytes())?;
+    let destination = CString::new(destination.as_os_str().as_bytes())?;
+    if unsafe { libc::renameat2(libc::AT_FDCWD, source.as_ptr(), libc::AT_FDCWD, destination.as_ptr(), libc::RENAME_NOREPLACE) } != 0 {
+        return Err(io::Error::last_os_error().into());
     }
-    #[cfg(not(target_os = "linux"))]
-    {
-        let _ = (source, destination);
-        Err("Backup publication requires installed Linux".into())
-    }
+    Ok(())
 }
 
 fn backup(session: &Session) -> Result<()> {
@@ -477,7 +475,9 @@ fn workflow(session: &Session, repository: &Path, status: bool) -> Result<()> {
         fs::set_permissions(STATE, fs::Permissions::from_mode(0o700))?;
     }
     check_keys(session)?;
-    uuid::Uuid::parse_str(fs::read_to_string(Path::new(STATE).join("GUID"))?.trim())?;
+    if !valid_guid(fs::read_to_string(Path::new(STATE).join("GUID"))?.trim()) {
+        return Err("Signing GUID is invalid".into());
+    }
     backup(session)?;
     activate(session, &repository)?;
     if local_key_present(session, "PK")? {

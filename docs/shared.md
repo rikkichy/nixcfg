@@ -5,7 +5,7 @@ Related: [Desktop Linux](nix.md) · [macOS](ne.md) · [Server](nixos-server.md)
 ## Rebuild commands
 
 All three hosts import the system module `common/modules/nh.nix`, which installs
-`nh` and sets `NH_FLAKE=/etc/nixos`. Use `nh os switch --no-nom` on desktop
+`nh`, sets `NH_FLAKE=/etc/nixos`, enables flakes and sets default substituters. Use `nh os switch --no-nom` on desktop
 `nix`, `nh os switch` on the server, and `nh darwin switch --hostname ne` on the Mac.
 Keep `--hostname ne` when the Mac's
 local hostname differs from the flake attribute. The server does not need

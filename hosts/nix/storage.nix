@@ -15,7 +15,6 @@ in
   systemd.tmpfiles.rules = [
     "Z ${nixcfgPath} - ri users - -"
 
-    "d /var/lib/xfsprogs 0700 root root - -"
 
     "d /games 0755 ri users - -"
     "d /data  0755 ri users - -"

@@ -1,4 +1,4 @@
-{ config, pkgs, lib, ... }:
+{ pkgs, lib, ... }:
 
 let
   stateDirectory = "/var/lib/openrgb-off";
@@ -50,8 +50,6 @@ in
       ProtectHome = true;
       PrivateTmp = true;
       NoNewPrivileges = true;
-      BindReadOnlyPaths = lib.optional (config.environment.memoryAllocator.provider != "libc")
-        "${pkgs.emptyFile}:${config.environment.etc."ld-nix.so.preload".source}";
       ExecStart = lib.escapeShellArgs [
         "${pkgs.openrgb}/bin/openrgb"
         "--config" stateDirectory

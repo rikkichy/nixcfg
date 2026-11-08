@@ -48,13 +48,8 @@
 
   boot.loader.timeout = 5;
 
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
-  nix.settings.substituters = [
-    "https://mirror.yandex.ru/nixos/?priority=10"
-    "https://cache.nixos.org/"
-  ];
   programs.fish.enable = true;
-  environment.systemPackages = with pkgs; [ git vim pam_u2f ghostty.terminfo ];
+  environment.systemPackages = with pkgs; [ vim pam_u2f ghostty.terminfo ];
   users.users.ri = {
     isNormalUser = true;
     shell = pkgs.fish;

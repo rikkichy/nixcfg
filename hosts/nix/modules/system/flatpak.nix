@@ -18,9 +18,6 @@
       for app in org.vinegarhq.Sober me.amankhanna.opendeck; do
         $flatpak install --user -y --noninteractive flathub "$app"
       done
-
-      $flatpak override --user --filesystem=xdg-run/discord-ipc-0 \
-        me.amankhanna.opendeck
     '';
   };
 

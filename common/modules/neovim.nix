@@ -2,14 +2,27 @@
 
 let
   tooling = import ./language-servers.nix { inherit lib pkgs osConfig nixcfgPath; };
-  serverConfig = name: server: {
-    inherit name;
-    value = {
-      cmd = [ server.command ] ++ server.args;
-      filetypes = server.fileTypes or [ ];
-      root_markers = server.rootMarkers or [ ];
-      init_options = if name == "nixd" then { nixd = server.settings.nixd; } else server.settings or { };
-    };
+  # Neovim attaches a server without filetypes to every buffer; the shared table's
+  # fileTypes are OMP extensions, so map Neovim filetypes here.
+  fileTypes = {
+    nixd = [ "nix" ];
+    gopls = [ "go" "gomod" "gowork" "gotmpl" ];
+    basedpyright = [ "python" ];
+    ruff = [ "python" ];
+    rust-analyzer = [ "rust" ];
+    typescript-language-server = [ "javascript" "javascriptreact" "typescript" "typescriptreact" ];
+    lua-language-server = [ "lua" ];
+    bashls = [ "sh" "bash" ];
+    yamlls = [ "yaml" ];
+    tombi = [ "toml" ];
+    vscode-json-language-server = [ "json" "jsonc" ];
+    qml = [ "qml" ];
+  };
+  serverConfig = name: server: lib.filterAttrs (_: value: value != [ ] && value != { }) {
+    cmd = [ server.command ] ++ server.args;
+    filetypes = fileTypes.${name};
+    root_markers = server.rootMarkers or [ ];
+    init_options = server.settings or { };
   };
   initLua = ''
     vim.g.mapleader = " "
@@ -39,9 +52,6 @@ let
     local servers = ${lib.generators.toLua { } (lib.mapAttrs serverConfig tooling.servers)}
     for name, config in pairs(servers) do
       config.capabilities = capabilities
-      if #config.filetypes == 0 then config.filetypes = nil end
-      if #config.root_markers == 0 then config.root_markers = nil end
-      if next(config.init_options) == nil then config.init_options = nil end
       vim.lsp.config(name, config)
       vim.lsp.enable(name)
     end
@@ -58,15 +68,15 @@ let
     })
 
     local formatters = {
-      nix = { ${lib.getExe pkgs.nixfmt} },
+      nix = { "${lib.getExe pkgs.nixfmt}" },
       python = function() vim.lsp.buf.format({ name = "ruff" }) end,
       go = function() vim.lsp.buf.format({ name = "gopls" }) end,
       rust = function() vim.lsp.buf.format({ name = "rust-analyzer" }) end,
-      lua = { ${lib.getExe pkgs.stylua}, "--stdin-filepath", "%", "-" },
-      sh = { ${lib.getExe pkgs.shfmt}, "-i", "2", "-" },
-      bash = { ${lib.getExe pkgs.shfmt}, "-i", "2", "-" },
+      lua = { "${lib.getExe pkgs.stylua}", "--stdin-filepath", "%", "-" },
+      sh = { "${lib.getExe pkgs.shfmt}", "-i", "2", "-" },
+      bash = { "${lib.getExe pkgs.shfmt}", "-i", "2", "-" },
       fish = function(bufnr)
-        return vim.system({ ${lib.getExe pkgs.fish}, "-c", "fish_indent" }, { stdin = table.concat(vim.api.nvim_buf_get_lines(bufnr, 0, -1, true), "\n") .. "\n" }):wait().stdout
+        return vim.system({ "${lib.getExe pkgs.fish}", "-c", "fish_indent" }, { stdin = table.concat(vim.api.nvim_buf_get_lines(bufnr, 0, -1, true), "\n") .. "\n" }):wait().stdout
       end,
     }
     vim.api.nvim_create_autocmd("BufWritePre", {

@@ -13,7 +13,7 @@ Two sandbox permissions control its integration:
 **A plugin that talks to another program reaches it through the sandbox too.**
 The Discord plugin speaks Discord's RPC protocol over
 `$XDG_RUNTIME_DIR/discord-ipc-0`. A sandbox's runtime directory contains
-only granted resources. `flatpak-bootstrap` grants that one socket.
+only granted resources. The `opendeck` unit grants that one socket before launch.
 Without the grant, the plugin reports **"Failed to connect to Discord: Could
 not find the IPC pipe"**, although the host can see the socket.
 Neither side logs this failure. Check sandbox visibility with

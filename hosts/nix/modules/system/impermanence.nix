@@ -96,7 +96,6 @@ in
     ];
   };
 
-  users.mutableUsers = true;
   services.userborn = {
     enable = true;
     passwordFilesLocation = "/persist/etc";

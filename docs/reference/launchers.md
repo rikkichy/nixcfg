@@ -6,8 +6,8 @@ Source ownership paths below are repository-relative.
 
 ## Ownership and launcher visibility
 
-- `hosts/nix/modules/home/desktop-tools.nix`: general desktop entries and Nix maintenance entries; utility entries call Quickshell IPC directly.
-- `hosts/nix/modules/home/matugen.nix`: wallpaper entries/pickers and theming dependencies. See [wallpapers](wallpapers.md).
+- `hosts/nix/modules/home/desktop-tools.nix`: general, wallpaper and Nix maintenance desktop entries; utility entries call Quickshell IPC directly.
+- `hosts/nix/modules/home/matugen.nix`: wallpaper pickers and theming dependencies. See [wallpapers](wallpapers.md).
 - `hosts/nix/dotfiles/ricing/hypr/hyprland/keybinds.lua`: launcher release bindings.
 - `hosts/nix/dotfiles/ricing/quickshell/Launcher.qml` and `desktop-apps.py`: shared app/tool grid, native index integration and GIO visibility/launch bridge. `hosts/nix/modules/home/quickshell.nix` packages the helper and configures Foot as the XDG terminal.
 - `hosts/nix/pkgs/ricing/mignon-icon-theme.nix`: pinned Mignon icon package. `applications.nix` selects `Mignon-pastel-dark` for GTK and Qt. Broken upstream aliases are omitted, preserving inherited icon fallback.

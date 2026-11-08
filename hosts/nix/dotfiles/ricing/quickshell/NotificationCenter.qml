@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Wayland
 import Quickshell.Services.Notifications
 import Quickshell.Services.Pipewire
@@ -18,11 +17,6 @@ Scope {
     readonly property var entries: items.filter(entry => !entry.notification.transient)
     readonly property int count: entries.length
     property var items: []
-
-    function focusedScreen() {
-        const monitor = Hyprland.focusedMonitor;
-        return Quickshell.screens.find(screen => monitor && screen.name === monitor.name) || Quickshell.screens[0] || null;
-    }
 
     function remove(entry, userDismissed) {
         if (!entry || entry.removing)
@@ -95,7 +89,7 @@ Scope {
                 if (removing || !active)
                     return;
                 receivedAt = new Date();
-                const screen = root.focusedScreen();
+                const screen = root.shell.focusedScreen;
                 screenName = screen ? screen.name : "";
                 popup = !root.dnd;
                 expiration.stop();
@@ -253,7 +247,7 @@ Scope {
         if (soundOpen)
             return;
         if (!volumeSlider.pressed) {
-            osdScreen = focusedScreen();
+            osdScreen = root.shell.focusedScreen;
             if (!osdRail)
                 return;
             const clock = osdRail.triggerForPanel("calendar");

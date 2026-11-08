@@ -256,27 +256,14 @@ in
 
   programs.fzf = {
     enable = true;
-    enableFishIntegration = true;
-    enableBashIntegration = false;
-    enableZshIntegration = false;
-    enableNushellIntegration = false;
   };
 
   programs.starship = {
     enable = true;
-    enableFishIntegration = true;
-    enableBashIntegration = false;
-    enableZshIntegration = false;
-    enableIonIntegration = false;
-    enableNushellIntegration = false;
   };
 
   programs.zoxide = {
     enable = true;
-    enableFishIntegration = true;
-    enableBashIntegration = false;
-    enableZshIntegration = false;
-    enableNushellIntegration = false;
     options = [ "--cmd cd" ];
   };
 

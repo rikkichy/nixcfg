@@ -84,7 +84,7 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
         run: |
-          nix build --no-update-lock-file --out-link "$RUNNER_TEMP/attic-client" 'path:.#attic-client'
+          nix build --no-update-lock-file --inputs-from path:. --out-link "$RUNNER_TEMP/attic-client" nixpkgs#attic-client
           nix build --no-update-lock-file --out-link "$RUNNER_TEMP/cache-target" --print-out-paths "path:.#cacheTargets.x86_64-linux.$TARGET" > "$RUNNER_TEMP/store-paths"
           test -s "$RUNNER_TEMP/store-paths"
       - name: Upload selected closure

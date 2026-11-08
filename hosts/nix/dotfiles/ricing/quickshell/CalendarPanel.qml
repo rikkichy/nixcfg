@@ -20,9 +20,7 @@ ColumnLayout {
     RowLayout {
         Layout.fillWidth: true
         ExpressiveButton {
-            contentItem: Item {
-                BoxIcon { anchors.centerIn: parent; name: "boxicons-chevron-left-filled"; tint: Theme.textOnSurface }
-            }
+            iconName: "boxicons-chevron-left-filled"
             description: "Previous month"
             onClicked: calendar.displayed = new Date(calendar.displayed.getFullYear(), calendar.displayed.getMonth() - 1, 1)
         }
@@ -36,9 +34,7 @@ ColumnLayout {
             font.weight: Font.DemiBold
         }
         ExpressiveButton {
-            contentItem: Item {
-                BoxIcon { anchors.centerIn: parent; name: "boxicons-chevron-right-filled"; tint: Theme.textOnSurface }
-            }
+            iconName: "boxicons-chevron-right-filled"
             description: "Next month"
             onClicked: calendar.displayed = new Date(calendar.displayed.getFullYear(), calendar.displayed.getMonth() + 1, 1)
         }

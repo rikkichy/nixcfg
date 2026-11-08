@@ -39,6 +39,12 @@
     let
       nixcfgPath = "/etc/nixos";
       system = "x86_64-linux";
+      pkgs = nixpkgs.legacyPackages.${system};
+      homeManager = {
+        useGlobalPkgs = true;
+        useUserPackages = true;
+        extraSpecialArgs = { inherit inputs nixcfgPath; };
+      };
 
       commonOverlay = import ./common/pkgs/overlay.nix;
       overlay = import ./hosts/nix/pkgs/overlay.nix { inherit inputs; };
@@ -52,16 +58,11 @@
       # Publicly redistributable roots only; never publish the whole host closure.
       cacheTargets.${system} = cacheTargets;
       packages.${system} = cacheTargets // {
-        attic-client = nixpkgs.legacyPackages.${system}.attic-client;
-        install = nixpkgs.legacyPackages.${system}.callPackage ./install.nix { };
-        hysteria-setup = nixpkgs.legacyPackages.${system}.callPackage ./hysteria-setup.nix { };
-        attic-setup = nixpkgs.legacyPackages.${system}.callPackage ./attic-setup.nix { };
-        secureboot-setup = nixpkgs.legacyPackages.${system}.callPackage ./secureboot-setup.nix { };
+        install = pkgs.callPackage ./install.nix { };
+        hysteria-setup = pkgs.callPackage ./hysteria-setup.nix { };
+        attic-setup = pkgs.callPackage ./attic-setup.nix { };
+        secureboot-setup = pkgs.callPackage ./secureboot-setup.nix { };
         vts-opendeck = inputs.vts-opendeck.packages.${system}.default;
-      };
-      apps.${system}.install = {
-        type = "app";
-        program = "${nixpkgs.legacyPackages.${system}.callPackage ./install.nix { }}/bin/nixcfg-install";
       };
       packages.aarch64-darwin.hysteria-setup =
         nixpkgs.legacyPackages.aarch64-darwin.callPackage ./hysteria-setup.nix { };
@@ -74,11 +75,10 @@
           { nixpkgs.overlays = [ commonOverlay ]; }
           home-manager.nixosModules.home-manager
           {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.extraSpecialArgs = { inherit nixcfgPath; };
-            home-manager.backupFileExtension = "before-home-manager";
-            home-manager.users.ri = import ./hosts/nixos-server/home.nix;
+            home-manager = homeManager // {
+              backupFileExtension = "before-home-manager";
+              users.ri = import ./hosts/nixos-server/home.nix;
+            };
           }
         ];
       };
@@ -90,11 +90,10 @@
           ./hosts/ne
           home-manager.darwinModules.home-manager
           {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.extraSpecialArgs = { inherit inputs nixcfgPath; };
-            home-manager.backupFileExtension = "before-nix-darwin";
-            home-manager.users.rii = import ./hosts/ne/home.nix;
+            home-manager = homeManager // {
+              backupFileExtension = "before-nix-darwin";
+              users.rii = import ./hosts/ne/home.nix;
+            };
           }
         ];
       };
@@ -109,12 +108,7 @@
           { nixpkgs.overlays = [ commonOverlay overlay ]; }
 
           home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.extraSpecialArgs = { inherit inputs nixcfgPath; };
-            home-manager.users.ri = import ./hosts/nix/home.nix;
-          }
+          { home-manager = homeManager // { users.ri = import ./hosts/nix/home.nix; }; }
         ];
       };
     };

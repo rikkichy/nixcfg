@@ -53,14 +53,14 @@ in
     done
   '';
 
-  dconf.settings."org/gnome/desktop/interface" = {
-    gtk-theme = "adw-gtk3-dark";
-    color-scheme = "prefer-dark";
-    icon-theme = config.gtk.iconTheme.name;
-  };
+  dconf.settings."org/gnome/desktop/interface".color-scheme = "prefer-dark";
 
   gtk = {
     enable = true;
+    theme = {
+      name = "adw-gtk3-dark";
+      package = pkgs.adw-gtk3;
+    };
     gtk2.enable = false;
     iconTheme = {
       name = "Mignon-pastel-dark";

@@ -115,7 +115,6 @@ hl.bind(vars.kbMusicWs, toggle_ws("music", { { "spotify", "spotify" } }))
 hl.bind(vars.kbCommunicationWs, toggle_ws("communication", {
     { "discord", "discord" },
 }))
-hl.bind(vars.kbTodoWs, toggle_ws("todo"))
 
 hl.bind(vars.kbTerminal, hl.dsp.exec_cmd(vars.terminal))
 hl.bind(vars.kbBrowser, hl.dsp.exec_cmd(vars.browser))
@@ -137,12 +136,3 @@ hl.bind("SUPER + SHIFT + ALT + S", hl.dsp.exec_cmd("hyprshot -m window -o " .. s
 hl.bind("SUPER + SHIFT + L", hl.dsp.exec_cmd(vars.sleepGestureCmd), { locked = true })
 
 hl.bind("SUPER + Period", hl.dsp.exec_cmd("quickshell -c expressive ipc call desktop toggle emoji"))
-
-hl.bind(
-    "SUPER + ALT + F12",
-    hl.dsp.exec_cmd(
-        "notify-send -u low -i dialog-information-symbolic 'Test notification' " ..
-        [["Here's a really long message to test truncation and wrapping\nYou can middle click or flick this notification to dismiss it!"]] ..
-        " -a 'Shell' -A 'Test1=I got it!' -A 'Test2=Another action'"
-    )
-)

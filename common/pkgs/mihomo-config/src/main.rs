@@ -1,10 +1,9 @@
-use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use std::ffi::CString;
 use std::fmt::Write as _;
-use std::fs;
-use std::io::Write as _;
-use std::os::fd::AsRawFd;
+use std::fs::{self, File, OpenOptions};
+use std::io::{ErrorKind, Read as _, Write as _};
 use std::os::unix::ffi::OsStrExt;
+use std::os::unix::fs::{OpenOptionsExt as _, fchown};
 use std::path::Path;
 
 const FAILURE: &str =
@@ -103,28 +102,31 @@ pub fn render(
     if seen.into_iter().all(|present| present) { Ok(output) } else { Err(()) }
 }
 
-fn publish(path: &Path, content: &str, permissions: libc::mode_t, uid: libc::uid_t) -> Result<(), ()> {
-    let parent = path.parent().filter(|parent| !parent.as_os_str().is_empty()).unwrap_or(Path::new("."));
-    // NamedTempFile starts at 0600, uses exclusive creation, and unlinks on error.
-    let mut temporary = tempfile::Builder::new()
-        .prefix(".mihomo-config.")
-        .tempfile_in(parent)
-        .map_err(|_| ())?;
-    temporary.write_all(content.as_bytes()).map_err(|_| ())?;
-    let fd = temporary.as_file().as_raw_fd();
-    // SAFETY: fd remains open and owned by temporary throughout both calls.
-    if unsafe { libc::fchown(fd, uid, !0 as libc::gid_t) } != 0
-        || unsafe { libc::fchmod(fd, permissions) } != 0
-    {
-        return Err(());
+fn publish(path: &Path, content: &str, mode: u32, owner: Option<u32>) -> Result<(), ()> {
+    let mut temporary = path.as_os_str().to_owned();
+    temporary.push(".tmp");
+    let temporary = Path::new(&temporary);
+    // A stale temporary from an interrupted run would block exclusive creation.
+    if let Err(error) = fs::remove_file(temporary) {
+        if error.kind() != ErrorKind::NotFound {
+            return Err(());
+        }
     }
-    temporary.persist(path).map_err(|_| ())?;
-    Ok(())
+    let published = (|| {
+        // Exclusive creation never follows a planted link; the unit's UMask=0077 keeps `mode` exact.
+        let mut file = OpenOptions::new().write(true).create_new(true).mode(mode).open(temporary)?;
+        file.write_all(content.as_bytes())?;
+        fchown(&file, owner, None)?;
+        file.sync_all()?;
+        fs::rename(temporary, path)
+    })();
+    if published.is_err() {
+        let _ = fs::remove_file(temporary);
+    }
+    published.map_err(|_| ())
 }
 
 fn run() -> Result<(), ()> {
-    // SAFETY: this executable is single-threaded and sets its mask before file creation.
-    unsafe { libc::umask(0o077) };
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     if args.len() != 7 {
         return Err(());
@@ -143,13 +145,16 @@ fn run() -> Result<(), ()> {
     // SAFETY: getpwnam succeeded, and its storage has not been reused.
     let uid = unsafe { (*account).pw_uid };
     let mut random = [0u8; 32];
-    getrandom::fill(&mut random).map_err(|_| ())?;
-    let token = URL_SAFE_NO_PAD.encode(random);
+    File::open("/dev/urandom").and_then(|mut source| source.read_exact(&mut random)).map_err(|_| ())?;
+    let token = random.iter().fold(String::with_capacity(64), |mut token, byte| {
+        let _ = write!(token, "{byte:02x}");
+        token
+    });
     let result = render(&template, &primary, &quattro, &hwid, hostname, &token)?;
     // Publish authentication first. Any failure prevents the dependent service from starting.
-    publish(Path::new(&args[5]), &format!("Authorization: Bearer {token}\n"), 0o400, uid)?;
-    // SAFETY: getuid has no preconditions.
-    publish(Path::new(&args[4]), &result, 0o600, unsafe { libc::getuid() })
+    publish(Path::new(&args[5]), &format!("Authorization: Bearer {token}\n"), 0o400, Some(uid))?;
+    // The root unit already owns what it creates.
+    publish(Path::new(&args[4]), &result, 0o600, None)
 }
 
 fn main() {
@@ -190,5 +195,20 @@ mod tests {
         assert_eq!(lines.next(), Some("$"));
         assert!(render("${unknown}", primary, "quattro", uuid, "host", "token").is_err());
         assert!(render("${primary}", primary, "quattro", uuid, "host", "token").is_err());
+    }
+
+    #[test]
+    fn publish_replaces_stale_temporary_with_exact_mode() {
+        use std::os::unix::fs::PermissionsExt as _;
+        let dir = std::env::temp_dir().join(format!("mihomo-config-test-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("api.header");
+        fs::write(dir.join("api.header.tmp"), "stale").unwrap();
+        fs::write(&path, "old").unwrap();
+        publish(&path, "new\n", 0o400, None).unwrap();
+        assert_eq!(fs::read_to_string(&path).unwrap(), "new\n");
+        assert_eq!(fs::metadata(&path).unwrap().permissions().mode() & 0o777, 0o400);
+        assert!(!dir.join("api.header.tmp").exists());
+        fs::remove_dir_all(&dir).unwrap();
     }
 }

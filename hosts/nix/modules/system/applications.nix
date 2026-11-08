@@ -9,7 +9,6 @@
     filen-desktop
 
 
-    foot
     yubioath-flutter
     age-plugin-yubikey
     yubikey-manager
@@ -35,13 +34,9 @@
 
     android-tools
 
-    hyprpolkitagent
-
     wl-clipboard nvtopPackages.nvidia yt-dlp
 
     glib
-
-    bluez
 
     hyprpicker
     adwaita-icon-theme
@@ -109,7 +104,5 @@
     enable = true;
     package = pkgs.callPackage ../../pkgs/waydroid.nix { };
   };
-
-  services.printing.enable = false;
 
 }

@@ -23,16 +23,12 @@ return {
     blurXray                   = false,
 
     shadowEnabled              = false,
-    shadowRange                = 15,
-    shadowRenderPower          = 4,
-    shadowColour               = "rgba(" .. scheme.inversePrimary .. "10)",
 
     workspaceGaps              = 20,
     windowGapsIn               = 5,
     windowGapsOut              = 10,
     singleWindowGapsOut        = 20,
 
-    windowOpacity              = 1.0,
     windowRounding             = 15,
     windowBorderSize           = 3,
     activeWindowBorderColour   = "rgba(" .. scheme.primary .. "e6)",
@@ -68,7 +64,6 @@ return {
     kbSystemMonitorWs          = "CTRL + SHIFT + Escape",
     kbMusicWs                  = "SUPER + R",
     kbCommunicationWs          = "SUPER + D",
-    kbTodoWs                   = "SUPER + M",
 
     kbTerminal                 = "SUPER + T",
     kbBrowser                  = "SUPER + W",

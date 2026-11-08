@@ -8,8 +8,6 @@ bootstrap_dir=/var/lib/hysteria-bootstrap
 client_dir=$HOME/.config/hysteria
 workdir=
 
-fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
-
 report_exit() {
   local status=$1
   [[ -z $workdir ]] || rm -rf -- "$workdir"
@@ -33,38 +31,10 @@ Router UDP 443 forwarding remains manual. Existing credentials are not rotated.
 HELP
 }
 
-approve() {
-  local answer
-  while :; do
-    printf '%s [y/N]: ' "$1"
-    IFS= read -r answer || fail 'Input closed; cancelled.'
-    case "$answer" in
-      y|Y|yes|YES) return 0 ;;
-      ''|n|N|no|NO) return 1 ;;
-      *) printf 'Enter y or n.\n' ;;
-    esac
-  done
-}
-
-valid_hostname() {
-  [[ ${#1} -le 253 && $1 =~ ^[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?$ ]]
-}
-
-valid_ipv4() {
-  local part
-  local -a parts
-  [[ $1 =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || return 1
-  IFS=. read -r -a parts <<<"$1"
-  for part in "${parts[@]}"; do
-    [[ ${#part} -le 3 && ( $part == 0 || $part != 0* ) ]] || return 1
-    (( 10#$part <= 255 )) || return 1
-  done
-}
-
 public_endpoint() {
   local detected='' answer
   printf 'Detecting public IPv4 via https://ifconfig.me/ip (10-second timeout).\n'
-  if detected=$(curl -4 --fail --silent --show-error --max-time 10 https://ifconfig.me/ip 2>/dev/null) && valid_ipv4 "$detected"; then
+  if detected=$(curl -4 --fail --silent --show-error --max-time 10 https://ifconfig.me/ip 2>/dev/null) && valid_hostname "$detected"; then
     printf 'Check this address: VPN/proxy egress may differ from the inbound address.\n'
   else
     detected=
@@ -93,9 +63,6 @@ private_directory() {
   mkdir -p -- "$path"
   chmod 700 -- "$path"
 }
-
-# noclobber rejects existing files and symlinks; umask keeps new files private.
-create() ( umask 077; set -o noclobber; cat > "$1" )
 
 # Read passwords from a private file, never argv or a printed shell expansion.
 render_config() {
@@ -194,12 +161,9 @@ client() {
 main() {
   if [[ ${1:-} == --help || ${1:-} == -h ]]; then usage; return; fi
   (( $# == 1 )) || fail 'Expected server, client or connect; see --help.'
-  umask 077
-  trap 'report_exit "$?"' EXIT
-  trap 'exit 130' INT
-  trap 'exit 143' TERM
-  server_template=${NIXCFG_HYSTERIA_SERVER_TEMPLATE:-$repo/hosts/nixos-server/dotfiles/hysteria/server.example.yaml}
-  client_template=${NIXCFG_HYSTERIA_CLIENT_TEMPLATE:-$repo/common/dotfiles/hysteria/client.example.yaml}
+  setup_traps
+  server_template=${NIXCFG_HYSTERIA_SERVER_TEMPLATE:?Run the packaged setup}
+  client_template=${NIXCFG_HYSTERIA_CLIENT_TEMPLATE:?Run the packaged setup}
   case "$1" in
     server) server ;;
     client) client ;;
@@ -211,4 +175,4 @@ main() {
   esac
 }
 
-if [[ ${BASH_SOURCE[0]} == "$0" ]]; then main "$@"; fi
+main "$@"

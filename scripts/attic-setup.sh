@@ -10,8 +10,9 @@ server_dir=/etc/attic
 bootstrap_dir=/var/lib/attic-bootstrap
 client_conf=/etc/nix/attic.conf
 workdir=
-
-fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
+# Remote bootstrap-directory ownership checks; expanded only by the SSH shell.
+# shellcheck disable=SC2016
+bootstrap_check='set -eu; p=/var/lib/attic-bootstrap; test ! -L "$p"; test -d "$p"; test "$(stat -c %u "$p")" = 0; test "$(stat -c %a "$p")" = 755;'
 
 report_exit() {
   local status=$1
@@ -41,21 +42,7 @@ renew a consumed publication token. Private credentials never enter the checkout
 HELP
 }
 
-approve() {
-  local answer
-  while :; do
-    printf '%s [y/N]: ' "$1"
-    IFS= read -r answer || fail 'Input closed; cancelled.'
-    case "$answer" in
-      y|Y|yes|YES) return 0 ;;
-      ''|n|N|no|NO) return 1 ;;
-      *) printf 'Enter y or n.\n' ;;
-    esac
-  done
-}
-
 valid_key() { [[ $1 =~ ^nixcfg:[A-Za-z0-9+/]{43}=$ ]]; }
-valid_hostname() { [[ ${#1} -le 253 && $1 =~ ^[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?$ ]]; }
 
 no_symlinks() {
   local path=$1
@@ -116,9 +103,6 @@ public_directory() {
     mkdir -m 755 -- "$1" || fail "Cannot create bootstrap directory: $1"
   fi
 }
-
-# noclobber rejects existing files and symlinks; never truncate an identity.
-create() ( umask 077; set -o noclobber; cat > "$1" )
 
 new_workdir() {
   if [[ -z $workdir ]]; then
@@ -313,7 +297,7 @@ fetch_identity() {
   new_workdir
   # These expressions belong to the authenticated remote shell, not this shell.
   # shellcheck disable=SC2016
-  ssh_server 'set -eu; p=/var/lib/attic-bootstrap; test ! -L "$p"; test -d "$p"; test "$(stat -c %u "$p")" = 0; test "$(stat -c %a "$p")" = 755; test ! -L "$p/nixcfg.pub"; test -f "$p/nixcfg.pub"; test "$(stat -c %u "$p/nixcfg.pub")" = 0; test "$(stat -c %a "$p/nixcfg.pub")" = 644; cat "$p/nixcfg.pub"' > "$workdir/nixcfg.pub" || fail 'Authenticated server public-key retrieval failed.'
+  ssh_server "$bootstrap_check"' test ! -L "$p/nixcfg.pub"; test -f "$p/nixcfg.pub"; test "$(stat -c %u "$p/nixcfg.pub")" = 0; test "$(stat -c %a "$p/nixcfg.pub")" = 644; cat "$p/nixcfg.pub"' > "$workdir/nixcfg.pub" || fail 'Authenticated server public-key retrieval failed.'
   trusted_key=$(cat -- "$workdir/nixcfg.pub")
   valid_key "$trusted_key" || fail 'Invalid independently known server key.'
   https_cache_info "$workdir/https-cache.json"
@@ -382,7 +366,7 @@ github_transfer() {
   new_workdir
   # Keep remote ownership checks and the token path literal until SSH executes them.
   # shellcheck disable=SC2016
-  ssh_server 'set -eu; p=/var/lib/attic-bootstrap; test ! -L "$p"; test -d "$p"; test "$(stat -c %u "$p")" = 0; test "$(stat -c %a "$p")" = 755; test ! -L "$p/ci-token"; test -f "$p/ci-token"; test "$(stat -c %u "$p/ci-token")" = "$(id -u)"; test "$(stat -c %a "$p/ci-token")" = 600; cat "$p/ci-token"' > "$workdir/ci-token" || fail 'Publication-token retrieval failed; remote credential retained.'
+  ssh_server "$bootstrap_check"' test ! -L "$p/ci-token"; test -f "$p/ci-token"; test "$(stat -c %u "$p/ci-token")" = "$(id -u)"; test "$(stat -c %a "$p/ci-token")" = 600; cat "$p/ci-token"' > "$workdir/ci-token" || fail 'Publication-token retrieval failed; remote credential retained.'
   valid_token_file "$workdir/ci-token" || fail 'Invalid staged JWT; no GitHub changes made.'
   gh variable set ATTIC_PUBLIC_KEY --repo rikkichy/nixcfg --body "$trusted_key" || fail 'GitHub public-key update failed; remote staged token retained.'
   gh secret set ATTIC_TOKEN --repo rikkichy/nixcfg < "$workdir/ci-token" || fail 'GitHub secret update failed; remote staged token retained.'
@@ -390,7 +374,7 @@ github_transfer() {
   if approve 'Remove the successfully uploaded staged token from the server'; then
     digest=$(sha256sum -- "$workdir/ci-token")
     digest=${digest%% *}
-    ssh_server "set -eu; p=/var/lib/attic-bootstrap; test ! -L \"\$p\"; test \"\$(stat -c %u \"\$p\")\" = 0; test \"\$(stat -c %a \"\$p\")\" = 755; test ! -L \"\$p/ci-token\"; test -f \"\$p/ci-token\"; test \"\$(stat -c %u \"\$p/ci-token\")\" = \"\$(id -u)\"; test \"\$(stat -c %a \"\$p/ci-token\")\" = 600; printf '%s  %s\\n' '$digest' \"\$p/ci-token\" | sha256sum --check --status; sudo rm -- \"\$p/ci-token\"" interactive || fail 'Remote cleanup failed; inspect the pending server token before renewal.'
+    ssh_server "$bootstrap_check test ! -L \"\$p/ci-token\"; test -f \"\$p/ci-token\"; test \"\$(stat -c %u \"\$p/ci-token\")\" = \"\$(id -u)\"; test \"\$(stat -c %a \"\$p/ci-token\")\" = 600; printf '%s  %s\\n' '$digest' \"\$p/ci-token\" | sha256sum --check --status; sudo rm -- \"\$p/ci-token\"" interactive || fail 'Remote cleanup failed; inspect the pending server token before renewal.'
   fi
   rm -f -- "$workdir/ci-token"
   if approve 'Dispatch package-cache.yml with target=all now'; then
@@ -408,10 +392,7 @@ github() {
 main() {
   if [[ ${1:-} == --help || ${1:-} == -h ]]; then usage; return; fi
   (( $# == 1 )) || fail 'Expected server, client or github; see --help.'
-  umask 077
-  trap 'report_exit "$?"' EXIT
-  trap 'exit 130' INT
-  trap 'exit 143' TERM
+  setup_traps
   case "$1" in
     server) server ;;
     client) client ;;
@@ -420,4 +401,4 @@ main() {
   esac
 }
 
-if [[ ${BASH_SOURCE[0]} == "$0" ]]; then main "$@"; fi
+main "$@"

@@ -10,5 +10,5 @@ writeShellApplication {
   ];
   text = ''
     export NIXCFG_CRYPTSETUP_PLUGINS=${systemd}/lib/cryptsetup
-  '' + builtins.readFile ./scripts/install.sh;
+  '' + builtins.readFile ./scripts/lib.sh + builtins.readFile ./scripts/install.sh;
 }

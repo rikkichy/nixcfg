@@ -16,11 +16,6 @@ hl.config({
             passes            = vars.blurPasses,
         },
 
-        shadow = {
-            enabled      = vars.shadowEnabled,
-            range        = vars.shadowRange,
-            render_power = vars.shadowRenderPower,
-            color        = vars.shadowColour,
-        },
+        shadow = { enabled = vars.shadowEnabled },
     },
 })

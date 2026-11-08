@@ -302,8 +302,8 @@ The desktop packages and custom wrappers/assets come from the
 **desktop's final pkgs**, not a second import with approximate overlays.
 Quickshell, Hyprland, Filen and the Spicetify CLI use unmodified Nixpkgs packages
 and are not custom cache targets. Spotify's theme patches run during app
-packaging. Static Bibata Modern Ice assets are fetched from their publisher,
-not republished through this cache.
+packaging. Static Bibata Modern Ice cursors come from unmodified Nixpkgs via
+the official cache, not republished through this cache.
 
 These roots are redistributable according to their pinned package metadata:
 desktop packages retain upstream free licenses, the custom packages are

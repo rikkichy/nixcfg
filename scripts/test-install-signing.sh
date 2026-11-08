@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Run: nix shell nixpkgs#openssl --command bash scripts/test-install-signing.sh
 set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/install.sh"
 tmp=$(mktemp -d)
 trap 'rm -rf -- "$tmp"' EXIT

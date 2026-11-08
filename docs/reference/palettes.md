@@ -68,7 +68,7 @@ Consequences:
 **foot carries no palette of its own.** Its colours arrive as OSC escape
 sequences:
 
-- `term-sequences` writes `~/.local/state/theme/sequences.txt` and sends it to
+- `theme-apply` writes `~/.local/state/theme/sequences.txt` and sends it to
   every open pty.
 - Linux Fish initialization in `hosts/nix/modules/home/foot.nix`
   `cat`s the same file for shells started later.
@@ -78,8 +78,8 @@ Preserve both live updates and initialization for newly opened terminals.
 The parser reads assignments once as data and accepts only known keys with six
 hex digits. It preserves the first duplicate and validates before writing any output.
 Foot palette includes and SIGUSR1/SIGUSR2 do not reload arbitrary palette files.
-`theme-apply`, `awp-apply`, `term-sequences` and
-`wallpaper-frame` are private runtime dependencies. Use public `wpp`/`awpp`.
+`theme-apply` and `wallpaper-frame` are private runtime dependencies.
+Use public `wpp`/`awpp`.
 
 Two more things the pipeline depends on:
 

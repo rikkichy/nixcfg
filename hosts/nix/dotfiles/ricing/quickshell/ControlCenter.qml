@@ -66,7 +66,6 @@ Item {
 
     component PlaybackButton: ExpressiveButton {
         id: button
-        required property string iconName
         required property int position
         Layout.fillWidth: true
         Layout.preferredHeight: 56

@@ -7,5 +7,5 @@ writeShellApplication {
   runtimeInputs = [
     openssl openssh curl nix attic-client gh jq coreutils nh systemd util-linux
   ];
-  text = builtins.readFile ./scripts/attic-setup.sh;
+  text = builtins.readFile ./scripts/lib.sh + builtins.readFile ./scripts/attic-setup.sh;
 }

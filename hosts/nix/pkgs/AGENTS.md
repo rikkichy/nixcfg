@@ -21,10 +21,8 @@ cover AppImages, Filen and Telegram proxy.
   Proxy routing/security belongs to the [networking runbook](../../../docs/nix-networking.md),
   not an application-side bypass. External projects own their toolchains;
   shared Zed/toolchains belong to [common guidance](../../../common/AGENTS.md).
-- `ricing/` owns static cursor/font/icon assets. Keep static cursors immutable
-  and Home Manager-owned; generated palettes remain writable. Use the
-  [cursor](../../../docs/reference/cursors.md) and
-  [palette](../../../docs/reference/palettes.md) references for format/font contracts.
+- `ricing/` owns static font/icon assets; generated palettes remain writable.
+  Use the [palette](../../../docs/reference/palettes.md) reference for format/font contracts.
 
 ## Runtime and external ownership
 
