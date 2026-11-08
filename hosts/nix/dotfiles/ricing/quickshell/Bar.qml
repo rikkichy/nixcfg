@@ -174,6 +174,7 @@ PanelWindow {
                                 }
                             }
                             Behavior on color {
+                                enabled: !Theme.morphing
                                 ColorAnimation {
                                     duration: Theme.motionDuration
                                 }

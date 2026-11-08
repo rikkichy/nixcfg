@@ -584,7 +584,7 @@ PanelWindow {
                         border.width: tile.visualFocus || (grid.activeFocus && tile.checked) ? 2 : 0
                         border.color: Theme.primary
                         Behavior on radius { enabled: !Theme.reducedMotion; SpringAnimation { spring: 4; damping: 0.8; epsilon: 0.05 } }
-                        Behavior on color { ColorAnimation { duration: Theme.motionDuration } }
+                        Behavior on color { enabled: !Theme.morphing; ColorAnimation { duration: Theme.motionDuration } }
                     }
                     contentItem: Column {
                         spacing: 8

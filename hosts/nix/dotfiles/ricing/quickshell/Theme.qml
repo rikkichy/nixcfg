@@ -9,8 +9,10 @@ Singleton {
     // Displayed colors blend from this snapshot toward `palette` while `morph` runs to 1.
     property var previousPalette: ({})
     property real morph: 1
-    // Briefly true after a new palette; ExpressiveButton's scale spring turns it into a pop.
-    property bool popping: false
+    // Color Behaviors stand aside while the palette morphs: per-frame retargeting would hold them still.
+    readonly property bool morphing: morph < 1
+    // ExpressiveButton scales by this; a new palette drives one shared bounce.
+    property real popScale: 1
     readonly property var fallbacks: ({
             surface: "#141218",
             surfaceContainer: "#211f26",
@@ -77,8 +79,7 @@ Singleton {
         palette = next;
         if (animate) {
             morphAnimation.start();
-            popping = true;
-            popRelease.restart();
+            popAnimation.restart();
         }
     }
 
@@ -87,14 +88,29 @@ Singleton {
         target: theme
         property: "morph"
         to: 1
-        duration: 350
+        duration: 220
         easing.type: Easing.BezierSpline
         easing.bezierCurve: [0.2, 0, 0, 1, 1, 1]
     }
-    Timer {
-        id: popRelease
-        interval: 200
-        onTriggered: theme.popping = false
+    // Quick swell, then an elastic settle that bounces below rest before landing.
+    SequentialAnimation {
+        id: popAnimation
+        NumberAnimation {
+            target: theme
+            property: "popScale"
+            to: 1.12
+            duration: 90
+            easing.type: Easing.OutCubic
+        }
+        NumberAnimation {
+            target: theme
+            property: "popScale"
+            to: 1
+            duration: 420
+            easing.type: Easing.OutElastic
+            easing.amplitude: 1
+            easing.period: 0.4
+        }
     }
 
     FileView {

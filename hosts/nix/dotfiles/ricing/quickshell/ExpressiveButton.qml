@@ -11,7 +11,13 @@ AbstractButton {
     focusPolicy: Qt.StrongFocus
     Accessible.name: description || text
     opacity: enabled ? 1 : 0.38
-    scale: down ? 0.96 : Theme.popping ? 1.06 : 1
+    scale: down ? 0.96 : 1
+    transform: Scale {
+        origin.x: control.width / 2
+        origin.y: control.height / 2
+        xScale: Theme.popScale
+        yScale: Theme.popScale
+    }
     Behavior on scale { enabled: !Theme.reducedMotion; SpringAnimation { spring: 4; damping: 0.65; epsilon: 0.001 } }
     background: Rectangle {
         radius: control.down ? Theme.radiusSmall : (control.checked ? Theme.radiusMedium : height / 2)
@@ -20,7 +26,7 @@ AbstractButton {
         border.width: control.visualFocus ? 2 : 0
         border.color: Theme.primary
         Behavior on radius { enabled: !Theme.reducedMotion; SpringAnimation { spring: 4; damping: 0.8; epsilon: 0.05 } }
-        Behavior on color { ColorAnimation { duration: Theme.motionDuration } }
+        Behavior on color { enabled: !Theme.morphing; ColorAnimation { duration: Theme.motionDuration } }
     }
     contentItem: Text {
         id: label

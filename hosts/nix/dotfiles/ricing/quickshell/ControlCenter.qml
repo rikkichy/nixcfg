@@ -56,6 +56,7 @@ Item {
                 }
             }
             Behavior on color {
+                enabled: !Theme.morphing
                 ColorAnimation {
                     duration: Theme.motionDuration
                 }
@@ -167,6 +168,7 @@ Item {
                     border.color: Theme.outline
                     opacity: audioSwitch.enabled ? 1 : 0.38
                     Behavior on color {
+                        enabled: !Theme.morphing
                         ColorAnimation {
                             duration: Theme.motionDuration
                             easing.type: Easing.BezierSpline
@@ -199,6 +201,7 @@ Item {
                             }
                         }
                         Behavior on color {
+                            enabled: !Theme.morphing
                             ColorAnimation {
                                 duration: Theme.motionDuration
                                 easing.type: Easing.BezierSpline
