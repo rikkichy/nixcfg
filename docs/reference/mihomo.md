@@ -1,6 +1,6 @@
 # Mihomo networking — desktop host nix
 
-Sources: `hosts/nix/modules/system/networking.nix`,
+Sources: `hosts/nix/modules/system/{networking,mihomo-killswitch}.nix`,
 `common/modules/nixos-mihomo-secrets.nix`, `common/dotfiles/mihomo.yaml`,
 `common/pkgs/{mihomo-config,vpn.nix}`.
 Mihomo, the `vpn` command and tunnel-specific network rules are desktop-only.
@@ -60,22 +60,23 @@ Mihomo restart reruns the renderer.
 
 ## Tunnel and local control boundaries
 
-Keep these three names synchronized when renaming the TUN device:
+Keep the TUN device name synchronized across:
 
 - `tun.device` in `common/dotfiles/mihomo.yaml`.
 - `networking.networkmanager.unmanaged` in
   `hosts/nix/modules/system/networking.nix`.
 - `networking.firewall.trustedInterfaces` in that same module.
+- The OUTPUT/FORWARD interface rules in `hosts/nix/modules/system/mihomo-killswitch.nix`.
 
 The current device is `mihomo`. IPv6 is disabled, reverse-path filtering is
 loose, and LAN application ports are scoped to the physical interfaces. Do not
 turn those into unrestricted firewall openings to fix tunnel routing.
 The controller binds `127.0.0.1:9090`, mixed proxy has `allow-lan: false`, and
 Mihomo DNS and TUN DNS hijacking are disabled. Resolution uses the system DNS.
-Krypton routing uses destination IP and port. TLS SNI sniffing on port 443
-supports the exact Anthropic, Claude, ChatGPT, Noko, `spype.pages.dev` and `ota.waydro.id` rules without
-overriding the connection destination. The web dashboard is disabled. The controller API serves the
-picker and CLI. Controller status is not tunnel proof.
+The template proxies all Internet destinations without TLS sniffing, DNS
+classification, geosite, ASN or process rules. Only the explicit local IPv4
+rules use `DIRECT`. The web dashboard is disabled. The controller API serves
+the picker and CLI. Controller status is not tunnel or firewall proof.
 Inspect `ip -br addr show mihomo` for an actual IPv4 address. `UP` with only link-local
 IPv6 is not a working tunnel.
 
@@ -83,19 +84,58 @@ All controller requests must use `--header @/run/mihomo-api.header`.
 Never expand the token into command arguments or log it. Browser CORS permits only the
 localhost controller origin. See the operator guide for ownership and lifecycle.
 
-Scoped mode proxies Krypton's `162.19.224.212` ports `6700` and `3030` plus
-the exact `anthropic.com`, `claude.ai`, `chatgpt.com`, `noko.chat`, `api.noko.chat`, `cdn.noko.chat`, `spype.pages.dev` and
-`ota.waydro.id` hostnames, with `MATCH,DIRECT` for everything else.
-`vpn mode global` selects `PROXY` in `GLOBAL` before changing Mihomo's mode.
-Global traffic therefore uses the same subscription/server instead of
-`GLOBAL`'s default `DIRECT`. `vpn mode scoped` restores rule mode. Both changes
-close tracked connections so existing traffic follows the new policy. The mode
-is runtime-only. The template starts scoped. Do not stop Mihomo to change
-routing: that removes the tunnel. `profile.store-selected` persists server
-choices in `cache.db` under the service's state directory. There are no geosite,
-ASN or process routing rules. Process lookup is disabled. The service does not
-request cross-user inspection privileges or override `ProtectProc`. Keep the
-upstream sandbox.
+The template remains in `rule` mode with local exceptions followed by
+`MATCH,PROXY` and `MATCH,REJECT`. There is no runtime routing-mode control.
+`profile.store-selected` persists server choices in `cache.db` under the
+service's state directory. Process lookup is disabled; the service does not
+request cross-user inspection privileges or override `ProtectProc`.
+Keep the upstream sandbox.
+
+## Kernel egress guard
+
+`mihomo-killswitch.nix` owns a separate nftables `inet mihomo_guard` table,
+without migrating the existing iptables firewall used by Docker and Waydroid.
+Its OUTPUT and FORWARD hooks default to drop, independently of other tables'
+accept rules. There is no established/related exemption: moving an existing
+connection onto a physical route must not leak it.
+
+Only loopback and explicitly allowed IPv4 traffic can pass: the TUN, private
+LAN destinations and narrowly scoped host discovery/DHCP. The `mihomo` UID
+alone gets public IPv4 OUTPUT access for the proxy broker's transport and
+bootstrap. Forwarded containers have no UID exception. IPv6 outside loopback
+is dropped even if an interface acquires an IPv6 address. The module and
+template are authoritative for the exact local exceptions.
+
+A static system account makes the UID exemption stable. Upstream
+`DynamicUser = true` reuses that account and keeps its other sandbox settings;
+do not remove private state directories during this transition.
+The native oneshot invokes `nft -f` directly. Table replacement is one netlink
+transaction; a failed transaction leaves the previous table intact. No
+`ExecStop` deletes the guard. Both NetworkManager and Mihomo require it and
+are ordered after it. The module rejects initrd networking and enabling the
+global nftables service, which could flush its independent table.
+
+The trust boundary includes root, the Mihomo process and authenticated
+controller clients. It does not isolate malicious privileged code or prevent
+a controller client from deliberately selecting direct routing. LAN access
+and LAN DNS remain available. Service status alone does not establish that
+packets are being blocked; use the regression and operator packet capture.
+
+## Kill-switch verification
+
+The standalone regression boots disposable VMs with synthetic addresses and
+credentials, actual Mihomo, the production guard module and a local proxy peer:
+
+```sh
+nix-build hosts/nix/tests/mihomo-killswitch.nix --arg nixpkgs '(builtins.getFlake "git+file:///etc/nixos").inputs.nixpkgs.outPath' --no-out-link
+```
+
+It exercises TCP/UDP and IPv6 denial, packet capture, existing connections,
+forwarded traffic, real TUN/proxy failure and recovery, atomic reload and
+failed-start ordering. The public template also needs `mihomo -t` validation
+with synthetic runtime fields, never private input copies. Host activation,
+real provider connectivity, physical-interface packet capture and cold boot
+remain operator acceptance steps in the [runbook](../nix-networking.md#activation-and-recovery-acceptance).
 
 ## Subscription and node failure modes
 
@@ -107,9 +147,8 @@ upstream sandbox.
 - Keep `proxy: DIRECT` on **both** providers. Otherwise Mihomo can fetch its
   subscription through the very tunnel it needs to repair.
   A bad update then cannot self-recover and may surface only as EOF.
-- Child selectors use `empty-fallback: REJECT`. Each Krypton endpoint's proxy rule
-  is paired with a rejection rule so unsupported flows cannot fall through to
-  `MATCH,DIRECT`. Keep each pair aligned when updating the endpoints.
+- Child selectors use `empty-fallback: REJECT`. Keep `MATCH,REJECT` after
+  `MATCH,PROXY` so unsupported flows cannot escape through a direct fallback.
 - HTTP health checks require 204 but do not test UDP relay. Lazy checks can leave
   inactive-provider latency stale. Preserve manual node selection.
 - Node latency needs membership **and** health history. Top-level `PROXY`
@@ -124,9 +163,9 @@ upstream sandbox.
 `vpn` is a `writeShellApplication` installed in `environment.systemPackages`,
 not an alias: fish, Hyprland, and the Stream Deck use the same command.
 `vpn subscription` selects Primary/Quattro, each retaining its manual server
-selection. `vpn mode [global|scoped]` reads or changes routing. The Quickshell VPN
-menu offers the opposite mode. There are no AUTO groups or separate selection-state
-files. Bare `vpn` reports the server. `vpn use PATTERN` searches live
+selection. The Quickshell VPN menu offers subscription/server selection and
+public-template editing, not routing-mode changes. There are no AUTO groups
+or separate selection-state files. Bare `vpn` reports the server. `vpn use PATTERN` searches live
 active-subscription nodes by regex because provider names change. It makes a
 one-time selection. `vpn select NAME` validates an exact live name for pickers.
 Keep the distinction and the two-level group selection when changing callers.

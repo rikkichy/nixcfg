@@ -1,7 +1,10 @@
 { pkgs, ... }:
 
 {
-  imports = [ ../../../../common/modules/nixos-networking.nix ];
+  imports = [
+    ../../../../common/modules/nixos-networking.nix
+    ./mihomo-killswitch.nix
+  ];
 
   networking.modemmanager.enable = false;
 

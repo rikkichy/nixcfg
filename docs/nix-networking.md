@@ -27,29 +27,32 @@ There is no app to launch. The web dashboard is disabled. The localhost controll
 `127.0.0.1:9090` remains available to the VPN picker and CLI with bearer-token
 authentication. Browser origins are restricted to that localhost origin.
 
-### Split routing and server selection
+### Proxy-only routing and server selection
 
-Scoped mode proxies the observed Krypton startup endpoints on
-`162.19.224.212` (loader port `6700` and initialization port `3030`) and the
-exact `anthropic.com`, `claude.ai`, `chatgpt.com`, `noko.chat`, `api.noko.chat`, `cdn.noko.chat`, `spype.pages.dev` and
-`ota.waydro.id` hostnames for Anthropic, Claude, ChatGPT, Noko, Spype and Waydroid OTA traffic. All other
-destinations and ports use `DIRECT`, including loopback and private LAN addresses. The
-Krypton IP-and-port rules do not depend on DNS or protocol sniffing.
-`vps-c35938de.vps.ovh.net` is the server's reverse-DNS hostname, not a confirmed
-hostname used by the loader. Update the rules if Krypton's endpoints move.
+All Internet application traffic uses the selected proxy, including Claude and
+Anthropic hostnames, subdomains, literal IPs and traffic with hidden SNI.
+There is no hostname allowlist or TLS sniffing. Loopback, private IPv4 LAN and
+local discovery remain direct; system DNS can still use the LAN router.
 
-The Anthropic, Claude, ChatGPT, Noko, Spype and Waydroid rules use TLS SNI sniffing on port 443. Sniffing changes
-neither DNS resolution nor the connection destination. Traffic without a visible
-matching hostname, including ECH-hidden SNI, cannot match these rules.
-There are no geosite, ASN or application-process routing rules. Process lookup
-is disabled; the service does not request cross-user process-inspection
-privileges.
+`hosts/nix/modules/system/mihomo-killswitch.nix` installs an independent
+kernel OUTPUT/FORWARD guard before NetworkManager and Mihomo start. Public
+egress outside the TUN is denied for applications and forwarded containers,
+including existing connections. IPv6 egress is denied except on loopback.
+Only the trusted Mihomo service account can open direct public IPv4 connections,
+for subscription retrieval, resolver bootstrap and proxy transport. The source
+module owns the exact LAN, discovery and DHCP exceptions.
 
-Empty subscriptions reject traffic instead of falling back to a direct connection.
-Each endpoint's proxy rule has a matching rejection rule so an unsupported flow
-cannot fall through to `MATCH,DIRECT`. Keep each pair together.
-Health checks require the endpoint's HTTP 204 response. Checks remain lazy, so
-an inactive subscription can show stale measurements.
+If the proxy fails, unsupported traffic is rejected, or Mihomo stops, Internet
+applications lose connectivity rather than switching to direct access.
+Empty subscriptions reject traffic. Keep `MATCH,PROXY` followed by
+`MATCH,REJECT` in the template. Health checks require HTTP 204 and remain lazy,
+so an inactive subscription can show stale measurements.
+
+This protects against routing/tunnel failure, not a privileged administrator,
+a compromised Mihomo process or an authenticated controller client changing
+the policy. Keep the controller credentials private and do not use its API
+to enable direct mode. LAN DNS is an intentional exception, not a promise
+that DNS queries are hidden from the LAN resolver.
 
 TCP concurrency races multiple resolved addresses for faster connection setup.
 It does not increase bandwidth. The TUN retains its gVisor stack.
@@ -61,32 +64,25 @@ default 300 s, so `hosts/nix/modules/system/nix.nix` sets
 **`SUPER + SHIFT + V`** opens the VPN picker. **Switch subscription** opens
 **Primary** and **Quattro**, each retaining its selected server. **Choose server**
 opens only the active subscription's live nodes, fastest first. Dismissing
-either submenu leaves the selection unchanged. **Switch to global** routes traffic
-handled by Mihomo through the selected subscription/server. **Switch to scoped**
-restores the scoped rules. The view shows the current mode, subscription and server.
-Switching routing mode closes existing Mihomo connections so applications
-reconnect using the new policy. Downloads, calls and games can be interrupted.
+either submenu leaves the selection unchanged. The view shows the subscription
+and server, not a claim of verified firewall health.
 Server and subscription changes do not close existing connections.
-The mode is a runtime choice. Mihomo starts in scoped mode from the template.
 **Edit config** opens the public `common/dotfiles/mihomo.yaml` template in Neovim in Foot, including when Mihomo
 is unavailable. It never opens the private rendered configuration. Saving edits
 does not activate them: apply them with an approved NixOS rebuild.
-There are no DIRECT, AUTO or on/off controls. The picker is also available as
+There are no routing-mode, DIRECT, AUTO or on/off controls. The picker is also available as
 **VPN** in Settings or `quickshell -c expressive ipc call desktop toggle vpn`:
 
 ```
 vpn                              # show the selected server
 vpn status                       # show the selected server
-vpn mode                         # show global or scoped routing
-vpn mode global                  # proxy Mihomo traffic through the selected server
-vpn mode scoped                  # apply the scoped routing rules
 vpn subscription                 # active subscription name
 vpn subscription primary         # select Primary's remembered server
 vpn subscription quattro         # select Quattro's remembered server
 vpn list                         # active subscription's nodes and latency
 vpn use <pattern>                # fastest matching node in that subscription
 vpn select <name>                # exact node in that subscription
-vpn ip                           # public IP and country under the current routing mode
+vpn ip                           # public IP and country through the selected proxy
 ```
 
 Selection persists in Mihomo's cache. `vpn use` is a one-time manual choice,
@@ -103,16 +99,31 @@ The proxy-group hierarchy is **PROXY** choosing **PRIMARY** or
 `/var/lib/private/mihomo/cache.db`. With no valid cached choice, Mihomo uses
 the first available member. Runtime state does not need to be deleted.
 
-Changing servers does not change routing policy. Direct destinations still
-pass through the TUN, but Mihomo connects through the physical interface.
-Stopping Mihomo removes the tunnel. It is not a routing toggle.
-External shortcuts can invoke `quickshell -c expressive ipc call desktop toggle vpn`,
-`vpn mode global`, `vpn mode scoped`, or `vpn select <name>`.
+Changing servers does not change routing policy. Stopping Mihomo removes the
+tunnel but leaves the guard in place; it is not a direct-network fallback.
+External shortcuts can invoke `quickshell -c expressive ipc call desktop toggle vpn`
+or `vpn select <name>`.
 
-After approved activation, launch Krypton and confirm that its connections to
-`162.19.224.212` on ports `6700` and `3030` select `PROXY`, while an unrelated
-destination selects `DIRECT`. Verify that Minecraft reaches its window.
-Configuration validation does not prove connectivity or a successful game launch.
+#### Activation and recovery acceptance
+
+Source changes do not enable the live kill switch. Activation, service-stop
+tests and reboot each need operator approval and a local recovery console.
+Retain a known-working generation before switching: all Internet applications,
+downloads and games now depend on the chosen proxy and its protocol support.
+
+After approved activation, verify `systemctl is-active mihomo-killswitch`,
+`sudo nft list table inet mihomo_guard`, the TUN's IPv4 address and actual
+Claude access through the proxy. With separately approved interruption, stop
+Mihomo, confirm new and existing Internet traffic cannot go direct, and capture
+the physical interface to confirm no packets reach the test destination.
+Restart Mihomo and verify connectivity recovers. Repeat boot acceptance
+before describing the installed machine's startup behavior as verified.
+
+The guard is replaced atomically on reload and deliberately survives service
+stop, including a configuration rollback. For recovery, boot the retained
+known-working generation; do not flush the firewall as a connectivity workaround.
+The isolated [VM regression](reference/mihomo.md#kill-switch-verification)
+does not replace these operator checks.
 
 Edit the public template `common/dotfiles/mihomo.yaml`. The compiled Rust
 [`mihomo-config` renderer](reference/mihomo.md#public-template-private-runtime-rendering)
@@ -145,17 +156,12 @@ proxy-node lookups use the system resolver. Configure upstream DNS through
 NetworkManager, not the Mihomo template. When the system uses the LAN router,
 the router retains its ControlD DoQ connection and private endpoint.
 
-Routing uses the destination IP and port only; no sniffing or DNS mappings are
-needed. Changing the template does not reroute an already established loader
-connection: restart the instance after approved activation.
-
-
 File-only subscription provisioning and retained-identity recovery boundaries
 are in [the security guide](nix-security.md#private-inputs-and-first-provisioning).
 
 ### Tunnel diagnosis
 
-When renaming the TUN, preserve the [three-way device-name invariant](reference/mihomo.md#tunnel-and-local-control-boundaries).
+When renaming the TUN, preserve the [device-name invariant](reference/mihomo.md#tunnel-and-local-control-boundaries).
 
 If the VPN appears connected but traffic is not tunnelled, do not trust the
 controller status. Check that the interface has its IPv4 address:

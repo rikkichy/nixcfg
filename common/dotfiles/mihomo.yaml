@@ -24,14 +24,6 @@ tun:
 dns:
   enable: false
 
-sniffer:
-  enable: true
-  parse-pure-ip: true
-  override-destination: false
-  sniff:
-    TLS:
-      ports: [443]
-
 proxy-providers:
   primary:
     type: http
@@ -102,25 +94,12 @@ profile:
   store-selected: true
 
 rules:
-  - DOMAIN,anthropic.com,PROXY
-  - DOMAIN,anthropic.com,REJECT
-  - DOMAIN,claude.ai,PROXY
-  - DOMAIN,claude.ai,REJECT
-  - DOMAIN,chatgpt.com,PROXY
-  - DOMAIN,chatgpt.com,REJECT
-  - DOMAIN,noko.chat,PROXY
-  - DOMAIN,noko.chat,REJECT
-  - DOMAIN,api.noko.chat,PROXY
-  - DOMAIN,api.noko.chat,REJECT
-  - DOMAIN,cdn.noko.chat,PROXY
-  - DOMAIN,cdn.noko.chat,REJECT
-  - DOMAIN,spype.pages.dev,PROXY
-  - DOMAIN,spype.pages.dev,REJECT
-  - DOMAIN,ota.waydro.id,PROXY
-  - DOMAIN,ota.waydro.id,REJECT
-  # Observed Krypton startup endpoints; update if the service moves.
-  - AND,((DST-PORT,6700),(IP-CIDR,162.19.224.212/32,no-resolve)),PROXY
-  - AND,((DST-PORT,6700),(IP-CIDR,162.19.224.212/32,no-resolve)),REJECT
-  - AND,((DST-PORT,3030),(IP-CIDR,162.19.224.212/32,no-resolve)),PROXY
-  - AND,((DST-PORT,3030),(IP-CIDR,162.19.224.212/32,no-resolve)),REJECT
-  - MATCH,DIRECT
+  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+  - IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
+  - AND,((NETWORK,udp),(IP-CIDR,224.0.0.251/32,no-resolve),(DST-PORT,5353)),DIRECT
+  - AND,((NETWORK,udp),(IP-CIDR,239.255.255.250/32,no-resolve),(DST-PORT,1900)),DIRECT
+  - MATCH,PROXY
+  - MATCH,REJECT

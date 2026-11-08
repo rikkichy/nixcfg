@@ -13,7 +13,6 @@ Item {
     property int revision: 0
     property bool busy: false
     property var emojiEntries: []
-    property string vpnMode: ""
     property string subscription: ""
     property string server: ""
     readonly property string title: host.mode === "night-light" ? "Blue-light filter"
@@ -41,7 +40,6 @@ Item {
         entries = [
             UtilityData.entry("Switch subscription", "network-vpn", "page", "subscriptions"),
             UtilityData.entry("Choose server", "network-server", "page", "nodes"),
-            UtilityData.entry(vpnMode ? "Switch to " + (vpnMode === "global" ? "scoped" : "global") : "Mode unavailable", "network-vpn", "mode", vpnMode === "global" ? "scoped" : "global"),
             UtilityData.entry("Edit config", "document-edit", "edit", "")
         ];
     }
@@ -89,22 +87,11 @@ Item {
                 }
             }
         } else if (host.mode === "vpn") {
-            vpnMode = "";
             subscription = "";
             server = "";
             status = "Loading VPN status…";
             if (!page)
                 vpnEntries();
-            request(["vpn", "mode"], output => {
-                vpnMode = output.trim();
-                if (!["global", "scoped"].includes(vpnMode)) {
-                    vpnMode = "";
-                    report("VPN returned an unknown mode.");
-                }
-                updateVpnStatus();
-                if (!page)
-                    vpnEntries();
-            });
             request(["vpn", "subscription"], output => { subscription = output.trim(); updateVpnStatus(); });
             request(["vpn", "status"], output => { server = output.trim(); updateVpnStatus(); });
             if (page) {
@@ -116,7 +103,7 @@ Item {
     }
 
     function updateVpnStatus() {
-        status = "Mode: " + (vpnMode || "unavailable") + " · Subscription: " + (subscription || "unavailable")
+        status = "Subscription: " + (subscription || "unavailable")
             + " · Server: " + (server || "unavailable");
     }
 
@@ -128,16 +115,12 @@ Item {
             open(entry.value);
             return;
         }
-        if (entry.action === "mode" && !vpnMode) {
-            report("VPN mode is unavailable. Reopen VPN to retry.");
-            return;
-        }
         busy = true;
         if (entry.action === "sun") {
             request(["hyprctl", "hyprsunset"].concat(entry.value), () => open(""), true, true);
         } else if (entry.action === "power") {
             request(["systemctl", entry.value], () => host.close(), false, true);
-        } else if (["subscription", "select", "mode"].includes(entry.action)) {
+        } else if (["subscription", "select"].includes(entry.action)) {
             request(["vpn", entry.action, entry.value], () => open(""), false, true);
         } else if (entry.action === "edit") {
             const path = Quickshell.env("QS_VPN_CONFIG");
