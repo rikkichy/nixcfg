@@ -16,7 +16,7 @@ Recovery: [Spotify update-cache protection](#spotify-and-spicetify) ·
 - [SSH agent](#ssh-agent)
 - [Keyboard](#keyboard)
 - [Ghostty and wallpaper themes](#ghostty-and-wallpaper-themes)
-- [Discord and Equicord](#discord-and-equicord)
+- [Discord](#discord)
 - [Spotify and Spicetify](#spotify-and-spicetify)
 - [Marta](#marta)
 - [Zed file associations](#zed-file-associations)
@@ -170,35 +170,32 @@ and the same `scheme-content` mode as NixOS, including Fastfetch's accent slots 
 Run `wallpaper-theme` (or `wallpaper-theme light`) after changing the macOS wallpaper.
 Then use Ghostty's Reload Configuration action.
 The command reads the first desktop's wallpaper.
-It writes the mutable Ghostty palette, btop `wallpaper.theme`, Marta `Matugen.theme`, Equicord QuickCSS and Spotify colors.
+It writes the mutable Ghostty palette, btop `wallpaper.theme`, Marta `Matugen.theme` and Spotify colors.
 Restart btop or Spotify after regenerating their palettes.
 Wallpaper changes are not watched automatically.
 The captured Zed theme is static. `wallpaper-theme` does not regenerate it.
 
-## Discord and Equicord
+## Discord
 
-Home Manager installs Discord with Equicord injected at build time, using the
-pinned Nixpkgs packages. `hosts/ne/modules/home/discord.nix` sets `disableUpdater`
-in the packaged `build_info.json` to select Discord's legacy updater: its native
-updater does not honor `SKIP_HOST_UPDATE` and can replace the injected bundle.
+Home Manager installs vanilla Discord from the pinned Nixpkgs package, without
+client mods, declarative plugins or wallpaper theming.
+`hosts/ne/modules/home/discord.nix` sets `disableUpdater` in the packaged
+`build_info.json` to select Discord's legacy updater: its native updater does not
+honor `SKIP_HOST_UPDATE` and can replace the Nix-managed bundle.
 Activation disables both host and module updates, then stages the matching pinned
 native modules for Finder launches. The executable is not renamed or re-signed.
-Discord and Equicord updates follow the Nixpkgs pin and rebuild. Keep that pin
+Discord updates follow the Nixpkgs pin and rebuild. Keep that pin
 current for Electron security updates and Discord compatibility. There is no
 installer download or live app-bundle patch during activation.
 
-Close Discord before activation so it cannot overwrite merged plugin settings.
+Close Discord before activation.
 Launch the Nix-managed Discord application, not an independently installed
 `/Applications/Discord.app`. Activation does not remove that unmanaged copy.
 Existing Discord account data remains in its normal Application Support directory.
 
-Both hosts share plugin declarations, the Wallpaper color-only theme, and its
-Matugen palette. See the [Discord integration reference](reference/discord.md)
-for ownership, mutable settings and watcher requirements. Run `wallpaper-theme`
-after activation to generate the palette. Fresh Equicord settings enable Wallpaper
-and QuickCSS. Existing theme choices are preserved. Colors update through QuickCSS
-without restarting Discord. macOS wallpaper changes are not watched automatically.
-Client modifications are against Discord's terms of service.
+See the [Discord integration reference](reference/discord.md) for ownership and
+isolated startup checks. macOS Finder startup and signed-in behavior require
+operator verification after activation.
 
 ## Spotify and Spicetify
 

@@ -4,7 +4,7 @@
   programs.git.enable = true;
 
   environment.systemPackages = with pkgs; [
-    brave-origin
+    chromium
 
     filen-desktop
     lan-mouse
@@ -29,7 +29,7 @@
     bitwarden-desktop
     onlyoffice-desktopeditors
 
-    (discord.override { withEquicord = true; })
+    discord
     telegram-desktop
 
     pavucontrol
@@ -87,7 +87,7 @@
       TranslateEnabled = false;
       PasswordManagerEnabled = false;
       DefaultSearchProviderName = "Google";
-      NewTabPageLocation = "file://${pkgs.writeText "brave-new-tab.html" ''
+      NewTabPageLocation = "file://${pkgs.writeText "chromium-new-tab.html" ''
         <!doctype html>
         <html lang="en">
         <meta charset="utf-8">

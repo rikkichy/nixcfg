@@ -1,4 +1,4 @@
-{ config, pkgs, lib, equicordDataDir, spotifyPaletteTemplate, ... }:
+{ config, pkgs, lib, spotifyPaletteTemplate, ... }:
 
 let
   terminalColours = "${config.xdg.stateHome}/theme/terminal-colors.conf";
@@ -22,7 +22,6 @@ let
       };
       nvtop = template ../../dotfiles/ricing/matugen/templates/nvtop.colors "${cfg}/nvtop/nvtop.colors";
       qt = template ../../dotfiles/ricing/matugen/templates/qt.colors "${cfg}/qtengine/scheme.colors";
-      discord = template ../../../../common/dotfiles/matugen/templates/discord-palette.css "${equicordDataDir}/settings/quickCss.css";
       spotify = spotifyPaletteTemplate;
       obsidian = template ../../dotfiles/ricing/matugen/templates/obsidian.css "${cfg}/obsidian/matugen.css";
     };

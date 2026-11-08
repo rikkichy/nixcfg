@@ -28,8 +28,7 @@ Then bootstrap as the normal user with
 | `hosts/ne/modules/home/matugen.nix` | Matugen configuration and wallpaper-theme |
 | `hosts/ne/modules/home/marta.nix` | official Marta launcher wrapper |
 | `hosts/ne/modules/home/keyboard.nix` | BetterGlobeKey configuration deployment |
-| `hosts/ne/modules/home/discord.nix` | Nix-packaged Discord with Equicord and native module staging for Finder |
-| `common/modules/discord.nix` | shared Equicord theme and writable settings merge |
+| `hosts/ne/modules/home/discord.nix` | Vanilla Nix-packaged Discord and native module staging for Finder |
 | `hosts/ne/modules/home/spotify.nix` | post-copy Spotify palette link and non-destructive native updater guard |
 | `hosts/ne/modules/home/file-associations.nix` | explicit text/source extension list |
 | `hosts/ne/pkgs/zed-file-associations.nix` | native NSWorkspace association helper |
@@ -98,7 +97,6 @@ Generated destinations must remain writable:
 - `~/.config/ghostty/themes/Matugen`
 - `~/.config/btop/themes/wallpaper.theme`
 - `~/Library/Application Support/org.yanex.marta/Themes/Matugen.theme`
-- `~/Library/Application Support/Equicord/settings/quickCss.css`
 - `~/.config/spicetify/colors.css`
 
 Edit templates, not mutable outputs. Read [Ghostty and wallpaper themes](../../docs/ne.md#ghostty-and-wallpaper-themes)

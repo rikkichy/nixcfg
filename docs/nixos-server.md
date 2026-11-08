@@ -314,7 +314,7 @@ Preserve this boundary when adding roots or updating runtime dependencies.
 Attic skips paths already signed by the official `cache.nixos.org-1` key.
 
 No system/Home Manager aggregate closure is published. Proprietary Spotify,
-Discord/Equicord, Brave and Kotlin LSP are deliberately excluded.
+Discord and Kotlin LSP are deliberately excluded.
 `allowUnfree` on the desktop is not redistribution permission. VTS OpenDeck's
 separate exported package is not a cache target (the desktop uses Flatpak).
 If proprietary caching becomes necessary, first establish redistribution rights
@@ -367,6 +367,10 @@ git pull --ff-only
 nix run path:/etc/nixos#attic-setup -- github
 ```
 
+Desktop consumption is disabled: host `nix` uses only Yandex and the official
+NixOS cache. The following optional client procedure requires first restoring
+`nix.extraOptions = "!include /etc/nix/attic.conf";` in the desktop's source
+configuration as an explicitly approved cache-policy change.
 Wait for successful cache publication before approving desktop activation:
 
 ```sh
@@ -385,8 +389,8 @@ for sudo.
 
 `client` asks before writing root-owned `/etc/nix/attic.conf` and separately
 before desktop activation/daemon restart. An identical existing file is reused.
-A different file or symlink is refused rather than overwritten. Missing include
-means that the existing substituters remain in use until activation. This file contains only
+A different file or symlink is refused rather than overwritten. The source include
+must be enabled before client setup; existing daemon settings change only after activation. This file contains only
 `extra-substituters` and `extra-trusted-public-keys`: no JWT or private key.
 Official caches/signature checking remain enabled. No trusted user is added.
 Server/Darwin trust is unchanged.

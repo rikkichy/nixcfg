@@ -1,13 +1,11 @@
+{ lib, ... }:
+
 {
   nix.settings = {
     experimental-features = [ "nix-command" "flakes" ];
-    substituters = [
+    substituters = lib.mkForce [
       "https://mirror.yandex.ru/nixos/?priority=10"
-      "https://cache.nixos.org/?priority=5"
-      "https://cache.lantian.pub/lantian"
-    ];
-    trusted-public-keys = [
-      "lantian:WVGO7vsRMSEN+h7Lp7kv6SAmrkEXgUGbbXm7jMDjBuQ="
+      "https://cache.nixos.org/?priority=40"
     ];
     max-jobs = 2;
     cores = 8;

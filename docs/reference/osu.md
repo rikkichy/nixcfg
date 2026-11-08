@@ -25,9 +25,6 @@ file to preserve those edits.
 `home.activation.osuSettings` in
 `hosts/nix/modules/home/applications.nix` seeds these files instead. It copies
 only absent files and leaves subsequent changes to the game.
-Equicord's `settings.json` is also writable, but explicitly declared plugin
-preferences merge on activation while private/runtime state remains local;
-theme selection and QuickCSS defaults seed only when absent. See [Discord](discord.md).
 **A partial file is enough.** osu!framework applies the keys it finds and keeps
 its own defaults for the rest. It writes the full set on exit.
 

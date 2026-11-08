@@ -12,12 +12,6 @@ Source ownership paths below are repository-relative. The
   symlinks or overwrite existing seeds. Keep credentials, account data and osu!
   database-specific IDs out of seeds; do not seed `framework.ini` or `client.realm`.
   See [osu!](../../../../docs/reference/osu.md).
-- Equicord is the explicit merge exception, owned by `common/modules/discord.nix`:
-  declared plugin preferences merge on activation, while private/runtime state
-  stays local. Theme/QuickCSS defaults seed only when settings are absent.
-  Close Discord before approved activation; never export its whole settings.
-  Keep static theme CSS separate from generated QuickCSS, which must be written
-  in place because atomic rename breaks its watcher. See [Discord](../../../../docs/reference/discord.md).
 - Thunar bookmarks are intentionally declarative GTK store links; declared xfconf
   values reapply at activation while undeclared values remain app-owned.
   Preserve tumbler/xfconf integration. Diagnose a portal activation stall by

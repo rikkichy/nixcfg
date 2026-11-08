@@ -72,9 +72,6 @@ Source edits do not authorize a switch or app restart against the user's live se
 
 ## Shared integrations and Linux-only modules
 
-- `common/modules/discord.nix` owns writable Equicord settings and the explicit
-  plugin-preference merge, not private/runtime state. Read the [Discord contract](../docs/reference/discord.md).
-  Static themes and in-place-written QuickCSS are separate; atomic rename breaks its watcher.
 - `common/dotfiles/matugen/` is used by Linux and Darwin. Preserve the shared
   assignment format, writable generated palettes, and distinct ANSI hues.
   Read the [palette contract](../docs/reference/palettes.md) before changing consumers.

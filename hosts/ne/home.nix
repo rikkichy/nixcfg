@@ -2,7 +2,6 @@
 
 {
   imports = [
-    ../../common/modules/discord.nix
     ../../common/modules/spotify.nix
     ./modules/home/spotify.nix
     ./modules/home/discord.nix

@@ -1,66 +1,21 @@
-# Discord and its theme
+# Discord
 
-[Shared Discord guidance](../../common/dotfiles/discord/AGENTS.md) · [Shared template guidance](../../common/dotfiles/matugen/AGENTS.md)
+Both desktop hosts install vanilla Discord from Nixpkgs, without injected client
+mods, declarative plugins, custom themes or Matugen palette output.
 
-Source ownership paths below are repository-relative.
+Source ownership paths are repository-relative:
 
-Both hosts install `discord.override { withEquicord = true; }`: Linux through
-`hosts/nix/modules/system/applications.nix`, Darwin through
-`hosts/ne/modules/home/discord.nix`. Darwin packaging selects Discord's legacy
-updater. Activation disables host/module updates and stages the pinned native
-modules for Finder launches. See [the Mac guide](../ne.md#discord-and-equicord)
-for the native-updater compatibility constraint.
-`common/modules/discord.nix` owns the static theme, seeds theme selection and
-QuickCSS only when settings are absent, and merges plugin preferences on activation.
-Each host's `modules/home/matugen.nix` owns its writable palette output.
+- Linux: `hosts/nix/modules/system/applications.nix` installs `pkgs.discord`.
+- macOS: `hosts/ne/modules/home/discord.nix` retains the legacy-updater selection,
+  disables host/module updates and stages pinned native modules for Finder
+  launches. See [the Mac guide](../ne.md#discord) for the updater constraint.
 
-## Declarative plugins
+Discord owns its writable profile and account data. Package changes do not clear
+that profile or delete old client-mod data; vanilla Discord does not load it.
+Updates follow the Nixpkgs pin and rebuild, not an external client-mod installer.
 
-`common/dotfiles/discord/plugins.nix` declares enabled plugins and their
-preferences. Close Discord before rebuilding: its in-memory settings can
-overwrite external edits. Activation disables existing plugin entries, then
-recursively merges the declarations into the writable settings file. Plugins
-omitted from the declarations are disabled. Equicord may enable required
-dependencies itself. Declared values override GUI edits at the next activation.
-
-Undeclared preferences, plugin runtime state, theme selection and private account
-or cloud data remain local. Do not export the entire settings file into this public
-repository. The synchronizer writes a mode-600 temporary file alongside the
-destination and renames it only after successful JSON processing. Invalid input
-leaves the existing settings untouched. This settings file is not QuickCSS and
-does not use its inode-watcher contract.
-
-## Color-only theme
-
-Enable **Wallpaper** in Equicord and leave other themes disabled for Discord's
-native layout, icons, fonts, controls and animations. Other local theme files
-are not managed or deleted by this configuration.
-
-- `themes/wallpaper.theme.css` is a static Home Manager store symlink to
-  `common/dotfiles/discord/theme.css`. It maps palette variables to
-  Discord's native color variables, without layout rules, custom elements,
-  font overrides, animation overrides or remote imports.
-- `settings/quickCss.css` is the palette, rendered by Matugen from
-  `common/dotfiles/matugen/templates/discord-palette.css` when the host's wallpaper
-  command runs (`wpp` on Linux, `wallpaper-theme` on Darwin). Keep **QuickCSS** enabled.
-
-The palette is required by the static mappings. Disabling QuickCSS is not a
-supported fallback palette. Disable Wallpaper too to use Discord's own colors.
-Custom user-profile themes are excluded from the theme-class overrides.
-The accent and red ramps follow the wallpaper. Green, yellow and purple stay
-fixed so low-chroma wallpapers do not collapse distinct status colors.
-
-## File watching
-
-Equicord's data directory is `~/.config/Equicord` on Linux and
-`~/Library/Application Support/Equicord` on macOS, overridable with
-`EQUICORD_USER_DATA_DIR`. The theme watcher watches `themes/`. The QuickCSS
-watcher watches the file inode. Matugen must truncate and rewrite QuickCSS in
-place. Renaming a staged file over it causes subsequent updates to lose the watcher.
-
-Theme reloads use asynchronous `vencord://` imports. QuickCSS instead assigns
-text directly to a live style element, after theme styles, with a 50ms read
-debounce. Keeping wallpaper updates in QuickCSS avoids dropping the static
-theme during each palette update. Theme symlinks into the Nix store are supported.
-
-Preview color changes only in an isolated or separately approved Discord session.
+For startup diagnosis, use an isolated disposable profile and graphical session,
+not the user's signed-in session. Confirm that the login form renders rather than
+treating process startup as success. A Linux Xvfb check does not verify Wayland GPU
+rendering, signed-in behavior or macOS Finder launches. Those checks remain
+operator acceptance after activation.

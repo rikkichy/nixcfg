@@ -90,11 +90,11 @@ in
   xdg.mimeApps = {
     enable = true;
     defaultApplications = {
-      "text/html" = "brave-origin.desktop";
-      "x-scheme-handler/http" = "brave-origin.desktop";
-      "x-scheme-handler/https" = "brave-origin.desktop";
-      "x-scheme-handler/about" = "brave-origin.desktop";
-      "x-scheme-handler/unknown" = "brave-origin.desktop";
+      "text/html" = "chromium-browser.desktop";
+      "x-scheme-handler/http" = "chromium-browser.desktop";
+      "x-scheme-handler/https" = "chromium-browser.desktop";
+      "x-scheme-handler/about" = "chromium-browser.desktop";
+      "x-scheme-handler/unknown" = "chromium-browser.desktop";
       "inode/directory" = "thunar.desktop";
       "video/mp4" = "mpv.desktop";
       "video/x-matroska" = "mpv.desktop";

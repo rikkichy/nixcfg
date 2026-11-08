@@ -29,7 +29,7 @@ Palettes are generated only after display acceptance. See the canonical
 [wallpaper state machine](wallpapers.md) for apply ordering, failures and success-record semantics.
 Matugen writes `hypr/scheme/current.lua`,
 `quickshell/colors.json`, both GTK and Thunar styles,
-btop/nvtop/Qt palettes, Equicord QuickCSS and terminal colours.
+btop/nvtop/Qt palettes and terminal colours.
 GTK3/GTK4 outputs remain separate entries: this matugen pin loses earlier paths
 in multi-output templates.
 Consequences:

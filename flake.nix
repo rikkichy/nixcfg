@@ -107,7 +107,6 @@
           ./common/modules/nixos-mihomo-secrets.nix
 
           { nixpkgs.overlays = [ commonOverlay overlay ]; }
-          { nix.extraOptions = "!include /etc/nix/attic.conf"; }
 
           home-manager.nixosModules.home-manager
           {

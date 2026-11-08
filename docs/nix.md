@@ -117,17 +117,18 @@ Telegram activation requests do not steal focus or reveal its workspace.
 Use **META + D** to reveal it. Notification clicks that request application
 activation follow the same focus policy.
 
-Brave Origin (`pkgs.brave-origin`) is the default browser for the browser shortcut,
+Chromium (`pkgs.chromium`) is the default browser for the browser shortcut,
 HTML files and web links. Its profile remains application-owned under
-`~/.config/BraveSoftware/Brave-Origin`. No extensions are force-installed.
+`~/.config/chromium`. Existing Brave Origin data under
+`~/.config/BraveSoftware/Brave-Origin` is left untouched; it is not automatically
+imported. No extensions are force-installed, and Chromium has no Brave Shields.
 Normal new tabs use a Nix-store HTML page with a solid black (`#000`) background,
-enforced by `NewTabPageLocation` in the managed Brave policies. The dashboard is
-replaced entirely: no top sites, clock, Stats cards, or search widget. Search in
-the address bar remains available. This applies to existing profiles without
-rewriting their preferences; dashboard customization toggles are not changed.
-The page and policy are declared in `hosts/nix/modules/system/applications.nix`.
-After activating the configuration, restart Brave; `brave://policy` shows the
-loaded policy. Private windows retain Brave's private new-tab page.
+enforced by `NewTabPageLocation` in the managed Chromium policies. Address-bar
+search remains available. The page and policy are declared in
+`hosts/nix/modules/system/applications.nix`.
+After activating the configuration, restart Chromium; `chrome://policy` shows
+the loaded policies. Verify the browser shortcut, web-link defaults and new-tab
+page in the desktop session. Incognito windows retain Chromium's own new-tab page.
 
 OpenBot is not installed on the desktop. Its independent
 [server container](nixos-server.md#openbot-agent-server) is managed on `nixos-server`.
@@ -648,47 +649,27 @@ Update selected pins with `nix flake update nixpkgs home-manager --flake /etc/ni
 **nh os switch --update** updates all inputs, rebuilds and switches.
 Review and commit `flake.lock` after a successful build.
 
-The desktop configures the NixOS cache endpoints and the CachyOS maintainer's signed binary cache.
-Endpoint and public-key declarations live in `hosts/nix/modules/system/nix.nix`.
-The latter adds trust in a third-party publisher, not an official NixOS build service.
-The stock kernel comes from the main Nixpkgs pin. No separate CachyOS kernel input or overlay is active.
-The Lantian cache and its signing key remain configured independently of kernel selection.
+The desktop uses only the Yandex NixOS mirror (priority 10) and the official
+NixOS cache (priority 40). Lower numbers are tried first. Endpoint declarations
+live in `hosts/nix/modules/system/nix.nix`; only the official NixOS signing key
+is trusted. The stock kernel comes from the main Nixpkgs pin.
 NVIDIA, NCT6687, and v4l2loopback remain separate matching packages and can require local compilation.
 
-Before the cache settings are active, an ordinary user's key override can be rejected by the Nix daemon.
-For a separately approved first build on the desktop or Linux builder, use a root invocation with the reviewed configuration's cache settings:
+Activation is required to replace the running daemon's cache settings.
+For a separately approved build before activation, this Fish command replaces
+the old cache list with the evaluated source policy without switching the system:
 
-```bash
-cache=$(nix eval --no-update-lock-file --json \
-  path:/etc/nixos#nixosConfigurations.nix.config.nix.settings \
-  --apply 's: { inherit (s) substituters trusted-public-keys; }')
-sudo nix build --no-link --no-update-lock-file \
-  --option extra-substituters "$(jq -r '.substituters | join(" ")' <<<"$cache")" \
-  --option extra-trusted-public-keys "$(jq -r '.["trusted-public-keys"] | join(" ")' <<<"$cache")" \
-  path:/etc/nixos#nixosConfigurations.nix.config.system.build.toplevel
+```fish
+sudo nix build --no-link --no-update-lock-file --option substituters (nix eval --raw path:/etc/nixos#nixosConfigurations.nix.config.nix.settings --apply 's: builtins.concatStringsSep " " s.substituters') path:/etc/nixos#nixosConfigurations.nix.config.system.build.toplevel
 ```
 
-This permits downloads for the build without activating services or disabling signature checks.
-After approved activation installs the cache settings, ordinary builds use them without these command-line overrides.
-Cache misses can still compile locally. Do not bypass signatures to avoid a build.
+Cache misses can still compile locally. Signature checks remain enabled.
 
-The optional signed Attic cache at `https://cache.kror.net/nixcfg` supplies
-only `google-sans-rounded`, `tg-ws-proxy` and `vpn` through
-`.github/workflows/package-cache.yml`. Follow the
-[server cache provisioning and desktop trust procedure](nixos-server.md#public-package-cache-attic)
-before enabling it. An absent `/etc/nix/attic.conf` leaves only the declared
-NixOS and CachyOS cache endpoints. CI builds the committed lock file and publishes exact derivation outputs.
-Commit input updates and wait for successful publication before expecting matching downloads.
-Proprietary application and full-host closures are not public cache targets.
-A binary cache moves compilation to CI. It does
-not make a new patch/input revision available before its first build finishes.
-
-After server provisioning, guided desktop setup uses
-`nix run path:/etc/nixos#attic-setup -- client`. GitHub publication credentials
-use the same command with `github`. Run both as your normal user with the SSH
-YubiKey connected. The helper verifies the saved server public key over SSH
-against the HTTPS cache and asks before trust installation, activation or
-GitHub changes. DNS and inbound server TCP 80/443 remain operator prerequisites.
+The server's signed Attic cache and GitHub publication workflow remain separate
+from desktop cache consumption. The desktop does not include `/etc/nix/attic.conf`,
+even if that file already exists. Do not run `attic-setup -- client` under this
+two-cache policy. Re-enabling it requires an explicit source-policy change and
+the [server cache provisioning and desktop trust procedure](nixos-server.md#public-package-cache-attic).
 
 To avoid ordinary local compilation, inspect the build plan after updating:
 

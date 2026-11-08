@@ -6,7 +6,6 @@
     ./modules/home/desktop-tools.nix
     ./modules/home/matugen.nix
     ./modules/home/applications.nix
-    ../../common/modules/discord.nix
     ../../common/modules/spotify.nix
     ../../common/modules/shell.nix
     ../../common/modules/ssh.nix
