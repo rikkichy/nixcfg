@@ -37,13 +37,30 @@ let
         notifications = 2;
         media_stream_mic = 2;
         media_stream_camera = 2;
+        geolocation = 2;
       };
     };
     # 3 = extended preloading.
     net.network_prediction_options = 3;
     vertical_tabs.enabled = true;
-    # Past the restore-tabs infobar's show limit (3 in Chrome 157).
-    browser.session_restore_infobar_times_shown = 9999;
+    browser = {
+      # Past the restore-tabs infobar's show limit (3 in Chrome 157).
+      session_restore_infobar_times_shown = 9999;
+      enable_spellchecking = false;
+    };
+    # Google Password Manager off. WebAuthn with security keys, iCloud Keychain
+    # and phones stays available; only creating passkeys in GPM is disabled.
+    credentials_enable_service = false;
+    credentials_enable_autosignin = false;
+    translate.enabled = false;
+    # Safe Browsing "No protection".
+    safebrowsing = {
+      enabled = false;
+      enhanced = false;
+    };
+    # Always use secure connections: warn for public and private sites.
+    https_only_mode_enabled = true;
+    https_first_balanced_mode_enabled = false;
   };
 
   seed = pkgs.runCommand "chrome-profile-seed" { } ''

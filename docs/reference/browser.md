@@ -38,13 +38,21 @@ the seed affects only profiles created afterwards.
 Seeded values are ordinary user settings, not policy, and stay changeable in Settings:
 
 - profile name `Default`; first-run screens skipped
-- notifications, microphone and camera blocked by default, with per-site exceptions possible
+- notifications, microphone, camera and location blocked by default, with per-site exceptions possible
 - extended preloading (`net.network_prediction_options = 3`)
 - performance issue alerts, Memory Saver and Energy Saver off
 - vertical tabs (`vertical_tabs.enabled`)
 - What's New tab and "Continue where you left off" infobar suppressed
   (`browser.last_whats_new_version`, `browser.session_restore_infobar_times_shown`)
 - on-device AI model off (`optimization_guide.on_device_foundational_model_user_settings`)
+- Google Password Manager offers and auto sign-in off (`credentials_enable_service`,
+  `credentials_enable_autosignin`). This disables only passkey creation in Google
+  Password Manager; security keys, iCloud Keychain and phone passkeys remain available.
+- spell check and Translate off (`browser.enable_spellchecking`, `translate.enabled`)
+- Safe Browsing "No protection" (`safebrowsing.enabled = false`). This removes
+  Chrome's malware and phishing warnings.
+- Always use secure connections, warning for public and private sites
+  (`https_only_mode_enabled = true`, balanced mode off)
 
 Chrome 157 has no recommendable policy for most of these, and Mac Chrome treats
 plain user defaults as recommended policy only. To apply the seed to an existing
