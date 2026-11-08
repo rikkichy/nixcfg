@@ -39,8 +39,8 @@ PanelWindow {
     readonly property bool bluetoothEnabled: Bluetooth.adapters.values.some(adapter => adapter.enabled)
     readonly property int bluetoothConnections: Bluetooth.devices.values.filter(device => device.connected).length
     readonly property var activeWorkspace: {
-        const specialId = monitor?.lastIpcObject.specialWorkspace?.id;
-        return (specialId ? Hyprland.workspaces.values.find(workspace => workspace.id === specialId) : null) || monitor?.activeWorkspace || null;
+        const specialName = monitor?.lastIpcObject.specialWorkspace?.name;
+        return (specialName ? Hyprland.workspaces.values.find(workspace => workspace.name === specialName) : null) || monitor?.activeWorkspace || null;
     }
     readonly property var occupiedWorkspaces: Hyprland.workspaces.values.filter(workspace => workspace.monitor === monitor && workspace.toplevels.values.length > 0).sort((a, b) => a.id - b.id)
 
