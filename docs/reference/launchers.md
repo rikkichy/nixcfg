@@ -8,13 +8,13 @@ Source ownership paths below are repository-relative.
 
 - `hosts/nix/modules/home/desktop-tools.nix`: general desktop entries and Nix maintenance entries; utility entries call Quickshell IPC directly.
 - `hosts/nix/modules/home/matugen.nix`: wallpaper entries/pickers and theming dependencies. See [wallpapers](wallpapers.md).
-- `hosts/nix/dotfiles/ricing/hypr/hyprland/keybinds.lua`: launcher release bindings. `hosts/nix/dotfiles/ricing/quickshell/Bar.qml`: symbolic rail launcher.
+- `hosts/nix/dotfiles/ricing/hypr/hyprland/keybinds.lua`: launcher release bindings.
 - `hosts/nix/dotfiles/ricing/quickshell/Launcher.qml` and `desktop-apps.py`: shared app/tool grid, native index integration and GIO visibility/launch bridge. `hosts/nix/modules/home/quickshell.nix` packages the helper and configures Foot as the XDG terminal.
 - `hosts/nix/pkgs/ricing/mignon-icon-theme.nix`: pinned Mignon icon package. `applications.nix` selects `Mignon-pastel-dark` for GTK and Qt. Broken upstream aliases are omitted, preserving inherited icon fallback.
 
 `UtilityPicker.qml` supplies the launcher's native VPN, blue-light, power and emoji views. `UtilityData.js` parses exact VPN rows and pinned Unicode data. `quickshell.nix` supplies command dependencies and `QS_EMOJI_DATA`/`QS_VPN_CONFIG`.
 
-Bare Meta calls `quickshell -c expressive ipc call desktop toggle launcher`; the rail opens the same apps-only grid on its own monitor. Meta+Alt calls `desktop toggle tools`. The same chord dismisses its mode; the other chord changes modes. Quickshell supplies desktop metadata and change signals. GIO supplies separate app/tool visibility sets and performs launches because Quickshell 0.3.2 does not expose desktop visibility restrictions or fully implement desktop-file execution. Metadata snapshots must not retain native objects. The helper receives mode, exact desktop ID and optional action ID as separate argv items; it rechecks visibility and action membership at launch. GIO preserves terminal, working-directory and field-code semantics. `xdg-terminal-exec` uses the managed `foot.desktop` preference.
+Bare Meta calls `quickshell -c expressive ipc call desktop toggle launcher` to open the apps-only grid on the focused monitor. Meta+Alt calls `desktop toggle tools`. The same chord dismisses its mode; the other chord changes modes. Quickshell supplies desktop metadata and change signals. GIO supplies separate app/tool visibility sets and performs launches because Quickshell 0.3.2 does not expose desktop visibility restrictions or fully implement desktop-file execution. Metadata snapshots must not retain native objects. The helper receives mode, exact desktop ID and optional action ID as separate argv items; it rechecks visibility and action membership at launch. GIO preserves terminal, working-directory and field-code semantics. `xdg-terminal-exec` uses the managed `foot.desktop` preference.
 
 The GIO visibility snapshot loads at shell start and refreshes on native desktop-entry
 changes, so the first open needs no scan. Opening an unchanged Apps or Settings view does not spawn another scan.

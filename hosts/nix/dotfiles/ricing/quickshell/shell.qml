@@ -16,7 +16,6 @@ ShellRoot {
     property rect origin: Qt.rect(12, 12, 56, 48)
     property bool barsVisible: true
     property alias notifications: notificationCenter
-    property alias launcher: appLauncher
 
     onPanelWindowChanged: if (!panelWindow && popover)
         closePanel()

@@ -128,17 +128,6 @@ PanelWindow {
                 trayToggle.forceActiveFocus();
             }
 
-            IconRailButton {
-                id: launcherButton
-                anchors.top: parent.top
-                implicitHeight: 56
-                iconName: "boxicons-layers-filled"
-                prominent: true
-                checked: shell.launcher.opened && shell.launcher.mode === "apps" && shell.launcher.screen === bar.screen
-                description: "Open applications"
-                onClicked: shell.togglePanel("launcher", bar.screen, launcherButton)
-            }
-
             Column {
                 id: workspaceButtons
                 width: parent.width
@@ -240,7 +229,7 @@ PanelWindow {
                 color: Theme.surfaceContainerHigh
                 ScrollView {
                     id: trayViewport
-                    readonly property real maximumHeight: Math.max(48, notificationsButton.y - trayToggle.height - launcherButton.height - 32)
+                    readonly property real maximumHeight: Math.max(48, notificationsButton.y - trayToggle.height - 32)
                     anchors.top: parent.top
                     width: parent.width
                     height: Math.min(maximumHeight, Math.min(trayIcons.implicitHeight + 8, maximumHeight) * Math.max(0, trayCapsule.expansion))

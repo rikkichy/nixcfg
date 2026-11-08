@@ -310,12 +310,35 @@ The first client starts the daemon. Restart-policy containers do not start merel
 because the machine boots. Weekly automatic pruning can also start Docker, and
 the daemon does not automatically exit when idle.
 
-Waydroid is enabled through `virtualisation.waydroid.enable` in the desktop
-applications module, with `pkgs.waydroid-nftables` selected explicitly. Its native
-nftables backend avoids the legacy `ip_tables` kernel dependency without changing
-the host firewall backend. Android images and container/session data remain
-application-owned rather than managed by this checkout. Applying the package
-selection requires separately approved activation.
+Waydroid is enabled in the desktop applications module. Its package in
+`hosts/nix/pkgs/waydroid.nix` extends `pkgs.waydroid-nftables`, avoiding the legacy
+`ip_tables` kernel dependency without changing the host firewall backend.
+
+The package pins the Android 13 `libndk_translation` ARM32/ARM64 payload by
+revision and SHA-256. Waydroid mounts it directly from the Nix store as an
+additional system-overlay lower layer and includes the native-bridge properties
+in `/vendor/waydroid.prop`, which Android 13 loads after its image properties.
+No runtime installer, download, resetprop binary or image modification is needed.
+Keep `mount_overlays = True` in `/var/lib/waydroid/waydroid.cfg`; review the
+translator pin before upgrading Android beyond 13.
+
+Android images, apps, data and the existing writable overlay remain
+application-owned. Switching the package changes the translator on the next
+container/session restart; removing this package override removes its lower
+layer and generated bridge properties on restart. Activation and restarting a
+running Android session require separate approval.
+
+APKs with incomplete x86 libraries can still select x86 ahead of ARM. For the
+Troll Face Quest Video Games APK, reinstall without clearing app data after the
+bridge is active:
+
+```sh
+adb install -r --abi arm64-v8a '/home/ri/Downloads/Troll+Face+Quest_+Video+Games_226.1.31_APKPure.apk'
+```
+
+Check `adb shell getprop ro.dalvik.vm.native.bridge` for
+`libndk_translation.so`, then launch the game and inspect its logcat. A successful
+Nix build or overlay mount does not establish game compatibility.
 
 The desktop session disables Speech Dispatcher, including its user socket,
 and desktop networking disables ModemManager. Speech Dispatcher-based screen
@@ -464,8 +487,8 @@ so a configuration rebuild updates the unit as well as its files. After separate
 activation approval, apply with `nh os switch --no-nom`. No manual notification daemon
 or wallpaper daemon should run alongside the managed ones.
 
-The left rail places the application launcher above a folded tray toggle,
-notifications, the centered clock/calendar, and occupied workspaces. Empty workspaces are
+The left rail contains a folded tray toggle, notifications, the centered
+clock/calendar, and occupied workspaces. Empty workspaces are
 hidden. Occupied ordinary and special workspaces appear beneath the clock.
 Tray icons expand vertically upward without moving the clock or overlapping
 the notification button. Escape or the toggle collapses them.
@@ -503,7 +526,7 @@ Emoji searches pinned Unicode data and copies the selected character to the clip
 Utility views return to Settings; VPN submenus return to VPN.
 DND is available in notification history.
 
-The app launcher opens on the focused monitor (or the clicked rail's monitor).
+The app launcher opens with META on the focused monitor.
 It uses a 56px pill-shaped search field, responsive tonal tiles, the current Matugen
 palette and Google Sans Flex. Search ranks name prefixes, contiguous matches and
 subsequences, with desktop ID, generic name, executable and keywords as fallback.

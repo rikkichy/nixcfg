@@ -107,7 +107,7 @@
 
   virtualisation.waydroid = {
     enable = true;
-    package = pkgs.waydroid-nftables;
+    package = pkgs.callPackage ../../pkgs/waydroid.nix { };
   };
 
   services.printing.enable = false;
