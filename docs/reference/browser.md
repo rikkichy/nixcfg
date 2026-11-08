@@ -2,18 +2,22 @@
 
 Source ownership paths below are repository-relative. See the [desktop runbook](../nix.md) before consequential action.
 
-Chromium comes from `pkgs.chromium` in `hosts/nix/modules/system/applications.nix`.
-`hosts/nix/dotfiles/ricing/hypr/variables.lua` selects `chromium`, and
-`hosts/nix/modules/home/applications.nix` owns the `chromium-browser.desktop` HTML
-and URL-handler defaults. The browser owns its writable profile under
-`~/.config/chromium` after the seed below.
+Google Chrome comes from `pkgs.google-chrome` in `hosts/nix/modules/system/applications.nix`
+on the desktop and from `hosts/ne/home.nix` on the Mac. It is unfree and not a
+[cache target](../nixos-server.md#targets-and-publication-boundary).
+`hosts/nix/dotfiles/ricing/hypr/variables.lua` selects `google-chrome-stable`, and
+`hosts/nix/modules/home/applications.nix` owns the `google-chrome.desktop` HTML
+and URL-handler defaults. The package's hidden `com.google.Chrome.desktop` entry is
+not used. The browser owns its writable profile under `~/.config/google-chrome`
+after the seed below.
 Do not copy another browser's profile over it or delete old profiles during package changes.
 Bitwarden uses the native `bitwarden-desktop` package in
 `hosts/nix/modules/system/applications.nix`. Its launcher comes from that package.
 Spotify uses the native `common/modules/spotify.nix` package. See [shared Spotify integration](../shared.md#spotify-and-wallpaper-colors).
 
 `programs.chromium` in `hosts/nix/modules/system/applications.nix` installs no
-browser. It writes policy JSON under `/etc/chromium/policies/managed/`.
+browser. It writes the desktop's policy JSON under both `/etc/chromium/policies/managed/`
+and `/etc/opt/chrome/policies/managed/`; Chrome reads the latter. Mac Chrome has no managed policy.
 `chrome://policy` shows the loaded policies and their source.
 
 No extensions are force-installed. Translation and the browser password manager
@@ -29,7 +33,7 @@ Private new tabs remain browser-owned.
 ## Profile seed
 
 `common/modules/chrome-profile.nix` seeds the `Default` profile for desktop
-Chromium (`~/.config/chromium`) and Mac Chrome
+Chrome (`~/.config/google-chrome`) and Mac Chrome
 (`~/Library/Application Support/Google/Chrome`). Home Manager activation copies
 it only when that data directory does not exist, staging it as `<dir>.nix-seed`
 and renaming it into place. An existing directory is never modified, so changing

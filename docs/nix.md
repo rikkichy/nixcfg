@@ -117,17 +117,18 @@ Telegram activation requests do not steal focus or reveal its workspace.
 Use **META + D** to reveal it. Notification clicks that request application
 activation follow the same focus policy.
 
-Chromium (`pkgs.chromium`) is the default browser for the browser shortcut,
+Google Chrome (`pkgs.google-chrome`) is the default browser for the browser shortcut,
 HTML files and web links. Its profile remains application-owned under
-`~/.config/chromium` after the one-time [profile seed](reference/browser.md#profile-seed),
+`~/.config/google-chrome` after the one-time [profile seed](reference/browser.md#profile-seed),
 which applies only when that directory is absent. No extensions are force-installed.
 Normal new tabs use a Nix-store HTML page with a solid black (`#000`) background,
-enforced by `NewTabPageLocation` in the managed Chromium policies. Address-bar
+enforced by `NewTabPageLocation` in the managed policies. Address-bar
 search remains available. The page and policy are declared in
 `hosts/nix/modules/system/applications.nix`.
-After activating the configuration, restart Chromium; `chrome://policy` shows
+After activating the configuration, restart Chrome; `chrome://policy` shows
 the loaded policies. Verify the browser shortcut, web-link defaults and new-tab
-page in the desktop session. Incognito windows retain Chromium's own new-tab page.
+page in the desktop session. Incognito windows retain Chrome's own new-tab page.
+An earlier `~/.config/chromium` profile is not used or removed by this configuration.
 
 OpenBot is not installed on the desktop. Its independent
 [server container](nixos-server.md#openbot-agent-server) is managed on `nixos-server`.

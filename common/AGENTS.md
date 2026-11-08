@@ -20,7 +20,7 @@ action. Paths below are repository-relative.
   Keep zero-add-on themes loading matching rewritten JS/CSS through native theme patches.
   Read [Spotify](../docs/shared.md#spotify-and-wallpaper-colors) for the operator contract.
 - `common/modules/chrome-profile.nix`: create-only `Default` profile seed for
-  desktop Chromium and Mac Chrome. See the [browser reference](../docs/reference/browser.md#profile-seed).
+  Google Chrome on the desktop and Mac. See the [browser reference](../docs/reference/browser.md#profile-seed).
 - `hosts/ne/modules/home/shell.nix`: Brew/Bun environment only.
 - `hosts/nix/modules/home/foot.nix`: Linux terminal integration. Do not move its
   OSC delivery or systemd behavior into the portable shell module.

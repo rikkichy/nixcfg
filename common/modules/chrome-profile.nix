@@ -6,12 +6,11 @@
 }:
 
 let
-  # Chrome on macOS, Chromium on Linux; both read the same Chromium pref names.
   dataDir =
     if pkgs.stdenv.hostPlatform.isDarwin then
       "${config.home.homeDirectory}/Library/Application Support/Google/Chrome"
     else
-      "${config.xdg.configHome}/chromium";
+      "${config.xdg.configHome}/google-chrome";
 
   localState = {
     profile.info_cache.Default = {

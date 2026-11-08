@@ -3,7 +3,7 @@ local scheme = require("current_scheme")
 return {
     terminal                   = "foot",
 
-    browser                    = "chromium",
+    browser                    = "google-chrome-stable",
     editor                     = "foot -e nvim",
     fileExplorer               = "thunar",
     audioSettings              = "pavucontrol",

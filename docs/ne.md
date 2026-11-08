@@ -39,7 +39,7 @@ Steam and Yubico Authenticator are casks because nixpkgs has no aarch64-darwin b
 Homebrew Bundle adopts an existing `/Applications` copy only when its version
 matches the cask; otherwise activation fails. Move that copy aside and switch again.
 Chromium has neither a Darwin package nor an enabled cask, so Chrome fills that role;
-the desktop's Chromium policies are Linux-only and do not apply. Both browsers share
+the desktop's managed Chrome policies are Linux-only and do not apply. Both share
 the [profile seed](reference/browser.md#profile-seed).
 Bitwarden is the signed App Store build (`masApps`) for Touch ID and browser
 biometric unlock; activation needs an App Store sign-in to install it.

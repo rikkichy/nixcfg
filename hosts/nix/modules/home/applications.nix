@@ -90,11 +90,11 @@ in
   xdg.mimeApps = {
     enable = true;
     defaultApplications = {
-      "text/html" = "chromium-browser.desktop";
-      "x-scheme-handler/http" = "chromium-browser.desktop";
-      "x-scheme-handler/https" = "chromium-browser.desktop";
-      "x-scheme-handler/about" = "chromium-browser.desktop";
-      "x-scheme-handler/unknown" = "chromium-browser.desktop";
+      "text/html" = "google-chrome.desktop";
+      "x-scheme-handler/http" = "google-chrome.desktop";
+      "x-scheme-handler/https" = "google-chrome.desktop";
+      "x-scheme-handler/about" = "google-chrome.desktop";
+      "x-scheme-handler/unknown" = "google-chrome.desktop";
       "inode/directory" = "thunar.desktop";
       "video/mp4" = "mpv.desktop";
       "video/x-matroska" = "mpv.desktop";
