@@ -102,6 +102,12 @@ profile:
   store-selected: true
 
 rules:
+  - DOMAIN,anthropic.com,PROXY
+  - DOMAIN,anthropic.com,REJECT
+  - DOMAIN,claude.ai,PROXY
+  - DOMAIN,claude.ai,REJECT
+  - DOMAIN,chatgpt.com,PROXY
+  - DOMAIN,chatgpt.com,REJECT
   - DOMAIN,noko.chat,PROXY
   - DOMAIN,noko.chat,REJECT
   - DOMAIN,api.noko.chat,PROXY

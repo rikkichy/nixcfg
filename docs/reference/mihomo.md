@@ -73,7 +73,7 @@ turn those into unrestricted firewall openings to fix tunnel routing.
 The controller binds `127.0.0.1:9090`, mixed proxy has `allow-lan: false`, and
 Mihomo DNS and TUN DNS hijacking are disabled. Resolution uses the system DNS.
 Krypton routing uses destination IP and port. TLS SNI sniffing on port 443
-supports the exact Noko, `spype.pages.dev` and `ota.waydro.id` rules without
+supports the exact Anthropic, Claude, ChatGPT, Noko, `spype.pages.dev` and `ota.waydro.id` rules without
 overriding the connection destination. The web dashboard is disabled. The controller API serves the
 picker and CLI. Controller status is not tunnel proof.
 Inspect `ip -br addr show mihomo` for an actual IPv4 address. `UP` with only link-local
@@ -84,7 +84,7 @@ Never expand the token into command arguments or log it. Browser CORS permits on
 localhost controller origin. See the operator guide for ownership and lifecycle.
 
 Scoped mode proxies Krypton's `162.19.224.212` ports `6700` and `3030` plus
-the exact `noko.chat`, `api.noko.chat`, `cdn.noko.chat`, `spype.pages.dev` and
+the exact `anthropic.com`, `claude.ai`, `chatgpt.com`, `noko.chat`, `api.noko.chat`, `cdn.noko.chat`, `spype.pages.dev` and
 `ota.waydro.id` hostnames, with `MATCH,DIRECT` for everything else.
 `vpn mode global` selects `PROXY` in `GLOBAL` before changing Mihomo's mode.
 Global traffic therefore uses the same subscription/server instead of

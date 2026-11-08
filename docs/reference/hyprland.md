@@ -10,7 +10,7 @@ Source ownership paths below are repository-relative.
 
 This is the Lua API (Hyprland ≥0.55), not deprecated hyprlang. `hosts/nix/dotfiles/ricing/hypr/current_scheme.lua` reads `scheme.current`. It falls back to `scheme.default` when loading fails or the required palette shape is missing. Keep that fallback. `hosts/nix/dotfiles/ricing/hypr/variables.lua` interpolates colours, and a failed import can silently truncate configuration, losing keybinds and window rules. Matugen owns the writable generated `hosts/nix/dotfiles/ricing/hypr/scheme/current.lua`. Do not deploy a store symlink there.
 
-The entry point creates `hypr-vars.lua` and `hypr-user.lua` on first start and loads these optional overrides from runtime `~/.config/hypr-user/`. Keep them distinct from tracked sources. Shared shell/Zed settings belong to [common guidance](../../common/AGENTS.md).
+The entry point creates `hypr-vars.lua` and `hypr-user.lua` on first start and loads these optional overrides from runtime `~/.config/hypr-user/`. Keep them distinct from tracked sources. Shared shell/Neovim settings belong to [common guidance](../../common/AGENTS.md).
 
 `io.open(…, "w")` cannot create a missing directory. Preserve `maybe_create`'s `mkdir -p` before the Lua `require`. Without it, a raw Lua error aborts subsequent configuration without a log line.
 

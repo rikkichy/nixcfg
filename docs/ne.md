@@ -19,7 +19,6 @@ Recovery: [Spotify update-cache protection](#spotify-and-spicetify) ·
 - [Discord](#discord)
 - [Spotify and Spicetify](#spotify-and-spicetify)
 - [Marta](#marta)
-- [Zed file associations](#zed-file-associations)
 - [Project environments](#project-environments)
 
 ## Ownership
@@ -29,8 +28,9 @@ upstream Nix package, installs `nh`, and enables Fish as the login shell.
 `hosts/ne/home.nix` imports the shared `common/modules/shell.nix` configuration described below.
 The host does not import the Linux desktop, secrets, or overlays.
 `hosts/ne/home.nix` owns Darwin CLI packages and Prism Launcher.
-Home Manager deploys Ghostty from `pkgs.ghostty-bin` and Zed from `pkgs.zed-editor`
-through its existing `copyApps` activation. Automatic updates are disabled for both apps.
+Home Manager deploys Ghostty from `pkgs.ghostty-bin` through its existing
+`copyApps` activation. Neovim comes from the shared `common/modules/neovim.nix`;
+no GUI editor or file associations are managed.
 `hosts/ne/modules/system/homebrew.nix` retains BetterGlobeKey, maigret, helium-browser,
 Marta, noswoosh, and wallspace. Maigret remains on Brew because the pinned Nix package is broken.
 Google Cloud CLI and Wireshark are not declared or replaced.
@@ -66,13 +66,13 @@ Check deployed Nix binaries, login-shell paths, and Brew dependents first.
 Keep working installations until their replacements work. Do not run blanket `brew cleanup`.
 
 See [shared shell and editor configuration](shared.md#shared-shell-and-editor)
-for portable packages, Zed settings, and language-server ownership.
+for portable packages, Neovim settings, and language-server ownership.
 
 ## Bootstrap
 
 This configuration targets the existing `rii` account. Homebrew must be installed
 at `/opt/homebrew`. nix-darwin manages its inventory, not the Homebrew installation.
-Use an existing terminal for bootstrap. Home Manager installs Ghostty and Zed during activation.
+Use an existing terminal for bootstrap. Home Manager installs Ghostty and Neovim during activation.
 
 Install [Nix](https://nixos.org/download/) in an interactive terminal:
 
@@ -157,7 +157,7 @@ installed taps and unmanaged formulae.
 ## Ghostty and wallpaper themes
 
 The Darwin home configuration also manages Matugen's configuration, `wallpaper-theme`, and
-Ghostty's settings. Home Manager installs both Ghostty and Zed on macOS.
+Ghostty's settings. Home Manager installs both Ghostty and Neovim on macOS.
 Edit Ghostty's settings in `hosts/ne/modules/home/ghostty.nix`,
 not the store-backed files in `~/.config`.
 Control-Command-Return toggles Ghostty's quick terminal while Ghostty is running.
@@ -173,7 +173,6 @@ The command reads the first desktop's wallpaper.
 It writes the mutable Ghostty palette, btop `wallpaper.theme`, Marta `Matugen.theme` and Spotify colors.
 Restart btop or Spotify after regenerating their palettes.
 Wallpaper changes are not watched automatically.
-The captured Zed theme is static. `wallpaper-theme` does not regenerate it.
 
 ## Discord
 
@@ -242,17 +241,6 @@ To restore native reveal actions to Finder, remove the `NSFileViewer` declaratio
 from `hosts/ne/modules/system/preferences.nix`. Switch, then run `defaults delete -g NSFileViewer`.
 Removing the declaration alone does not clear the stored preference. Applications
 that cache it may need restarting.
-
-## Zed file associations
-
-On Darwin, `hosts/ne/modules/home/file-associations.nix` owns the text/source file associations.
-Its user activation runs after `copyApps` and passes the managed `Zed.app` path
-to `hosts/ne/pkgs/zed-file-associations.nix`. The native `NSWorkspace` API handles dynamic content types that `duti` cannot set.
-The explicit app path prevents a leftover manual installation from taking precedence.
-macOS may ask for approval when a default changes. Associations already pointing
-to Zed are skipped. The activation leaves folder, media, archive, PDF, and Adobe
-project defaults alone. To retain a different default for a managed extension,
-remove it from the activation argument list in `file-associations.nix`. Then change it in Finder.
 
 ## Project environments
 

@@ -240,7 +240,7 @@ in
         }
       ) tooling.servers
       // {
-        # Use the same selected servers as Zed, even when alternatives are on PATH.
+        # Keep one explicit server selection even when alternatives are on PATH.
         nil.disabled = true;
         pyright.disabled = true;
         pylsp.disabled = true;

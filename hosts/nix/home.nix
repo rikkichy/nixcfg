@@ -9,7 +9,7 @@
     ../../common/modules/spotify.nix
     ../../common/modules/shell.nix
     ../../common/modules/ssh.nix
-    ../../common/modules/zed.nix
+    ../../common/modules/neovim.nix
     ./modules/home/foot.nix
   ];
 

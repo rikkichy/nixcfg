@@ -4,7 +4,7 @@ return {
     terminal                   = "foot",
 
     browser                    = "chromium",
-    editor                     = "zeditor",
+    editor                     = "foot -e nvim",
     fileExplorer               = "thunar",
     audioSettings              = "pavucontrol",
 

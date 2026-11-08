@@ -78,7 +78,7 @@ To try the source without activation, launch
 `omp -e /etc/nixos/common/dotfiles/omp/larp.js`.
 
 `common/modules/language-servers.nix` owns the server commands, arguments and
-settings shared by Zed and OMP. Both clients reference the same Nix-store
+settings shared by Neovim and OMP. Both clients reference the same Nix-store
 executables without adding language runtimes to the global PATH.
 The shared shell module generates `~/.omp/agent/lsp.json` for OMP's default
 profile. Project LSP overrides and other OMP profiles remain independent.
@@ -116,14 +116,15 @@ Fish is `ri`'s system login shell. Reconnect SSH after activation to start it.
 Conflicting managed files are preserved with `.before-home-manager`. Existing
 backups are not overwritten.
 
-Only the desktop and Mac import `common/modules/zed.nix`, which owns Zed's read-only
-settings, extension selection, the shared-server adapter, and the captured theme.
-It owns the Zed package on both platforms, using `pkgs.zed-editor` on Darwin
-with `auto_update = false`. Home Manager deploys the Mac app through `copyApps`.
-Edit this module rather than Zed's settings UI. Extensions are installed by Zed
-on startup, not version-pinned by Nix. Before the first activation, back up
-any unmanaged `~/.config/zed/settings.json` or conflicting Matugen theme file.
-Restart Zed after activation so language servers use the new generation.
+Only the desktop and Mac import `common/modules/neovim.nix`, which installs
+Neovim as the default terminal editor with generated Lua configuration, built-in
+completion, LSP integration and format-on-save for the declared languages.
+Edit this module rather than generated store files. Restart Neovim after
+activation to use the new configuration. The Linux editor shortcut and VPN config
+action open Neovim in Foot. macOS has no managed GUI editor or file associations;
+existing associations remain user-owned. Zed's package, generated settings,
+captured theme and activation integration are removed; existing user data and
+installed unmanaged copies are not deleted.
 
 Project environments still come from direnv.
 If nix-direnv loads a previous environment after evaluation fails, Starship displays `stale devShell`.
@@ -132,7 +133,7 @@ Fix the project shell, then run `nix-direnv-reload` to reload it.
 The warning clears when direnv supplies a successfully evaluated environment.
 Fallback remains enabled for offline use.
 
-Zed's Node runtime and the shared gopls fallback Go runtime are tool-scoped, not global project toolchains.
+Neovim's Node provider and the shared gopls fallback Go runtime are tool-scoped, not global project toolchains.
 Darwin uses Nix-managed rustup with mutable, project-owned toolchains.
 Install `rust-src` and `rustfmt` for each project toolchain that needs standard-library navigation and formatting.
 Linux supplies default Rust tools and sources. Project development shells can override them.

@@ -36,7 +36,7 @@ path retains `utils.logging_setup`.
 
 External projects own their toolchains. Prefer official tools and native package
 launchers rather than introducing wrapper scripts or changing shared PATH to
-repair a project's environment. Shared Zed/toolchains belong to
+repair a project's environment. Shared Neovim/toolchains belong to
 [common guidance](../../common/AGENTS.md); macOS applications belong to
 [Darwin guidance](../../hosts/ne/AGENTS.md).
 

@@ -126,7 +126,7 @@ Resolve the [signing-key prerequisite](docs/nix-security.md#secure-boot-with-lim
 
 1. Use the existing `rii` account on Apple Silicon.
    Use an interactive terminal to install [Homebrew](https://brew.sh/) at `/opt/homebrew` and Nix.
-   Home Manager deploys Ghostty and Zed during activation.
+   Home Manager deploys Ghostty and Neovim during activation.
 
    ```sh
    curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install | sh

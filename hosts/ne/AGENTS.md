@@ -30,8 +30,6 @@ Then bootstrap as the normal user with
 | `hosts/ne/modules/home/keyboard.nix` | BetterGlobeKey configuration deployment |
 | `hosts/ne/modules/home/discord.nix` | Vanilla Nix-packaged Discord and native module staging for Finder |
 | `hosts/ne/modules/home/spotify.nix` | post-copy Spotify palette link and non-destructive native updater guard |
-| `hosts/ne/modules/home/file-associations.nix` | explicit text/source extension list |
-| `hosts/ne/pkgs/zed-file-associations.nix` | native NSWorkspace association helper |
 | `hosts/ne/dotfiles/` | Marta template and keyboard configuration |
 
 `flake.nix` imports nix-darwin and Home Manager's Darwin module together, with
@@ -46,8 +44,9 @@ Keep state versions fixed unless deliberately performing a compatibility migrati
   Removing a declaration is not an uninstall. After approved activation and
   runtime checks, verify Brew dependents and the deployed login shell before
   separately approved, targeted duplicate removal. Never run blanket Brew cleanup.
-- Home Manager deploys Ghostty, Zed and Prism through existing `copyApps`.
-  Zed uses `pkgs.zed-editor` with automatic updates disabled.
+- Home Manager deploys Ghostty and Prism through existing `copyApps`.
+- Neovim comes from the shared module; no macOS GUI editor or file associations
+  are managed. Existing Zed file associations are preserved unless the user changes them.
 - Brew retains BetterGlobeKey, maigret, helium-browser, Marta, noswoosh and wallspace.
   Google Cloud CLI and Wireshark are removed from declarations, not migrated.
 - Read [shared guidance](../../common/AGENTS.md) for portable CLI packages, fonts,
@@ -77,11 +76,7 @@ Keep state versions fixed unless deliberately performing a compatibility migrati
   Do not manipulate launch counters or replace application-owned preferences.
   Removing a declared default does not clear its stored value: the guide gives
   the explicit `NSFileViewer` removal procedure.
-- Zed associations use `NSWorkspace` and `UTType`, including dynamic content
-  types. Do not substitute `duti`. Zed must be deployed before association changes. Skip extensions
-  already assigned to it, propagate native failures, and preserve the explicit
-  text/source allowlist. Folder/media/archive/PDF/Adobe defaults stay untouched.
-  macOS may request approval. Changing defaults is an activation side effect.
+- Do not reintroduce Zed-specific file associations. Native associations remain user-owned; do not substitute `duti`. Folder/media/archive/PDF/Adobe defaults stay untouched.
 
 ## Ghostty and wallpaper themes
 
@@ -101,7 +96,6 @@ Generated destinations must remain writable:
 
 Edit templates, not mutable outputs. Read [Ghostty and wallpaper themes](../../docs/ne.md#ghostty-and-wallpaper-themes)
 and [Marta](../../docs/ne.md#marta) for reload/restart and initial selection procedures.
-Keep Zed's theme static.
 Use the exact family `DepartureMono Nerd Font`. Font visibility may require an app restart.
 Keep Spotify's resource link after `copyApps`. See [update-cache recovery](../../docs/ne.md#spotify-and-spicetify)
 before changing the user-immutable updater directory.

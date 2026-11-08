@@ -31,14 +31,14 @@ authentication. Browser origins are restricted to that localhost origin.
 
 Scoped mode proxies the observed Krypton startup endpoints on
 `162.19.224.212` (loader port `6700` and initialization port `3030`) and the
-exact `noko.chat`, `api.noko.chat`, `cdn.noko.chat`, `spype.pages.dev` and
-`ota.waydro.id` hostnames for Noko, Spype and Waydroid OTA traffic. All other
+exact `anthropic.com`, `claude.ai`, `chatgpt.com`, `noko.chat`, `api.noko.chat`, `cdn.noko.chat`, `spype.pages.dev` and
+`ota.waydro.id` hostnames for Anthropic, Claude, ChatGPT, Noko, Spype and Waydroid OTA traffic. All other
 destinations and ports use `DIRECT`, including loopback and private LAN addresses. The
 Krypton IP-and-port rules do not depend on DNS or protocol sniffing.
 `vps-c35938de.vps.ovh.net` is the server's reverse-DNS hostname, not a confirmed
 hostname used by the loader. Update the rules if Krypton's endpoints move.
 
-The Noko, Spype and Waydroid rules use TLS SNI sniffing on port 443. Sniffing changes
+The Anthropic, Claude, ChatGPT, Noko, Spype and Waydroid rules use TLS SNI sniffing on port 443. Sniffing changes
 neither DNS resolution nor the connection destination. Traffic without a visible
 matching hostname, including ECH-hidden SNI, cannot match these rules.
 There are no geosite, ASN or application-process routing rules. Process lookup
@@ -68,7 +68,7 @@ Switching routing mode closes existing Mihomo connections so applications
 reconnect using the new policy. Downloads, calls and games can be interrupted.
 Server and subscription changes do not close existing connections.
 The mode is a runtime choice. Mihomo starts in scoped mode from the template.
-**Edit config** opens the public `common/dotfiles/mihomo.yaml` template in Zed (`zeditor`), including when Mihomo
+**Edit config** opens the public `common/dotfiles/mihomo.yaml` template in Neovim in Foot, including when Mihomo
 is unavailable. It never opens the private rendered configuration. Saving edits
 does not activate them: apply them with an approved NixOS rebuild.
 There are no DIRECT, AUTO or on/off controls. The picker is also available as

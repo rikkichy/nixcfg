@@ -146,7 +146,7 @@ Item {
                 report("QS_VPN_CONFIG is not configured with an absolute path.");
                 return;
             }
-            request(["zeditor", path], () => host.close(), false, true);
+            request(["foot", "-e", "nvim", path], () => host.close(), false, true);
         } else if (entry.action === "emoji") {
             request(["wl-copy", "--", entry.value], () => host.close(), false, true);
         }

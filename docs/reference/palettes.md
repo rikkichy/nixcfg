@@ -11,9 +11,7 @@ Source ownership paths below are repository-relative.
 The terminal template is an assignment format. Linux consumes it as OSC data.
 `hosts/ne/modules/home/matugen.nix` translates its keys into Ghostty syntax.
 Preserve colors 0–18, including Fastfetch accents 16–18, and inspect both consumers
-when changing that format. Shared Zed uses the static captured theme under
-`common/dotfiles/zed/`, not a wallpaper-generated output. See
-[common guidance](../../common/AGENTS.md).
+when changing that format. See [common guidance](../../common/AGENTS.md).
 
 Darwin has an independent `wallpaper-theme` command. It does not use the Linux
 services or OSC delivery. Its lifecycle and mutable Ghostty/Marta
