@@ -392,8 +392,8 @@ before desktop activation/daemon restart. An identical existing file is reused.
 A different file or symlink is refused rather than overwritten. The source include
 must be enabled before client setup; existing daemon settings change only after activation. This file contains only
 `extra-substituters` and `extra-trusted-public-keys`: no JWT or private key.
-Official caches/signature checking remain enabled. No trusted user is added.
-Server/Darwin trust is unchanged.
+Official caches and signature checking stay enabled. No trusted user is added.
+Client setup does not change server or Darwin trust.
 
 For the first activation, the helper builds with the verified cache URL/key as
 root-only Nix invocation options, then activates that exact snapshot through

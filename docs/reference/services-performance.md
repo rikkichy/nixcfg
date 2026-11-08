@@ -120,11 +120,10 @@ from the package registry at build time. See [RGB lighting](../nix.md#rgb-lighti
 
 `hosts/nix/boot.nix` selects the stock Nixpkgs kernel and its stable NVIDIA branch for official cache reuse.
 NCT6687 and v4l2loopback also use that kernel package set.
-The Lantian cache remains configured, but no CachyOS kernel input or overlay is active.
-No explicit lockdown or module-signature enforcement is configured. Limine Secure Boot is unchanged.
+No explicit lockdown or module-signature enforcement is configured.
 Read the [kernel policy and recovery checks](../nix-security.md#local-module-signing-and-integrity-lockdown)
 and [cache trust procedure](../nix.md#updates-and-prebuilt-systems) before using additional caches.
-Boot parameters retain `vsyscall=none`, `slab_nomerge`, and `page_alloc.shuffle=1`.
+Boot parameters include `vsyscall=none`, `slab_nomerge`, and `page_alloc.shuffle=1`.
 `init_on_free` is deliberately absent because of its gaming cost.
 
 ## systemd startup and staged updates

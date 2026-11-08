@@ -6,7 +6,7 @@ Chromium comes from `pkgs.chromium` in `hosts/nix/modules/system/applications.ni
 `hosts/nix/dotfiles/ricing/hypr/variables.lua` selects `chromium`, and
 `hosts/nix/modules/home/applications.nix` owns the `chromium-browser.desktop` HTML
 and URL-handler defaults. The browser owns its writable profile under
-`~/.config/chromium`. Existing Brave Origin profiles are preserved, not imported.
+`~/.config/chromium`.
 Do not copy another browser's profile over it or delete old profiles during package changes.
 Bitwarden uses the native `bitwarden-desktop` package in
 `hosts/nix/modules/system/applications.nix`. Its launcher comes from that package.
@@ -27,8 +27,7 @@ also covers existing profiles without editing their writable preferences.
 No `initial_preferences` package override is needed. Private new tabs remain
 browser-owned.
 
-Chromium does not include Brave Shields. No content-blocking extension is
-declared. Home Manager does not seed Widevine.
+No content-blocking extension is declared. Home Manager does not seed Widevine.
 
 Browser previews use an isolated disposable profile, never the user's existing session.
 Headless rendering does not establish Wayland GPU acceleration or DRM playback.

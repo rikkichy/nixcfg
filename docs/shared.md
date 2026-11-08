@@ -63,10 +63,9 @@ Each launch checks npm's `latest` tag and updates before starting OMP.
 [Bun handles cached execution](https://bun.sh/docs/pm/bunx) when the registry is unavailable.
 The first launch requires network access. OMP releases are not pinned by `flake.lock`
 or restored by a Nix rollback. No update timer or activation-time download is needed.
-The shared Fish initialization puts this launcher ahead of existing Brew or Bun-global installations.
-After activation, open a new terminal. Existing OMP settings, credentials, and sessions stay in `~/.omp`.
-Homebrew cleanup remains disabled. After approved activation and runtime checks,
-remove the old formula only with separate approval: `brew uninstall can1357/tap/omp`.
+The shared Fish initialization puts this launcher ahead of Brew or Bun-global installations.
+After activation, open a new terminal. OMP settings, credentials, and sessions live in `~/.omp`.
+Homebrew cleanup is disabled; uninstall a duplicate `can1357/tap/omp` formula only with separate approval.
 
 The shared OMP extension [`larp.js`](../common/dotfiles/omp/larp.js) adds `/larp`,
 which toggles the status-bar model label to `Claude Mythos 5.5` for the current

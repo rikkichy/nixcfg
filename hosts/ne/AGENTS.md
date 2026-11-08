@@ -49,14 +49,13 @@ Keep state versions fixed unless deliberately performing a compatibility migrati
   nixpkgs lacks a working aarch64-darwin build or signing matters.
 - Neovim comes from the shared module; no macOS GUI editor or file associations
   are managed. Existing Zed file associations are preserved unless the user changes them.
-- Brew retains BetterGlobeKey, maigret, helium-browser, Marta, noswoosh, wallspace,
+- Brew declares BetterGlobeKey, maigret, helium-browser, Marta, noswoosh, wallspace,
   Steam and Yubico Authenticator; Bitwarden is an App Store `masApps` entry.
-  Google Cloud CLI and Wireshark are removed from declarations, not migrated.
 - Read [shared guidance](../../common/AGENTS.md) for portable CLI packages, fonts,
   Zed, and project/toolchain boundaries. Do not duplicate them in Brew or expose
   editor-scoped runtimes as global project toolchains.
-  Rustup is Nix-managed, with mutable, project-owned toolchains. Keep its former
-  `/opt/homebrew/opt/rustup/bin` path out of host shell configuration.
+  Rustup is Nix-managed, with mutable, project-owned toolchains. Keep
+  `/opt/homebrew/opt/rustup/bin` out of host shell configuration.
   For project setup, read [project environments](../../docs/ne.md#project-environments) and the project's guide.
 - Home Manager does not migrate existing account login shells.
   Before approved migration, read [shell migration](../../docs/ne.md#updates-and-shell-migration) and [bootstrap](../../docs/ne.md#bootstrap).

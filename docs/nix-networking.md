@@ -111,7 +111,7 @@ or `vpn select <name>`.
 Source changes do not enable the live kill switch. Activation, service-stop
 tests and reboot each need operator approval and a local recovery console.
 Retain a known-working generation before switching: all Internet applications,
-downloads and games now depend on the chosen proxy and its protocol support.
+downloads and games depend on the chosen proxy and its protocol support.
 
 After approved activation, verify `systemctl is-active mihomo-killswitch`,
 `sudo nft list table inet mihomo_guard`, the TUN's IPv4 address and actual

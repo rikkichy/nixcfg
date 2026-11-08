@@ -357,12 +357,12 @@ Cache misses can compile external modules locally, even when the kernel itself i
 Build and boot-check this combination on the actual desktop before relying on it.
 
 `nh os build --no-nom path:/etc/nixos --hostname nix --no-update-lock-file` builds without activation.
-The stock kernel uses existing NixOS cache trust. The retained Lantian cache has its own [first-build trust procedure](nix.md#updates-and-prebuilt-systems).
+The stock kernel uses existing NixOS cache trust.
 No content-addressed-derivation bootstrap or persistent daemon override is required.
 
 Limine Secure Boot signing, configuration/artifact hash authentication and TPM
-measurement remain unchanged. They do not establish Linux lockdown or
-module-signature enforcement, or an organization signature accepted by anti-cheat.
+measurement do not establish Linux lockdown or module-signature enforcement,
+or an organization signature accepted by anti-cheat.
 
 Activation and reboot require separate approval. Retain a known-working
 generation and the [boot-menu recovery path](#limine-recovery-with-a-zero-timeout).
@@ -377,8 +377,7 @@ fi
 nvidia-smi
 ```
 
-Record the actual running kernel and lockdown state; `[integrity]` and signed
-external modules are no longer acceptance requirements. Verify working NVIDIA
+Record the actual running kernel and lockdown state. Verify working NVIDIA
 graphics, NCT6687 sensors, OBS Cam and the documented disk-unlock fallback.
 Repeat the Secure Boot and TPM operator checks above. A successful build does
 not prove these runtime or firmware properties.

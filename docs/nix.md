@@ -119,9 +119,7 @@ activation follow the same focus policy.
 
 Chromium (`pkgs.chromium`) is the default browser for the browser shortcut,
 HTML files and web links. Its profile remains application-owned under
-`~/.config/chromium`. Existing Brave Origin data under
-`~/.config/BraveSoftware/Brave-Origin` is left untouched; it is not automatically
-imported. No extensions are force-installed, and Chromium has no Brave Shields.
+`~/.config/chromium`. No extensions are force-installed.
 Normal new tabs use a Nix-store HTML page with a solid black (`#000`) background,
 enforced by `NewTabPageLocation` in the managed Chromium policies. Address-bar
 search remains available. The page and policy are declared in
@@ -221,11 +219,10 @@ not a delayed Hyprland command. It starts once per graphical session.
 Session exit stops its managed process. UWSM's existing Flatpak scope policy
 also stops its separate sandbox process tree.
 
-Flatpak bootstrap remains timer-driven and does not block desktop startup.
+Flatpak bootstrap is timer-driven and does not block desktop startup.
 If OpenDeck is missing, successful bootstrap requests its first launch only
 while a graphical session is active. The launch request stays active until
 logout, so later bootstrap completion does not reopen a closed or failed app.
-The daily Flatpak update timer is unchanged.
 Bootstrap and each OpenDeck launch enforce the narrow Discord IPC socket grant.
 Discord must already be running when OpenDeck starts for that socket to be
 available inside the sandbox.
@@ -263,18 +260,17 @@ runs during NixOS activation.
 Kernel and external modules use the same package set. No CPU-specific kernel build is selected.
 The [kernel security section](nix-security.md#local-module-signing-and-integrity-lockdown) owns NVIDIA compatibility and boot acceptance.
 
-`hosts/nix/hardware-policy.nix` retains the cache-rich CCD preference and performance EPP under `amd_pstate=active`.
+`hosts/nix/hardware-policy.nix` sets the cache-rich CCD preference and performance EPP under `amd_pstate=active`.
 The explicit `powersave` governor permits dynamic frequency selection and boosting, rather than fixing every core's minimum performance level.
 GameMode keeps that governor instead of overriding it.
 Its native [L3-topology detection](https://github.com/FeralInteractive/gamemode/blob/1.8.2/daemon/gamemode-cpu.c) selects the larger-cache cores for participating games.
 No CPU numbers are hard-coded, and the other CCD remains available for background work.
 Use `gamemoderun %command%` in a game's Steam launch options when it does not request GameMode itself.
-Ananicy retains ownership of process-priority rules. No sched_ext daemon is enabled.
+Ananicy owns process-priority rules. No sched_ext daemon is enabled.
 
 `hosts/nix/modules/system/gaming.nix` loads NTSync for Wine/Proton builds that support the kernel synchronization interface.
 Loading the module does not force an unsupported game runtime to use it.
-The [Wave XLR policy](#wave-xlr-mk1-and-wave-dx-audio), Wave DX processing, and Blessing III headphone filter remain unchanged.
-Wooting retains its native device-access rules. No global USB polling or audio-buffer override is imposed on the Razer mouse or audio interface.
+Wooting uses its native device-access rules. No global USB polling or audio-buffer override is imposed on the Razer mouse or audio interface.
 DDR5-6000 EXPO, firmware settings, voltages, and GPU clocks are not changed by this configuration.
 
 After an approved boot, check `cpupower frequency-info` and the per-policy `energy_performance_preference` values in `/sys/devices/system/cpu/cpufreq/`.
@@ -369,7 +365,7 @@ Obsidian and Bitwarden are native desktop packages in
 Obsidian uses the nixpkgs default Electron with native Wayland and GPU acceleration.
 Bitwarden uses normal window placement. Hyprland does not force its size or floating state.
 Application data and vault settings remain user-owned. No Obsidian vault is created
-by the configuration, and existing Anytype data is left untouched.
+by the configuration.
 
 ### Obsidian wallpaper colours
 
