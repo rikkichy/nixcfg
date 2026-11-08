@@ -52,7 +52,10 @@ Item {
                     height: history.availableHeight
                     spacing: 12
                     reuseItems: true
-                    model: root.center.entries
+                    model: ScriptModel {
+                        comparisonMode: ObjectComparison.Identity
+                        values: root.center.entries
+                    }
                     delegate: Card {
                         required property var modelData
                         width: notificationList.width

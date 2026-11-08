@@ -113,7 +113,7 @@ PanelWindow {
     }
 
     function loadApplications() {
-        if (!opened || wallpaperMode || utilityMode || !visibilityDirty || visibilityProcess.running)
+        if (!visibilityDirty || visibilityProcess.running)
             return;
         visibilityDirty = false;
         visibilityProcess.accepted = false;
@@ -122,8 +122,7 @@ PanelWindow {
 
     function invalidateApplications() {
         visibilityDirty = true;
-        if (opened && !wallpaperMode && !utilityMode)
-            refresh.restart();
+        refresh.restart();
     }
 
     function previewKey(path, revision) {
@@ -213,6 +212,8 @@ PanelWindow {
         Qt.callLater(loadPreviews);
     }
     onOpenedChanged: Qt.callLater(loadPreviews)
+    // Snapshot GIO visibility before the first open so the grid appears immediately.
+    Component.onCompleted: loadApplications()
     onBackingWindowVisibleChanged: if (backingWindowVisible)
         search.forceActiveFocus(Qt.ShortcutFocusReason)
     onScreenChanged: if (!screen)
@@ -394,6 +395,16 @@ PanelWindow {
         onCleared: launcher.close()
     }
 
+    // One circular mask texture shared by every app icon's colorizing effect.
+    Rectangle {
+        id: iconMask
+        width: 48
+        height: 48
+        radius: 24
+        visible: false
+        layer.enabled: true
+    }
+
     Rectangle {
         anchors.fill: parent
         radius: Theme.radiusExtraLarge
@@ -545,7 +556,7 @@ PanelWindow {
                     activeFocusOnTab: false
                     enabled: launcher.utilityMode ? !utilities.busy : !launcher.wallpaperMode || !launchProcess.running
                     description: (launcher.mode === "emoji" ? "Copy emoji " : launcher.wallpaperMode ? "Apply wallpaper " : "Open ") + modelData.name
-                        + (launcher.wallpaperMode && (previewState === null || wallpaperPreview.status === Image.Error) ? ". Preview unavailable" : "")
+                        + (launcher.wallpaperMode && (previewState === null || wallpaperFrame.item?.failed) ? ". Preview unavailable" : "")
                     onClicked: {
                         grid.currentIndex = index;
                         launcher.launch(index);
@@ -564,67 +575,70 @@ PanelWindow {
                         Item {
                             width: parent.width
                             height: launcher.wallpaperMode ? width * 9 / 16 : 48
-                            ClippingRectangle {
+                            // Wallpaper-only clipping layers are not built for app, tool or utility tiles.
+                            Loader {
+                                id: wallpaperFrame
                                 anchors.fill: parent
-                                visible: launcher.wallpaperMode
-                                radius: Theme.radiusSmall
-                                color: Theme.surfaceContainerHighest
-                                Image {
-                                    id: wallpaperPreview
-                                    anchors.fill: parent
-                                    Binding {
-                                        target: wallpaperPreview
-                                        property: "source"
-                                        // Prefetch files, not Images: Qt's LIFO loader must only see visible tiles.
-                                        value: launcher.wallpaperMode && tile.index >= grid.previewStart && tile.index < grid.visibleEnd
-                                            && tile.previewState !== null ? tile.modelData.preview || tile.previewState || "" : ""
-                                        when: launcher.opened
-                                        // Keep the presented image for the compositor's closing snapshot.
-                                        restoreMode: Binding.RestoreNone
-                                    }
-                                    sourceSize: Qt.size(640, 360)
-                                    fillMode: Image.PreserveAspectCrop
-                                    asynchronous: true
-                                    cache: true
-                                    autoTransform: true
-                                    onStatusChanged: {
-                                        if (status === Image.Error && launcher.opened && launcher.wallpaperMode) {
-                                            launcher.previewCache.delete(tile.modelData.previewKey);
-                                            launcher.previewStates.set(tile.modelData.previewKey, null);
-                                            launcher.previewStatesChanged();
+                                active: launcher.wallpaperMode
+                                sourceComponent: ClippingRectangle {
+                                    readonly property bool failed: wallpaperPreview.status === Image.Error
+                                    radius: Theme.radiusSmall
+                                    color: Theme.surfaceContainerHighest
+                                    Image {
+                                        id: wallpaperPreview
+                                        anchors.fill: parent
+                                        Binding {
+                                            target: wallpaperPreview
+                                            property: "source"
+                                            // Prefetch files, not Images: Qt's LIFO loader must only see visible tiles.
+                                            value: launcher.wallpaperMode && tile.index >= grid.previewStart && tile.index < grid.visibleEnd
+                                                && tile.previewState !== null ? tile.modelData.preview || tile.previewState || "" : ""
+                                            when: launcher.opened
+                                            // Keep the presented image for the compositor's closing snapshot.
+                                            restoreMode: Binding.RestoreNone
+                                        }
+                                        sourceSize: Qt.size(640, 360)
+                                        fillMode: Image.PreserveAspectCrop
+                                        asynchronous: true
+                                        cache: true
+                                        autoTransform: true
+                                        onStatusChanged: {
+                                            if (status === Image.Error && launcher.opened && launcher.wallpaperMode) {
+                                                launcher.previewCache.delete(tile.modelData.previewKey);
+                                                launcher.previewStates.set(tile.modelData.previewKey, null);
+                                                launcher.previewStatesChanged();
+                                            }
                                         }
                                     }
-                                }
-                                Text {
-                                    anchors.centerIn: parent
-                                    visible: wallpaperPreview.status !== Image.Ready
-                                    text: tile.previewState === null || wallpaperPreview.status === Image.Error ? "Preview unavailable" : "Loading preview…"
-                                    color: Theme.textOnSurfaceVariant
-                                    font.family: Theme.fontFamily
-                                    font.pixelSize: 14
+                                    Text {
+                                        anchors.centerIn: parent
+                                        visible: wallpaperPreview.status !== Image.Ready
+                                        text: tile.previewState === null || wallpaperPreview.status === Image.Error ? "Preview unavailable" : "Loading preview…"
+                                        color: Theme.textOnSurfaceVariant
+                                        font.family: Theme.fontFamily
+                                        font.pixelSize: 14
+                                    }
                                 }
                             }
-                            ClippingRectangle {
+                            Image {
+                                id: appIcon
                                 anchors.centerIn: parent
                                 width: 48
                                 height: 48
-                                radius: width / 2
-                                color: "transparent"
-                                visible: !launcher.wallpaperMode && appIcon.status === Image.Ready
-                                Image {
-                                    id: appIcon
-                                    anchors.centerIn: parent
-                                    width: 48
-                                    height: 48
-                                    source: !launcher.wallpaperMode && tile.modelData.icon ? Quickshell.iconPath(tile.modelData.icon, true) : ""
-                                    sourceSize: Qt.size(48, 48)
-                                    fillMode: Image.PreserveAspectCrop
-                                    asynchronous: true
-                                    layer.enabled: visible && status === Image.Ready
-                                    layer.effect: MultiEffect {
-                                        colorization: 1
-                                        colorizationColor: tile.checked ? Theme.textOnSecondaryContainer : Theme.primary
-                                    }
+                                visible: !launcher.wallpaperMode && status === Image.Ready
+                                source: !launcher.wallpaperMode && tile.modelData.icon ? Quickshell.iconPath(tile.modelData.icon, true) : ""
+                                sourceSize: Qt.size(48, 48)
+                                fillMode: Image.PreserveAspectCrop
+                                asynchronous: true
+                                // A single layer both tints and clips to the circle.
+                                layer.enabled: visible
+                                layer.effect: MultiEffect {
+                                    colorization: 1
+                                    colorizationColor: tile.checked ? Theme.textOnSecondaryContainer : Theme.primary
+                                    maskEnabled: true
+                                    maskSource: iconMask
+                                    maskThresholdMin: 0.5
+                                    maskSpreadAtMin: 1
                                 }
                             }
                             BoxIcon {

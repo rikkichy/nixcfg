@@ -199,7 +199,11 @@ Scope {
                     width: popupWindow.width
                     spacing: 12
                     Repeater {
-                        model: popupWindow.popups
+                        // Diffing keeps existing cards and decoded images; filtering preserves order, so rows never move.
+                        model: ScriptModel {
+                            comparisonMode: ObjectComparison.Identity
+                            values: popupWindow.popups
+                        }
                         delegate: NotificationPanel.Card {
                             required property var modelData
                             width: popupColumn.width

@@ -16,8 +16,8 @@ Source ownership paths below are repository-relative.
 
 Bare Meta calls `quickshell -c expressive ipc call desktop toggle launcher`; the rail opens the same apps-only grid on its own monitor. Meta+Alt calls `desktop toggle tools`. The same chord dismisses its mode; the other chord changes modes. Quickshell supplies desktop metadata and change signals. GIO supplies separate app/tool visibility sets and performs launches because Quickshell 0.3.2 does not expose desktop visibility restrictions or fully implement desktop-file execution. Metadata snapshots must not retain native objects. The helper receives mode, exact desktop ID and optional action ID as separate argv items; it rechecks visibility and action membership at launch. GIO preserves terminal, working-directory and field-code semantics. `xdg-terminal-exec` uses the managed `foot.desktop` preference.
 
-The GIO visibility snapshot loads on first use and refreshes on native desktop-entry
-changes. Opening an unchanged Apps or Settings view does not spawn another scan.
+The GIO visibility snapshot loads at shell start and refreshes on native desktop-entry
+changes, so the first open needs no scan. Opening an unchanged Apps or Settings view does not spawn another scan.
 
 Tool entries declare `OnlyShowIn=X-DesktopTools;`. The helper checks that marker and native desktop visibility without changing the session's desktop identity or XDG directories. Native tool actions appear as additional tiles. Search starts empty with normal matching, not an injected keyword. Release bindings handle either modifier-release order and left/right keys. Another Meta+Alt shortcut shadows those bindings.
 

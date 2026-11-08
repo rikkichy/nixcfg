@@ -146,7 +146,11 @@ PanelWindow {
                 anchors.topMargin: 8
                 spacing: 4
                 Repeater {
-                    model: bar.occupiedWorkspaces
+                    // Diffing keeps existing buttons when windows open or close; id order never moves rows.
+                    model: ScriptModel {
+                        comparisonMode: ObjectComparison.Identity
+                        values: bar.occupiedWorkspaces
+                    }
                     delegate: RailButton {
                         id: workspaceButton
                         required property var modelData
