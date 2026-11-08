@@ -39,6 +39,7 @@ let
     };
     # 3 = extended preloading.
     net.network_prediction_options = 3;
+    vertical_tabs.enabled = true;
   };
 
   seed = pkgs.runCommand "chrome-profile-seed" { } ''
