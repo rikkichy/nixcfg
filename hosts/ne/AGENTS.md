@@ -18,10 +18,10 @@ Then bootstrap as the normal user with
 | Source | Owns |
 | --- | --- |
 | `hosts/ne/default.nix` | identity, user, Fish login shell, system imports, state version |
-| `hosts/ne/home.nix` | Home Manager imports, Darwin CLI packages, Prism Launcher and state version |
+| `hosts/ne/home.nix` | Home Manager imports, Darwin CLI packages and Nix-packaged GUI apps |
 | `hosts/ne/modules/system/nix.nix` | upstream Nix and content-addressed derivations |
 | `common/modules/nh.nix` | system-wide nh, NH_FLAKE, flakes and substituters, shared with both Linux hosts |
-| `hosts/ne/modules/system/homebrew.nix` | Brew formulae, casks, taps and BetterGlobeKey service |
+| `hosts/ne/modules/system/homebrew.nix` | Brew formulae, casks, taps, App Store apps and BetterGlobeKey service |
 | `hosts/ne/modules/system/preferences.nix` | native preferences and per-power-source pmset activation |
 | `hosts/ne/modules/home/shell.nix` | Homebrew and Bun PATH integration |
 | `hosts/ne/modules/home/ghostty.nix` | Ghostty package (`pkgs.ghostty-bin`) and settings |
@@ -44,10 +44,13 @@ Keep state versions fixed unless deliberately performing a compatibility migrati
   Removing a declaration is not an uninstall. After approved activation and
   runtime checks, verify Brew dependents and the deployed login shell before
   separately approved, targeted duplicate removal. Never run blanket Brew cleanup.
-- Home Manager deploys Ghostty and Prism through existing `copyApps`.
+- Home Manager deploys Ghostty, Prism, Chrome, Obsidian, Filen, LocalSend and
+  qBittorrent through existing `copyApps`. Prefer nixpkgs; use Brew only when
+  nixpkgs lacks a working aarch64-darwin build or signing matters.
 - Neovim comes from the shared module; no macOS GUI editor or file associations
   are managed. Existing Zed file associations are preserved unless the user changes them.
-- Brew retains BetterGlobeKey, maigret, helium-browser, Marta, noswoosh and wallspace.
+- Brew retains BetterGlobeKey, maigret, helium-browser, Marta, noswoosh, wallspace,
+  Steam and Yubico Authenticator; Bitwarden is an App Store `masApps` entry.
   Google Cloud CLI and Wireshark are removed from declarations, not migrated.
 - Read [shared guidance](../../common/AGENTS.md) for portable CLI packages, fonts,
   Zed, and project/toolchain boundaries. Do not duplicate them in Brew or expose

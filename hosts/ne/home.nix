@@ -22,17 +22,22 @@
     cmake
     fd
     ffmpeg
+    filen-desktop
     git-filter-repo
+    google-chrome
     idb-companion
     imagemagick
     innoextract
     libpq
+    localsend
+    obsidian
     openssh
     pipx
     pngquant
     poppler
     potrace
     prismlauncher
+    qbittorrent
     railway
     # Keep the pinned rust-analyzer ahead of rustup's proxy.
     (lib.lowPrio rustup)

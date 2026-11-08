@@ -9,7 +9,14 @@
   ];
 
   nixpkgs.hostPlatform = "aarch64-darwin";
-  nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [ "discord" "spotify" ];
+  nixpkgs.config.allowUnfreePredicate =
+    pkg:
+    builtins.elem (lib.getName pkg) [
+      "discord"
+      "google-chrome"
+      "obsidian"
+      "spotify"
+    ];
 
   programs.fish.enable = true;
 

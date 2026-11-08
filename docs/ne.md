@@ -27,14 +27,27 @@ The separate host lives in `hosts/ne/default.nix`. It uses nix-darwin's default
 upstream Nix package, installs `nh`, and enables Fish as the login shell.
 `hosts/ne/home.nix` imports the shared `common/modules/shell.nix` configuration described below.
 The host does not import the Linux desktop, secrets, or overlays.
-`hosts/ne/home.nix` owns Darwin CLI packages and Prism Launcher.
-Home Manager deploys Ghostty from `pkgs.ghostty-bin` through its existing
-`copyApps` activation. Neovim comes from the shared `common/modules/neovim.nix`;
-no GUI editor or file associations are managed.
+`hosts/ne/home.nix` owns Darwin CLI packages and Nix-packaged GUI apps: Prism
+Launcher, Google Chrome, Obsidian, Filen, LocalSend and qBittorrent.
+Home Manager deploys Ghostty from `pkgs.ghostty-bin` and those apps to
+`~/Applications/Home Manager Apps` through its existing `copyApps` activation,
+which resyncs each bundle on every activation. Neovim comes from the shared
+`common/modules/neovim.nix`; no GUI editor or file associations are managed.
 `hosts/ne/modules/system/homebrew.nix` retains BetterGlobeKey, maigret, helium-browser,
 Marta, noswoosh, and wallspace. Maigret remains on Brew because the pinned Nix package is broken.
+Steam and Yubico Authenticator are casks because nixpkgs has no aarch64-darwin build;
+Homebrew Bundle adopts existing `/Applications` copies instead of replacing them.
+Chromium has neither a Darwin package nor an enabled cask, so Chrome fills that role;
+the desktop's Chromium policies are Linux-only and do not apply.
+Bitwarden stays the signed App Store build (`masApps`) for Touch ID and browser
+biometric unlock; activation needs an App Store sign-in to install it.
 Google Cloud CLI and Wireshark are not declared or replaced.
 Homebrew activation neither upgrades nor removes packages (`cleanup = "none"`).
+
+Earlier direct installs of Obsidian, Filen, LocalSend and qBittorrent in
+`/Applications` are not removed; launch the Home Manager copies. Chrome launched
+from Finder may self-update between activations; the next activation restores the pinned bundle.
+App data stays in each app's Application Support directory.
 
 The host also owns reduced-motion, Dock, Finder, keyboard, trackpad, and
 per-power-source sleep/energy preferences. Some macOS preferences require
