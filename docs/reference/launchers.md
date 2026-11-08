@@ -28,9 +28,12 @@ Wallpaper tiles open the same launcher's gallery through `wpp`/`awpp` and
 filename search and a Settings return button. Metadata-only lists include cached
 thumbnail paths. Four bounded workers generate small JPEG previews for either
 gallery, serving visible rows before prefetch. Qt decodes only visible thumbnails.
-Source revisions invalidate caches. Helpers revalidate selections before applying; process
-completions are scoped to the opened view so an old request cannot close or
-overwrite a newer one.
+Source revisions invalidate caches. Helpers revalidate selections before applying.
+Selecting a wallpaper closes the gallery immediately while the helper applies it in
+the background. Applies run one at a time: a reopened gallery shows “Applying wallpaper…”
+with disabled tiles until it finishes. Failures arrive as a critical `notify-send`
+notification and in the shell log. Other process completions are scoped to the opened
+view so an old request cannot close or overwrite a newer one.
 Utility tiles and shortcuts use `desktop toggle night-light|vpn|power|emoji`.
 
 ## Picker input safety

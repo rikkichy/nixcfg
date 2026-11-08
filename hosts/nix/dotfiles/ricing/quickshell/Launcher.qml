@@ -189,15 +189,21 @@ PanelWindow {
             open(screen, utilityTool);
             return;
         }
+        if (wallpaperMode) {
+            // Applies run one at a time in the background; failures arrive as notifications.
+            if (wallpaperApply.running)
+                return;
+            wallpaperApply.exec([wallpaperHelper, "--apply", app.path, directory]);
+            close();
+            return;
+        }
         if (launchProcess.running)
             return;
         errorMessage = "";
         launchProcess.generation = generation;
-        const wallpaperTool = !wallpaperMode && !app.action && (app.id === "wpp" || app.id === "awpp");
+        const wallpaperTool = !app.action && (app.id === "wpp" || app.id === "awpp");
         launchProcess.closeOnSuccess = !wallpaperTool;
-        if (wallpaperMode)
-            launchProcess.exec([wallpaperHelper, "--apply", app.path, directory]);
-        else if (wallpaperTool)
+        if (wallpaperTool)
             launchProcess.exec([app.id]);
         else
             launchProcess.exec(["expressive-apps", mode, app.id + ".desktop", ...(app.action ? [app.action] : [])]);
@@ -364,6 +370,17 @@ PanelWindow {
         }
     }
     Process {
+        id: wallpaperApply
+        stderr: StdioCollector { id: applyErrors }
+        onExited: (exitCode, exitStatus) => {
+            if (exitCode === 0 && exitStatus === 0)
+                return;
+            const reason = applyErrors.text.trim() || "The wallpaper could not be applied.";
+            console.warn(reason);
+            Quickshell.execDetached(["notify-send", "--app-name=Wallpaper", "--urgency=critical", "--", "Wallpaper could not be applied", reason]);
+        }
+    }
+    Process {
         id: launchProcess
         property int generation: -1
         property bool closeOnSuccess: true
@@ -375,7 +392,7 @@ PanelWindow {
                 if (closeOnSuccess)
                     launcher.close();
             } else {
-                launcher.errorMessage = launchErrors.text.trim() || (launcher.wallpaperMode ? "The wallpaper could not be applied." : "The application could not be started.");
+                launcher.errorMessage = launchErrors.text.trim() || "The application could not be started.";
             }
         }
     }
@@ -510,7 +527,7 @@ PanelWindow {
 
             Text {
                 Layout.fillWidth: true
-                text: launcher.errorMessage || (launcher.utilityMode ? (utilities.busy ? "Working…" : utilities.status || launcher.results.length + " entries") : launcher.wallpaperMode && launchProcess.running ? "Applying wallpaper…" : launcher.wallpaperLoading ? "Loading wallpapers…" : (launcher.query ? "Search results" : launcher.wallpaperMode ? "All wallpapers" : launcher.mode === "tools" ? "All tools" : "All apps") + " · " + launcher.results.length)
+                text: launcher.errorMessage || (launcher.utilityMode ? (utilities.busy ? "Working…" : utilities.status || launcher.results.length + " entries") : launcher.wallpaperMode && wallpaperApply.running ? "Applying wallpaper…" : launcher.wallpaperLoading ? "Loading wallpapers…" : (launcher.query ? "Search results" : launcher.wallpaperMode ? "All wallpapers" : launcher.mode === "tools" ? "All tools" : "All apps") + " · " + launcher.results.length)
                 color: launcher.errorMessage ? Theme.error : Theme.textOnSurfaceVariant
                 font.family: Theme.fontFamily
                 font.pixelSize: 14
@@ -554,7 +571,7 @@ PanelWindow {
                     height: grid.cellHeight - 8
                     checked: GridView.isCurrentItem
                     activeFocusOnTab: false
-                    enabled: launcher.utilityMode ? !utilities.busy : !launcher.wallpaperMode || !launchProcess.running
+                    enabled: launcher.utilityMode ? !utilities.busy : !launcher.wallpaperMode || !wallpaperApply.running
                     description: (launcher.mode === "emoji" ? "Copy emoji " : launcher.wallpaperMode ? "Apply wallpaper " : "Open ") + modelData.name
                         + (launcher.wallpaperMode && (previewState === null || wallpaperFrame.item?.failed) ? ". Preview unavailable" : "")
                     onClicked: {
