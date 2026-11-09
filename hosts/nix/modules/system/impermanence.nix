@@ -96,6 +96,12 @@ in
     ];
   };
 
+  # waydroid-nvidia renames vendor images between these trees; separate bind mounts fail with EXDEV.
+  systemd.tmpfiles.rules = [
+    "d /var/lib/waydroid/waydroid-nvidia 0755 root root -"
+    "L+ /var/lib/waydroid-nvidia - - - - /var/lib/waydroid/waydroid-nvidia"
+  ];
+
   services.userborn = {
     enable = true;
     passwordFilesLocation = "/persist/etc";

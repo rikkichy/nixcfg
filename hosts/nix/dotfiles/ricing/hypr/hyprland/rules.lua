@@ -59,6 +59,12 @@ hl.window_rule({
     immediate = true,
 })
 
+-- Per-app windows are `waydroid.<package>`; the full UI is `Waydroid`.
+hl.window_rule({
+    match      = { class = "(waydroid\\..+)|Waydroid" },
+    fullscreen = true,
+})
+
 hl.window_rule({ match = { class = "steam" }, rounding = 10 })
 
 hl.window_rule({

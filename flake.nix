@@ -32,6 +32,12 @@
       url = "github:Flowseal/tg-ws-proxy";
       flake = false;
     };
+
+    # Pinned Nix packaging of Shiro836/waydroid-nvidia v0.2.0 (hash-checked release assets).
+    waydroid-nvidia = {
+      url = "github:yigexuanmu/waydroid-nvidia-nix/28a092527b56f3ddba4592083bc7154d84599d79";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =

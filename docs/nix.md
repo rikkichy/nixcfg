@@ -313,35 +313,40 @@ The first client starts the daemon. Restart-policy containers do not start merel
 because the machine boots. Weekly automatic pruning can also start Docker, and
 the daemon does not automatically exit when idle.
 
-Waydroid is enabled in the desktop applications module. Its package in
-`hosts/nix/pkgs/waydroid.nix` extends `pkgs.waydroid-nftables`, avoiding the legacy
-`ip_tables` kernel dependency without changing the host firewall backend.
+Waydroid is enabled in the desktop applications module. Stock Waydroid skips
+NVIDIA render nodes, and an AMD-iGPU fallback renders black under Hyprland on
+the RTX 3090. `hosts/nix/pkgs/waydroid.nix` therefore builds the pinned
+`waydroid-nvidia` v0.2.0 flake input (Shiro836/waydroid-nvidia, hash-checked
+release assets, nftables networking). Android 13 renders through ANGLE on
+NVK against the host's open NVIDIA kernel module; hwcomposer presents
+same-GPU dma-bufs to Hyprland. It only supports the official LineageOS 20
+(Android 13) system image; do not switch to newer community images.
 
-The package pins the Android 13 `libndk_translation` ARM32/ARM64 payload by
+`applications.nix` restates upstream's container drop-in (wait for the NVIDIA
+render node; `driver-mode verify-active` before start), because NixOS owns the
+unit directory. `/var/lib/waydroid-nvidia` is a tmpfiles symlink into
+`/var/lib/waydroid`: setup renames vendor images between them, which fails
+across separate Preservation mounts.
+
+`sudo waydroid-nvidia-setup` installs and gates the NVIDIA vendor image on the
+loaded kernel module. Rerun it after every NVIDIA driver update and reboot;
+the container refuses to start until then. `--restore-official-vendor`
+returns to the stock vendor image. The first live activation of the udev rule
+leaves the render-node device unit waiting; boot coldplug applies it.
+
+The package also pins the Android 13 `libndk_translation` ARM32/ARM64 payload by
 revision and SHA-256. Waydroid mounts it directly from the Nix store as an
 additional system-overlay lower layer and includes the native-bridge properties
 in `/vendor/waydroid.prop`, which Android 13 loads after its image properties.
-No runtime installer, download, resetprop binary or image modification is needed.
-Keep `mount_overlays = True` in `/var/lib/waydroid/waydroid.cfg`; review the
-translator pin before upgrading Android beyond 13.
+Keep `mount_overlays = True` in `/var/lib/waydroid/waydroid.cfg`.
+Android images, apps and data remain application-owned.
 
-Android images, apps, data and the existing writable overlay remain
-application-owned. Switching the package changes the translator on the next
-container/session restart; removing this package override removes its lower
-layer and generated bridge properties on restart. Activation and restarting a
-running Android session require separate approval.
-
-APKs with incomplete x86 libraries can still select x86 ahead of ARM. For the
-Troll Face Quest Video Games APK, reinstall without clearing app data after the
-bridge is active:
-
-```sh
-adb install -r --abi arm64-v8a '/home/ri/Downloads/Troll+Face+Quest_+Video+Games_226.1.31_APKPure.apk'
-```
-
-Check `adb shell getprop ro.dalvik.vm.native.bridge` for
-`libndk_translation.so`, then launch the game and inspect its logcat. A successful
-Nix build or overlay mount does not establish game compatibility.
+Check with `adb shell dumpsys SurfaceFlinger | grep GLES` (expect
+`ANGLE (NVIDIA … RTX 3090 (NVK …))`) and
+`adb shell getprop ro.dalvik.vm.native.bridge` (`libndk_translation.so`), then
+launch the app and confirm the Hyprland window shows it. APKs with incomplete x86
+libraries can still select x86; reinstall those with
+`adb install -r --abi arm64-v8a <apk>` without clearing app data.
 
 The desktop session disables Speech Dispatcher, including its user socket,
 and desktop networking disables ModemManager. Speech Dispatcher-based screen
@@ -456,6 +461,9 @@ The desktop resets only `/` at boot with a tmpfs root.
 Encrypted XFS remains mounted at `/persist`; all of `/home` and explicit system state persist through Preservation.
 The writable checkout also persists, so wallpaper records, generated palettes, app sessions, and user collections remain available.
 Use the [offline conversion procedure](install.md#offline-desktop-conversion-without-formatting), not a live switch, for the initial cutover.
+`preservation.target` requires every preserved mount, and `sysinit.target` requires it.
+Never live-switch (`switch`/`test`) a change that removes a preserved path: stopping that mount
+stops `sysinit.target` and with it greetd and the whole session. Use `nh os boot` and reboot instead.
 Wallpaper state belongs to `hosts/nix/modules/home/matugen.nix`: `~/.local/state/wallpaper/{current,animated}`
 records selections, while `~/.cache/animated-wallpaper` holds rebuildable video
 thumbnails and backing frames. Back up the records together with the image

@@ -1,4 +1,4 @@
-{ fetchzip, runCommand, waydroid-nftables }:
+{ fetchzip, runCommand, waydroidNvidia }:
 
 let
   # Android 13 payload used by waydroid_script; keep in step with the Android image.
@@ -23,12 +23,14 @@ let
     "ro.dalvik.vm.isa.arm64=x86_64"
   ];
 in
-waydroid-nftables.overrideAttrs (old: {
-  postPatch = (old.postPatch or "") + ''
-    substituteInPlace tools/helpers/images.py \
-      --replace-fail 'helpers.mount.mount_overlay(args, [tools.config.defaults["overlay"],' \
-        'helpers.mount.mount_overlay(args, ["${armTranslation}", tools.config.defaults["overlay"],' \
-      --replace-fail '        for prop in props:' \
-        '        for prop in props + ${builtins.toJSON properties}:'
-  '';
-})
+waydroidNvidia.waydroid-nvidia-full.override {
+  waydroid-nvidia = waydroidNvidia.waydroid-nvidia.overrideAttrs (old: {
+    postPatch = (old.postPatch or "") + ''
+      substituteInPlace tools/helpers/images.py \
+        --replace-fail 'helpers.mount.mount_overlay(args, [tools.config.defaults["overlay"],' \
+          'helpers.mount.mount_overlay(args, ["${armTranslation}", tools.config.defaults["overlay"],' \
+        --replace-fail '        for prop in props:' \
+          '        for prop in props + ${builtins.toJSON properties}:'
+    '';
+  });
+}

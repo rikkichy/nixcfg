@@ -1,4 +1,11 @@
-{ pkgs, ... }:
+{ config, inputs, pkgs, ... }:
+
+let
+  waydroidNvidia = inputs.waydroid-nvidia;
+  waydroid = pkgs.callPackage ../../pkgs/waydroid.nix {
+    waydroidNvidia = waydroidNvidia.packages.${pkgs.stdenv.hostPlatform.system};
+  };
+in
 
 {
   programs.git.enable = true;
@@ -123,7 +130,21 @@
 
   virtualisation.waydroid = {
     enable = true;
-    package = pkgs.callPackage ../../pkgs/waydroid.nix { };
+    package = waydroid;
   };
+
+  # waydroid-nvidia's container drop-in, restated because NixOS owns the unit directory:
+  # start after the NVIDIA render node exists and refuse an ungated vendor image.
+  systemd.services.waydroid-container = {
+    wants = [ "sys-subsystem-waydroid_nvidia-render.device" ];
+    after = [ "sys-subsystem-waydroid_nvidia-render.device" ];
+    path = waydroid.runtimePath ++ [ config.system.path ];
+    preStart = "${waydroid}/lib/waydroid-nvidia/native/dev/driver-mode verify-active";
+  };
+  services.udev.packages = [
+    (pkgs.writeTextDir "lib/udev/rules.d/70-waydroid-nvidia-gpu.rules" (
+      builtins.readFile "${waydroidNvidia.inputs.wnv-src}/packaging/aur/waydroid-nvidia-bin/waydroid-nvidia-gpu.rules"
+    ))
+  ];
 
 }
