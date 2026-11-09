@@ -154,6 +154,11 @@ Spout/OBS frame-rate settings remain independent.
 
 ### Wave XLR MK1 and Wave DX audio
 
+**Temporary hardware.** The Wave XLR MK1 is due to be replaced by a class-compliant
+Solid State Logic SSL 2+ MkII, which needs no keepalive helper or OpenWave safeguards.
+At that switch, remove the MK1-specific keepalive, activation safeguards and card-matched
+filter targets rather than adapting them to the new interface.
+
 `hosts/nix/modules/system/audio.nix` owns the desktop's PipeWire filters and
 WirePlumber policy. The Wave XLR MK1 (`0fd9:007d`) runs capture and playback
 at 48 kHz without idle pause or suspension. Other Wave models are not covered.

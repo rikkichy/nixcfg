@@ -3,7 +3,17 @@
 let
   waveXlrKeepalive = pkgs.runCommandCC "wave-xlr-keepalive" {
     nativeBuildInputs = [ pkgs.pkg-config ];
-    buildInputs = [ pkgs.json_c ];
+    # json-c 0.19 compiles json_object_put's container free out under NDEBUG (upstream #936).
+    buildInputs = [
+      (pkgs.json_c.overrideAttrs (old: {
+        patches = (old.patches or [ ]) ++ [
+          (pkgs.fetchpatch {
+            url = "https://github.com/json-c/json-c/commit/f291fa81c6f21d925ea771a8cca597f5886309cc.patch";
+            hash = "sha256-ZffSw1pfEfOH2ylRpJShdx7sTQR2nmPM/JIj/26UrDM=";
+          })
+        ];
+      }))
+    ];
     meta.mainProgram = "wave-xlr-keepalive";
   } ''
     mkdir -p "$out/bin"
