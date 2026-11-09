@@ -8,8 +8,8 @@ action. Paths below are repository-relative.
 
 ## Ownership
 
-- `common/modules/nh.nix`: system-level nh package, checkout default, flakes and
-  default substituters for all three hosts, imported from host `default.nix` files, not Home Manager.
+- `common/modules/nh.nix`: system-level nh package, checkout default and flakes
+  for all three hosts, imported from host `default.nix` files, not Home Manager.
 - `common/modules/shell.nix`: portable packages, Fish initialization and
   [OMP startup host context](../docs/shared.md#omp-startup-host-context).
   `common/dotfiles/` owns shared assets. Micro settings are generated in the shell module.

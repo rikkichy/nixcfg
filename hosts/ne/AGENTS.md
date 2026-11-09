@@ -20,7 +20,7 @@ Then bootstrap as the normal user with
 | `hosts/ne/default.nix` | identity, user, Fish login shell, system imports, state version |
 | `hosts/ne/home.nix` | Home Manager imports, Darwin CLI packages and Nix-packaged GUI apps |
 | `hosts/ne/modules/system/nix.nix` | upstream Nix and content-addressed derivations |
-| `common/modules/nh.nix` | system-wide nh, NH_FLAKE, flakes and substituters, shared with both Linux hosts |
+| `common/modules/nh.nix` | system-wide nh, NH_FLAKE and flakes, shared with both Linux hosts |
 | `hosts/ne/modules/system/homebrew.nix` | Brew formulae, casks, taps, App Store apps and BetterGlobeKey service |
 | `hosts/ne/modules/system/preferences.nix` | native preferences and per-power-source pmset activation |
 | `hosts/ne/modules/home/shell.nix` | Homebrew and Bun PATH integration |

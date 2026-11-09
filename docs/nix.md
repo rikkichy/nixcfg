@@ -671,10 +671,8 @@ Update selected pins with `nix flake update nixpkgs home-manager --flake /etc/ni
 **nh os switch --update** updates all inputs, rebuilds and switches.
 Review and commit `flake.lock` after a successful build.
 
-The desktop uses only the Yandex NixOS mirror (priority 10) and the official
-NixOS cache (priority 40). Lower numbers are tried first. Endpoint declarations
-live in `hosts/nix/modules/system/nix.nix`; only the official NixOS signing key
-is trusted. The stock kernel comes from the main Nixpkgs pin.
+The desktop uses only the official NixOS cache, the Nixpkgs default substituter,
+and trusts only the official NixOS signing key. The stock kernel comes from the main Nixpkgs pin.
 NVIDIA, NCT6687, and v4l2loopback remain separate matching packages and can require local compilation.
 
 Activation is required to replace the running daemon's cache settings.
@@ -690,7 +688,7 @@ Cache misses can still compile locally. Signature checks remain enabled.
 The server's signed Attic cache and GitHub publication workflow remain separate
 from desktop cache consumption. The desktop does not include `/etc/nix/attic.conf`,
 even if that file already exists. Do not run `attic-setup -- client` under this
-two-cache policy. Re-enabling it requires an explicit source-policy change and
+official-cache policy. Re-enabling it requires an explicit source-policy change and
 the [server cache provisioning and desktop trust procedure](nixos-server.md#public-package-cache-attic).
 
 To avoid ordinary local compilation, inspect the build plan after updating:

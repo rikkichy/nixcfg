@@ -29,9 +29,8 @@ output has a verified substitute.
 [desktop prebuild workflow](nix.md#updates-and-prebuilt-systems) to retain a
 built system for later activation.
 
-All three hosts prefer the Yandex NixOS binary mirror with explicit priority 10.
-`cache.nixos.org` is second with its advertised priority 40 (lower wins).
-Official NixOS signature verification remains enabled with the existing trusted key.
+All three hosts use the default `cache.nixos.org` substituter with official
+NixOS signature verification and the existing trusted key.
 
 ## Shared shell and editor
 

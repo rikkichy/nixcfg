@@ -367,7 +367,7 @@ git pull --ff-only
 nix run path:/etc/nixos#attic-setup -- github
 ```
 
-Desktop consumption is disabled: host `nix` uses only Yandex and the official
+Desktop consumption is disabled: host `nix` uses only the official
 NixOS cache. The following optional client procedure requires first restoring
 `nix.extraOptions = "!include /etc/nix/attic.conf";` in the desktop's source
 configuration as an explicitly approved cache-policy change.
