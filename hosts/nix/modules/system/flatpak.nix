@@ -45,14 +45,30 @@
     };
   };
 
+  # A Flatpak file grant pins the socket inode at sandbox start, so a later or restarted
+  # Discord stays unreachable. Grant a stable directory, relaying each connection to the live socket.
+  systemd.user.sockets.opendeck-discord-ipc = {
+    description = "Discord IPC relay for OpenDeck";
+    wantedBy = [ "sockets.target" ];
+    socketConfig = {
+      ListenStream = "%t/app/com.discordapp.Discord/discord-ipc-0";
+      SocketMode = "0600";
+    };
+  };
+  systemd.user.services.opendeck-discord-ipc = {
+    description = "Discord IPC relay for OpenDeck";
+    serviceConfig.ExecStart = "${pkgs.systemd}/lib/systemd/systemd-socket-proxyd %t/discord-ipc-0";
+  };
+
   systemd.user.services.opendeck = {
     description = "OpenDeck controls";
     partOf = [ "graphical-session.target" ];
     requisite = [ "graphical-session.target" ];
-    after = [ "graphical-session.target" ];
+    wants = [ "opendeck-discord-ipc.socket" ];
+    after = [ "graphical-session.target" "opendeck-discord-ipc.socket" ];
     serviceConfig = {
       Type = "exec";
-      ExecStartPre = "${pkgs.flatpak}/bin/flatpak override --user --filesystem=xdg-run/discord-ipc-0 me.amankhanna.opendeck";
+      ExecStartPre = "${pkgs.flatpak}/bin/flatpak override --user --nofilesystem=xdg-run/discord-ipc-0 --filesystem=xdg-run/app/com.discordapp.Discord:create me.amankhanna.opendeck";
       ExecStart = "${pkgs.flatpak}/bin/flatpak run --user me.amankhanna.opendeck --hide";
       Slice = "session.slice";
     };

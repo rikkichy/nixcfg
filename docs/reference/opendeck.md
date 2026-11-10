@@ -11,20 +11,32 @@ Two sandbox permissions control its integration:
 `org.freedesktop.Flatpak=talk` allows host commands with Unicode preserved.
 
 **A plugin that talks to another program reaches it through the sandbox too.**
-The Discord plugin speaks Discord's RPC protocol over
-`$XDG_RUNTIME_DIR/discord-ipc-0`. A sandbox's runtime directory contains
-only granted resources. The `opendeck` unit grants that one socket before launch.
-Without the grant, the plugin reports **"Failed to connect to Discord: Could
-not find the IPC pipe"**, although the host can see the socket.
-Neither side logs this failure. Check sandbox visibility with
-`ls "$XDG_RUNTIME_DIR"` under `flatpak run
---command=sh me.amankhanna.opendeck`.
-The grant names the socket file rather than a directory, so binding occurs at
-sandbox startup. Discord must already be running. If OpenDeck starts first,
-the same error persists until OpenDeck restarts.
+The Discord plugin speaks Discord's RPC protocol over a `discord-ipc-N` socket.
+A sandbox's runtime directory contains only granted resources.
+Without a reachable socket, the plugin reports **"Failed to connect to Discord:
+Could not find the IPC pipe"**, although the host can see the socket.
+Neither side logs this failure.
+
+A file grant such as `xdg-run/discord-ipc-0` binds the socket inode at sandbox
+startup. If Discord starts after OpenDeck, or restarts, the sandbox keeps the dead
+inode and every reconnect fails until OpenDeck restarts. The plugin's IPC crate
+picks the first *existing* candidate path in hash-set order and never falls back,
+so a stale bound socket also shadows any working path.
+
+Instead, the `opendeck` unit revokes that file grant and grants the directory
+`xdg-run/app/com.discordapp.Discord`, one of the plugin's candidate paths. The
+socket-activated `opendeck-discord-ipc` user unit listens there and
+`systemd-socket-proxyd` forwards each connection to the live
+`$XDG_RUNTIME_DIR/discord-ipc-0`. The sandbox still reaches only Discord RPC.
+When Discord is absent, the relay closes the connection and the plugin retries.
+Overrides apply at sandbox start: launch OpenDeck through
+`systemctl --user restart opendeck`, not the app menu, after changing them.
+
+Check sandbox visibility with `ls "$XDG_RUNTIME_DIR/app/com.discordapp.Discord"`
+under `flatpak run --command=sh me.amankhanna.opendeck`.
 The plugin's own descriptors prove a live connection:
-`readlink /proc/<pid>/fd/*` yields socket inodes. `ss -x -a` pairs one of them
-with the `/run/user/1000/discord-ipc-0` endpoint.
+`readlink /proc/<pid>/fd/*` yields socket inodes. `ss -x -a -p` pairs one of them
+with `systemd-socket-proxyd`, which in turn connects to `/run/user/1000/discord-ipc-0`.
 
 **Its profile JSON is GUI-owned. Do not write it by hand.**
 OpenDeck discards a manually written key entry in

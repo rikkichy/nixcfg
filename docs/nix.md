@@ -202,9 +202,9 @@ Flatpak bootstrap is timer-driven and does not block desktop startup.
 If OpenDeck is missing, successful bootstrap requests its first launch only
 while a graphical session is active. The launch request stays active until
 logout, so later bootstrap completion does not reopen a closed or failed app.
-Bootstrap and each OpenDeck launch enforce the narrow Discord IPC socket grant.
-Discord must already be running when OpenDeck starts for that socket to be
-available inside the sandbox.
+Bootstrap and each OpenDeck launch enforce the narrow Discord IPC relay grant,
+so Discord may start or restart at any time; see the
+[OpenDeck reference](reference/opendeck.md).
 
 Inspect failures with `systemctl --user status opendeck opendeck-autostart flatpak-bootstrap`.
 Read their logs with `journalctl --user -u opendeck -u opendeck-autostart -u flatpak-bootstrap`.
