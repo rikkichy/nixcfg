@@ -154,16 +154,21 @@ Spout/OBS frame-rate settings remain independent.
 
 ### Desktop audio
 
-`hosts/nix/modules/system/audio.nix` owns the desktop's PipeWire filters.
-The Solid State Logic SSL 2+ MkII is class-compliant and needs no helper service,
-vendor client or WirePlumber device rules.
+`hosts/nix/modules/system/audio.nix` owns the desktop's PipeWire filters and WirePlumber policy.
+The Solid State Logic SSL 2+ MkII is class-compliant and needs no helper service or vendor client.
+WirePlumber starts it in the **Pro Audio** profile with UCM disabled: one 6-channel sink
+(`AUX0`–`AUX5`, outputs 1/2 first) and one 8-channel source (`AUX0` is input 1).
+The pinned `alsa-ucm-conf` profile treats the 2+ Mk II as the plain 2 Mk II and fails
+its channel check; upstream commit `4367278` fixes that, but Pro Audio does not use UCM.
 
 **Shure Nexadyne** is the mono microphone filter: a headroom preamp
 followed by six native parametric EQ filters. Its coefficients and graph ports
 live in the audio module. **BriseAudio Fugaku** is a separate stereo headphone filter.
 Neither sets a smart-filter target, so WirePlumber inserts them for streams that
 follow the default source and sink. Set the interface as the default input and
-output; streams pinned to a specific device bypass the filters.
+output; streams pinned to a specific device bypass the filters. On the Pro Audio
+nodes WirePlumber links the mono voice filter to input 1 and the stereo headphone
+filter to outputs 1/2.
 Neither filter requires EasyEffects or vendor-control USB permissions.
 
 Read-only inspection:
