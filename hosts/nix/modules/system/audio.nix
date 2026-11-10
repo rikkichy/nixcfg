@@ -78,7 +78,7 @@
       ];
     };
 
-    # Shure Nexadyne voice EQ, no EasyEffects. Smart filtering follows the default source.
+    # Shure Nexadyne voice EQ on SSL input 1, no EasyEffects.
     extraConfig.pipewire."91-wave-dx-velvet-voice" = {
       "context.modules" = [
         {
@@ -125,9 +125,13 @@
             "audio.channels" = 1;
             "audio.position" = [ "MONO" ];
 
+            # Pro Audio exposes AUX channels; without an explicit AUX0 position
+            # WirePlumber links a stereo stream to inputs 1 and 2.
             "capture.props" = {
               "node.name" = "capture.wave_dx_velvet_voice";
               "node.passive" = true;
+              "audio.position" = [ "AUX0" ];
+              "stream.dont-remix" = true;
             };
 
             "playback.props" = {
@@ -136,6 +140,7 @@
               "media.class" = "Audio/Source";
               "filter.smart" = true;
               "filter.smart.name" = "wave-dx-velvet-voice";
+              "filter.smart.target"."node.name" = "alsa_input.usb-Solid_State_Logic_SSL_2__Mk_II-00.pro-input-0";
             };
           };
         }

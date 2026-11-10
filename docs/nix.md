@@ -163,12 +163,15 @@ its channel check; upstream commit `4367278` fixes that, but Pro Audio does not 
 
 **Shure Nexadyne** is the mono microphone filter: a headroom preamp
 followed by six native parametric EQ filters. Its coefficients and graph ports
-live in the audio module. **BriseAudio Fugaku** is a separate stereo headphone filter.
-Neither sets a smart-filter target, so WirePlumber inserts them for streams that
-follow the default source and sink. Set the interface as the default input and
-output; streams pinned to a specific device bypass the filters. On the Pro Audio
-nodes WirePlumber links the mono voice filter to input 1 and the stereo headphone
-filter to outputs 1/2.
+live in the audio module. Its smart-filter target is the SSL Pro Audio source, so
+streams that use that source or the filter directly get the processed mic.
+Its capture stream is positioned as `AUX0` without remixing, so it reads only input 1.
+Without that position WirePlumber links a stereo stream to inputs 1 and 2.
+
+**BriseAudio Fugaku** is the stereo headphone filter. It has no smart-filter target
+and follows the default sink. Select the physical headphone output, motherboard or
+SSL, as the default sink with `wpctl set-default`; WirePlumber remembers that choice.
+Streams pinned to another sink bypass it.
 Neither filter requires EasyEffects or vendor-control USB permissions.
 
 Read-only inspection:
