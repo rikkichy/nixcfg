@@ -42,9 +42,8 @@ hl.window_rule({
     center = true,
 })
 
--- Native CS2 runs under XWayland as `cs2`, not `steam_app_730`.
 hl.window_rule({
-    match        = { class = "(steam_app_(default|[0-9]+))|gamescope|cs2" },
+    match        = { class = "(steam_app_(default|[0-9]+))|gamescope" },
     immediate    = true,
     idle_inhibit = "always",
 })
