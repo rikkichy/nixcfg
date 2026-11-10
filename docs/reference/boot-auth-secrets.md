@@ -64,9 +64,9 @@ Initrd changes take effect only on reboot. Before requesting one:
    results. Successful evaluation, build, or switch is not unlock evidence.
    Do not garbage-collect recovery generations or remove fallback slots first.
 
-Limine's zero timeout gives no visible menu. Do not rely on Shift/Escape.
+Limine shows its menu for one second; a key press stops the countdown.
 Before any operator-approved boot-recovery action, read the
-[Limine recovery runbook](../nix-security.md#limine-recovery-with-a-zero-timeout).
+[Limine recovery runbook](../nix-security.md#limine-boot-menu-recovery).
 Verify the installed EFI version before relying on a one-shot menu override.
 A newer checkout is not proof. Retain the passphrase and recovery ISO. Never format.
 Nix rollback restores boot configuration, **not LUKS enrollment or keyslots**.

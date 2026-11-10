@@ -1,6 +1,6 @@
 # nix — security and recovery
 
-Recovery: [boot menu / previous generation](#limine-recovery-with-a-zero-timeout) ·
+Recovery: [boot menu / previous generation](#limine-boot-menu-recovery) ·
 [disk unlock and passphrase fallback](#touch-only-disk-unlock) ·
 [sudo and retained-root-shell recovery](#touch-only-sudo-with-password-fallback) ·
 [subscription recovery and retained identities](#subscription-recovery-and-retained-identities) ·
@@ -117,21 +117,20 @@ the existing empty-keyring-password setup remains protected at rest by LUKS.
 Activation and reboot remain separate operator actions. Greetd's NixOS module
 has `restartIfChanged = false`, so switching does not replace the already-running
 daemon; plan a reboot rather than killing a live session. Retain the working
-generation and [Limine recovery procedure](#limine-recovery-with-a-zero-timeout).
+generation and [Limine recovery procedure](#limine-boot-menu-recovery).
 At the physical console, test disk touch/no-PIN and no-token/passphrase boot,
 then logout/relogin with key+touch, no key+correct password, wrong password,
 unregistered key and no touch. Keep an authenticated recovery shell until
 password fallback and negative cases work. Build success is not proof of
 physical unlock, console appearance or hardware login.
 
-### Limine recovery with a zero timeout
+### Limine boot menu recovery
 
-`boot.loader.timeout = 0` means immediate boot without a visible menu. The
-locked [Limine 12.9.3 documentation](https://github.com/limine-bootloader/limine/blob/v12.9.3/CONFIG.md)
+`boot.loader.timeout = 1` shows the Limine menu for one second before booting the default entry.
+Press a key during that second to stop the countdown, then select the known-working generation.
+For a longer window, the locked [Limine 12.9.3 documentation](https://github.com/limine-bootloader/limine/blob/v12.9.3/CONFIG.md)
 documents UEFI one-shot timeout override.
 When the installed bootloader supports it, an operator-approved `sudo systemctl reboot --boot-loader-menu=30s` requests a menu on that next reboot.
-Select the known-working generation there.
-Do not assume that holding Shift/Escape works at timeout zero.
 Do not assume that a newer checkout means the installed EFI binary was updated.
 
 For a controlled boot experiment, temporarily set `boot.loader.timeout = 10` and rebuild the boot configuration.
@@ -341,7 +340,7 @@ than `identity`, and a working NVIDIA GPU. `DMA-FQ` uses lazy IOTLB
 invalidation. It is translated DMA, not passthrough. Verify the integrated
 GPU's group too if it remains enabled. Group numbers can change across boots.
 Retain the known-working generation
-and [boot-menu recovery path](#limine-recovery-with-a-zero-timeout).
+and [boot-menu recovery path](#limine-boot-menu-recovery).
 
 ## Local module signing and integrity lockdown
 
@@ -365,7 +364,7 @@ measurement do not establish Linux lockdown or module-signature enforcement,
 or an organization signature accepted by anti-cheat.
 
 Activation and reboot require separate approval. Retain a known-working
-generation and the [boot-menu recovery path](#limine-recovery-with-a-zero-timeout).
+generation and the [boot-menu recovery path](#limine-boot-menu-recovery).
 After the approved reboot:
 
 ```bash

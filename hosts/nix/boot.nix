@@ -3,7 +3,7 @@
 {
   imports = [ ../../common/modules/nixos-limine.nix ];
 
-  boot.loader.timeout = 0;
+  boot.loader.timeout = 1;
   boot.loader.limine.secureBoot = {
     enable = true;
     autoGenerateKeys = false;

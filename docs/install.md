@@ -8,7 +8,7 @@ Use the [desktop-only manual alternative](#manual-installation--recovery-referen
 Use [snapshot adoption](#adopt-the-installed-snapshot) only for installed source without Git metadata.
 Use [offline desktop conversion](#offline-desktop-conversion-without-formatting) to make an existing desktop root volatile.
 For a desktop that cannot boot,
-start with [Limine / live-ISO recovery](nix-security.md#limine-recovery-with-a-zero-timeout),
+start with [Limine / live-ISO recovery](nix-security.md#limine-boot-menu-recovery),
 not an erasing installer.
 
 **Fresh desktop `nix` installation requires a protected backup of the existing sbctl identity.**
@@ -50,7 +50,7 @@ authentication and root login are disabled. No desktop session is enabled.
 
 Both Linux hosts use the shared UEFI Limine policy in
 `common/modules/nixos-limine.nix`, retaining ten generations. The desktop keeps
-its zero-second timeout. The server displays the menu for five seconds.
+its one-second menu timeout. The server displays the menu for five seconds.
 Darwin does not import this module. LUKS/FIDO2 policy is independent of the loader.
 
 
@@ -191,7 +191,7 @@ Offline installation, secret handling, activation, and each reboot require separ
 ### Preconditions
 
 - Use a trusted x86_64 UEFI NixOS recovery ISO at the physical desktop console.
-  Follow [Secure Boot and ISO recovery](nix-security.md#limine-recovery-with-a-zero-timeout).
+  Follow [Secure Boot and ISO recovery](nix-security.md#limine-boot-menu-recovery).
 - Confirm the devices against `hosts/nix/hardware.nix`.
   The retained LUKS UUID is `7f0ee47d-3794-4ec0-a006-f8eea8fc471a`; the ESP UUID is `612D-84DE`.
 - Retain a working generation, tested passphrase, complete checkout, and protected backups outside the target disk.
@@ -319,7 +319,7 @@ Do not run `passwd`, enrollment, key generation, or hardware regeneration during
 Stop on mount, evaluation, installation, or signing failure.
 Retain the recovery shell and mounted target.
 Follow the [security runbook](nix-security.md#touch-only-disk-unlock) to check crypttab and the initrd.
-Check [signed Limine files](nix-security.md#secure-boot-with-limine) and the [zero-timeout menu procedure](nix-security.md#limine-recovery-with-a-zero-timeout) before requesting reboot.
+Check [signed Limine files](nix-security.md#secure-boot-with-limine) and the [boot menu procedure](nix-security.md#limine-boot-menu-recovery) before requesting reboot.
 
 ### First-boot acceptance and recovery
 
@@ -371,7 +371,7 @@ It targets host `nix`, user `ri`, installed checkout `/etc/nixos`.
 **Fresh installation is destructive:** step 1 partitions/formats the confirmed target disk.
 **Existing-system conversion and recovery are non-destructive:** use the [offline procedure](#offline-desktop-conversion-without-formatting), not these fresh-install steps.
 Do not format, replace existing hardware configuration, clone over the installed checkout, or bootstrap fresh accounts during recovery.
-Start with the [Limine / live-ISO recovery runbook](nix-security.md#limine-recovery-with-a-zero-timeout) when the installed machine cannot boot.
+Start with the [Limine / live-ISO recovery runbook](nix-security.md#limine-boot-menu-recovery) when the installed machine cannot boot.
 Use [checkout adoption](#adopt-the-installed-snapshot) only when installed source lacks Git metadata.
 
 Boot the NixOS 26.05 minimal ISO. **Secure Boot must be OFF**.

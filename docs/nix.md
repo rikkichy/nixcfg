@@ -7,7 +7,7 @@ Source paths below are relative to `/etc/nixos`. Run repository commands there
 unless an installation step specifies otherwise.
 
 Recovery: [disk unlock](nix-security.md#touch-only-disk-unlock),
-[zero-timeout boot menu](nix-security.md#limine-recovery-with-a-zero-timeout),
+[boot menu](nix-security.md#limine-boot-menu-recovery),
 [sudo fallback](nix-security.md#touch-only-sudo-with-password-fallback),
 [subscription recovery](nix-security.md#subscription-recovery-and-retained-identities),
 and [existing-system manual recovery](install.md#manual-installation--recovery-reference).
@@ -745,7 +745,7 @@ The link is a snapshot: later edits are excluded, and a failed build can leave
 an older result. For next-boot staging, use
 `nh os boot --no-nom /etc/nixos --hostname nix --no-update-lock-file`.
 Keep known-good generations for
-[Limine recovery](nix-security.md#limine-recovery-with-a-zero-timeout).
+[Limine recovery](nix-security.md#limine-boot-menu-recovery).
 **Garbage collection — nh clean all** removes older generations, keeping one per profile.
 
 `nh`'s default `/etc/nixos` and the maintenance rebuild actions read the tree
