@@ -154,15 +154,21 @@ Spout/OBS frame-rate settings remain independent.
 
 ### Desktop audio
 
-`hosts/nix/modules/system/audio.nix` owns the desktop's PipeWire headphone filter and WirePlumber policy.
+`hosts/nix/modules/system/audio.nix` owns the desktop's PipeWire filters and WirePlumber policy.
 The Solid State Logic SSL 2+ MkII is class-compliant and needs no helper service or vendor client.
 WirePlumber starts it in the **Pro Audio** profile with UCM disabled: one 6-channel sink
 (`AUX0`–`AUX5`, outputs 1/2 first) and one 8-channel source (`AUX0` is input 1).
 The pinned `alsa-ucm-conf` profile treats the 2+ Mk II as the plain 2 Mk II and fails
 its channel check; upstream commit `4367278` fixes that, but Pro Audio does not use UCM.
 
-The microphone is unprocessed: applications record the SSL Pro Audio source directly.
-Stereo applications link `AUX0`/`AUX1` (inputs 1 and 2) as left/right.
+**SSL Mic** is the processed microphone source: it reads only input 1 (`AUX0`, no
+remixing), removes keyboard and mouse noise with the DeepFilterNet LADSPA plugin, then
+mutes the gaps with the LSP LV2 gate (`extraLadspaPackages`, `extraLv2Packages`).
+Select it in voice applications and turn their own noise suppression and input
+sensitivity off. The gate threshold is an absolute level measured at the current SSL
+gain; changing the gain knob requires re-measuring speech and leaked clicks.
+DeepFilterNet adds tens of milliseconds of latency. Applications that record the
+SSL Pro Audio source directly get the unprocessed inputs 1 and 2 as left/right.
 
 **BriseAudio Fugaku** is the stereo headphone filter. It has no smart-filter target
 and follows the default sink. Select the physical headphone output, motherboard or
