@@ -180,7 +180,8 @@ Scope {
             implicitHeight: Math.min(popupColumn.implicitHeight, modelData.height - 32)
             exclusionMode: ExclusionMode.Ignore
             WlrLayershell.namespace: "expressive-notification"
-            WlrLayershell.layer: WlrLayer.Overlay
+            // Top stays under fullscreen windows; Overlay would break game tearing and direct scanout.
+            WlrLayershell.layer: WlrLayer.Top
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
 
             ScrollView {
