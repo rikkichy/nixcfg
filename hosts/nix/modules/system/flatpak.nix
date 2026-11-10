@@ -1,5 +1,9 @@
 { pkgs, ... }:
 
+let
+  # Revoke the socket-file grant (its inode is pinned at sandbox start) in favour of the relay directory.
+  discordIpcGrant = "--nofilesystem=xdg-run/discord-ipc-0 --filesystem=xdg-run/app/com.discordapp.Discord:create";
+in
 {
   services.flatpak.enable = true;
 
@@ -17,6 +21,7 @@
         https://dl.flathub.org/repo/flathub.flatpakrepo
       for app in org.vinegarhq.Sober me.amankhanna.opendeck; do
         $flatpak install --user -y --noninteractive flathub "$app"
+        $flatpak override --user ${discordIpcGrant} "$app"
       done
     '';
   };
@@ -46,9 +51,9 @@
   };
 
   # A Flatpak file grant pins the socket inode at sandbox start, so a later or restarted
-  # Discord stays unreachable. Grant a stable directory, relaying each connection to the live socket.
+  # Discord stays unreachable. Relay each connection to the live socket from a stable directory.
   systemd.user.sockets.opendeck-discord-ipc = {
-    description = "Discord IPC relay for OpenDeck";
+    description = "Discord IPC relay for Flatpak apps";
     wantedBy = [ "sockets.target" ];
     socketConfig = {
       ListenStream = "%t/app/com.discordapp.Discord/discord-ipc-0";
@@ -56,7 +61,7 @@
     };
   };
   systemd.user.services.opendeck-discord-ipc = {
-    description = "Discord IPC relay for OpenDeck";
+    description = "Discord IPC relay for Flatpak apps";
     serviceConfig.ExecStart = "${pkgs.systemd}/lib/systemd/systemd-socket-proxyd %t/discord-ipc-0";
   };
 
@@ -68,7 +73,7 @@
     after = [ "graphical-session.target" "opendeck-discord-ipc.socket" ];
     serviceConfig = {
       Type = "exec";
-      ExecStartPre = "${pkgs.flatpak}/bin/flatpak override --user --nofilesystem=xdg-run/discord-ipc-0 --filesystem=xdg-run/app/com.discordapp.Discord:create me.amankhanna.opendeck";
+      ExecStartPre = "${pkgs.flatpak}/bin/flatpak override --user ${discordIpcGrant} me.amankhanna.opendeck";
       ExecStart = "${pkgs.flatpak}/bin/flatpak run --user me.amankhanna.opendeck --hide";
       Slice = "session.slice";
     };
