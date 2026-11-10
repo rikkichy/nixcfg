@@ -1,8 +1,11 @@
+{ pkgs, ... }:
+
 {
   security.rtkit.enable = true;
 
   services.pipewire = {
     enable = true;
+    extraLv2Packages = [ pkgs.lsp-plugins ];
     alsa.enable = true;
     alsa.support32Bit = true;
     pulse.enable = true;
@@ -78,7 +81,7 @@
       ];
     };
 
-    # Shure Nexadyne voice EQ on SSL input 1, no EasyEffects.
+    # Shure Nexadyne voice chain on SSL input 1: EQ, noise gate, compressor. No EasyEffects.
     extraConfig.pipewire."91-wave-dx-velvet-voice" = {
       "context.modules" = [
         {
@@ -111,15 +114,59 @@
                     { type = "bq_highshelf"; freq = 8000.0; gain = -1.0; q = 0.71; }
                   ];
                 }
+                # Levels below are dBFS inside the filter and depend on the SSL gain knob.
+                # Measured room noise reached -50 dBFS RMS; close speech is about -28 dBFS
+                # RMS. LSP zone/hysteresis values are relative to the threshold.
+                {
+                  type = "lv2";
+                  name = "gate";
+                  plugin = "http://lsp-plug.in/plugins/lv2/gate_mono";
+                  control = {
+                    scm = 1; # RMS detection
+                    sla = 5.0; # ms lookahead keeps word onsets
+                    gt = 0.006310; # opens at -44 dB
+                    gz = 0.501187; # 6 dB opening zone
+                    gh = 1;
+                    ht = 0.501187; # closes at -50 dB
+                    hz = 0.501187;
+                    gr = 0.063096; # -24 dB when closed, not hard mute
+                    at = 2.0;
+                    hold = 150.0;
+                    rt = 200.0;
+                  };
+                }
+                {
+                  type = "lv2";
+                  name = "comp";
+                  plugin = "http://lsp-plug.in/plugins/lv2/compressor_mono";
+                  control = {
+                    scm = 1; # RMS detection
+                    sla = 5.0;
+                    al = 0.050119; # -26 dB threshold
+                    cr = 3.0;
+                    kn = 0.501187; # 6 dB soft knee
+                    at = 5.0;
+                    rt = 120.0;
+                    mk = 1.584893; # +4 dB makeup
+                  };
+                }
               ];
               links = [
                 {
                   output = "preamp:Out";
                   input = "eq:In 1";
                 }
+                {
+                  output = "eq:Out 1";
+                  input = "gate:in";
+                }
+                {
+                  output = "gate:out";
+                  input = "comp:in";
+                }
               ];
               inputs = [ "preamp:In" ];
-              outputs = [ "eq:Out 1" ];
+              outputs = [ "comp:out" ];
             };
 
             "audio.channels" = 1;

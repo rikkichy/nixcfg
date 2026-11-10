@@ -161,10 +161,15 @@ WirePlumber starts it in the **Pro Audio** profile with UCM disabled: one 6-chan
 The pinned `alsa-ucm-conf` profile treats the 2+ Mk II as the plain 2 Mk II and fails
 its channel check; upstream commit `4367278` fixes that, but Pro Audio does not use UCM.
 
-**Shure Nexadyne** is the mono microphone filter: a headroom preamp
-followed by six native parametric EQ filters. Its coefficients and graph ports
-live in the audio module. Its smart-filter target is the SSL Pro Audio source, so
+**Shure Nexadyne** is the mono microphone filter: a headroom preamp, six native
+parametric EQ filters, then the LSP LV2 noise gate and compressor
+(`services.pipewire.extraLv2Packages`). Its coefficients, thresholds and graph ports
+live in the audio module. Gate and compressor thresholds are absolute levels, so
+changing the SSL gain knob moves speech and room noise relative to them; re-measure
+both after a gain change. Its smart-filter target is the SSL Pro Audio source, so
 streams that use that source or the filter directly get the processed mic.
+Turn off Discord's own noise suppression and automatic gain control to avoid
+processing the voice twice.
 Its capture stream is positioned as `AUX0` without remixing, so it reads only input 1.
 Without that position WirePlumber links a stereo stream to inputs 1 and 2.
 
