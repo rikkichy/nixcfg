@@ -56,7 +56,8 @@ The live `~/.config/hypr` symlink targets `hosts/nix/dotfiles/ricing/hypr/`.
 If it points elsewhere, switch the host configuration before reloading Hyprland.
 Keep the locally generated `scheme/current.lua` and `hyprtoolkit.conf` in that
 directory. Git ignores them, and they must remain writable. `hyprtoolkit.conf`
-themes hyprtoolkit clients such as the xdph screen-share picker.
+themes hyprtoolkit clients such as the xdph screen-share picker. Its font and
+rounding mirror Quickshell's `Theme.qml`; change both together.
 
 Screen sharing defaults to allowing restore tokens through `hypr/xdph.conf`.
 The first screen/window selection remains interactive. Applications that save and
