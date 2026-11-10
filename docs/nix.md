@@ -61,6 +61,8 @@ Screen sharing defaults to allowing restore tokens through `hypr/xdph.conf`.
 The first screen/window selection remains interactive. Applications that save and
 reuse the token can restore that selection without another picker.
 After updating the checkout, log out and back in to restart the portal.
+The Hyprland portal restarts with PipeWire, so a rebuild that restarts PipeWire
+does not leave screen sharing on a dead stream connection.
 
 Previous/next workspace keys and Super+scroll cycle existing workspaces on the
 current monitor. Closing or moving the last window off an active numbered

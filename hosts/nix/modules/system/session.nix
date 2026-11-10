@@ -20,6 +20,8 @@
     enable = true;
     config.common.default = [ "hyprland" "gtk" ];
   };
+  # xdph keeps its PipeWire connection; without this, screen share times out after PipeWire restarts.
+  systemd.user.services.xdg-desktop-portal-hyprland.partOf = [ "pipewire.service" ];
 
   console = {
     # Keep the Russian PAM touch cue readable on the plain console.
