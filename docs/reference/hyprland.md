@@ -47,7 +47,7 @@ solitaryBlockedBy: windowed mode,special workspace,missing candidate
 
 `user settings` is the `allow_tearing` gate. `window settings` is the rule. **`next frame is not torn` is per-frame state, not a configuration failure.** Read this with the game fullscreen and focused. `activelyTearing` shows whether tearing is active. `missing candidate` means no qualifying window, as with an open special workspace.
 
-`render:direct_scanout` is separate. Its `directScanoutBlockedBy` also uses the label `user settings`, but that gates reaching the display plane without a composite pass. A window can tear without direct scanout. `hosts/nix/dotfiles/ricing/hypr/hyprland/misc.lua` sets mode `2`, which scans out only fullscreen windows whose content type is `game`. osu!lazer declares none (`CONTENT` in `directScanoutBlockedBy`), so its rule sets `content = "game"`. Content rules apply when the window opens: relaunch osu, then confirm `directScanoutTo` is non-zero.
+`render:direct_scanout` is separate and stays `0` in `hosts/nix/dotfiles/ricing/hypr/hyprland/misc.lua`. A window tears without it. Mode `2` with osu!lazer tagged `content = "game"` coincided with two 4-second freezes during gameplay on NVIDIA 615.78.08, each logged by the kernel as `nvidia-drm` `Flip event timeout on head 0`; osu tearing alone ran since August without them. `directScanoutBlockedBy` also uses the label `user settings`, here meaning this mode setting.
 
 ## Night-light service and IPC
 

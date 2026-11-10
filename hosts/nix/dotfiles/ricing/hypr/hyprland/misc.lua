@@ -24,8 +24,10 @@ hl.config({
         background_color             = "rgb(" .. scheme.surfaceContainer .. ")",
     },
 
+    -- Off: with NVIDIA 615.78.08, scanning osu!lazer out directly caused 4-second
+    -- nvidia-drm flip-timeout freezes. Tearing does not need it.
     render = {
-        direct_scanout = 2,
+        direct_scanout = 0,
     },
 
     debug = {

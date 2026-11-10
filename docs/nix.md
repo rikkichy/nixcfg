@@ -570,7 +570,7 @@ on the focused monitor as its origin. No full-screen overlay is created.
 Reduced-motion mode disables this compositor animation as well.
 Notification bodies are plain text. DND suppresses popups, not history.
 Popups use the Top layer, so a fullscreen window covers them instead of losing
-tearing and direct scanout; they still time out into history.
+tearing; they still time out into history.
 History is memory-only, bounded to 100 entries, and clears on shell restart
 or QML reload. Expired notifications remain readable but their actions are
 disabled. Transient notifications do not enter history. Critical and explicit

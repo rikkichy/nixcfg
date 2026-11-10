@@ -54,11 +54,9 @@ hl.window_rule({
     render_unfocused = true,
 })
 
--- osu!lazer declares no content type; tagging it lets render.direct_scanout = 2 apply.
 hl.window_rule({
     match     = { class = "osu!" },
     immediate = true,
-    content   = "game",
 })
 
 -- Per-app windows are `waydroid.<package>`; the full UI is `Waydroid`.
