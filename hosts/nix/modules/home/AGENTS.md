@@ -68,9 +68,9 @@ Source ownership paths below are repository-relative. The
   that sandbox to theme generation, restoration or mpvpaper; animation stays on
   the bottom layer. Static cursor assets remain immutable/Home Manager-owned.
 - Preserve each service's actual owner: Quickshell/wallpaper follow the graphical
-  session; Wave XLR keepalive follows PipeWire, not login. OpenDeck's once-per-session
+  session. OpenDeck's once-per-session
   launch and timer-driven Flatpak bootstrap belong to system modules, not delayed
   compositor commands. Use the [startup](../../../../docs/nix.md#session-application-startup)
-  and [audio](../../../../docs/nix.md#wave-xlr-mk1-and-wave-dx-audio) runbooks for
+  and [audio](../../../../docs/nix.md#desktop-audio) runbooks for
   diagnostics and separately approved runtime acceptance. Evaluation or process
   startup alone does not prove GUI, audio, IPC or sandbox behavior.

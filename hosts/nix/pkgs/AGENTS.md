@@ -35,7 +35,3 @@ cover AppImages, Filen and Telegram proxy.
   the host through `flatpak-spawn --host`/`distrobox-host-exec`; testing it needs
   the same approval as the host action. Read [OpenDeck](../../../docs/reference/opendeck.md)
   before changing permissions or diagnosing missing sockets.
-- The Wave XLR helper is MK1-specific and compiled for this host's CPU. Preserve
-  its no-recording/no-logging and no-device-control boundaries; the
-  [audio runbook](../../../docs/nix.md#wave-xlr-mk1-and-wave-dx-audio) owns acceptance.
-  A build does not prove sandbox access, device behavior or runtime integration.

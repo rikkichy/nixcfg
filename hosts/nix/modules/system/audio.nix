@@ -7,20 +7,6 @@
     alsa.support32Bit = true;
     pulse.enable = true;
 
-    # MK1 shares its capture/playback clock. Avoid idle transitions and renegotiation.
-    wireplumber.extraConfig."51-wave-xlr-mk1"."monitor.alsa.rules" = [
-      {
-        matches = [
-          { "node.name" = "~alsa_(input|output)[.]usb-Elgato_Systems_Elgato_Wave_XLR_.*"; }
-        ];
-        actions.update-props = {
-          "session.suspend-timeout-seconds" = 0;
-          "node.pause-on-idle" = false;
-          "audio.rate" = 48000;
-        };
-      }
-    ];
-
     extraConfig.pipewire."90-blessing3-eq" = {
       "context.modules" = [
         {
@@ -68,10 +54,6 @@
               "media.class" = "Audio/Sink";
               "filter.smart" = true;
               "filter.smart.name" = "blessing3-eq";
-              "filter.smart.target" = {
-                "alsa.card_name" = "Elgato Wave XLR";
-                "media.class" = "Audio/Sink";
-              };
             };
 
             "playback.props" = {
@@ -84,8 +66,7 @@
       ];
     };
 
-    # Wave DX on Elgato Wave XLR: warm voice EQ, no EasyEffects.
-    # Smart filtering targets the capture source of the Elgato card.
+    # Shure Nexadyne voice EQ, no EasyEffects. Smart filtering follows the default source.
     extraConfig.pipewire."91-wave-dx-velvet-voice" = {
       "context.modules" = [
         {
@@ -143,10 +124,6 @@
               "media.class" = "Audio/Source";
               "filter.smart" = true;
               "filter.smart.name" = "wave-dx-velvet-voice";
-              "filter.smart.target" = {
-                "alsa.card_name" = "Elgato Wave XLR";
-                "media.class" = "Audio/Source";
-              };
             };
           };
         }

@@ -152,72 +152,30 @@ enables `render_unfocused` for both classes so hidden windows keep receiving
 render callbacks. `hyprland/misc.lua` sets their shared limit to 60 FPS. Application and
 Spout/OBS frame-rate settings remain independent.
 
-### Wave XLR MK1 and Wave DX audio
+### Desktop audio
 
-**Temporary hardware.** The Wave XLR MK1 is due to be replaced by a class-compliant
-Solid State Logic SSL 2+ MkII, which needs no keepalive helper or OpenWave safeguards.
-At that switch, remove the MK1-specific keepalive, activation safeguards and card-matched
-filter targets rather than adapting them to the new interface.
-
-`hosts/nix/modules/system/audio.nix` owns the desktop's PipeWire filters and
-WirePlumber policy. The Wave XLR MK1 (`0fd9:007d`) runs capture and playback
-at 48 kHz without idle pause or suspension. Other Wave models are not covered.
+`hosts/nix/modules/system/audio.nix` owns the desktop's PipeWire filters.
+The Solid State Logic SSL 2+ MkII is class-compliant and needs no helper service,
+vendor client or WirePlumber device rules.
 
 **Shure Nexadyne** is the mono microphone filter: a headroom preamp
 followed by six native parametric EQ filters. Its coefficients and graph ports
-live in the audio module. Select the Wave XLR input in recording applications.
-WirePlumber's smart-filter policy inserts the voice processing for that device.
-The **BriseAudio Fugaku** is a separate stereo headphone filter on the same card.
-Both smart-filter targets match the card name and media class: the voice filter
-uses `Audio/Source`, and the headphone filter uses `Audio/Sink`. Matching only the
-card name is ambiguous and can route the voice filter from the playback monitor.
+live in the audio module. **BriseAudio Fugaku** is a separate stereo headphone filter.
+Neither sets a smart-filter target, so WirePlumber inserts them for streams that
+follow the default source and sink. Set the interface as the default input and
+output; streams pinned to a specific device bypass the filters.
 Neither filter requires EasyEffects or vendor-control USB permissions.
-
-The user `wave-xlr-keepalive.service` follows PipeWire, not the graphical session.
-Its compiled C helper selects the single MK1 hardware source by node identity and
-starts a serial-targeted `pw-cat` stream. WirePlumber can route that stream through
-the smart voice filter. The helper drains signed-16-bit mono samples in memory,
-including when no voice application is recording. It never stores or logs samples.
-The helper targets the desktop's Ryzen 9 9950X3D with `-march=znver5`.
-Its binary is not intended for CPUs without the required instruction support.
-This package-local setting does not change PipeWire or the rest of Nixpkgs.
-
-After a one-second startup allowance, three seconds without data can restart
-the owned capture. Thirty seconds of digital silence while confirmed unmuted
-allows one capture restart per incident. Only nonzero samples rearm that allowance.
-Unknown graph/mute state does not authorize watchdog recovery. Unplug/replug and
-PipeWire recreation require fresh node identity. Multiple matching inputs are
-ambiguous, not permission to select another microphone.
-The helper never changes gain, mute, phantom power, card profiles or USB state.
 
 Read-only inspection:
 
 ```sh
-systemctl --user status wave-xlr-keepalive
-journalctl --user -u wave-xlr-keepalive
 wpctl status
 ```
 
+Arrange an audio interruption when applying PipeWire or WirePlumber changes.
 After separately approved activation, check the microphone's processed signal,
 headphone EQ, idle-to-playback, mute/unmute and unplug/replug behavior.
-Confirm exactly one MK1 keepalive and no fallback to another microphone.
 Evaluation alone does not establish device behavior or perceived audio quality.
-
-#### Audio activation safeguards
-
-Home Manager checks known OpenWave-generated integration paths before user-unit reload.
-Recognized files move to adjacent `.before-wave-xlr-mk1` backups, with numbered
-backups when needed. Symlinks, non-files and unrecognized content stop activation
-for review. Application settings and scenes are preserved.
-Inspect the exact reported path rather than deleting a configuration directory.
-
-The keepalive conflicts with `openwave.service` and `openwave-gui.service`.
-Quit any manually launched vendor-control client before approved activation.
-Arrange an audio interruption when applying PipeWire or WirePlumber changes.
-Existing virtual sources require clients to select the Wave XLR input instead.
-Administrator-owned `/etc/udev/rules.d/99-openwave.rules` copies require separate review.
-For rollback, retain a known-working generation and restore retired integration
-files only while the replacement service is stopped.
 
 ### Session application startup
 
