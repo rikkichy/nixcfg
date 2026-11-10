@@ -118,7 +118,7 @@ source in its private mount namespace. The bounded root-only
 It releases boot targets without waiting for lighting completion. Its detector allowlist comes
 from the package registry at build time. See [RGB lighting](../nix.md#rgb-lighting) for devices/actions and permission boundaries.
 
-`hosts/nix/boot.nix` selects the stock Nixpkgs kernel and its stable NVIDIA branch for official cache reuse.
+`hosts/nix/boot.nix` selects the cached CachyOS `zen4` LTO kernel and the provider's `latest` NVIDIA branch.
 NCT6687 and v4l2loopback also use that kernel package set.
 No explicit lockdown or module-signature enforcement is configured.
 Read the [kernel policy and recovery checks](../nix-security.md#local-module-signing-and-integrity-lockdown)

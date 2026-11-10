@@ -43,7 +43,8 @@ Read [services/performance](../../docs/reference/services-performance.md) before
   UWSM processes may be outside a logind session; diagnose the actual caller rather than broadening grants.
 - Preserve paired store durability settings (`fsync-store-paths`, no store hardlink optimization).
   XFS metadata scrub is not a backup; retain recovery closures before repair.
-- Use the stock kernel's matching module package set. Do not re-enable sched_ext as a generic optimization.
+- Use the cached CachyOS `zen4` LTO kernel's own module package set; keep its pinned overlay, without `follows`.
+  Do not re-enable sched_ext as a generic optimization.
   CPU priority is not affinity; preserve cache-CCD and dynamic EPP policy unless measured evidence warrants a change.
 - Keep the default allocator unless real application startup checks prove a replacement safe.
   AppImage sandboxes do not necessarily see the host preload; inspect the actual namespace.

@@ -263,8 +263,10 @@ runs during NixOS activation.
 
 ## Desktop hardware performance
 
-`hosts/nix/boot.nix` selects the stock Nixpkgs kernel for official binary-cache reuse.
-Kernel and external modules use the same package set. No CPU-specific kernel build is selected.
+`hosts/nix/boot.nix` selects the cached CachyOS ThinLTO kernel built for `-march=znver4`.
+No Zen 5 variant is published; the 9950X3D executes the Zen 4 instruction set. This is not a portable kernel choice.
+The provider's pinned package set keeps kernel and module toolchains aligned without rebuilding all system packages for a custom CPU target.
+Use the [cache procedure below](#updates-and-prebuilt-systems) before the first build.
 The [kernel security section](nix-security.md#local-module-signing-and-integrity-lockdown) owns NVIDIA compatibility and boot acceptance.
 
 `hosts/nix/hardware-policy.nix` sets the cache-rich CCD preference and performance EPP under `amd_pstate=active`.
@@ -681,24 +683,30 @@ Update selected pins with `nix flake update nixpkgs home-manager --flake /etc/ni
 **nh os switch --update** updates all inputs, rebuilds and switches.
 Review and commit `flake.lock` after a successful build.
 
-The desktop uses only the official NixOS cache, the Nixpkgs default substituter,
-and trusts only the official NixOS signing key. The stock kernel comes from the main Nixpkgs pin.
+The desktop uses the official NixOS cache and the CachyOS kernel maintainer's signed cache.
+Endpoint and public-key declarations live in `hosts/nix/modules/system/nix.nix`.
+The latter adds trust in a third-party publisher, not an official NixOS build service.
+It advertises priority 41, so the official cache (40) is queried first.
+`nix-cachyos-kernel` tracks the provider's [release branch](https://github.com/xddxdd/nix-cachyos-kernel/tree/release), which publishes built kernels.
+That branch can trail the stock kernel version until the provider's CI has built a release.
+Keep its own Nixpkgs input and pinned overlay. A `follows` override or custom kernel options can lose cache matches.
 NVIDIA, NCT6687, and v4l2loopback remain separate matching packages and can require local compilation.
 
-Activation is required to replace the running daemon's cache settings.
-For a separately approved build before activation, this Fish command replaces
-the old cache list with the evaluated source policy without switching the system:
+Activation is required to install the cache settings in the running daemon, and only root may supply untrusted keys.
+For a separately approved first build before activation, this Fish command uses the evaluated source policy without switching the system:
 
 ```fish
-sudo nix build --no-link --no-update-lock-file --option substituters (nix eval --raw path:/etc/nixos#nixosConfigurations.nix.config.nix.settings --apply 's: builtins.concatStringsSep " " s.substituters') path:/etc/nixos#nixosConfigurations.nix.config.system.build.toplevel
+set settings path:/etc/nixos#nixosConfigurations.nix.config.nix.settings
+sudo nix build --no-link --no-update-lock-file --option substituters (nix eval --raw $settings --apply 's: builtins.concatStringsSep " " s.substituters') --option trusted-public-keys (nix eval --raw $settings --apply 's: builtins.concatStringsSep " " s.trusted-public-keys') path:/etc/nixos#nixosConfigurations.nix.config.system.build.toplevel
 ```
 
-Cache misses can still compile locally. Signature checks remain enabled.
+Alternatively, activate the cache settings alone before selecting the kernel.
+Cache misses can still compile locally. Signature checks remain enabled; do not bypass them to avoid a build.
 
 The server's signed Attic cache and GitHub publication workflow remain separate
 from desktop cache consumption. The desktop does not include `/etc/nix/attic.conf`,
 even if that file already exists. Do not run `attic-setup -- client` under this
-official-cache policy. Re-enabling it requires an explicit source-policy change and
+cache policy. Re-enabling it requires an explicit source-policy change and
 the [server cache provisioning and desktop trust procedure](nixos-server.md#public-package-cache-attic).
 
 To avoid ordinary local compilation, inspect the build plan after updating:
@@ -713,7 +721,7 @@ nh os build --no-nom path:/etc/nixos --hostname nix --no-update-lock-file \
 
 With no remote builders, `--max-jobs 0` rejects uncached ordinary packages.
 Derivations marked `preferLocalBuild`, such as small configuration generators,
-can still run locally. The kernel has no custom local-only signing requirement.
+can still run locally. A kernel absent from the trusted caches is an ordinary local build.
 This command is therefore not a no-compilation guarantee. Binary AppImage
 wrapping and Python/script packaging are distinct from native compilation.
 The normal build below permits local work with bounded parallelism.

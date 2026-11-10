@@ -26,9 +26,10 @@
     ForwardToConsole=yes
     MaxLevelConsole=notice
   '';
-  # Use the stock kernel for official NixOS binary-cache reuse.
-  boot.kernelPackages = pkgs.linuxPackages_latest;
-  hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.stable;
+  # The 9950X3D is Zen 5; zen4 is the newest cached CPU target.
+  boot.kernelPackages = pkgs.cachyosKernels.linuxPackages-cachyos-latest-lto-zen4;
+  # The provider applies its NVIDIA open-module compatibility fixes to this branch.
+  hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.latest;
 
   boot.kernelParams = [
     "quiet"
