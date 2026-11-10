@@ -54,8 +54,9 @@ Both rebuild entries use NH's default Nix Output Monitor display.
 
 The live `~/.config/hypr` symlink targets `hosts/nix/dotfiles/ricing/hypr/`.
 If it points elsewhere, switch the host configuration before reloading Hyprland.
-Keep the locally generated `scheme/current.lua` in that directory. Git ignores it,
-and it must remain writable.
+Keep the locally generated `scheme/current.lua` and `hyprtoolkit.conf` in that
+directory. Git ignores them, and they must remain writable. `hyprtoolkit.conf`
+themes hyprtoolkit clients such as the xdph screen-share picker.
 
 Screen sharing defaults to allowing restore tokens through `hypr/xdph.conf`.
 The first screen/window selection remains interactive. Applications that save and
@@ -382,7 +383,8 @@ snippet controls.
 ## Wallpapers and colours
 
 Runtime palettes are generated from a wallpaper: `quickshell/colors.json`, both
-`gtk.css`, the btop theme, terminal colours and `hypr/scheme/current.lua`.
+`gtk.css`, the btop theme, terminal colours, `hypr/scheme/current.lua` and
+`hypr/hyprtoolkit.conf`.
 Their templates are tracked, but generated destinations must remain writable.
 
 A fresh installation generates its initial theme from a gradient in

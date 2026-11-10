@@ -16,6 +16,7 @@ let
       thunar3 = template ../../dotfiles/ricing/matugen/templates/thunar.css "${cfg}/gtk-3.0/thunar.css";
       thunar4 = template ../../dotfiles/ricing/matugen/templates/thunar.css "${cfg}/gtk-4.0/thunar.css";
       hypr = template ../../dotfiles/ricing/matugen/templates/hypr-scheme.lua "${cfg}/hypr/scheme/current.lua";
+      hyprtoolkit = template ../../dotfiles/ricing/matugen/templates/hyprtoolkit.conf "${cfg}/hypr/hyprtoolkit.conf";
       terminal = template ../../../../common/dotfiles/matugen/templates/terminal-colors.conf terminalColours;
       btop = template ../../../../common/dotfiles/matugen/templates/btop.theme "${cfg}/btop/themes/wallpaper.theme" // {
         post_hook = "${pkgs.psmisc}/bin/killall -USR2 btop 2>/dev/null || true";

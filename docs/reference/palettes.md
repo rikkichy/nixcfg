@@ -25,7 +25,7 @@ outputs belong to [Darwin host guidance](../../hosts/ne/AGENTS.md).
 `pkgs.formats.toml`, installed at `~/.config/matugen/config.toml`.
 Palettes are generated only after display acceptance. See the canonical
 [wallpaper state machine](wallpapers.md) for apply ordering, failures and success-record semantics.
-Matugen writes `hypr/scheme/current.lua`,
+Matugen writes `hypr/scheme/current.lua`, `hypr/hyprtoolkit.conf`,
 `quickshell/colors.json`, both GTK and Thunar styles,
 btop/nvtop/Qt palettes and terminal colours.
 GTK3/GTK4 outputs remain separate entries: this matugen pin loses earlier paths
@@ -39,7 +39,7 @@ Consequences:
   `wallpaper-restore` generates them.
 - `hosts/nix/modules/home/quickshell.nix` maps `~/.config/hypr` to
   `hosts/nix/dotfiles/ricing/hypr/` with `mkOutOfStoreSymlink`, not a store copy.
-  This keeps `scheme/current.lua` writable and requires `ri` to own the repository.
+  This keeps `scheme/current.lua` and `hyprtoolkit.conf` writable and requires `ri` to own the repository.
   The installer clones as root. Thus, `hosts/nix/storage.nix` carries a
   `systemd.tmpfiles` `Z` rule that reasserts `ri:users` before greetd.
 - **`config.source_color_index = 0` keeps selection noninteractive.** An image
