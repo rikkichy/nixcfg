@@ -34,7 +34,7 @@
                   name = "preamp";
                   label = "linear";
                   control = {
-                    Mult = 0.630957;
+                    Mult = 0.446684; # -7 dB, matches the bass shelf gain to avoid clipping
                     Add = 0.0;
                   };
                 }
@@ -45,7 +45,7 @@
                   control = {
                     Freq = 105.0;
                     Q = 0.70;
-                    Gain = 4.0;
+                    Gain = 7.0;
                   };
                 }
               ];
