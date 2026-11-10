@@ -24,6 +24,10 @@ hl.config({
         background_color             = "rgb(" .. scheme.surfaceContainer .. ")",
     },
 
+    render = {
+        direct_scanout = 2,
+    },
+
     debug = {
         error_position = 1
     }
