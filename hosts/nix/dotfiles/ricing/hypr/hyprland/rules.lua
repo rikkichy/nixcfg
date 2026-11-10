@@ -42,12 +42,11 @@ hl.window_rule({
     center = true,
 })
 
--- Native CS2 uses class `cs2`, not `steam_app_730`. `content` only takes on Wayland-native windows.
+-- Native CS2 runs under XWayland as `cs2`, not `steam_app_730`.
 hl.window_rule({
     match        = { class = "(steam_app_(default|[0-9]+))|gamescope|cs2" },
     immediate    = true,
     idle_inhibit = "always",
-    content      = "game",
 })
 
 -- VTube Studio/Shoost share 1325860; VBridger uses 1898830.
