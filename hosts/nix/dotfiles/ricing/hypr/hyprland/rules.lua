@@ -42,6 +42,14 @@ hl.window_rule({
     center = true,
 })
 
+-- The picker floats only after mapping, too late for the generic rule; master layouts then place it at 0,0.
+hl.window_rule({
+    match  = { class = "hyprland-share-picker" },
+    float  = true,
+    size   = "960 800",
+    center = true,
+})
+
 hl.window_rule({
     match        = { class = "(steam_app_(default|[0-9]+))|gamescope" },
     immediate    = true,
