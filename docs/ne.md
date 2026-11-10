@@ -24,7 +24,9 @@ Recovery: [Spotify update-cache protection](#spotify-and-spicetify) ·
 ## Ownership
 
 The separate host lives in `hosts/ne/default.nix`. It uses nix-darwin's default
-upstream Nix package, installs `nh`, and enables Fish as the login shell.
+upstream Nix package, installs `nh`, enables Fish as the login shell, and lets
+`sudo` authenticate with Touch ID (also inside tmux) through `/etc/pam.d/sudo_local`.
+The password prompt remains the fallback.
 `hosts/ne/home.nix` imports the shared `common/modules/shell.nix` configuration described below.
 The host does not import the Linux desktop, secrets, or overlays.
 `hosts/ne/home.nix` owns Darwin CLI packages and Nix-packaged GUI apps: Prism

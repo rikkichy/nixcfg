@@ -19,6 +19,11 @@
     ];
 
   programs.fish.enable = true;
+  # reattach lets Touch ID work inside tmux sessions.
+  security.pam.services.sudo_local = {
+    touchIdAuth = true;
+    reattach = true;
+  };
 
   networking.hostName = "ne";
   system.primaryUser = "rii";
