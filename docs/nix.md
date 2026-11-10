@@ -154,30 +154,21 @@ Spout/OBS frame-rate settings remain independent.
 
 ### Desktop audio
 
-`hosts/nix/modules/system/audio.nix` owns the desktop's PipeWire filters and WirePlumber policy.
+`hosts/nix/modules/system/audio.nix` owns the desktop's PipeWire headphone filter and WirePlumber policy.
 The Solid State Logic SSL 2+ MkII is class-compliant and needs no helper service or vendor client.
 WirePlumber starts it in the **Pro Audio** profile with UCM disabled: one 6-channel sink
 (`AUX0`–`AUX5`, outputs 1/2 first) and one 8-channel source (`AUX0` is input 1).
 The pinned `alsa-ucm-conf` profile treats the 2+ Mk II as the plain 2 Mk II and fails
 its channel check; upstream commit `4367278` fixes that, but Pro Audio does not use UCM.
 
-**Shure Nexadyne** is the mono microphone filter: a headroom preamp, six native
-parametric EQ filters, then the LSP LV2 noise gate and compressor
-(`services.pipewire.extraLv2Packages`). Its coefficients, thresholds and graph ports
-live in the audio module. Gate and compressor thresholds are absolute levels, so
-changing the SSL gain knob moves speech and room noise relative to them; re-measure
-both after a gain change. Its smart-filter target is the SSL Pro Audio source, so
-streams that use that source or the filter directly get the processed mic.
-Turn off Discord's own noise suppression and automatic gain control to avoid
-processing the voice twice.
-Its capture stream is positioned as `AUX0` without remixing, so it reads only input 1.
-Without that position WirePlumber links a stereo stream to inputs 1 and 2.
+The microphone is unprocessed: applications record the SSL Pro Audio source directly.
+Stereo applications link `AUX0`/`AUX1` (inputs 1 and 2) as left/right.
 
 **BriseAudio Fugaku** is the stereo headphone filter. It has no smart-filter target
 and follows the default sink. Select the physical headphone output, motherboard or
 SSL, as the default sink with `wpctl set-default`; WirePlumber remembers that choice.
-Streams pinned to another sink bypass it.
-Neither filter requires EasyEffects or vendor-control USB permissions.
+Streams pinned to another sink bypass it. It requires no EasyEffects or vendor-control
+USB permissions.
 
 Read-only inspection:
 
@@ -186,7 +177,7 @@ wpctl status
 ```
 
 Arrange an audio interruption when applying PipeWire or WirePlumber changes.
-After separately approved activation, check the microphone's processed signal,
+After separately approved activation, check the microphone signal,
 headphone EQ, idle-to-playback, mute/unmute and unplug/replug behavior.
 Evaluation alone does not establish device behavior or perceived audio quality.
 
