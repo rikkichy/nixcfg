@@ -7,7 +7,7 @@ cover AppImages, Filen and Telegram proxy.
 
 ## Ownership and package boundaries
 
-- `hosts/nix/pkgs/overlay.nix` wires `ricing/` and `bypasses/` packages.
+- `hosts/nix/pkgs/overlay.nix` wires `ricing/`, `bypasses/` and `waydroid-pinch/` packages.
   Inventory/services belong to `hosts/nix/modules/system/applications.nix`;
   desktop entries belong to `hosts/nix/modules/home/desktop-tools.nix`.
   Do not import this overlay into Darwin or move Linux runtime policy into `common/`.

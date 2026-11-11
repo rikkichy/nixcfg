@@ -27,5 +27,7 @@ hl.config({
 
     cursor = {
         hotspot_padding = 1,
+        -- waydroid-pinch's virtual touches would otherwise hide the mouse cursor on every pinch.
+        hide_on_touch   = false,
     },
 })

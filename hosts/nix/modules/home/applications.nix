@@ -108,6 +108,20 @@
     Install.WantedBy = [ "default.target" ];
   };
 
+  systemd.user.services.waydroid-pinch = {
+    Unit = {
+      Description = "Virtual touchscreen for Waydroid pinch zoom";
+      PartOf = [ "graphical-session.target" ];
+      After = [ "graphical-session.target" ];
+    };
+    Service = {
+      ExecStart = lib.getExe pkgs.waydroid-pinch;
+      Restart = "on-failure";
+      Slice = "session.slice";
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+  };
+
   xdg.configFile = {
     "qtengine/config.json" = {
       force = true;

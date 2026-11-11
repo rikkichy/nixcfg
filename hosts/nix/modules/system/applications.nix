@@ -40,6 +40,7 @@ in
     pavucontrol
 
     android-tools
+    waydroid-pinch
 
     wl-clipboard nvtopPackages.nvidia yt-dlp
 

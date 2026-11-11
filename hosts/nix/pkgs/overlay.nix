@@ -15,6 +15,8 @@ final: prev: {
     src = inputs.tg-ws-proxy;
   };
 
+  waydroid-pinch = final.callPackage ./waydroid-pinch { };
+
   google-sans-rounded =
     final.callPackage ./ricing/google-sans-rounded.nix { };
   mignon-icon-theme =

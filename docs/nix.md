@@ -322,6 +322,19 @@ launch the app and confirm the Hyprland window shows it. APKs with incomplete x8
 libraries can still select x86; reinstall those with
 `adb install -r --abi arm64-v8a <apk>` without clearing app data.
 
+**ALT + scroll** over a focused Waydroid window sends a real two-finger pinch at
+the cursor: up zooms in, down zooms out. Waydroid only receives pointer events
+from a mouse, so `hosts/nix/pkgs/waydroid-pinch/` provides a uinput
+touchscreen. The Home Manager `waydroid-pinch` user service in
+`hosts/nix/modules/home/applications.nix` owns it, and the bind in
+`keybinds.lua` steps the pinch through `$XDG_RUNTIME_DIR/waydroid-pinch.sock`.
+Fingers stay down across ticks and lift 250 ms after the last one. Near an edge
+they restart as a new pinch. The bind assumes the fullscreen rule (window = touch
+output) and one monitor. Elsewhere ALT + scroll does nothing. While the service runs, the
+seat advertises a touchscreen to every Wayland client, and Hyprland keeps the
+cursor visible on touch (`input.lua`). Check with `systemctl --user status
+waydroid-pinch` and `hyprctl devices` (touch device `waydroid-pinch`).
+
 The desktop session disables Speech Dispatcher, including its user socket,
 and desktop networking disables ModemManager. Speech Dispatcher-based screen
 readers/text-to-speech and ModemManager-managed cellular/WWAN or modem GPS are
