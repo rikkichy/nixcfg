@@ -40,20 +40,15 @@ hl.bind("SUPER + Page_down", hl.dsp.focus({ workspace = "m+1" }), { repeating = 
 hl.bind("CTRL + SUPER + mouse_down", hl.dsp.focus({ workspace = "-10" }))
 hl.bind("CTRL + SUPER + mouse_up", hl.dsp.focus({ workspace = "+10" }))
 
--- Fractions are window-relative because rules.lua keeps Waydroid fullscreen, so the window is the touch output.
-local function waydroid_pinch(direction)
-    return function()
-        local w = hl.get_active_window()
-        local c = hl.get_cursor_pos()
-        local class = w and w.class or ""
-        if not (c and (class == "Waydroid" or class:find("^waydroid%."))) then return end
-        local x, y = (c.x - w.at.x) / w.size.x, (c.y - w.at.y) / w.size.y
-        if x < 0 or x > 1 or y < 0 or y > 1 then return end
-        hl.dispatch(hl.dsp.exec_cmd(string.format("waydroid-pinch %s %.4f %.4f", direction, x, y)))
+-- Holding Alt over Waydroid shows waydroid-pinch's overlay, which closes itself on release.
+-- It needs Waydroid fullscreen (rules.lua).
+hl.bind("Alt_L", function()
+    local w = hl.get_active_window()
+    local class = w and w.class or ""
+    if class == "Waydroid" or class:find("^waydroid%.") then
+        hl.dispatch(hl.dsp.exec_cmd("waydroid-pinch start"))
     end
-end
-hl.bind("ALT + mouse_up", waydroid_pinch("in"))
-hl.bind("ALT + mouse_down", waydroid_pinch("out"))
+end, { non_consuming = true })
 
 hl.bind("SUPER + ALT + Page_Up", hl.dsp.window.move({ workspace = "-1" }), { repeating = true })
 hl.bind("SUPER + ALT + Page_Down", hl.dsp.window.move({ workspace = "+1" }), { repeating = true })

@@ -322,18 +322,27 @@ launch the app and confirm the Hyprland window shows it. APKs with incomplete x8
 libraries can still select x86; reinstall those with
 `adb install -r --abi arm64-v8a <apk>` without clearing app data.
 
-**ALT + scroll** over a focused Waydroid window sends a real two-finger pinch at
-the cursor: up zooms in, down zooms out. Waydroid only receives pointer events
-from a mouse, so `hosts/nix/pkgs/waydroid-pinch/` provides a uinput
-touchscreen. The Home Manager `waydroid-pinch` user service in
-`hosts/nix/modules/home/applications.nix` owns it, and the bind in
-`keybinds.lua` steps the pinch through `$XDG_RUNTIME_DIR/waydroid-pinch.sock`.
-Fingers stay down across ticks and lift 250 ms after the last one. Near an edge
-they restart as a new pinch. The bind assumes the fullscreen rule (window = touch
-output) and one monitor. Elsewhere ALT + scroll does nothing. While the service runs, the
-seat advertises a touchscreen to every Wayland client, and Hyprland keeps the
-cursor visible on touch (`input.lua`). Check with `systemctl --user status
-waydroid-pinch` and `hyprctl devices` (touch device `waydroid-pinch`).
+**Pinch zoom:** hold **left Alt** over the focused Waydroid window. A ring marks
+finger 1 at the cursor. Press and hold the left button elsewhere for finger 2,
+then drag: finger 2 follows the cursor and finger 1 moves the opposite way
+around their midpoint. Release the button to lift both. Android's Show taps
+(`adb shell settings put system show_touches 1`, app-owned state) draws the
+fingers.
+
+`hosts/nix/pkgs/waydroid-pinch/` is a uinput touchscreen plus a transparent
+layer-shell overlay, run by the Home Manager `waydroid-pinch` user service in
+`hosts/nix/modules/home/applications.nix`. The Alt bind in `keybinds.lua` sends
+`start` over `$XDG_RUNTIME_DIR/waydroid-pinch.sock`. The overlay exists because
+Android 13 cancels a touch gesture as soon as the mouse moves over the same
+window: it takes the pointer so Waydroid's hwcomposer stops forwarding motion.
+Fingers land through input-region holes, since touch focus is fixed at
+touch-down. Touch-down moves keyboard focus to Waydroid, so the overlay closes
+on button release after a pinch, otherwise on Alt release, Escape or focus
+loss. It assumes the fullscreen rule (overlay = Waydroid window) and one
+monitor. While the service runs the seat advertises a touchscreen to every
+Wayland client, and Hyprland keeps the cursor visible on touch (`input.lua`).
+Check with `systemctl --user status waydroid-pinch` and `hyprctl devices`
+(touch device `waydroid-pinch`).
 
 The desktop session disables Speech Dispatcher, including its user socket,
 and desktop networking disables ModemManager. Speech Dispatcher-based screen
