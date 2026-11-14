@@ -1,8 +1,9 @@
 { pkgs, ... }:
 
 let
+  relayGrant = "--filesystem=xdg-run/app/com.discordapp.Discord:create";
   # Revoke the socket-file grant (its inode is pinned at sandbox start) in favour of the relay directory.
-  discordIpcGrant = "--nofilesystem=xdg-run/discord-ipc-0 --filesystem=xdg-run/app/com.discordapp.Discord:create";
+  openDeckIpcGrant = "--nofilesystem=xdg-run/discord-ipc-0 ${relayGrant}";
 in
 {
   services.flatpak.enable = true;
@@ -21,8 +22,9 @@ in
         https://dl.flathub.org/repo/flathub.flatpakrepo
       for app in org.vinegarhq.Sober me.amankhanna.opendeck; do
         $flatpak install --user -y --noninteractive flathub "$app"
-        $flatpak override --user ${discordIpcGrant} "$app"
       done
+      # Sober prompts for this exact socket-file grant whenever Rich Presence is enabled.
+      $flatpak override --user --filesystem=xdg-run/discord-ipc-0 ${relayGrant} org.vinegarhq.Sober
     '';
   };
 
@@ -73,7 +75,7 @@ in
     after = [ "graphical-session.target" "opendeck-discord-ipc.socket" ];
     serviceConfig = {
       Type = "exec";
-      ExecStartPre = "${pkgs.flatpak}/bin/flatpak override --user ${discordIpcGrant} me.amankhanna.opendeck";
+      ExecStartPre = "${pkgs.flatpak}/bin/flatpak override --user ${openDeckIpcGrant} me.amankhanna.opendeck";
       ExecStart = "${pkgs.flatpak}/bin/flatpak run --user me.amankhanna.opendeck --hide";
       Slice = "session.slice";
     };

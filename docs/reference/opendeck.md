@@ -29,8 +29,9 @@ socket-activated `opendeck-discord-ipc` user unit listens there and
 `systemd-socket-proxyd` forwards each connection to the live
 `$XDG_RUNTIME_DIR/discord-ipc-0`. The sandbox still reaches only Discord RPC.
 When Discord is absent, the relay closes the connection and the plugin retries.
-Flatpak bootstrap applies the same grant to Sober, whose manifest also requests
-the pinned socket file.
+Flatpak bootstrap grants Sober the relay directory plus the socket file itself:
+Sober's Rich Presence prompt checks for `xdg-run/discord-ipc-0` and reappears
+without it, so a Discord restart mid-session needs a Sober restart.
 Overrides apply at sandbox start: launch OpenDeck through
 `systemctl --user restart opendeck`, not the app menu, after changing them.
 
