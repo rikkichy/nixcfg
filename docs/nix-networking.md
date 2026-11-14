@@ -27,26 +27,28 @@ There is no app to launch. The web dashboard is disabled. The localhost controll
 `127.0.0.1:9090` remains available to the VPN picker and CLI with bearer-token
 authentication. Browser origins are restricted to that localhost origin.
 
-### Proxy-only routing and server selection
+### Scoped routing and server selection
 
-All Internet application traffic uses the selected proxy, including Claude and
-Anthropic hostnames, subdomains, literal IPs and traffic with hidden SNI.
-There is no hostname allowlist or TLS sniffing. Loopback, private IPv4 LAN and
-local discovery remain direct; system DNS can still use the LAN router.
+Only `anthropic.com`, `claude.ai`, `chatgpt.com` and their subdomains use the
+selected proxy. All other traffic, including LAN and discovery, goes direct
+through Mihomo. Hostnames come from TLS and QUIC SNI sniffing on port 443;
+Mihomo DNS stays disabled. Traffic with hidden or encrypted SNI, or reaching
+those services by literal IP, is classified by IP and goes direct.
 
 `hosts/nix/modules/system/mihomo-killswitch.nix` installs an independent
 kernel OUTPUT/FORWARD guard before NetworkManager and Mihomo start. Public
 egress outside the TUN is denied for applications and forwarded containers,
 including existing connections. IPv6 egress is denied except on loopback.
 Only the trusted Mihomo service account can open direct public IPv4 connections,
-for subscription retrieval, resolver bootstrap and proxy transport. The source
-module owns the exact LAN, discovery and DHCP exceptions.
+for direct-routed traffic, subscription retrieval, resolver bootstrap and proxy
+transport. The source module owns the exact LAN, discovery and DHCP exceptions.
 
-If the proxy fails, unsupported traffic is rejected, or Mihomo stops, Internet
-applications lose connectivity rather than switching to direct access.
-Empty subscriptions reject traffic. Keep `MATCH,PROXY` followed by
-`MATCH,REJECT` in the template. Health checks require HTTP 204 and remain lazy,
-so an inactive subscription can show stale measurements.
+Each scoped `PROXY` rule is followed by a matching `REJECT` rule, so a failed
+proxy or unsupported UDP flow is rejected instead of falling through to
+`MATCH,DIRECT`. Empty subscriptions reject scoped traffic. If Mihomo stops,
+the guard blocks all Internet traffic rather than switching to direct access.
+Health checks require HTTP 204 and remain lazy, so an inactive subscription
+can show stale measurements.
 
 This protects against routing/tunnel failure, not a privileged administrator,
 a compromised Mihomo process or an authenticated controller client changing

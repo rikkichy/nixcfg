@@ -24,6 +24,16 @@ tun:
 dns:
   enable: false
 
+sniffer:
+  enable: true
+  parse-pure-ip: true
+  override-destination: false
+  sniff:
+    TLS:
+      ports: [443]
+    QUIC:
+      ports: [443]
+
 proxy-providers:
   primary:
     type: http
@@ -94,12 +104,10 @@ profile:
   store-selected: true
 
 rules:
-  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
-  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
-  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
-  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
-  - IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
-  - AND,((NETWORK,udp),(IP-CIDR,224.0.0.251/32,no-resolve),(DST-PORT,5353)),DIRECT
-  - AND,((NETWORK,udp),(IP-CIDR,239.255.255.250/32,no-resolve),(DST-PORT,1900)),DIRECT
-  - MATCH,PROXY
-  - MATCH,REJECT
+  - DOMAIN-SUFFIX,anthropic.com,PROXY
+  - DOMAIN-SUFFIX,anthropic.com,REJECT
+  - DOMAIN-SUFFIX,claude.ai,PROXY
+  - DOMAIN-SUFFIX,claude.ai,REJECT
+  - DOMAIN-SUFFIX,chatgpt.com,PROXY
+  - DOMAIN-SUFFIX,chatgpt.com,REJECT
+  - MATCH,DIRECT

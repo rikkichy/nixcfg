@@ -73,9 +73,11 @@ loose, and LAN application ports are scoped to the physical interfaces. Do not
 turn those into unrestricted firewall openings to fix tunnel routing.
 The controller binds `127.0.0.1:9090`, mixed proxy has `allow-lan: false`, and
 Mihomo DNS and TUN DNS hijacking are disabled. Resolution uses the system DNS.
-The template proxies all Internet destinations without TLS sniffing, DNS
-classification, geosite, ASN or process rules. Only the explicit local IPv4
-rules use `DIRECT`. The web dashboard is disabled. The controller API serves
+Scoped rules match `anthropic.com`, `claude.ai` and `chatgpt.com` with
+`DOMAIN-SUFFIX`, using TLS and QUIC SNI sniffing on port 443 without
+overriding the connection destination. There is no DNS classification,
+geosite, ASN or process rule; everything else is `MATCH,DIRECT`.
+The web dashboard is disabled. The controller API serves
 the picker and CLI. Controller status is not tunnel or firewall proof.
 Inspect `ip -br addr show mihomo` for an actual IPv4 address. `UP` with only link-local
 IPv6 is not a working tunnel.
@@ -84,8 +86,8 @@ All controller requests must use `--header @/run/mihomo-api.header`.
 Never expand the token into command arguments or log it. Browser CORS permits only the
 localhost controller origin. See the operator guide for ownership and lifecycle.
 
-The template remains in `rule` mode with local exceptions followed by
-`MATCH,PROXY` and `MATCH,REJECT`. There is no runtime routing-mode control.
+The template remains in `rule` mode with paired scoped `PROXY`/`REJECT` rules
+followed by `MATCH,DIRECT`. There is no runtime routing-mode control.
 `profile.store-selected` persists server choices in `cache.db` under the
 service's state directory. Process lookup is disabled; the service does not
 request cross-user inspection privileges or override `ProtectProc`.
@@ -147,8 +149,9 @@ remain operator acceptance steps in the [runbook](../nix-networking.md#activatio
 - Keep `proxy: DIRECT` on **both** providers. Otherwise Mihomo can fetch its
   subscription through the very tunnel it needs to repair.
   A bad update then cannot self-recover and may surface only as EOF.
-- Child selectors use `empty-fallback: REJECT`. Keep `MATCH,REJECT` after
-  `MATCH,PROXY` so unsupported flows cannot escape through a direct fallback.
+- Child selectors use `empty-fallback: REJECT`. Keep each scoped `PROXY` rule
+  paired with its `REJECT` rule so unsupported flows cannot fall through to
+  `MATCH,DIRECT`.
 - HTTP health checks require 204 but do not test UDP relay. Lazy checks can leave
   inactive-provider latency stale. Preserve manual node selection.
 - Node latency needs membership **and** health history. Top-level `PROXY`
