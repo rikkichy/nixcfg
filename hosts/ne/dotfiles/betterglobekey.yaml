@@ -1,7 +1,8 @@
 version: 2
 
+# BetterGlobeKey does not expand "~" in this path.
 logger:
-  path: ~/Library/Logs/betterglobekey.log
+  path: /Users/rii/Library/Logs/betterglobekey.log
   level: info
   retention:
     days: 30

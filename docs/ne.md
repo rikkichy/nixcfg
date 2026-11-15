@@ -165,6 +165,11 @@ disabled so the service alone switches input sources. Home Manager owns
 collections and behavior. On a fresh Mac, grant Accessibility permission when
 prompted, then run `betterglobekey doctor`.
 
+The daemon creates its event tap once at startup. If Accessibility is not yet
+available when it starts at login, it logs `accessibility permission not granted`
+to `~/Library/Logs/betterglobekey.log` and ignores Globe until restarted, even
+after `doctor` reports `granted`. Recover with `brew services restart betterglobekey`.
+
 The formula comes from [Homebrew core](https://formulae.brew.sh/formula/betterglobekey).
 No additional tap is required. With `cleanup = "none"`, activation preserves
 installed taps and unmanaged formulae.
