@@ -33,10 +33,9 @@
     daemon.enable = false;
   };
 
-  hardware.wooting.enable = true;
-
   services.udev.packages = [
     pkgs.yubikey-personalization
+    pkgs.wooting-udev-rules
 
     (pkgs.writeTextDir "lib/udev/rules.d/70-lc87.rules" ''
       KERNEL=="hidraw*", ATTRS{idVendor}=="056a", TAG+="uaccess"

@@ -1,5 +1,22 @@
 { config, pkgs, lib, ... }:
 
+let
+  filenSyncPairs = pkgs.writeText "filen-sync-pairs.json" (builtins.toJSON [
+    {
+      local = "${config.home.homeDirectory}/Pictures/Wallpapers";
+      remote = "/Sync/Pictures/Wallpapers";
+      syncMode = "twoWay";
+      excludeDotFiles = true;
+    }
+    {
+      local = "${config.home.homeDirectory}/Videos/Animated Wallpapers";
+      remote = "/Sync/Videos/AnimatedWallpapers";
+      syncMode = "twoWay";
+      excludeDotFiles = true;
+    }
+  ]);
+in
+
 {
   home.activation.osuSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     osudir="${config.home.homeDirectory}/.local/share/osu"
@@ -117,6 +134,24 @@
     Service = {
       ExecStart = lib.getExe pkgs.waydroid-pinch;
       Restart = "on-failure";
+      Slice = "session.slice";
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+  };
+
+  systemd.user.services.filen-sync = {
+    Unit = {
+      Description = "Filen two-way sync";
+      PartOf = [ "graphical-session.target" ];
+      # The saved login's key lives in the GNOME keyring, unlocked by the session.
+      After = [ "graphical-session.target" ];
+      # Without saved credentials the CLI blocks on an interactive login prompt.
+      AssertPathExists = "${config.xdg.configHome}/filen-cli/.filen-cli-keep-me-logged-in";
+    };
+    Service = {
+      ExecStart = "${lib.getExe pkgs.filen-cli} --skip-update --quiet sync ${filenSyncPairs} --continuous";
+      Restart = "on-failure";
+      RestartSec = "30s";
       Slice = "session.slice";
     };
     Install.WantedBy = [ "graphical-session.target" ];

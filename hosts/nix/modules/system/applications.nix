@@ -13,7 +13,7 @@ in
   environment.systemPackages = with pkgs; [
     google-chrome
 
-    filen-desktop
+    filen-cli
 
 
     yubioath-flutter

@@ -156,6 +156,21 @@ enables `render_unfocused` for both classes so hidden windows keep receiving
 render callbacks. `hyprland/misc.lua` sets their shared limit to 60 FPS. Application and
 Spout/OBS frame-rate settings remain independent.
 
+### Filen sync
+
+The `filen-sync` user service runs the two-way sync pairs declared in
+`hosts/nix/modules/home/applications.nix`. The login is not declarative: after
+activation, sign in once as `ri` in the graphical session, then start the service.
+
+```sh
+filen --skip-update whoami
+```
+
+Enter the email, password and 2FA code, and answer **y** to **Keep me logged in?**.
+Then run `systemctl --user restart filen-sync` and check
+`journalctl --user -u filen-sync`. Package boundaries and failure modes are in
+[packages](reference/packages.md#filen). `filen logout` removes the saved login.
+
 ### Desktop audio
 
 `hosts/nix/modules/system/audio.nix` owns the desktop's PipeWire filters and WirePlumber policy.
@@ -251,7 +266,7 @@ Ananicy owns process-priority rules. No sched_ext daemon is enabled.
 
 `hosts/nix/modules/system/gaming.nix` loads NTSync for Wine/Proton builds that support the kernel synchronization interface.
 Loading the module does not force an unsupported game runtime to use it.
-Wooting uses its native device-access rules. No global USB polling or audio-buffer override is imposed on the Razer mouse or audio interface.
+Wooting keeps only its native device-access rules; configure the keyboard with web Wootility in Google Chrome. No global USB polling or audio-buffer override is imposed on the Razer mouse or audio interface.
 DDR5-6000 EXPO, firmware settings, voltages, and GPU clocks are not changed by this configuration.
 
 After an approved boot, check `cpupower frequency-info` and the per-policy `energy_performance_preference` values in `/sys/devices/system/cpu/cpufreq/`.

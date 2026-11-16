@@ -21,8 +21,22 @@ to `extraInstallCommands`. Use that path instead of a separate
 
 ## Filen
 
-Filen uses the unmodified Nixpkgs package so official binary substitutes remain
-usable. Nixpkgs owns the Canvas header fix and native npm rebuild ordering.
+The desktop uses the unmodified Nixpkgs `filen-cli`; the Electron desktop client
+is not installed. `hosts/nix/modules/home/applications.nix` declares the sync
+pairs as a store JSON file and runs `filen sync <file> --continuous` as the
+`filen-sync` user service in the graphical session.
+
+- `--skip-update` is required: the CLI otherwise checks for and offers
+  self-updates, which cannot replace a store binary.
+- Login is runtime state, not configuration. "Keep me logged in" stores an
+  encrypted auth config in `~/.config/filen-cli` and its key in the GNOME keyring.
+  The unit asserts that file exists because the CLI otherwise blocks on a login
+  prompt. An expired saved login also falls back to that prompt, so the service
+  stays active but idle; the journal shows `login from saved credentials`.
+- A missing cloud directory skips only that pair and logs
+  `No such cloud file or directory`; the service keeps running.
+- Sync state lives in `~/.config/filen-cli/sync`; deletions go to each local
+  folder's `.filen.trash.local`, which dot-file exclusion keeps out of the cloud.
 
 ## Telegram proxy
 
