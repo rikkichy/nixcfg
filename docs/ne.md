@@ -35,8 +35,11 @@ Home Manager deploys Ghostty from `pkgs.ghostty-bin` and those apps to
 `~/Applications/Home Manager Apps` through its existing `copyApps` activation,
 which resyncs each bundle on every activation. Neovim comes from the shared
 `common/modules/neovim.nix`; no GUI editor or file associations are managed.
-`hosts/ne/modules/system/homebrew.nix` declares BetterGlobeKey, maigret, helium-browser,
+`hosts/ne/modules/system/homebrew.nix` declares BetterGlobeKey, maigret, Ollama, helium-browser,
 Marta, noswoosh, and wallspace. Maigret uses Brew because the pinned Nix package is broken.
+Ollama uses the Brew formula because nixpkgs sets `OLLAMA_MLX_BACKENDS=""`; the formula
+links `mlx-c` for the MLX engine and runs `ollama serve` as a Brew service on
+`127.0.0.1:11434` (log: `/opt/homebrew/var/log/ollama.log`). Models stay in `~/.ollama`.
 Steam and Yubico Authenticator are casks because nixpkgs has no aarch64-darwin build;
 Homebrew Bundle adopts an existing `/Applications` copy only when its version
 matches the cask; otherwise activation fails. Move that copy aside and switch again.

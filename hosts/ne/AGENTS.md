@@ -21,7 +21,7 @@ Then bootstrap as the normal user with
 | `hosts/ne/home.nix` | Home Manager imports, Darwin CLI packages and Nix-packaged GUI apps |
 | `hosts/ne/modules/system/nix.nix` | upstream Nix and content-addressed derivations |
 | `common/modules/nh.nix` | system-wide nh, NH_FLAKE and flakes, shared with both Linux hosts |
-| `hosts/ne/modules/system/homebrew.nix` | Brew formulae, casks, taps, App Store apps and BetterGlobeKey service |
+| `hosts/ne/modules/system/homebrew.nix` | Brew formulae, casks, taps, App Store apps and BetterGlobeKey/Ollama services |
 | `hosts/ne/modules/system/preferences.nix` | native preferences and per-power-source pmset activation |
 | `hosts/ne/modules/home/shell.nix` | Homebrew and Bun PATH integration |
 | `hosts/ne/modules/home/ghostty.nix` | Ghostty package (`pkgs.ghostty-bin`) and settings |
@@ -49,8 +49,9 @@ Keep state versions fixed unless deliberately performing a compatibility migrati
   nixpkgs lacks a working aarch64-darwin build or signing matters.
 - Neovim comes from the shared module; no macOS GUI editor or file associations
   are managed. Existing Zed file associations are preserved unless the user changes them.
-- Brew declares BetterGlobeKey, maigret, helium-browser, Marta, noswoosh, wallspace,
+- Brew declares BetterGlobeKey, maigret, Ollama, helium-browser, Marta, noswoosh, wallspace,
   Steam and Yubico Authenticator; Bitwarden is an App Store `masApps` entry.
+  Ollama is the Brew formula because nixpkgs builds it without the MLX runner.
 - Read [shared guidance](../../common/AGENTS.md) for portable CLI packages, fonts,
   Zed, and project/toolchain boundaries. Do not duplicate them in Brew or expose
   editor-scoped runtimes as global project toolchains.

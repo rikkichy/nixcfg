@@ -10,6 +10,10 @@
         start_service = true;
       }
       "maigret"
+      {
+        name = "ollama";
+        start_service = true;
+      }
     ];
     casks = [
       "helium-browser"
