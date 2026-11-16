@@ -13,7 +13,10 @@ Owner: `hosts/nix/modules/home/matugen.nix`. The built-in image is
 `wpp` and `awpp` use `desktop wallpaper MODE DIRECTORY` IPC, where MODE is
 `wallpapers` or `animated-wallpapers`. Their `--list DIRECTORY` mode returns
 metadata-only JSON `{name,path,preview,revision}` entries without decoding images
-or writing caches. Preview is a fresh cached thumbnail path or an empty string.
+or writing caches. Collections include files in subfolders at any depth;
+hidden folders such as Filen's `.filen.trash.local` are skipped. Nested labels
+prefix the folder path, as in `Space / Deep · nebula.png`, so search also
+matches folder names. Preview is a fresh cached thumbnail path or an empty string.
 Both helpers support `--preview PATH DIRECTORY`, validating and generating one
 cached thumbnail and returning JSON `{preview}`. `--apply PATH DIRECTORY` rechecks collection membership before
 any side effects. Paths travel as argv and preview URLs are
@@ -47,7 +50,7 @@ thumbnails enter Qt's async image loader. Each FFmpeg worker uses one decode,
 filter and encode thread. Pending work comes from the current viewport, not an
 accumulated queue; in-flight jobs finish naturally.
 Still/video thumbnails live under `~/.cache/{wallpaper,animated-wallpaper}/thumbs/v2`,
-keyed by collection-directory hash, source basename and mtime/size revision.
+keyed by collection-directory hash, collection-relative source path and mtime/size revision.
 Lists return fresh cached paths directly, including after a shell restart.
 A bounded 128-entry URL cache retains metadata; Qt owns decoded-image caching.
 Failed previews show “Preview unavailable” without blocking selection.
@@ -141,7 +144,7 @@ are fatal and retain the animated record.
   beside the destination and replaces it only after successful nonempty output.
   Failed regeneration preserves the previous file. Full-frame failures are fatal;
   thumbnail failures remain nonfatal.
-- Thumbnail cache paths include a collection hash and source revision; identical
-  filenames in different collections cannot collide. Full-frame keys hash the
-  absolute source path. Animated labels omit the extension; selection uses the
-  complete path.
+- Thumbnail cache paths include a collection hash, relative path and source
+  revision; identical filenames in different collections or subfolders cannot
+  collide. Full-frame keys hash the absolute source path. Animated labels omit
+  the extension; selection uses the complete path.

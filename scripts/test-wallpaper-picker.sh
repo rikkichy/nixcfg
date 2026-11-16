@@ -149,6 +149,31 @@ ffmpeg -nostdin -v error -f lavfi -i color=c=blue:s=720x1280 -frames:v 1 -thread
 check_preview "$tmp/portrait.json"
 "$wpp" --list "$odd_dir" >"$tmp/portrait-list.json"
 jq -e --arg path "$odd_dir/tall.png" --slurpfile preview "$tmp/portrait.json" 'length == 1 and .[0].path == $path and .[0].preview == $preview[0].preview' "$tmp/portrait-list.json" >/dev/null
+
+# Subfolders list with folder labels; hidden folders stay out and same-named files keep separate previews.
+nested="$tmp/nested"
+mkdir -p "$nested/Space/Deep" "$nested/Scenery" "$nested/.trash" "$tmp/nested-videos/Clips"
+cp -- "$image" "$nested/top.png"
+for sub in Space/Deep Scenery .trash; do
+  cp -- "$image" "$nested/$sub/same.png"
+  touch -r "$nested/top.png" "$nested/$sub/same.png"
+done
+"$wpp" --list "$nested" >"$tmp/nested.json"
+jq -e --arg dir "$nested" 'map({name, path}) == [
+  {name: "Scenery · same.png", path: ($dir + "/Scenery/same.png")},
+  {name: "Space / Deep · same.png", path: ($dir + "/Space/Deep/same.png")},
+  {name: "top.png", path: ($dir + "/top.png")}]' "$tmp/nested.json" >/dev/null
+reject "$wpp" --preview "$nested/.trash/same.png" "$nested"
+"$wpp" --preview "$nested/Scenery/same.png" "$nested" >"$tmp/nested-a.json"
+"$wpp" --preview "$nested/Space/Deep/same.png" "$nested" >"$tmp/nested-b.json"
+check_preview "$tmp/nested-a.json"
+check_preview "$tmp/nested-b.json"
+jq -e --slurpfile a "$tmp/nested-a.json" '.preview != $a[0].preview' "$tmp/nested-b.json" >/dev/null
+"$wpp" --list "$nested" >"$tmp/nested-warm.json"
+jq -e --slurpfile a "$tmp/nested-a.json" --slurpfile b "$tmp/nested-b.json" \
+  '.[0].preview == $a[0].preview and .[1].preview == $b[0].preview' "$tmp/nested-warm.json" >/dev/null
+cp -- "$tmp/clip.mkv" "$tmp/nested-videos/Clips/clip.mkv"
+"$awpp" --list "$tmp/nested-videos" | jq -e 'map(.name) == ["Clips · clip"]' >/dev/null
 builtin=$(jq -er '.[0].path' "$tmp/default.json")
 for dir in "$tmp/empty" "$tmp/missing"; do
   "$wpp" --preview "$builtin" "$dir" >"$tmp/builtin-preview.json"
@@ -158,4 +183,4 @@ for dir in "$tmp/empty" "$tmp/missing"; do
 done
 test ! -e "$tmp/missing"
 test -z "$(find "$XDG_CACHE_HOME" -name '.frame.*' -print)"
-printf 'PASS: metadata-only cold/warm lists, bounded JPEG previews, revisions, retries, filename round-trip, isolation and rejected selections\n'
+printf 'PASS: metadata-only cold/warm lists, bounded JPEG previews, revisions, retries, filename round-trip, subfolders, isolation and rejected selections\n'

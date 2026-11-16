@@ -129,7 +129,7 @@ let
   };
 
   # wpp and awpp share one gallery picker; arguments carry their real differences.
-  mkPicker = { name, defaultDir, ipcMode, extensions, cacheName, onEmpty, listName, preview, apply, runtimeInputs }:
+  mkPicker = { name, defaultDir, ipcMode, extensions, cacheName, onEmpty, label, preview, apply, runtimeInputs }:
     pkgs.writeShellApplication {
       inherit name;
       runtimeInputs = with pkgs; [ quickshell jq coreutils findutils ] ++ runtimeInputs;
@@ -150,7 +150,8 @@ let
           exit 1
         }
 
-        mapfile -d "" -t files < <(find "$dir" -maxdepth 1 -type f \
+        # Subfolders are listed too; hidden ones (such as sync trash) are skipped.
+        mapfile -d "" -t files < <(find "$dir" -mindepth 1 -name '.*' -type d -prune -o -type f \
           \( ${lib.concatMapStringsSep " -o " (ext: "-iname '*.${ext}'") extensions} \) \
           -printf '%p\0%T@:%s\0' 2>/dev/null)
         empty=false
@@ -167,12 +168,15 @@ let
           for ((i = 0; i < ''${#files[@]}; i += 2)); do
             f="''${files[$i]}"
             revision="''${files[$((i + 1))]}"
-            preview="$cache/''${f##*/}/$revision.jpg"
+            preview="$cache/''${f#"$dir/"}/$revision.jpg"
             if [ ! -s "$preview" ] || [ "$f" -nt "$preview" ]; then preview=""; fi
             printf '%s\0%s\0%s\0' "$f" "$revision" "$preview"
-          done | jq -Rs --argjson builtin "$empty" '
+          done | jq -Rs --argjson builtin "$empty" --arg dir "$dir/" '
             [split("\u0000") | .[:-1] | range(0; length; 3) as $i |
-              {name: ${listName},
+              (.[$i] | ltrimstr($dir) | split("/")) as $parts |
+              {name: (if $builtin then "Built-in default" else
+                 ($parts[-1] | ${label}) as $base |
+                 if ($parts | length) > 1 then ($parts[:-1] | join(" / ")) + " · " + $base else $base end end),
                path: .[$i], preview: .[$i + 2], revision: .[$i + 1]}] | sort_by(.path)'
           exit 0
         fi
@@ -189,7 +193,7 @@ let
           die "Selection is no longer in $dir"
         fi
         if [ "$1" = --preview ]; then
-          preview="$cache/''${chosen##*/}/''${files[$((i + 1))]}.jpg"
+          preview="$cache/''${chosen#"$dir/"}/''${files[$((i + 1))]}.jpg"
           ${preview}
           jq -n --arg preview "$preview" '{preview: $preview}'
           exit 0
@@ -213,7 +217,7 @@ in
         empty=true
         files=(${defaultWallpaper} builtin)
       '';
-      listName = ''(if $builtin then "Built-in default" else .[$i] | split("/")[-1] end)'';
+      label = ".";
       preview = ''
         ${wallpaperFrame}/bin/wallpaper-frame --preview-image "$chosen" "$preview"
       '';
@@ -234,7 +238,7 @@ in
       onEmpty = ''
         die "No videos in $dir"
       '';
-      listName = ''(.[$i] | split("/")[-1] | sub("\\.[^.]*$"; ""))'';
+      label = ''sub("\\.[^.]*$"; "")'';
       preview = ''
         ${wallpaperFrame}/bin/wallpaper-frame --preview-video "$chosen" "$preview" \
           || die "Could not preview $chosen"
