@@ -2,8 +2,9 @@
 
 {
   nix.settings = {
-    # Publisher of the prebuilt CachyOS kernels selected in boot.nix.
-    substituters = [ "https://cache.lantian.pub/lantian" ];
+    # Yandex mirrors cache.nixos.org (official signatures); priority 39 queries it first.
+    # Lantian publishes the prebuilt CachyOS kernels selected in boot.nix.
+    substituters = [ "https://mirror.yandex.ru/nixos?priority=39" "https://cache.lantian.pub/lantian" ];
     trusted-public-keys = [ "lantian:WVGO7vsRMSEN+h7Lp7kv6SAmrkEXgUGbbXm7jMDjBuQ=" ];
     max-jobs = 2;
     cores = 8;

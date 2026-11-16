@@ -678,10 +678,11 @@ Update selected pins with `nix flake update nixpkgs home-manager --flake /etc/ni
 **nh os switch --update** updates all inputs, rebuilds and switches.
 Review and commit `flake.lock` after a successful build.
 
-The desktop uses the official NixOS cache and the CachyOS kernel maintainer's signed cache.
+The desktop uses the Yandex mirror of the official NixOS cache, the official cache itself, and the CachyOS kernel maintainer's signed cache.
 Endpoint and public-key declarations live in `hosts/nix/modules/system/nix.nix`.
-The latter adds trust in a third-party publisher, not an official NixOS build service.
-It advertises priority 41, so the official cache (40) is queried first.
+The mirror serves `cache.nixos.org-1`-signed paths, so it needs no extra trusted key; priority 39 makes Nix query it first, and misses fall through to the official cache (40).
+The kernel cache adds trust in a third-party publisher, not an official NixOS build service.
+It advertises priority 41, so both official sources are queried first.
 `nix-cachyos-kernel` tracks the provider's [release branch](https://github.com/xddxdd/nix-cachyos-kernel/tree/release), which publishes built kernels.
 That branch can trail the stock kernel version until the provider's CI has built a release.
 Keep its own Nixpkgs input and pinned overlay. A `follows` override or custom kernel options can lose cache matches.
