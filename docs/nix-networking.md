@@ -29,9 +29,10 @@ authentication. Browser origins are restricted to that localhost origin.
 
 ### Scoped routing and server selection
 
-Claude, ChatGPT, and Instagram use the scoped domain rules in the
+Claude, ChatGPT, Instagram, and Proton Mail use the scoped domain rules in the
 [Mihomo template](../common/dotfiles/mihomo.yaml). Shared Meta domains are not
-proxied as a whole. Unmatched traffic, including LAN and discovery, goes direct
+proxied as a whole. The Proton Mail rules include all `proton.me` subdomains,
+including shared account services. Unmatched traffic, including LAN and discovery, goes direct
 through Mihomo. Hostnames come from TLS and QUIC SNI sniffing on port 443.
 Mihomo DNS stays disabled. Traffic with hidden or encrypted SNI, or reaching
 those services by literal IP, is classified by IP and goes direct.
@@ -99,8 +100,8 @@ matches the allowed Estonia node with the `#4` suffix.
 same exact-name Estonia allowlist.
 If a provider renames a node, that node is no longer eligible.
 
-The separate **INSTAGRAM** selector accepts any node from either subscription.
-It has its own selection through the authenticated controller. The `vpn`
+**INSTAGRAM** and **PROTONMAIL** each accept any node from either subscription.
+Each has its own selection through the authenticated controller. The `vpn`
 command and desktop picker still control **PROXY** only.
 
 `profile.store-selected` persists selections in

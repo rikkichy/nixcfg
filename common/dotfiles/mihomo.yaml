@@ -109,6 +109,13 @@ proxy-groups:
       - primary
       - quattro
 
+  - name: PROTONMAIL
+    type: select
+    empty-fallback: REJECT
+    use:
+      - primary
+      - quattro
+
 profile:
   store-selected: true
 
@@ -129,4 +136,12 @@ rules:
   - DOMAIN-SUFFIX,instagr.am,REJECT
   - DOMAIN-SUFFIX,igsonar.com,INSTAGRAM
   - DOMAIN-SUFFIX,igsonar.com,REJECT
+  - DOMAIN-SUFFIX,proton.me,PROTONMAIL
+  - DOMAIN-SUFFIX,proton.me,REJECT
+  - DOMAIN-SUFFIX,protonmail.com,PROTONMAIL
+  - DOMAIN-SUFFIX,protonmail.com,REJECT
+  - DOMAIN-SUFFIX,protonmail.ch,PROTONMAIL
+  - DOMAIN-SUFFIX,protonmail.ch,REJECT
+  - DOMAIN-SUFFIX,pm.me,PROTONMAIL
+  - DOMAIN-SUFFIX,pm.me,REJECT
   - MATCH,DIRECT
