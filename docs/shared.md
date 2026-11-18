@@ -75,6 +75,9 @@ three hosts; activation requires separate approval, then start a new OMP session
 To try the source without activation, launch
 `omp -e /etc/nixos/common/dotfiles/omp/larp.js`.
 
+The [public IP guard](../common/dotfiles/omp/public-ip.js) rejects OMP Bash calls that run `curl` with a listed literal hostname.
+The agent receives a privacy warning before the command runs. The guard does not restrict other tools, redirects, or dynamically constructed destinations.
+
 `common/modules/language-servers.nix` owns the server commands, arguments and
 settings shared by Neovim and OMP. Both clients reference the same Nix-store
 executables without adding language runtimes to the global PATH.
