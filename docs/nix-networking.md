@@ -52,6 +52,12 @@ Discord uses its own selector. The rules cover Discord's service and media
 domains and its specific attachment upload host, not shared storage as a whole.
 [Discord voice media](https://docs.discord.com/developers/topics/voice-connections#establishing-a-voice-udp-connection)
 uses a separate UDP connection to an IP address. These hostname rules do not route that traffic through the proxy.
+GitHub rules send `github.com` and its subdomains through **PROXY**, including
+the `api.github.com` and `codeload.github.com` requests behind flake `github:`
+inputs, because direct transfers to GitHub are slow from this network. With no
+eligible proxy node, GitHub and `nix flake update` fail instead of going direct.
+`githubusercontent.com` is not covered.
+
 
 `hosts/nix/modules/system/mihomo-killswitch.nix` installs an independent
 kernel OUTPUT/FORWARD guard before NetworkManager and Mihomo start. Public
