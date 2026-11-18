@@ -9,28 +9,39 @@ curlmyip.net curlmyip.org curlmyip.com eth0.me eth0.me.uk ip.tyk.nu ipv4.wtfismy
 wtfismyip.com ipv4bot.whatismyipaddress.com diagnostic.opendns.com resolver1.opendns.com ns1.google.com
 `.trim().split(/\s+/));
 
-const reason = "You're strictly forbidden to discover, retrieve, infer, or disclose this machine's public IP address. Do not use curl, wget, DNS queries, external APIs, websites, or any other method to determine it, directly or indirectly.";
+const ipReason = "You're strictly forbidden to discover, retrieve, infer, or disclose this machine's public IP address. Do not use curl, wget, DNS queries, external APIs, websites, or any other method to determine it, directly or indirectly.";
+const vpnReason = "You're strictly forbidden to change VPN state at runtime. Use `vpn status` or `vpn list` for read-only inspection. If a change is needed, ask the operator to make it. Do not bypass this restriction with another tool.";
+const vpnReadOnly = new Set(["", "status", "list", "nodes", "subscription", "subscriptions"]);
 
 export default function (pi) {
   pi.on("tool_call", ({ toolName, input }) => {
-    if (toolName !== "bash" || !input.command?.includes("curl")) return;
+    if (toolName !== "bash" || !input.command) return;
 
     // Inspect literal shell words, without executing or expanding the command.
-    let executable;
+    let executable, vpnAction;
     for (const [raw] of input.command.matchAll(/(?:[^\s;&|()'"\\]+|'[^']*'|"(?:\\.|[^"\\])*"|\\[\s\S])+|[;&|()\n]/g)) {
       if (/^[;&|()\n]$/.test(raw)) {
         executable = undefined;
+        vpnAction = undefined;
         continue;
       }
-      const word = raw.replace(/\\\n/g, "").replace(/['"]/g, "");
+      const word = raw.replace(/\\\n/g, "").replace(/\\(.)|['"]/gs, (_, escaped) => escaped ?? "");
       if (!executable) {
-        if (!word || /^(?:command|exec|env)$|^[a-zA-Z_]\w*=/.test(word)) continue;
+        if (!word || /^(?:command|exec|env|sudo|--)$|^[a-zA-Z_]\w*=/.test(word)) continue;
         executable = word.split("/").pop();
+      } else if (executable === "vpn") {
+        if (vpnAction === undefined) {
+          vpnAction = word;
+          if (word === "ip") return { block: true, reason: ipReason };
+          if (!vpnReadOnly.has(word)) return { block: true, reason: vpnReason };
+        } else if (vpnAction === "subscription" && word) {
+          return { block: true, reason: vpnReason };
+        }
       } else if (executable === "curl") {
         const target = word.replace(/^--url=/, "");
         if (!target || /^[-/]/.test(target)) continue;
         const url = URL.parse(/^[a-z][a-z\d+.-]*:\/\//i.test(target) ? target : `http://${target}`);
-        if (url && blockedHosts.has(url.hostname.toLowerCase().replace(/\.$/, ""))) return { block: true, reason };
+        if (url && blockedHosts.has(url.hostname.toLowerCase().replace(/\.$/, ""))) return { block: true, reason: ipReason };
       }
     }
   });
