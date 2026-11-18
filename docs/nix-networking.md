@@ -45,8 +45,9 @@ transport. The source module owns the exact LAN, discovery and DHCP exceptions.
 
 Each scoped `PROXY` rule is followed by a matching `REJECT` rule, so a failed
 proxy or unsupported UDP flow is rejected instead of falling through to
-`MATCH,DIRECT`. Empty subscriptions reject scoped traffic. If Mihomo stops,
-the guard blocks all Internet traffic rather than switching to direct access.
+`MATCH,DIRECT`. A selected subscription with no allowed node rejects scoped
+traffic. If Mihomo stops, the guard blocks Internet traffic instead of allowing
+direct access.
 Health checks require HTTP 204 and remain lazy, so an inactive subscription
 can show stale measurements.
 
@@ -90,13 +91,12 @@ vpn ip                           # public IP and country through the selected pr
 Selection persists in Mihomo's cache. `vpn use` is a one-time manual choice,
 not continuous automatic selection.
 
-`vpn use` takes a case-insensitive regex, not a node name — `vpn use швец`
-picks the fastest Swedish node. **Match on the flag emoji** (`vpn use 🇸🇪`) for
-more stable matching. Node names carry numbering, `WlFl`/`LTE` suffixes
-and trailing spaces that providers change without notice.
+`vpn use` takes a case-insensitive regex. For example, `vpn use 'Эстония #4$'`
+matches the allowed Estonia node with the `#4` suffix.
 
-The proxy-group hierarchy is **PROXY** choosing **PRIMARY** or
-**QUATTRO**, and each subscription group contains only provider nodes.
+**PROXY** selects **PRIMARY** or **QUATTRO**. Both subscription groups use the
+same exact-name Estonia allowlist in the [Mihomo template](../common/dotfiles/mihomo.yaml).
+If a provider renames a node, that node is no longer eligible.
 `profile.store-selected` persists selections in
 `/var/lib/private/mihomo/cache.db`. With no valid cached choice, Mihomo uses
 the first available member. Runtime state does not need to be deleted.
