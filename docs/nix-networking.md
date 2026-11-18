@@ -48,6 +48,11 @@ of Clans domains. A game connection without a visible hostname, such as
 [Brawl Stars traffic on TCP port 9339](https://github.com/weeco/supercell-packet-listener/blob/master/.env.example),
 does not match these rules. Native gameplay is not guaranteed to use the proxy.
 
+Discord uses its own selector. The rules cover Discord's service and media
+domains and its specific attachment upload host, not shared storage as a whole.
+[Discord voice media](https://docs.discord.com/developers/topics/voice-connections#establishing-a-voice-udp-connection)
+uses a separate UDP connection to an IP address. These hostname rules do not route that traffic through the proxy.
+
 `hosts/nix/modules/system/mihomo-killswitch.nix` installs an independent
 kernel OUTPUT/FORWARD guard before NetworkManager and Mihomo start. Public
 egress outside the TUN is denied for applications and forwarded containers,

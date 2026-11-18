@@ -144,6 +144,13 @@ proxy-groups:
       - primary
       - quattro
 
+  - name: DISCORD
+    type: select
+    empty-fallback: REJECT
+    use:
+      - primary
+      - quattro
+
 profile:
   store-selected: true
 
@@ -230,4 +237,16 @@ rules:
   - DOMAIN-SUFFIX,clashofclans.com,REJECT
   - DOMAIN-SUFFIX,clash.com,SUPERCELL
   - DOMAIN-SUFFIX,clash.com,REJECT
+  - DOMAIN-SUFFIX,discord.com,DISCORD
+  - DOMAIN-SUFFIX,discord.com,REJECT
+  - DOMAIN-SUFFIX,discord.gg,DISCORD
+  - DOMAIN-SUFFIX,discord.gg,REJECT
+  - DOMAIN-SUFFIX,discordapp.com,DISCORD
+  - DOMAIN-SUFFIX,discordapp.com,REJECT
+  - DOMAIN-SUFFIX,discordapp.net,DISCORD
+  - DOMAIN-SUFFIX,discordapp.net,REJECT
+  - DOMAIN-SUFFIX,discord.media,DISCORD
+  - DOMAIN-SUFFIX,discord.media,REJECT
+  - DOMAIN,discord-attachments-uploads-prd.storage.googleapis.com,DISCORD
+  - DOMAIN,discord-attachments-uploads-prd.storage.googleapis.com,REJECT
   - MATCH,DIRECT
