@@ -116,6 +116,13 @@ proxy-groups:
       - primary
       - quattro
 
+  - name: CRUNCHYROLL
+    type: select
+    empty-fallback: REJECT
+    use:
+      - primary
+      - quattro
+
 profile:
   store-selected: true
 
@@ -146,4 +153,12 @@ rules:
   - DOMAIN-SUFFIX,pm.me,REJECT
   - DOMAIN-SUFFIX,simplelogin.io,PROTONMAIL
   - DOMAIN-SUFFIX,simplelogin.io,REJECT
+  - DOMAIN-SUFFIX,crunchyroll.com,CRUNCHYROLL
+  - DOMAIN-SUFFIX,crunchyroll.com,REJECT
+  - DOMAIN-SUFFIX,crunchyrollcdn.com,CRUNCHYROLL
+  - DOMAIN-SUFFIX,crunchyrollcdn.com,REJECT
+  - DOMAIN-SUFFIX,gccrunchyroll.com,CRUNCHYROLL
+  - DOMAIN-SUFFIX,gccrunchyroll.com,REJECT
+  - DOMAIN-SUFFIX,vrv.co,CRUNCHYROLL
+  - DOMAIN-SUFFIX,vrv.co,REJECT
   - MATCH,DIRECT

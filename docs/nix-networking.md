@@ -29,13 +29,20 @@ authentication. Browser origins are restricted to that localhost origin.
 
 ### Scoped routing and server selection
 
-Claude, ChatGPT, Instagram, Proton Mail, and SimpleLogin use the scoped rules
-in the [Mihomo template](../common/dotfiles/mihomo.yaml). Shared Meta domains are not
-proxied as a whole. The Proton Mail rules include all `proton.me` subdomains,
-including shared account services. Unmatched traffic, including LAN and discovery, goes direct
-through Mihomo. Hostnames come from TLS and QUIC SNI sniffing on port 443.
+Claude, ChatGPT, Instagram, Proton Mail, SimpleLogin, and Crunchyroll use the
+scoped rules in the [Mihomo template](../common/dotfiles/mihomo.yaml). Shared
+Meta domains are not proxied as a whole. The Proton Mail rules include all
+`proton.me` subdomains, including shared account services. Unmatched traffic,
+including LAN and discovery, goes direct through Mihomo. Hostnames come from
+TLS and QUIC SNI sniffing on port 443.
 Mihomo DNS stays disabled. Traffic with hidden or encrypted SNI, or reaching
 those services by literal IP, is classified by IP and goes direct.
+
+Crunchyroll rules cover the [web, API, and legacy VRV domains](https://www.netify.ai/resources/applications/crunchyroll)
+and [dedicated video CDN domains](https://github.com/J1nx888/OptiGate/blob/main/docs/features/crunchyroll.md#default-domains-and-path-rules).
+They do not proxy shared CDN domains wholesale. Crunchyroll
+[does not support VPN use](https://help.crunchyroll.com/hc/en-us/articles/360037400412-Subtitles-are-not-showing-up-on-web),
+so correct routing does not guarantee playback.
 
 `hosts/nix/modules/system/mihomo-killswitch.nix` installs an independent
 kernel OUTPUT/FORWARD guard before NetworkManager and Mihomo start. Public
@@ -100,7 +107,8 @@ matches the allowed Estonia node with the `#4` suffix.
 same exact-name Estonia allowlist.
 If a provider renames a node, that node is no longer eligible.
 
-**INSTAGRAM** and **PROTONMAIL** each accept any node from either subscription.
+**INSTAGRAM**, **PROTONMAIL**, and **CRUNCHYROLL** accept any node from either
+subscription.
 Each has its own selection through the authenticated controller. The `vpn`
 command and desktop picker still control **PROXY** only.
 
