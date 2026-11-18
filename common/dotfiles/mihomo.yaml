@@ -137,6 +137,13 @@ proxy-groups:
       - primary
       - quattro
 
+  - name: SUPERCELL
+    type: select
+    empty-fallback: REJECT
+    use:
+      - primary
+      - quattro
+
 profile:
   store-selected: true
 
@@ -199,4 +206,28 @@ rules:
   - DOMAIN-SUFFIX,grok.com,REJECT
   - DOMAIN-SUFFIX,x.ai,X-GROK
   - DOMAIN-SUFFIX,x.ai,REJECT
+  - DOMAIN-SUFFIX,supercell.com,SUPERCELL
+  - DOMAIN-SUFFIX,supercell.com,REJECT
+  - DOMAIN-SUFFIX,supercell.net,SUPERCELL
+  - DOMAIN-SUFFIX,supercell.net,REJECT
+  - DOMAIN-SUFFIX,supercellid.com,SUPERCELL
+  - DOMAIN-SUFFIX,supercellid.com,REJECT
+  - DOMAIN-SUFFIX,supercellstore.com,SUPERCELL
+  - DOMAIN-SUFFIX,supercellstore.com,REJECT
+  - DOMAIN-SUFFIX,supercellgames.com,SUPERCELL
+  - DOMAIN-SUFFIX,supercellgames.com,REJECT
+  - DOMAIN-SUFFIX,supercellcreators.com,SUPERCELL
+  - DOMAIN-SUFFIX,supercellcreators.com,REJECT
+  - DOMAIN-SUFFIX,seeurlpcl.com,SUPERCELL
+  - DOMAIN-SUFFIX,seeurlpcl.com,REJECT
+  - DOMAIN-SUFFIX,supr.cl,SUPERCELL
+  - DOMAIN-SUFFIX,supr.cl,REJECT
+  - DOMAIN-SUFFIX,brawlstars.com,SUPERCELL
+  - DOMAIN-SUFFIX,brawlstars.com,REJECT
+  - DOMAIN-SUFFIX,brawlstarsgame.com,SUPERCELL
+  - DOMAIN-SUFFIX,brawlstarsgame.com,REJECT
+  - DOMAIN-SUFFIX,clashofclans.com,SUPERCELL
+  - DOMAIN-SUFFIX,clashofclans.com,REJECT
+  - DOMAIN-SUFFIX,clash.com,SUPERCELL
+  - DOMAIN-SUFFIX,clash.com,REJECT
   - MATCH,DIRECT
