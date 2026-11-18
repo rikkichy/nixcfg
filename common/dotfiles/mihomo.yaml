@@ -123,6 +123,13 @@ proxy-groups:
       - primary
       - quattro
 
+  - name: OPENROUTER
+    type: select
+    empty-fallback: REJECT
+    use:
+      - primary
+      - quattro
+
 profile:
   store-selected: true
 
@@ -161,4 +168,6 @@ rules:
   - DOMAIN-SUFFIX,gccrunchyroll.com,REJECT
   - DOMAIN-SUFFIX,vrv.co,CRUNCHYROLL
   - DOMAIN-SUFFIX,vrv.co,REJECT
+  - DOMAIN-SUFFIX,openrouter.ai,OPENROUTER
+  - DOMAIN-SUFFIX,openrouter.ai,REJECT
   - MATCH,DIRECT
