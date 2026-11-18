@@ -176,7 +176,7 @@ A link that is `UP` with only a link-local v6 address is not carrying tunnel tra
 
 ## Telegram proxy (tg-ws-proxy)
 
-`Flowseal/tg-ws-proxy` is packaged from source in `hosts/nix/pkgs/bypasses/tg-ws-proxy.nix`
+`Flowseal/tg-ws-proxy` is packaged from source in `common/pkgs/tg-ws-proxy.nix`
 and pinned as a `flake = false` input. Update it explicitly with
 `nix flake update tg-ws-proxy --flake /etc/nixos`, then build and activate through
 the [host maintenance workflow](nix.md#updates-and-prebuilt-systems).

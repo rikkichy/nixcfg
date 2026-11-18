@@ -17,7 +17,7 @@ cover AppImages, Filen and Telegram proxy.
 - Preserve the commented Quickshell socket-lifetime workaround in `overlay.nix`;
   it is disabled for stock binary-cache reuse. Read the
   [Quickshell crash boundary](../../../docs/reference/quickshell.md) before changing it.
-- `bypasses/tg-ws-proxy.nix` packages the headless server, not tray UI or updater.
+- `common/pkgs/tg-ws-proxy.nix` (shared with `ne`) packages the headless server, not tray UI or updater.
   Proxy routing/security belongs to the [networking runbook](../../../docs/nix-networking.md),
   not an application-side bypass. External projects own their toolchains;
   shared Zed/toolchains belong to [common guidance](../../../common/AGENTS.md).

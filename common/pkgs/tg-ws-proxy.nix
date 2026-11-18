@@ -62,6 +62,6 @@ python3Packages.buildPythonApplication {
     homepage = "https://github.com/Flowseal/tg-ws-proxy";
     license = lib.licenses.mit;
     mainProgram = "tg-ws-proxy";
-    platforms = lib.platforms.linux;
+    platforms = lib.platforms.linux ++ lib.platforms.darwin;
   };
 }

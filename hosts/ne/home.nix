@@ -14,6 +14,7 @@
     ./modules/home/marta.nix
     ./modules/home/matugen.nix
     ./modules/home/keyboard.nix
+    ./modules/home/tg-ws-proxy.nix
   ];
 
   home.stateVersion = "26.05";

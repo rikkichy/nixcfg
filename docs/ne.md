@@ -19,6 +19,7 @@ Recovery: [Spotify update-cache protection](#spotify-and-spicetify) ·
 - [Discord](#discord)
 - [Spotify and Spicetify](#spotify-and-spicetify)
 - [Marta](#marta)
+- [Telegram proxy](#telegram-proxy)
 - [Project environments](#project-environments)
 
 ## Ownership
@@ -264,6 +265,17 @@ To restore native reveal actions to Finder, remove the `NSFileViewer` declaratio
 from `hosts/ne/modules/system/preferences.nix`. Switch, then run `defaults delete -g NSFileViewer`.
 Removing the declaration alone does not clear the stored preference. Applications
 that cache it may need restarting.
+
+## Telegram proxy
+
+`hosts/ne/modules/home/tg-ws-proxy.nix` runs the shared `common/pkgs/tg-ws-proxy.nix`
+package as the Home Manager launchd agent `org.nix-community.home.tg-ws-proxy` on
+`127.0.0.1:1443`. The secret is a fixed, intentionally public value in that module,
+so Telegram's saved proxy survives restarts. `KeepAlive` restarts it after failures.
+Add it once per Telegram profile by opening
+`tg://proxy?server=127.0.0.1&port=1443&secret=ddcc9604c59c09cf22a6ab0e02c4b729e1`.
+Check it with `launchctl print gui/$(id -u)/org.nix-community.home.tg-ws-proxy`.
+Pin updates follow the [desktop procedure](nix-networking.md#telegram-proxy-tg-ws-proxy).
 
 ## Project environments
 

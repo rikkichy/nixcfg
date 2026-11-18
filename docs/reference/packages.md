@@ -26,7 +26,7 @@ usable. Nixpkgs owns the Canvas header fix and native npm rebuild ordering.
 
 ## Telegram proxy
 
-`hosts/nix/pkgs/bypasses/tg-ws-proxy.nix` packages only the headless
+`common/pkgs/tg-ws-proxy.nix` packages only the headless
 `tg-ws-proxy` server. Its runtime dependencies are certifi, cryptography, HTTPX
 and HTTP/2. Wheel metadata excludes tray-only requirements. No platform tray
 entry points, UI modules or updater are shipped. The optional `--log-file`

@@ -30,6 +30,7 @@ Then bootstrap as the normal user with
 | `hosts/ne/modules/home/keyboard.nix` | BetterGlobeKey configuration deployment |
 | `hosts/ne/modules/home/discord.nix` | Vanilla Nix-packaged Discord and native module staging for Finder |
 | `hosts/ne/modules/home/spotify.nix` | post-copy Spotify palette link and non-destructive native updater guard |
+| `hosts/ne/modules/home/tg-ws-proxy.nix` | loopback Telegram proxy launchd agent with fixed public secret |
 | `hosts/ne/dotfiles/` | Marta template and keyboard configuration |
 
 `flake.nix` imports nix-darwin and Home Manager's Darwin module together, with

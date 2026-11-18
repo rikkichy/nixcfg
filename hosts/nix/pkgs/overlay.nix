@@ -11,7 +11,7 @@ final: prev: {
   });
   */
 
-  tg-ws-proxy = final.callPackage ./bypasses/tg-ws-proxy.nix {
+  tg-ws-proxy = final.callPackage ../../../common/pkgs/tg-ws-proxy.nix {
     src = inputs.tg-ws-proxy;
   };
 
