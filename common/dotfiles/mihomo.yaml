@@ -130,6 +130,13 @@ proxy-groups:
       - primary
       - quattro
 
+  - name: X-GROK
+    type: select
+    empty-fallback: REJECT
+    use:
+      - primary
+      - quattro
+
 profile:
   store-selected: true
 
@@ -176,4 +183,20 @@ rules:
   - DOMAIN-SUFFIX,vrv.co,REJECT
   - DOMAIN-SUFFIX,openrouter.ai,OPENROUTER
   - DOMAIN-SUFFIX,openrouter.ai,REJECT
+  - DOMAIN-SUFFIX,x.com,X-GROK
+  - DOMAIN-SUFFIX,x.com,REJECT
+  - DOMAIN-SUFFIX,twitter.com,X-GROK
+  - DOMAIN-SUFFIX,twitter.com,REJECT
+  - DOMAIN-SUFFIX,twimg.com,X-GROK
+  - DOMAIN-SUFFIX,twimg.com,REJECT
+  - DOMAIN-SUFFIX,t.co,X-GROK
+  - DOMAIN-SUFFIX,t.co,REJECT
+  - DOMAIN-SUFFIX,pscp.tv,X-GROK
+  - DOMAIN-SUFFIX,pscp.tv,REJECT
+  - DOMAIN-SUFFIX,tweetdeck.com,X-GROK
+  - DOMAIN-SUFFIX,tweetdeck.com,REJECT
+  - DOMAIN-SUFFIX,grok.com,X-GROK
+  - DOMAIN-SUFFIX,grok.com,REJECT
+  - DOMAIN-SUFFIX,x.ai,X-GROK
+  - DOMAIN-SUFFIX,x.ai,REJECT
   - MATCH,DIRECT

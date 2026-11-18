@@ -29,9 +29,8 @@ authentication. Browser origins are restricted to that localhost origin.
 
 ### Scoped routing and server selection
 
-Claude, ChatGPT, Instagram, Proton Mail, SimpleLogin, Crunchyroll, and
-OpenRouter use the scoped rules in the [Mihomo template](../common/dotfiles/mihomo.yaml).
-Shared Meta domains are not proxied as a whole. The Proton Mail rules include all
+The [Mihomo template](../common/dotfiles/mihomo.yaml) lists the domains that use
+split routing. Shared Meta domains are not proxied as a whole. The Proton Mail rules include all
 `proton.me` subdomains, including shared account services. Unmatched traffic,
 including LAN and discovery, goes direct through Mihomo. Hostnames come from
 TLS and QUIC SNI sniffing on port 443.
@@ -107,8 +106,7 @@ matches the allowed Estonia node with the `#4` suffix.
 same exact-name Estonia allowlist.
 If a provider renames a node, that node is no longer eligible.
 
-**INSTAGRAM**, **PROTONMAIL**, **CRUNCHYROLL**, and **OPENROUTER** accept any
-node from either subscription.
+The other service selectors accept any node from either subscription.
 Each has its own selection through the authenticated controller. The `vpn`
 command and desktop picker still control **PROXY** only.
 
