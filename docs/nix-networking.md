@@ -29,8 +29,8 @@ authentication. Browser origins are restricted to that localhost origin.
 
 ### Scoped routing and server selection
 
-Claude, ChatGPT, Instagram, and Proton Mail use the scoped domain rules in the
-[Mihomo template](../common/dotfiles/mihomo.yaml). Shared Meta domains are not
+Claude, ChatGPT, Instagram, Proton Mail, and SimpleLogin use the scoped rules
+in the [Mihomo template](../common/dotfiles/mihomo.yaml). Shared Meta domains are not
 proxied as a whole. The Proton Mail rules include all `proton.me` subdomains,
 including shared account services. Unmatched traffic, including LAN and discovery, goes direct
 through Mihomo. Hostnames come from TLS and QUIC SNI sniffing on port 443.

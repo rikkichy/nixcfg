@@ -144,4 +144,6 @@ rules:
   - DOMAIN-SUFFIX,protonmail.ch,REJECT
   - DOMAIN-SUFFIX,pm.me,PROTONMAIL
   - DOMAIN-SUFFIX,pm.me,REJECT
+  - DOMAIN-SUFFIX,simplelogin.io,PROTONMAIL
+  - DOMAIN-SUFFIX,simplelogin.io,REJECT
   - MATCH,DIRECT
