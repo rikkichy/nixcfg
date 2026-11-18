@@ -102,6 +102,13 @@ proxy-groups:
     use:
       - quattro
 
+  - name: INSTAGRAM
+    type: select
+    empty-fallback: REJECT
+    use:
+      - primary
+      - quattro
+
 profile:
   store-selected: true
 
@@ -112,4 +119,14 @@ rules:
   - DOMAIN-SUFFIX,claude.ai,REJECT
   - DOMAIN-SUFFIX,chatgpt.com,PROXY
   - DOMAIN-SUFFIX,chatgpt.com,REJECT
+  - DOMAIN-SUFFIX,instagram.com,INSTAGRAM
+  - DOMAIN-SUFFIX,instagram.com,REJECT
+  - DOMAIN-SUFFIX,cdninstagram.com,INSTAGRAM
+  - DOMAIN-SUFFIX,cdninstagram.com,REJECT
+  - DOMAIN-SUFFIX,ig.me,INSTAGRAM
+  - DOMAIN-SUFFIX,ig.me,REJECT
+  - DOMAIN-SUFFIX,instagr.am,INSTAGRAM
+  - DOMAIN-SUFFIX,instagr.am,REJECT
+  - DOMAIN-SUFFIX,igsonar.com,INSTAGRAM
+  - DOMAIN-SUFFIX,igsonar.com,REJECT
   - MATCH,DIRECT

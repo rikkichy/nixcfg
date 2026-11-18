@@ -29,9 +29,10 @@ authentication. Browser origins are restricted to that localhost origin.
 
 ### Scoped routing and server selection
 
-Only `anthropic.com`, `claude.ai`, `chatgpt.com` and their subdomains use the
-selected proxy. All other traffic, including LAN and discovery, goes direct
-through Mihomo. Hostnames come from TLS and QUIC SNI sniffing on port 443;
+Claude, ChatGPT, and Instagram use the scoped domain rules in the
+[Mihomo template](../common/dotfiles/mihomo.yaml). Shared Meta domains are not
+proxied as a whole. Unmatched traffic, including LAN and discovery, goes direct
+through Mihomo. Hostnames come from TLS and QUIC SNI sniffing on port 443.
 Mihomo DNS stays disabled. Traffic with hidden or encrypted SNI, or reaching
 those services by literal IP, is classified by IP and goes direct.
 
@@ -43,10 +44,10 @@ Only the trusted Mihomo service account can open direct public IPv4 connections,
 for direct-routed traffic, subscription retrieval, resolver bootstrap and proxy
 transport. The source module owns the exact LAN, discovery and DHCP exceptions.
 
-Each scoped `PROXY` rule is followed by a matching `REJECT` rule, so a failed
+Each scoped proxy rule is followed by a matching `REJECT` rule, so a failed
 proxy or unsupported UDP flow is rejected instead of falling through to
-`MATCH,DIRECT`. A selected subscription with no allowed node rejects scoped
-traffic. If Mihomo stops, the guard blocks Internet traffic instead of allowing
+`MATCH,DIRECT`. A proxy group with no eligible node rejects matched traffic.
+If Mihomo stops, the guard blocks Internet traffic instead of allowing
 direct access.
 Health checks require HTTP 204 and remain lazy, so an inactive subscription
 can show stale measurements.
@@ -95,8 +96,13 @@ not continuous automatic selection.
 matches the allowed Estonia node with the `#4` suffix.
 
 **PROXY** selects **PRIMARY** or **QUATTRO**. Both subscription groups use the
-same exact-name Estonia allowlist in the [Mihomo template](../common/dotfiles/mihomo.yaml).
+same exact-name Estonia allowlist.
 If a provider renames a node, that node is no longer eligible.
+
+The separate **INSTAGRAM** selector accepts any node from either subscription.
+It has its own selection through the authenticated controller. The `vpn`
+command and desktop picker still control **PROXY** only.
+
 `profile.store-selected` persists selections in
 `/var/lib/private/mihomo/cache.db`. With no valid cached choice, Mihomo uses
 the first available member. Runtime state does not need to be deleted.
