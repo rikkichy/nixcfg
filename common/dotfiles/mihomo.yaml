@@ -151,6 +151,13 @@ proxy-groups:
       - primary
       - quattro
 
+  - name: OBSIDIAN
+    type: select
+    empty-fallback: REJECT
+    use:
+      - primary
+      - quattro
+
 profile:
   store-selected: true
 
@@ -249,4 +256,6 @@ rules:
   - DOMAIN-SUFFIX,discord.media,REJECT
   - DOMAIN,discord-attachments-uploads-prd.storage.googleapis.com,DISCORD
   - DOMAIN,discord-attachments-uploads-prd.storage.googleapis.com,REJECT
+  - DOMAIN-SUFFIX,obsidian.md,OBSIDIAN
+  - DOMAIN-SUFFIX,obsidian.md,REJECT
   - MATCH,DIRECT
