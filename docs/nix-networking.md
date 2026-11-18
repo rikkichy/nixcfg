@@ -118,9 +118,9 @@ not continuous automatic selection.
 `vpn use` takes a case-insensitive regex. For example, `vpn use 'Польша #2$'`
 matches a node name ending in `Польша #2`.
 
-**PROXY** selects **PRIMARY** or **QUATTRO**. Both subscription groups use the
-same exact-name allowlist in the [Mihomo template](../common/dotfiles/mihomo.yaml).
-If a provider renames a node, that node is no longer eligible.
+**PROXY** selects **PRIMARY** or **QUATTRO**. The picker lists every server in the
+active subscription; the [Mihomo template](../common/dotfiles/mihomo.yaml)
+does not filter either subscription by server name.
 
 The other service selectors accept any node from either subscription.
 Each has its own selection through the authenticated controller. The `vpn`

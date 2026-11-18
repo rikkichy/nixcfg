@@ -91,14 +91,12 @@ proxy-groups:
   - name: PRIMARY
     type: select
     empty-fallback: REJECT
-    filter: &split_proxy_names '\A🇵🇱 🎮 ⭐️ Польша #2\z'
     use:
       - primary
 
   - name: QUATTRO
     type: select
     empty-fallback: REJECT
-    filter: *split_proxy_names
     use:
       - quattro
 
