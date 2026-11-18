@@ -91,7 +91,7 @@ proxy-groups:
   - name: PRIMARY
     type: select
     empty-fallback: REJECT
-    filter: &split_proxy_names '\A🇪🇪 🎮 ⚡️ ⭐️ Эстония(?: #4)?\z'
+    filter: &split_proxy_names '\A🇵🇱 🎮 ⭐️ Польша #2\z'
     use:
       - primary
 

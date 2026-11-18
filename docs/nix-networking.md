@@ -104,11 +104,11 @@ vpn ip                           # public IP and country through the selected pr
 Selection persists in Mihomo's cache. `vpn use` is a one-time manual choice,
 not continuous automatic selection.
 
-`vpn use` takes a case-insensitive regex. For example, `vpn use 'Эстония #4$'`
-matches the allowed Estonia node with the `#4` suffix.
+`vpn use` takes a case-insensitive regex. For example, `vpn use 'Польша #2$'`
+matches a node name ending in `Польша #2`.
 
 **PROXY** selects **PRIMARY** or **QUATTRO**. Both subscription groups use the
-same exact-name Estonia allowlist.
+same exact-name allowlist in the [Mihomo template](../common/dotfiles/mihomo.yaml).
 If a provider renames a node, that node is no longer eligible.
 
 The other service selectors accept any node from either subscription.
