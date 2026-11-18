@@ -138,6 +138,12 @@ rules:
   - DOMAIN-SUFFIX,anthropic.com,REJECT
   - DOMAIN-SUFFIX,claude.ai,PROXY
   - DOMAIN-SUFFIX,claude.ai,REJECT
+  - DOMAIN-SUFFIX,claude.com,PROXY
+  - DOMAIN-SUFFIX,claude.com,REJECT
+  - DOMAIN-SUFFIX,claudemcpclient.com,PROXY
+  - DOMAIN-SUFFIX,claudemcpclient.com,REJECT
+  - DOMAIN-SUFFIX,claudeusercontent.com,PROXY
+  - DOMAIN-SUFFIX,claudeusercontent.com,REJECT
   - DOMAIN-SUFFIX,chatgpt.com,PROXY
   - DOMAIN-SUFFIX,chatgpt.com,REJECT
   - DOMAIN-SUFFIX,instagram.com,INSTAGRAM
