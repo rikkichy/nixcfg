@@ -20,6 +20,7 @@ Recovery: [Spotify update-cache protection](#spotify-and-spicetify) ·
 - [Spotify and Spicetify](#spotify-and-spicetify)
 - [Marta](#marta)
 - [Telegram proxy](#telegram-proxy)
+- [Filen sync](#filen-sync)
 - [Project environments](#project-environments)
 
 ## Ownership
@@ -31,7 +32,7 @@ The password prompt remains the fallback.
 `hosts/ne/home.nix` imports the shared `common/modules/shell.nix` configuration described below.
 The host does not import the Linux desktop, secrets, or overlays.
 `hosts/ne/home.nix` owns Darwin CLI packages and Nix-packaged GUI apps: Prism
-Launcher, Google Chrome, Obsidian, Filen, LocalSend, qBittorrent and Audacity.
+Launcher, Google Chrome, Obsidian, LocalSend, qBittorrent and Audacity.
 Home Manager deploys Ghostty from `pkgs.ghostty-bin` and those apps to
 `~/Applications/Home Manager Apps` through its existing `copyApps` activation,
 which resyncs each bundle on every activation. Audacity's onboarding, welcome,
@@ -291,6 +292,28 @@ Add it once per Telegram profile by opening
 `tg://proxy?server=127.0.0.1&port=1443&secret=ddcc9604c59c09cf22a6ab0e02c4b729e1`.
 Check it with `launchctl print gui/$(id -u)/org.nix-community.home.tg-ws-proxy`.
 Pin updates follow the [desktop procedure](nix-networking.md#telegram-proxy-tg-ws-proxy).
+
+## Filen sync
+
+`hosts/ne/modules/home/filen.nix` runs the two-way sync pairs declared there as
+the launchd agent `org.nix-community.home.filen-sync`, mirroring the desktop's
+[Filen sync](nix.md#filen-sync); the Filen desktop app is not installed. The
+login is not declarative: after activation, sign in once as `rii`.
+
+```sh
+filen --skip-update whoami
+```
+
+Enter the email, password and 2FA code, and answer **y** to **Keep me logged in?**.
+The key goes to the login Keychain. launchd starts the agent once
+`~/Library/Application Support/filen-cli/.filen-cli-keep-me-logged-in` exists
+and restarts it 30 s after an exit. Check it with
+`launchctl print gui/$(id -u)/org.nix-community.home.filen-sync` and
+`~/Library/Logs/filen-sync.log`. A `filen-cli` update changes the binary, so
+macOS may ask once to allow its Keychain item; choose **Always Allow**.
+`filen logout` removes the saved login; launchd then stops restarting the agent,
+so end the running one with `launchctl kill TERM gui/$(id -u)/org.nix-community.home.filen-sync`.
+Failure modes are in [packages](reference/packages.md#filen).
 
 ## Project environments
 

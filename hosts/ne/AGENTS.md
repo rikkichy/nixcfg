@@ -31,6 +31,7 @@ Then bootstrap as the normal user with
 | `hosts/ne/modules/home/discord.nix` | Vanilla Nix-packaged Discord and native module staging for Finder |
 | `hosts/ne/modules/home/spotify.nix` | post-copy Spotify palette link and non-destructive native updater guard |
 | `hosts/ne/modules/home/tg-ws-proxy.nix` | loopback Telegram proxy launchd agent with fixed public secret |
+| `hosts/ne/modules/home/filen.nix` | `filen-cli` and the two-way Filen sync launchd agent |
 | `hosts/ne/dotfiles/` | Marta template and keyboard configuration |
 
 `flake.nix` imports nix-darwin and Home Manager's Darwin module together, with
@@ -45,7 +46,7 @@ Keep state versions fixed unless deliberately performing a compatibility migrati
   Removing a declaration is not an uninstall. After approved activation and
   runtime checks, verify Brew dependents and the deployed login shell before
   separately approved, targeted duplicate removal. Never run blanket Brew cleanup.
-- Home Manager deploys Ghostty, Prism, Chrome, Obsidian, Filen, LocalSend,
+- Home Manager deploys Ghostty, Prism, Chrome, Obsidian, LocalSend,
   qBittorrent and Audacity through existing `copyApps`. Prefer nixpkgs; use Brew only when
   nixpkgs lacks a working aarch64-darwin build or signing matters.
 - Neovim comes from the shared module; no macOS GUI editor or file associations

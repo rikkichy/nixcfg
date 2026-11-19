@@ -15,6 +15,7 @@
     ./modules/home/matugen.nix
     ./modules/home/keyboard.nix
     ./modules/home/tg-ws-proxy.nix
+    ./modules/home/filen.nix
   ];
 
   home.stateVersion = "26.05";
@@ -25,7 +26,6 @@
     cmake
     fd
     ffmpeg
-    filen-desktop
     git-filter-repo
     google-chrome
     idb-companion
