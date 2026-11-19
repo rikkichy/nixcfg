@@ -20,6 +20,7 @@ Recovery: [Spotify update-cache protection](#spotify-and-spicetify) ·
 - [Spotify and Spicetify](#spotify-and-spicetify)
 - [Marta](#marta)
 - [Telegram proxy](#telegram-proxy)
+- [Filen sync](#filen-sync)
 - [Project environments](#project-environments)
 
 ## Ownership
@@ -31,10 +32,12 @@ The password prompt remains the fallback.
 `hosts/ne/home.nix` imports the shared `common/modules/shell.nix` configuration described below.
 The host does not import the Linux desktop, secrets, or overlays.
 `hosts/ne/home.nix` owns Darwin CLI packages and Nix-packaged GUI apps: Prism
-Launcher, Google Chrome, Obsidian, Filen, LocalSend and qBittorrent.
+Launcher, Google Chrome, Obsidian, LocalSend, qBittorrent and Audacity.
 Home Manager deploys Ghostty from `pkgs.ghostty-bin` and those apps to
 `~/Applications/Home Manager Apps` through its existing `copyApps` activation,
-which resyncs each bundle on every activation. Neovim comes from the shared
+which resyncs each bundle on every activation. Audacity's onboarding, welcome,
+update and audio.com save/export prompts and splash screen are disabled through
+`CustomUserPreferences` in `preferences.nix`, reapplied on every switch. Neovim comes from the shared
 `common/modules/neovim.nix`; no GUI editor or file associations are managed.
 `hosts/ne/modules/system/homebrew.nix` declares BetterGlobeKey, maigret, Ollama, helium-browser,
 Marta, noswoosh, and wallspace. Maigret uses Brew because the pinned Nix package is broken.
@@ -45,7 +48,8 @@ Steam and Yubico Authenticator are casks because nixpkgs has no aarch64-darwin b
 Homebrew Bundle adopts an existing `/Applications` copy only when its version
 matches the cask; otherwise activation fails. Move that copy aside and switch again.
 Chromium has neither a Darwin package nor an enabled cask, so Chrome fills that role;
-the desktop's managed Chrome policies are Linux-only and do not apply. Both share
+the desktop's managed Chrome policies are Linux-only and do not apply. Mac Chrome gets
+recommended [policy](reference/browser.md) from `preferences.nix`. Both share
 the [profile seed](reference/browser.md#profile-seed).
 Bitwarden is the signed App Store build (`masApps`) for Touch ID and browser
 biometric unlock; activation needs an App Store sign-in to install it.
@@ -56,9 +60,16 @@ unmanaged; launch the Home Manager copies. Chrome launched
 from Finder may self-update between activations; the next activation restores the pinned bundle.
 App data stays in each app's Application Support directory.
 
-The host also owns reduced-motion, Dock, Finder, keyboard, trackpad, and
-per-power-source sleep/energy preferences. Some macOS preferences require
-logging out or restarting before taking effect. Individual apps may still animate.
+The host also owns reduced-motion, Dock, Finder, keyboard, trackpad, appearance,
+Siri, login-window, and per-power-source sleep/energy preferences, plus the
+application firewall in stealth mode. Allow LocalSend when the firewall prompts
+for incoming connections. Some macOS preferences require logging out or
+restarting before taking effect. Individual apps may still animate.
+System keyboard shortcuts (`com.apple.symbolichotkeys`) stay user-owned:
+nix-darwin writes the whole `AppleSymbolicHotKeys` dictionary, which would take over
+noswoosh's Ctrl+arrow entries and reapply them after its uninstall restores them.
+
+Screenshots go to `~/Pictures`.
 
 The [noswoosh](https://github.com/mmathys/noswoosh) Homebrew cask runs a login
 agent for animation-free Spaces switching with Ctrl+Left/Right and three-finger
@@ -169,6 +180,12 @@ disabled so the service alone switches input sources. Home Manager owns
 collections and behavior. On a fresh Mac, grant Accessibility permission when
 prompted, then run `betterglobekey doctor`.
 
+`preferences.nix` owns the enabled input sources: the US and Russian layouts
+that BetterGlobeKey's collection switches between, plus the emoji palette and
+press-and-hold accents. Activation replaces the whole list, so add layouts there
+rather than in System Settings. If Russian is missing from the input menu after
+the first switch on a fresh Mac, log out and back in.
+
 The daemon creates its event tap once at startup. If Accessibility is not yet
 available when it starts at login, it logs `accessibility permission not granted`
 to `~/Library/Logs/betterglobekey.log` and ignores Globe until restarted, even
@@ -276,6 +293,28 @@ Add it once per Telegram profile by opening
 `tg://proxy?server=127.0.0.1&port=1443&secret=ddcc9604c59c09cf22a6ab0e02c4b729e1`.
 Check it with `launchctl print gui/$(id -u)/org.nix-community.home.tg-ws-proxy`.
 Pin updates follow the [desktop procedure](nix-networking.md#telegram-proxy-tg-ws-proxy).
+
+## Filen sync
+
+`hosts/ne/modules/home/filen.nix` runs the two-way sync pairs declared there as
+the launchd agent `org.nix-community.home.filen-sync`, mirroring the desktop's
+[Filen sync](nix.md#filen-sync); the Filen desktop app is not installed. The
+login is not declarative: after activation, sign in once as `rii`.
+
+```sh
+filen --skip-update whoami
+```
+
+Enter the email, password and 2FA code, and answer **y** to **Keep me logged in?**.
+The key goes to the login Keychain. launchd starts the agent once
+`~/Library/Application Support/filen-cli/.filen-cli-keep-me-logged-in` exists
+and restarts it 30 s after an exit. Check it with
+`launchctl print gui/$(id -u)/org.nix-community.home.filen-sync` and
+`~/Library/Logs/filen-sync.log`. A `filen-cli` update changes the binary, so
+macOS may ask once to allow its Keychain item; choose **Always Allow**.
+`filen logout` removes the saved login; launchd then stops restarting the agent,
+so end the running one with `launchctl kill TERM gui/$(id -u)/org.nix-community.home.filen-sync`.
+Failure modes are in [packages](reference/packages.md#filen).
 
 ## Project environments
 

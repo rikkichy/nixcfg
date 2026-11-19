@@ -29,6 +29,7 @@ in
 
     swayimg
     mpv
+    audacity
     qbittorrent
     obsidian
     bitwarden-desktop
@@ -94,12 +95,31 @@ in
     extraOpts = {
       TranslateEnabled = false;
       PasswordManagerEnabled = false;
+      # Address autofill also gates Autocomplete (previously typed field values).
+      AutofillAddressEnabled = false;
+      AutofillCreditCardEnabled = false;
+      SavingBrowserHistoryDisabled = true;
+      SearchSuggestEnabled = false;
       DefaultSearchProviderName = "Google";
-      # uBlock Origin Lite: installed (user may disable, not remove) and configured
-      # through its managed storage schema.
-      ExtensionSettings.ddkjiahejlhfcafbddmgiahcphecmpfh = {
-        installation_mode = "normal_installed";
-        update_url = "https://clients2.google.com/service/update2/crx";
+      # Infostealers read cookies through the DevTools protocol port.
+      RemoteDebuggingAllowed = false;
+      # 2 = block. Web Wootility configures the Wooting keyboard over WebHID.
+      DefaultWebUsbGuardSetting = 2;
+      DefaultSerialGuardSetting = 2;
+      DefaultWebHidGuardSetting = 2;
+      DefaultWebBluetoothGuardSetting = 2;
+      WebHidAskForUrls = [ "https://wootility.io" ];
+      ExtensionSettings = {
+        # Only the extensions below may be installed; others are disabled.
+        "*".installation_mode = "blocked";
+        # uBlock Origin Lite: installed (user may disable, not remove) and configured
+        # through its managed storage schema.
+        ddkjiahejlhfcafbddmgiahcphecmpfh = {
+          installation_mode = "normal_installed";
+          update_url = "https://clients2.google.com/service/update2/crx";
+        };
+        # Bitwarden: allowed, user-installed.
+        nngceckbapebfimnlniiiahkandclblb.installation_mode = "allowed";
       };
       "3rdparty".extensions.ddkjiahejlhfcafbddmgiahcphecmpfh = {
         defaultFiltering = "complete";

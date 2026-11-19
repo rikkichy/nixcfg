@@ -17,11 +17,36 @@ Spotify uses the native `common/modules/spotify.nix` package. See [shared Spotif
 
 `programs.chromium` in `hosts/nix/modules/system/applications.nix` installs no
 browser. It writes the desktop's policy JSON under both `/etc/chromium/policies/managed/`
-and `/etc/opt/chrome/policies/managed/`; Chrome reads the latter. Mac Chrome has no managed policy.
+and `/etc/opt/chrome/policies/managed/`; Chrome reads the latter. Mac Chrome has no managed
+policy; `hosts/ne/modules/system/preferences.nix` writes `com.google.Chrome` user defaults,
+which Chrome applies as recommended policy (an explicit user setting wins).
 `chrome://policy` shows the loaded policies and their source.
 
 Translation and the browser password manager are disabled by policy, and Google is
-the managed default search engine.
+the managed default search engine. Address and payment-card autofill and address-bar
+search suggestions are off on both hosts (`AutofillAddressEnabled`,
+`AutofillCreditCardEnabled`, `SearchSuggestEnabled`): mandatory on the desktop,
+recommended on the Mac. Address autofill also gates Autocomplete, the dropdown of
+previously typed field values such as emails and usernames.
+
+Browsing history is not saved. The desktop enforces `SavingBrowserHistoryDisabled`, which
+also turns off tab sync. Chrome ignores that policy at recommended level, so on the
+Mac only profiles created from the seed have it off.
+
+Desktop-only policy, because Chrome ignores it at recommended level:
+
+- `RemoteDebuggingAllowed = false` disables `--remote-debugging-port` and other DevTools
+  protocol access from outside the browser, which infostealers use to read cookies. It
+  applies to every Chrome launch on the desktop, including disposable preview profiles.
+- WebUSB, Web Serial, WebHID and Web Bluetooth are blocked (`Default*GuardSetting = 2`),
+  except WebHID for `https://wootility.io`, which configures the Wooting keyboard.
+  Camera and microphone are separate permissions; USB cameras and audio devices use OS
+  drivers. Headset call buttons in web meeting apps need a WebHID exception.
+- `ExtensionSettings."*"` blocks every extension except uBlock Origin Lite and Bitwarden
+  (`nngceckbapebfimnlniiiahkandclblb`, allowed but not force-installed). Chrome disables
+  other installed extensions. Add an ID to the policy to allow it.
+
+The Mac seed blocks the same four device APIs for new profiles only.
 
 ### uBlock Origin Lite
 
@@ -44,7 +69,7 @@ by ID. Blocking itself remains observable to anti-adblock checks.
   same lists in the dashboard. AdGuard and Fanboy annoyance lists from classic
   uBlock Origin are not part of uBlock Origin Lite.
 
-Other extension choices remain user-owned.
+Mac extension choices remain user-owned.
 
 `NewTabPageLocation` points normal new tabs at a Nix-store HTML page with a solid
 black background. This replaces the normal new-tab content; address-bar search
@@ -64,13 +89,16 @@ the seed affects only profiles created afterwards.
 Seeded values are ordinary user settings, not policy, and stay changeable in Settings:
 
 - profile name `Default`; first-run screens skipped
-- notifications, microphone, camera, location, motion sensors, background sync and payment
-  handlers blocked by default, with per-site exceptions possible
+- notifications, microphone, camera, location, motion sensors, background sync, payment
+  handlers, WebUSB, Web Serial, WebHID and Web Bluetooth blocked by default, with
+  per-site exceptions possible
 - extended preloading (`net.network_prediction_options = 3`)
 - performance issue alerts, Memory Saver and Energy Saver off
 - vertical tabs (`vertical_tabs.enabled`)
 - What's New tab and "Continue where you left off" infobar suppressed
   (`browser.last_whats_new_version`, `browser.session_restore_infobar_times_shown`)
+- browsing history not saved (`history.saving_disabled`); there is no Settings toggle,
+  so re-enabling needs an edited `Preferences` file or a new profile
 - on-device AI model off (`optimization_guide.on_device_foundational_model_user_settings`)
 - Google Password Manager offers and auto sign-in off (`credentials_enable_service`,
   `credentials_enable_autosignin`). This disables only passkey creation in Google

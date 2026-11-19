@@ -67,11 +67,28 @@
     "vm.page-cluster" = 0;
 
     "kernel.dmesg_restrict" = 1;
+    "kernel.kptr_restrict" = 2;
 
     "kernel.unprivileged_bpf_disabled" = 2;
     "net.core.bpf_jit_harden" = 1;
 
     "kernel.yama.ptrace_scope" = 1;
+
+    # systemd defaults these to 1 and suid dumps to 2 (piped to systemd-coredump).
+    "fs.protected_fifos" = 2;
+    "fs.protected_regular" = 2;
+    "fs.suid_dumpable" = 0;
+    # The CachyOS kernel autoloads TTY line disciplines for unprivileged users.
+    "dev.tty.ldisc_autoload" = 0;
+
+    "net.ipv4.conf.all.accept_redirects" = 0;
+    "net.ipv4.conf.default.accept_redirects" = 0;
+    "net.ipv4.conf.all.secure_redirects" = 0;
+    "net.ipv4.conf.default.secure_redirects" = 0;
+    "net.ipv4.conf.all.send_redirects" = 0;
+    "net.ipv4.conf.default.send_redirects" = 0;
+    "net.ipv6.conf.all.accept_redirects" = 0;
+    "net.ipv6.conf.default.accept_redirects" = 0;
   };
 
   zramSwap.enable = true;

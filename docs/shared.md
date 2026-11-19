@@ -139,7 +139,9 @@ Fix the project shell, then run `nix-direnv-reload` to reload it.
 The warning clears when direnv supplies a successfully evaluated environment.
 Fallback remains enabled for offline use.
 
-Neovim's Node provider and the shared gopls fallback Go runtime are tool-scoped, not global project toolchains.
+Neovim's Node provider is tool-scoped, not a global project toolchain. The shared
+servers cover only languages present in this repository; other projects supply
+their own servers through their development shells.
 Darwin uses Nix-managed rustup with mutable, project-owned toolchains.
 Install `rust-src` and `rustfmt` for each project toolchain that needs standard-library navigation and formatting.
 Linux supplies default Rust tools and sources. Project development shells can override them.

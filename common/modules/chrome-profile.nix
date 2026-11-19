@@ -48,6 +48,10 @@ let
         sensors = 2;
         background_sync = 2;
         payment_handler = 2;
+        usb_guard = 2;
+        serial_guard = 2;
+        hid_guard = 2;
+        bluetooth_guard = 2;
       };
       # 1 = block third-party cookies.
       cookie_controls_mode = 1;
@@ -74,6 +78,8 @@ let
     credentials_enable_service = false;
     credentials_enable_autosignin = false;
     translate.enabled = false;
+    # No Settings toggle exists; the desktop also enforces it by policy.
+    history.saving_disabled = true;
     # Safe Browsing "No protection".
     safebrowsing = {
       enabled = false;

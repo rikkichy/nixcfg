@@ -15,6 +15,25 @@ let
       excludeDotFiles = true;
     }
   ]);
+
+  # Audacity 4 popups; see the macOS twin in hosts/ne/modules/system/preferences.nix.
+  # It re-enables the welcome dialog whenever the last-shown version sorts before
+  # the running one, so pin a sentinel above any 4.x. QSettings nests keys with "\".
+  audacitySeed = pkgs.writeText "Audacity4.ini" (lib.generators.toINI { } {
+    application = {
+      hasCompletedFirstLaunchSetup = true;
+      welcomeDialogShowOnStartup = false;
+      welcomeDialogLastShownVersion = "9999";
+      checkForUpdate = false;
+    };
+    project = {
+      shouldAskSaveLocationType = false;
+      lastUsedSaveLocationType = 1;
+    };
+    importexport.askExportLocationType = false;
+    trackedit.deleteBehavior = 1;
+    ui."application\\startup\\showSplashScreen" = false;
+  });
 in
 
 {
@@ -27,6 +46,13 @@ in
         run chmod u+w "$osudir/$f"
       fi
     done
+  '';
+
+  home.activation.audacitySettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    audacityini="${config.xdg.configHome}/Audacity/Audacity4.ini"
+    if [ ! -e "$audacityini" ]; then
+      run install -Dm644 ${audacitySeed} "$audacityini"
+    fi
   '';
 
   dconf.settings."org/gnome/desktop/interface".color-scheme = "prefer-dark";
