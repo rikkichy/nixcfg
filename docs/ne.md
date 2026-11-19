@@ -49,7 +49,7 @@ Homebrew Bundle adopts an existing `/Applications` copy only when its version
 matches the cask; otherwise activation fails. Move that copy aside and switch again.
 Chromium has neither a Darwin package nor an enabled cask, so Chrome fills that role;
 the desktop's managed Chrome policies are Linux-only and do not apply. Mac Chrome gets
-recommended [autofill policy](reference/browser.md) from `preferences.nix`. Both share
+recommended [policy](reference/browser.md) from `preferences.nix`. Both share
 the [profile seed](reference/browser.md#profile-seed).
 Bitwarden is the signed App Store build (`masApps`) for Touch ID and browser
 biometric unlock; activation needs an App Store sign-in to install it.
