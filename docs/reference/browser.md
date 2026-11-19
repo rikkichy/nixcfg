@@ -17,11 +17,16 @@ Spotify uses the native `common/modules/spotify.nix` package. See [shared Spotif
 
 `programs.chromium` in `hosts/nix/modules/system/applications.nix` installs no
 browser. It writes the desktop's policy JSON under both `/etc/chromium/policies/managed/`
-and `/etc/opt/chrome/policies/managed/`; Chrome reads the latter. Mac Chrome has no managed policy.
+and `/etc/opt/chrome/policies/managed/`; Chrome reads the latter. Mac Chrome has no managed
+policy; `hosts/ne/modules/system/preferences.nix` writes `com.google.Chrome` user defaults,
+which Chrome applies as recommended policy (an explicit user setting wins).
 `chrome://policy` shows the loaded policies and their source.
 
 Translation and the browser password manager are disabled by policy, and Google is
-the managed default search engine.
+the managed default search engine. Address and payment-card autofill are off on both
+hosts (`AutofillAddressEnabled`, `AutofillCreditCardEnabled`): mandatory on the desktop,
+recommended on the Mac. Address autofill also gates Autocomplete, the dropdown of
+previously typed field values such as emails and usernames.
 
 ### uBlock Origin Lite
 

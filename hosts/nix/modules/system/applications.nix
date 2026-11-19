@@ -95,6 +95,9 @@ in
     extraOpts = {
       TranslateEnabled = false;
       PasswordManagerEnabled = false;
+      # Address autofill also gates Autocomplete (previously typed field values).
+      AutofillAddressEnabled = false;
+      AutofillCreditCardEnabled = false;
       DefaultSearchProviderName = "Google";
       # uBlock Origin Lite: installed (user may disable, not remove) and configured
       # through its managed storage schema.
