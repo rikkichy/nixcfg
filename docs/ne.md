@@ -176,6 +176,12 @@ disabled so the service alone switches input sources. Home Manager owns
 collections and behavior. On a fresh Mac, grant Accessibility permission when
 prompted, then run `betterglobekey doctor`.
 
+`preferences.nix` owns the enabled input sources: the US and Russian layouts
+that BetterGlobeKey's collection switches between, plus the emoji palette and
+press-and-hold accents. Activation replaces the whole list, so add layouts there
+rather than in System Settings. If Russian is missing from the input menu after
+the first switch on a fresh Mac, log out and back in.
+
 The daemon creates its event tap once at startup. If Accessibility is not yet
 available when it starts at login, it logs `accessibility permission not granted`
 to `~/Library/Logs/betterglobekey.log` and ignores Globe until restarted, even

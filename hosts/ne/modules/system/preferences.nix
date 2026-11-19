@@ -41,6 +41,26 @@ in
     };
     CustomUserPreferences = {
       "com.apple.finder".DisableAllAnimations = true;
+      "com.apple.HIToolbox".AppleEnabledInputSources = [
+        {
+          InputSourceKind = "Keyboard Layout";
+          "KeyboardLayout ID" = 0;
+          "KeyboardLayout Name" = "U.S.";
+        }
+        {
+          InputSourceKind = "Keyboard Layout";
+          "KeyboardLayout ID" = 19456;
+          "KeyboardLayout Name" = "Russian";
+        }
+        {
+          "Bundle ID" = "com.apple.CharacterPaletteIM";
+          InputSourceKind = "Non Keyboard Input Method";
+        }
+        {
+          "Bundle ID" = "com.apple.PressAndHold";
+          InputSourceKind = "Non Keyboard Input Method";
+        }
+      ];
       "com.apple.desktopservices" = {
         DSDontWriteNetworkStores = true;
         DSDontWriteUSBStores = true;
