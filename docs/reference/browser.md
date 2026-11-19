@@ -33,6 +33,21 @@ Browsing history is not saved. The desktop enforces `SavingBrowserHistoryDisable
 also turns off tab sync. Chrome ignores that policy at recommended level, so on the
 Mac only profiles created from the seed have it off.
 
+Desktop-only policy, because Chrome ignores it at recommended level:
+
+- `RemoteDebuggingAllowed = false` disables `--remote-debugging-port` and other DevTools
+  protocol access from outside the browser, which infostealers use to read cookies. It
+  applies to every Chrome launch on the desktop, including disposable preview profiles.
+- WebUSB, Web Serial, WebHID and Web Bluetooth are blocked (`Default*GuardSetting = 2`),
+  except WebHID for `https://wootility.io`, which configures the Wooting keyboard.
+  Camera and microphone are separate permissions; USB cameras and audio devices use OS
+  drivers. Headset call buttons in web meeting apps need a WebHID exception.
+- `ExtensionSettings."*"` blocks every extension except uBlock Origin Lite and Bitwarden
+  (`nngceckbapebfimnlniiiahkandclblb`, allowed but not force-installed). Chrome disables
+  other installed extensions. Add an ID to the policy to allow it.
+
+The Mac seed blocks the same four device APIs for new profiles only.
+
 ### uBlock Origin Lite
 
 uBlock Origin Lite (`ddkjiahejlhfcafbddmgiahcphecmpfh`) is the only declared extension.
@@ -54,7 +69,7 @@ by ID. Blocking itself remains observable to anti-adblock checks.
   same lists in the dashboard. AdGuard and Fanboy annoyance lists from classic
   uBlock Origin are not part of uBlock Origin Lite.
 
-Other extension choices remain user-owned.
+Mac extension choices remain user-owned.
 
 `NewTabPageLocation` points normal new tabs at a Nix-store HTML page with a solid
 black background. This replaces the normal new-tab content; address-bar search
@@ -74,8 +89,9 @@ the seed affects only profiles created afterwards.
 Seeded values are ordinary user settings, not policy, and stay changeable in Settings:
 
 - profile name `Default`; first-run screens skipped
-- notifications, microphone, camera, location, motion sensors, background sync and payment
-  handlers blocked by default, with per-site exceptions possible
+- notifications, microphone, camera, location, motion sensors, background sync, payment
+  handlers, WebUSB, Web Serial, WebHID and Web Bluetooth blocked by default, with
+  per-site exceptions possible
 - extended preloading (`net.network_prediction_options = 3`)
 - performance issue alerts, Memory Saver and Energy Saver off
 - vertical tabs (`vertical_tabs.enabled`)

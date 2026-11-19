@@ -48,6 +48,10 @@ let
         sensors = 2;
         background_sync = 2;
         payment_handler = 2;
+        usb_guard = 2;
+        serial_guard = 2;
+        hid_guard = 2;
+        bluetooth_guard = 2;
       };
       # 1 = block third-party cookies.
       cookie_controls_mode = 1;
