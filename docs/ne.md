@@ -34,7 +34,9 @@ The host does not import the Linux desktop, secrets, or overlays.
 Launcher, Google Chrome, Obsidian, Filen, LocalSend, qBittorrent and Audacity.
 Home Manager deploys Ghostty from `pkgs.ghostty-bin` and those apps to
 `~/Applications/Home Manager Apps` through its existing `copyApps` activation,
-which resyncs each bundle on every activation. Neovim comes from the shared
+which resyncs each bundle on every activation. Audacity's onboarding, welcome,
+update and audio.com save/export prompts and splash screen are disabled through
+`CustomUserPreferences` in `preferences.nix`, reapplied on every switch. Neovim comes from the shared
 `common/modules/neovim.nix`; no GUI editor or file associations are managed.
 `hosts/ne/modules/system/homebrew.nix` declares BetterGlobeKey, maigret, Ollama, helium-browser,
 Marta, noswoosh, and wallspace. Maigret uses Brew because the pinned Nix package is broken.

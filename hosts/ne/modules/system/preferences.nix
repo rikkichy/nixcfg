@@ -74,6 +74,19 @@ in
       "com.apple.loginwindow".TALLogoutSavesState = false;
       "com.apple.assistant.support"."Assistant Enabled" = false;
       "org.yanex.marta"."core.launchedBefore" = true; # Skip the first-launch tutorial.
+      # Audacity 4 popups. It re-enables the welcome dialog whenever the last-shown
+      # version sorts before the running one, so pin a sentinel above any 4.x.
+      "org.audacityteam.Audacity4" = {
+        "application.hasCompletedFirstLaunchSetup" = true;
+        "application.welcomeDialogShowOnStartup" = false;
+        "application.welcomeDialogLastShownVersion" = "9999";
+        "application.checkForUpdate" = false; # Nix owns updates.
+        "project.shouldAskSaveLocationType" = false;
+        "project.lastUsedSaveLocationType" = 1; # Local, not audio.com.
+        "importexport.askExportLocationType" = false;
+        "trackedit.deleteBehavior" = 1; # Leave gap; skips the first-delete prompt.
+        "ui.application.startup.showSplashScreen" = false;
+      };
     };
     CustomSystemPreferences."com.apple.SoftwareUpdate".CriticalUpdateInstall = true;
   };

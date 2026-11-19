@@ -8,7 +8,7 @@ Source ownership paths below are repository-relative. The
 ## Application state and diagnosis
 
 - `applications.nix` owns browser MIME defaults, Thunar integration and absent-only
-  osu! seeds. Preserve writable app-owned settings: never force them into store
+  osu! and Audacity seeds. Preserve writable app-owned settings: never force them into store
   symlinks or overwrite existing seeds. Keep credentials, account data and osu!
   database-specific IDs out of seeds; do not seed `framework.ini` or `client.realm`.
   See [osu!](../../../../docs/reference/osu.md).
