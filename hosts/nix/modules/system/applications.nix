@@ -98,6 +98,8 @@ in
       # Address autofill also gates Autocomplete (previously typed field values).
       AutofillAddressEnabled = false;
       AutofillCreditCardEnabled = false;
+      SavingBrowserHistoryDisabled = true;
+      SearchSuggestEnabled = false;
       DefaultSearchProviderName = "Google";
       # uBlock Origin Lite: installed (user may disable, not remove) and configured
       # through its managed storage schema.

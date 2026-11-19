@@ -74,6 +74,8 @@ let
     credentials_enable_service = false;
     credentials_enable_autosignin = false;
     translate.enabled = false;
+    # No Settings toggle exists; the desktop also enforces it by policy.
+    history.saving_disabled = true;
     # Safe Browsing "No protection".
     safebrowsing = {
       enabled = false;

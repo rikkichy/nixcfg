@@ -74,10 +74,12 @@ in
       "com.apple.loginwindow".TALLogoutSavesState = false;
       "com.apple.assistant.support"."Assistant Enabled" = false;
       "org.yanex.marta"."core.launchedBefore" = true; # Skip the first-launch tutorial.
-      # Recommended Chrome policy: Autocomplete (address autofill) and card autofill off.
+      # Recommended Chrome policy: Autocomplete (address autofill), card autofill and
+      # search suggestions off.
       "com.google.Chrome" = {
         AutofillAddressEnabled = false;
         AutofillCreditCardEnabled = false;
+        SearchSuggestEnabled = false;
       };
       # Audacity 4 popups. It re-enables the welcome dialog whenever the last-shown
       # version sorts before the running one, so pin a sentinel above any 4.x.
