@@ -19,6 +19,7 @@
 
   home.stateVersion = "26.05";
   home.packages = with pkgs; [
+    audacity
     ast-grep
     cabextract
     cmake

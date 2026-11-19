@@ -45,8 +45,8 @@ Keep state versions fixed unless deliberately performing a compatibility migrati
   Removing a declaration is not an uninstall. After approved activation and
   runtime checks, verify Brew dependents and the deployed login shell before
   separately approved, targeted duplicate removal. Never run blanket Brew cleanup.
-- Home Manager deploys Ghostty, Prism, Chrome, Obsidian, Filen, LocalSend and
-  qBittorrent through existing `copyApps`. Prefer nixpkgs; use Brew only when
+- Home Manager deploys Ghostty, Prism, Chrome, Obsidian, Filen, LocalSend,
+  qBittorrent and Audacity through existing `copyApps`. Prefer nixpkgs; use Brew only when
   nixpkgs lacks a working aarch64-darwin build or signing matters.
 - Neovim comes from the shared module; no macOS GUI editor or file associations
   are managed. Existing Zed file associations are preserved unless the user changes them.

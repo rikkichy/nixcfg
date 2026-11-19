@@ -29,6 +29,7 @@ in
 
     swayimg
     mpv
+    audacity
     qbittorrent
     obsidian
     bitwarden-desktop

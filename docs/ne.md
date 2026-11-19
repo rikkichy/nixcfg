@@ -31,7 +31,7 @@ The password prompt remains the fallback.
 `hosts/ne/home.nix` imports the shared `common/modules/shell.nix` configuration described below.
 The host does not import the Linux desktop, secrets, or overlays.
 `hosts/ne/home.nix` owns Darwin CLI packages and Nix-packaged GUI apps: Prism
-Launcher, Google Chrome, Obsidian, Filen, LocalSend and qBittorrent.
+Launcher, Google Chrome, Obsidian, Filen, LocalSend, qBittorrent and Audacity.
 Home Manager deploys Ghostty from `pkgs.ghostty-bin` and those apps to
 `~/Applications/Home Manager Apps` through its existing `copyApps` activation,
 which resyncs each bundle on every activation. Neovim comes from the shared
