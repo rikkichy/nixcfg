@@ -6,7 +6,6 @@ let
   # fileTypes are OMP extensions, so map Neovim filetypes here.
   fileTypes = {
     nixd = [ "nix" ];
-    gopls = [ "go" "gomod" "gowork" "gotmpl" ];
     basedpyright = [ "python" ];
     ruff = [ "python" ];
     rust-analyzer = [ "rust" ];
@@ -70,7 +69,6 @@ let
     local formatters = {
       nix = { "${lib.getExe pkgs.nixfmt}" },
       python = function() vim.lsp.buf.format({ name = "ruff" }) end,
-      go = function() vim.lsp.buf.format({ name = "gopls" }) end,
       rust = function() vim.lsp.buf.format({ name = "rust-analyzer" }) end,
       lua = { "${lib.getExe pkgs.stylua}", "--stdin-filepath", "%", "-" },
       sh = { "${lib.getExe pkgs.shfmt}", "-i", "2", "-" },

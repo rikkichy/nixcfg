@@ -49,8 +49,8 @@ Use direnv/project flakes for project runtimes. This repository has no
 - `common/modules/neovim.nix` owns the editor package and read-only generated
   `init.lua` on both platforms. Keep it plugin-manager-free and reuse the existing
   `language-servers.nix` commands rather than installing duplicate runtimes.
-- Neovim's Node provider and the gopls fallback Go runtime are tool-scoped;
-  project toolchains still come from direnv.
+- Neovim's Node provider is tool-scoped; project toolchains and servers for
+  languages this repository does not contain come from direnv.
 - Preserve Darwin's Nix-managed rustup with mutable, project-owned toolchains,
   Linux default Rust tools/sources, and shared rust-analyzer.
   Project shells may override toolchains. Read [the shared guide](../docs/shared.md#shared-shell-and-editor) for rustup component setup.

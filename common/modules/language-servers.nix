@@ -7,15 +7,6 @@ let
   flake = "(builtins.getFlake ${builtins.toJSON evaluationPath})";
   host = "${if isDarwin then "darwinConfigurations" else "nixosConfigurations"}.${osConfig.networking.hostName}";
   rustAnalyzer = if isDarwin then pkgs.rust-analyzer-unwrapped else pkgs.rust-analyzer;
-  # Preserve project Go toolchains; supply a fallback outside a dev shell.
-  gopls = pkgs.symlinkJoin {
-    name = "gopls-with-go";
-    paths = [ pkgs.gopls ];
-    nativeBuildInputs = [ pkgs.makeWrapper ];
-    postBuild = ''
-      wrapProgram $out/bin/gopls --suffix PATH : ${lib.makeBinPath [ pkgs.go ]}
-    '';
-  };
 in
 {
   inherit rustAnalyzer;
@@ -33,10 +24,6 @@ in
         };
         formatting.command = [ (lib.getExe pkgs.nixfmt) ];
       };
-    };
-    gopls = {
-      command = "${gopls}/bin/gopls";
-      args = [ ];
     };
     basedpyright = {
       command = "${pkgs.basedpyright}/bin/basedpyright-langserver";
