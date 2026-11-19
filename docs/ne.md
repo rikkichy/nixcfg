@@ -56,9 +56,14 @@ unmanaged; launch the Home Manager copies. Chrome launched
 from Finder may self-update between activations; the next activation restores the pinned bundle.
 App data stays in each app's Application Support directory.
 
-The host also owns reduced-motion, Dock, Finder, keyboard, trackpad, and
-per-power-source sleep/energy preferences. Some macOS preferences require
-logging out or restarting before taking effect. Individual apps may still animate.
+The host also owns reduced-motion, Dock, Finder, keyboard, trackpad, appearance,
+Siri, login-window, and per-power-source sleep/energy preferences, plus the
+application firewall in stealth mode. Allow LocalSend when the firewall prompts
+for incoming connections. Some macOS preferences require logging out or
+restarting before taking effect. Individual apps may still animate.
+System keyboard shortcuts (`com.apple.symbolichotkeys`) stay user-owned:
+nix-darwin writes the whole `AppleSymbolicHotKeys` dictionary, which would take over
+noswoosh's Ctrl+arrow entries and reapply them after its uninstall restores them.
 
 The [noswoosh](https://github.com/mmathys/noswoosh) Homebrew cask runs a login
 agent for animation-free Spaces switching with Ctrl+Left/Right and three-finger

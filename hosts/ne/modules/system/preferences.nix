@@ -1,6 +1,11 @@
 { lib, ... }:
 
 {
+  networking.applicationFirewall = {
+    enable = true;
+    enableStealthMode = true;
+  };
+
   system.defaults = {
     hitoolbox.AppleFnUsageType = "Do Nothing";
     NSGlobalDomain = {
@@ -20,6 +25,7 @@
       launchanim = false;
     };
     universalaccess.reduceMotion = false;
+    loginwindow.GuestEnabled = false;
     finder.FXPreferredViewStyle = "Nlsv";
     WindowManager.EnableTiledWindowMargins = false;
     trackpad = {
@@ -31,6 +37,12 @@
       "com.apple.finder".DisableAllAnimations = true;
       NSGlobalDomain.QLPanelAnimationDuration = 0.0;
       NSGlobalDomain.NSFileViewer = "org.yanex.marta";
+      NSGlobalDomain.TSMLanguageIndicatorEnabled = false; # BetterGlobeKey owns input switching.
+      NSGlobalDomain.AppleIconAppearanceTintColor = "Graphite";
+      NSGlobalDomain.AppleAccentColor = 0;
+      NSGlobalDomain.AppleMiniaturizeOnDoubleClick = false;
+      "com.apple.loginwindow".TALLogoutSavesState = false;
+      "com.apple.assistant.support"."Assistant Enabled" = false;
       "org.yanex.marta"."core.launchedBefore" = true; # Skip the first-launch tutorial.
     };
   };

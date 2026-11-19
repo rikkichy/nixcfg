@@ -22,7 +22,7 @@ Then bootstrap as the normal user with
 | `hosts/ne/modules/system/nix.nix` | upstream Nix and content-addressed derivations |
 | `common/modules/nh.nix` | system-wide nh, NH_FLAKE and flakes, shared with both Linux hosts |
 | `hosts/ne/modules/system/homebrew.nix` | Brew formulae, casks, taps, App Store apps and BetterGlobeKey/Ollama services |
-| `hosts/ne/modules/system/preferences.nix` | native preferences and per-power-source pmset activation |
+| `hosts/ne/modules/system/preferences.nix` | native preferences, application firewall and per-power-source pmset activation |
 | `hosts/ne/modules/home/shell.nix` | Homebrew and Bun PATH integration |
 | `hosts/ne/modules/home/ghostty.nix` | Ghostty package (`pkgs.ghostty-bin`) and settings |
 | `hosts/ne/modules/home/matugen.nix` | Matugen configuration and wallpaper-theme |
