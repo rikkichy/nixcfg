@@ -21,6 +21,14 @@
           "device.profile" = "pro-audio";
         };
       }
+      {
+        matches = [
+          { "node.name" = "alsa_input.usb-Solid_State_Logic_SSL_2__Mk_II-00.pro-input-0"; }
+          { "node.name" = "alsa_output.usb-Solid_State_Logic_SSL_2__Mk_II-00.pro-output-0"; }
+        ];
+        # IRQ scheduling ties the graph to the hardware period, which can overrun osu!'s 10 ms audio request.
+        actions.update-props."api.alsa.disable-tsched" = false;
+      }
     ];
 
     extraConfig.pipewire."90-blessing3-eq" = {

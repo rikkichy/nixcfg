@@ -179,6 +179,11 @@ WirePlumber starts it in the **Pro Audio** profile with UCM disabled: one 6-chan
 (`AUX0`–`AUX5`, outputs 1/2 first) and one 8-channel source (`AUX0` is input 1).
 The pinned `alsa-ucm-conf` profile treats the 2+ Mk II as the plain 2 Mk II and fails
 its channel check; upstream commit `4367278` fixes that, but Pro Audio does not use UCM.
+The SSL input and output use timer-based scheduling so the shared graph can
+run in smaller blocks than the hardware interrupt period. This avoids distorted
+osu! playback under concurrent audio. Leave osu!'s output on **Default**:
+selecting the USB hardware entry directly bypasses PipeWire and can block
+other apps from using the interface.
 
 **SSL Mic** is the processed microphone source: it reads only input 1 (`AUX0`, no
 remixing), removes keyboard and mouse noise with the DeepFilterNet LADSPA plugin, then
