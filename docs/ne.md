@@ -65,6 +65,8 @@ System keyboard shortcuts (`com.apple.symbolichotkeys`) stay user-owned:
 nix-darwin writes the whole `AppleSymbolicHotKeys` dictionary, which would take over
 noswoosh's Ctrl+arrow entries and reapply them after its uninstall restores them.
 
+Screenshots go to `~/Pictures`.
+
 The [noswoosh](https://github.com/mmathys/noswoosh) Homebrew cask runs a login
 agent for animation-free Spaces switching with Ctrl+Left/Right and three-finger
 horizontal swipes. It requires macOS 26.6+ or 27 and uses private APIs that may

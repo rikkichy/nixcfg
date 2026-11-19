@@ -1,5 +1,8 @@
-{ lib, ... }:
+{ config, lib, ... }:
 
+let
+  home = config.users.users.rii.home;
+in
 {
   networking.applicationFirewall = {
     enable = true;
@@ -9,6 +12,7 @@
   system.defaults = {
     hitoolbox.AppleFnUsageType = "Do Nothing";
     NSGlobalDomain = {
+      AppleShowAllExtensions = true;
       AppleInterfaceStyle = "Dark";
       NSAutomaticWindowAnimationsEnabled = false;
       NSWindowResizeTime = 0.001;
@@ -23,10 +27,12 @@
       mineffect = "scale";
       show-recents = false;
       launchanim = false;
+      mru-spaces = false;
     };
     universalaccess.reduceMotion = false;
     loginwindow.GuestEnabled = false;
     finder.FXPreferredViewStyle = "Nlsv";
+    screencapture.location = "${home}/Pictures";
     WindowManager.EnableTiledWindowMargins = false;
     trackpad = {
       Clicking = false;
@@ -35,6 +41,10 @@
     };
     CustomUserPreferences = {
       "com.apple.finder".DisableAllAnimations = true;
+      "com.apple.desktopservices" = {
+        DSDontWriteNetworkStores = true;
+        DSDontWriteUSBStores = true;
+      };
       NSGlobalDomain.QLPanelAnimationDuration = 0.0;
       NSGlobalDomain.NSFileViewer = "org.yanex.marta";
       NSGlobalDomain.TSMLanguageIndicatorEnabled = false; # BetterGlobeKey owns input switching.
@@ -45,6 +55,7 @@
       "com.apple.assistant.support"."Assistant Enabled" = false;
       "org.yanex.marta"."core.launchedBefore" = true; # Skip the first-launch tutorial.
     };
+    CustomSystemPreferences."com.apple.SoftwareUpdate".CriticalUpdateInstall = true;
   };
 
   # nix-darwin has no per-power-source energy policy options.
