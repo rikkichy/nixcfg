@@ -3,8 +3,8 @@
 {
   environment.systemPackages = lib.mkAfter [
     (if pkgs.stdenv.hostPlatform.isDarwin then
-      pkgs.nh.override {
-        nh-unwrapped = inputs.nixpkgs-nh.legacyPackages.${pkgs.stdenv.hostPlatform.system}.nh-unwrapped;
+      inputs.nixpkgs-nh.legacyPackages.${pkgs.stdenv.hostPlatform.system}.nh.override {
+        inherit (pkgs) nix-output-monitor;
       }
     else pkgs.nh)
   ];

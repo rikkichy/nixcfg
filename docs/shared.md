@@ -16,14 +16,13 @@ for OS commands. For an explicit checkout/host, use
 `nh darwin switch path:/etc/nixos --hostname ne`.
 Switching activates the configuration and requires separate operator approval.
 Source edits and successful verification do not grant that approval.
-Desktop examples and launchers retain `--no-nom` as a native Nix output
-preference; the selected kernel requires neither it nor `ca-derivations`.
+On Linux, nh 4.5 uses its built-in progress renderer; `--no-rom` selects
+native Nix output. Examples use `--no-nom`, which also works before the upgrade.
 
-Darwin selects `nh-unwrapped` from the dedicated `nixpkgs-nh` input, keeping its
-compiler/dependency closure on a verified official-cache build. The main
-Nixpkgs input still owns its wrapper and `nix-output-monitor`. Linux uses the
-main input for both. Retire the dedicated pin when the main input's Darwin
-output has a verified substitute.
+Darwin uses `nh` from the dedicated `nixpkgs-nh` input, keeping its unwrapped
+binary on a verified official-cache build. Its wrapper still uses
+`nix-output-monitor` from the main input. Linux uses `nh` from the main input;
+retire the dedicated pin when the main input's Darwin output has a verified substitute.
 
 `--no-update-lock-file` rejects implicit pin changes. See the
 [desktop prebuild workflow](nix.md#updates-and-prebuilt-systems) to retain a

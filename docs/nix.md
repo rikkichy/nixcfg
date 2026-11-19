@@ -50,7 +50,7 @@ META+ALT exposes three Nix commands in held terminals:
 - **Switch** (`nh os switch`)
 - **Update** (`nh os switch --update`; update all inputs, rebuild and switch)
 - **Clean** (`nh clean all`)
-Both rebuild entries use NH's default Nix Output Monitor display.
+Both rebuild entries use nh's default progress display.
 
 The live `~/.config/hypr` symlink targets `hosts/nix/dotfiles/ricing/hypr/`.
 If it points elsewhere, switch the host configuration before reloading Hyprland.

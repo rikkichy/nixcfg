@@ -55,8 +55,8 @@ Three flat desktop entries open held Foot terminals: `nh os switch`,
 `nh os switch --update`, and `nh clean all`. `terminalEntry` takes trusted Desktop
 Exec fragments, not runtime user input.
 
-Rebuilds use `nh os switch` and the Git-aware checkout, with NH's default
-Nix Output Monitor display.
+Rebuilds use `nh os switch` and the Git-aware checkout, with nh's default
+progress display.
 Plain switching uses `--no-update-lock-file`. The update entry updates all inputs before rebuilding
 and switching. See [source inclusion and prebuilds](../nix.md#updates-and-prebuilt-systems).
 `nh clean all` cleans all profiles and runs garbage collection, keeping one
