@@ -16,6 +16,7 @@ and [existing-system manual recovery](install.md#manual-installation--recovery-r
 
 - [Installation](#installation)
 - [Rebuilds and desktop tools](#rebuilds-and-desktop-tools)
+- [TCL 27X3B display](#tcl-27x3b-display)
 - [Desktop hardware performance](#desktop-hardware-performance)
 - [Console login](#console-login)
 - [Printing](#printing)
@@ -252,6 +253,35 @@ Install the local archive from OpenDeck's Plugins page. Follow the upstream
 model/hotkey setup, credential locations, and troubleshooting. Existing
 plugins and profiles remain application-owned. No installation or migration
 runs during NixOS activation.
+
+## TCL 27X3B display
+
+The [27X3B](https://www.tcl.com/global/en/monitors/27x3b) has an opt-in
+[Hyprland profile](../hosts/nix/dotfiles/ricing/hypr/hyprland/tcl-27x3b.lua).
+The existing display rules stay in effect until you opt in.
+
+1. Use DisplayPort on the RTX 3090. Add this line to `~/.config/hypr-user/hypr-user.lua`:
+
+   ```lua
+   require("hyprland.tcl-27x3b")
+   ```
+
+2. Run `hyprctl reload`; no NixOS switch is needed. In `hyprctl monitors -j`,
+   check for 2560×1440 at about 279.96 Hz, scale 1, and a 10-bit `currentFormat`
+   such as `XRGB2101010`. Check that the image stays stable when the display wakes.
+3. Leave BFI off for 280 Hz (TCL limits it to 140 Hz). Leave OLED protection
+   enabled and let pixel refresh complete without cutting power. If the OSD
+   offers Adaptive-Sync, enable it there and check `hardwareDetails.vrrCapable`
+   before testing `vrr` in a fullscreen game. Hyprland cannot enable VRR while
+   the link reports it as unavailable.
+4. The desktop uses SDR; Hyprland's automatic HDR can switch for a compatible
+   fullscreen HDR client. Verify with the monitor's HDR indicator while playing
+   known HDR content and check that it exits HDR afterward. Audio routing is
+   unchanged; use **META + K** if you want the monitor speakers instead.
+
+To roll back, remove only the `require` line and run `hyprctl reload`. If the
+screen is unusable, make the same edit from a text console or SSH as `ri` and
+reload the sole Hyprland instance with `hyprctl -i 0 reload`.
 
 ## Desktop hardware performance
 
