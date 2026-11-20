@@ -5,5 +5,5 @@ hl.monitor({
     scale    = 1,
     bitdepth = 10,
     cm       = "srgb",
-    vrr      = 1,
+    vrr      = 2,
 })

@@ -75,6 +75,13 @@ hl.window_rule({
 
 hl.window_rule({ match = { class = "steam" }, rounding = 10 })
 
+-- Keep Chrome fullscreen from switching the display into HDR or VRR.
+hl.window_rule({
+    match       = { class = "google-chrome" },
+    no_auto_hdr = true,
+    no_vrr      = true,
+})
+
 hl.window_rule({
     match             = { title = "Picture(-| )in(-| )[Pp]icture" },
     move              = "(monitor_w*0.98-window_w) (monitor_h*0.97-window_h)",

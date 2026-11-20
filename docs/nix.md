@@ -272,14 +272,16 @@ Running a NixOS switch alone does not enable the profile.
    such as `XBGR2101010`. Check that the image stays stable when the display wakes.
 3. Leave BFI off for 280 Hz (TCL limits it to 140 Hz). Leave OLED protection
    enabled and let pixel refresh complete without cutting power. Enable
-   Adaptive-Sync in the monitor's OSD. The profile enables VRR on the desktop
-   as well as in games; verify `hardwareDetails.vrrCapable` and `vrr` in
-   `hyprctl monitors -j`. Hyprland 0.57.2 can skip VRR-only edits on reload;
-   if that happens, reconnect the display when convenient to reapply the rule.
+   Adaptive-Sync in the monitor's OSD. VRR is fullscreen-only to avoid
+   desktop flicker. In `hyprctl monitors -j`, check `hardwareDetails.vrrCapable`
+   and confirm `vrr` is off on the desktop and on in a fullscreen game.
+   Hyprland 0.57.2 can skip VRR-only edits on reload; if that happens,
+   reconnect the display when convenient to reapply the rule.
 4. The desktop uses SDR; Hyprland's automatic HDR can switch for a compatible
-   fullscreen HDR client. Verify with the monitor's HDR indicator while playing
-   known HDR content and check that it exits HDR afterward. Audio routing is
-   unchanged; use **META + K** if you want the monitor speakers instead.
+   fullscreen HDR client. Chrome is excluded from automatic HDR and VRR to
+   avoid blanking on fullscreen transitions. With another HDR client, verify
+   the monitor's HDR indicator turns on during HDR content and off afterward.
+   Use **META + K** if you want to route audio to the monitor speakers.
 
 To roll back, remove only the `require` line and run `hyprctl reload`. If the
 screen is unusable, make the same edit from a text console or SSH as `ri` and
