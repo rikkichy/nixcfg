@@ -258,7 +258,8 @@ runs during NixOS activation.
 
 The [27X3B](https://www.tcl.com/global/en/monitors/27x3b) has an opt-in
 [Hyprland profile](../hosts/nix/dotfiles/ricing/hypr/hyprland/tcl-27x3b.lua).
-The existing display rules stay in effect until you opt in.
+The existing display rules stay in effect until you add the opt-in below.
+Running a NixOS switch alone does not enable the profile.
 
 1. Use DisplayPort on the RTX 3090. Add this line to `~/.config/hypr-user/hypr-user.lua`:
 
@@ -268,7 +269,7 @@ The existing display rules stay in effect until you opt in.
 
 2. Run `hyprctl reload`; no NixOS switch is needed. In `hyprctl monitors -j`,
    check for 2560×1440 at about 279.96 Hz, scale 1, and a 10-bit `currentFormat`
-   such as `XRGB2101010`. Check that the image stays stable when the display wakes.
+   such as `XBGR2101010`. Check that the image stays stable when the display wakes.
 3. Leave BFI off for 280 Hz (TCL limits it to 140 Hz). Leave OLED protection
    enabled and let pixel refresh complete without cutting power. If the OSD
    offers Adaptive-Sync, enable it there and check `hardwareDetails.vrrCapable`
