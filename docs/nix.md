@@ -174,7 +174,7 @@ Then run `systemctl --user restart filen-sync` and check
 
 ### Desktop audio
 
-`hosts/nix/modules/system/audio.nix` owns the desktop's PipeWire filters and WirePlumber policy.
+`hosts/nix/modules/system/audio.nix` owns the desktop's PipeWire and WirePlumber policy.
 The Solid State Logic SSL 2+ MkII is class-compliant and needs no helper service or vendor client.
 WirePlumber starts it in the **Pro Audio** profile with UCM disabled: one 6-channel sink
 (`AUX0`–`AUX5`, outputs 1/2 first) and one 8-channel source (`AUX0` is input 1).
@@ -186,20 +186,10 @@ osu! playback under concurrent audio. Leave osu!'s output on **Default**:
 selecting the USB hardware entry directly bypasses PipeWire and can block
 other apps from using the interface.
 
-**SSL Mic** is the processed microphone source: it reads only input 1 (`AUX0`, no
-remixing), removes keyboard and mouse noise with the DeepFilterNet LADSPA plugin, then
-mutes the gaps with the LSP LV2 gate (`extraLadspaPackages`, `extraLv2Packages`).
-Select it in voice applications and turn their own noise suppression and input
-sensitivity off. The gate threshold is an absolute level measured at the current SSL
-gain; changing the gain knob requires re-measuring speech and leaked clicks.
-DeepFilterNet adds tens of milliseconds of latency. Applications that record the
-SSL Pro Audio source directly get the unprocessed inputs 1 and 2 as left/right.
-
-**BriseAudio Fugaku** is the stereo headphone filter. It has no smart-filter target
-and follows the default sink. Select the physical headphone output, motherboard or
-SSL, as the default sink with `wpctl set-default`; WirePlumber remembers that choice.
-Streams pinned to another sink bypass it. It requires no EasyEffects or vendor-control
-USB permissions.
+PipeWire does not apply a headphone EQ, noise suppression, or a microphone gate.
+In applications that previously selected a virtual device, choose **Default**
+or the physical **SSL 2+ Mk II Pro** input or output in the app's audio settings.
+The raw SSL source exposes inputs 1 and 2 as left and right to stereo clients.
 
 Read-only inspection:
 
@@ -208,9 +198,10 @@ wpctl status
 ```
 
 Arrange an audio interruption when applying PipeWire or WirePlumber changes.
-After separately approved activation, check the microphone signal,
-headphone EQ, idle-to-playback, mute/unmute and unplug/replug behavior.
-Evaluation alone does not establish device behavior or perceived audio quality.
+After separately approved activation, use `wpctl status` to confirm playback
+and capture go directly to the hardware. Test the same playback that exhibited
+crackling or speed changes, with and without voice capture, and compare the
+`ERR` counters in `pw-top`. Check idle-to-playback and unplug/replug separately.
 
 ### Session application startup
 
