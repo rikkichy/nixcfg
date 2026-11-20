@@ -271,10 +271,11 @@ Running a NixOS switch alone does not enable the profile.
    check for 2560×1440 at about 279.96 Hz, scale 1, and a 10-bit `currentFormat`
    such as `XBGR2101010`. Check that the image stays stable when the display wakes.
 3. Leave BFI off for 280 Hz (TCL limits it to 140 Hz). Leave OLED protection
-   enabled and let pixel refresh complete without cutting power. If the OSD
-   offers Adaptive-Sync, enable it there and check `hardwareDetails.vrrCapable`
-   before testing `vrr` in a fullscreen game. Hyprland cannot enable VRR while
-   the link reports it as unavailable.
+   enabled and let pixel refresh complete without cutting power. Enable
+   Adaptive-Sync in the monitor's OSD. The profile enables VRR on the desktop
+   as well as in games; verify `hardwareDetails.vrrCapable` and `vrr` in
+   `hyprctl monitors -j`. Hyprland 0.57.2 can skip VRR-only edits on reload;
+   if that happens, reconnect the display when convenient to reapply the rule.
 4. The desktop uses SDR; Hyprland's automatic HDR can switch for a compatible
    fullscreen HDR client. Verify with the monitor's HDR indicator while playing
    known HDR content and check that it exits HDR afterward. Audio routing is
