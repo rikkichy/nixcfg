@@ -92,6 +92,9 @@ Two more things the pipeline depends on:
 
 `hosts/nix/pkgs/ricing/google-sans-rounded.nix` provides the Linux proportional UI face, `nerd-fonts.departure-mono`
 the terminal. `common/modules/shell.nix` owns the shared terminal font package.
+The desktop's default Foot font size is set in
+[`programs.foot.settings.main.font`](../../hosts/nix/modules/home/foot.nix).
+After applying the configuration, open a new Foot window to see the new size.
 `hosts/nix/modules/system/session.nix` owns Linux UI font installation.
 Both faces use family names that differ from their advertised names.
 An unmatched family silently falls back to a default:
