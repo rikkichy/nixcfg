@@ -184,8 +184,10 @@ selecting the USB hardware entry directly bypasses PipeWire and can block
 other apps from using the interface.
 
 PipeWire does not apply a headphone EQ, noise suppression, or a microphone gate.
-In applications that previously selected a virtual device, choose **Default**
-or the **SSL 2+ Mk II** hardware input or output in the app's audio settings.
+In Discord, select **SSL Mic (Input 1)** explicitly. This mono source passes
+only the physical input 1, without effects. Do not select the raw **Analog
+Surround 7.1** input for voice chat: it also carries the interface's playback
+loopback channels. Keep playback on the **SSL 2+ Mk II** output.
 
 Read-only inspection:
 
@@ -194,10 +196,11 @@ wpctl status
 ```
 
 Arrange an audio interruption when applying PipeWire or WirePlumber changes.
-After separately approved activation, use `wpctl status` to confirm playback
-and capture go directly to the hardware. Test the same playback that exhibited
-crackling or speed changes, with and without voice capture, and compare the
-`ERR` counters in `pw-top`. Check idle-to-playback and unplug/replug separately.
+After separately approved activation, use `wpctl status` to confirm the
+voice client captures from **SSL Mic (Input 1)**. Check that it picks up
+speech but does not send playback to the call. Test playback with and
+without voice capture and compare the `ERR` counters in `pw-top`. Check
+idle-to-playback and unplug/replug separately.
 
 ### Session application startup
 

@@ -18,5 +18,28 @@
         };
       }
     ];
+
+    extraConfig.pipewire."91-ssl-mic"."context.modules" = [
+      {
+        name = "libpipewire-module-loopback";
+        args = {
+          # The SSL's other capture channels include hardware playback loopback.
+          "capture.props" = {
+            "node.name" = "capture.ssl_mic";
+            "target.object" = "alsa_input.usb-Solid_State_Logic_SSL_2__Mk_II-00.analog-surround-71";
+            "audio.position" = [ "FL" ];
+            "stream.dont-remix" = true;
+            "node.passive" = true;
+            "node.dont-fallback" = true;
+          };
+          "playback.props" = {
+            "node.name" = "ssl_mic";
+            "node.description" = "SSL Mic (Input 1)";
+            "media.class" = "Audio/Source";
+            "audio.position" = [ "MONO" ];
+          };
+        };
+      }
+    ];
   };
 }
