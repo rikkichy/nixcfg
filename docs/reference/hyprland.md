@@ -34,9 +34,11 @@ A raw Lua error aborts the rest of a file without a log line. Bad `hl.*` argumen
 - Monitor rules use `desc:` from `hyprctl monitors`, without the trailing port name, not a connector name. An unmatched rule is not an error: the fallback `output = ""` rule takes over at the preferred mode. `mode = "highrr"` sorts refresh before resolution and is wrong as a blanket fallback.
 - `hyprctl dispatch` takes Lua as of 0.56. Legacy `hyprctl dispatch closewindow address:0x…` is a syntax error. Lua form: `hyprctl repl 'hl.dispatch(hl.dsp.window.close({ window = "address:0x…" }))'`. This closes a window. Use only an intended disposable target.
 
-## Tearing is two settings and one live condition
+## Tearing and direct scanout
 
-`hosts/nix/dotfiles/ricing/hypr/hyprland/general.lua` enables `general.allow_tearing`, which is a gate, not sufficient by itself. A window also needs `immediate` in `hosts/nix/dotfiles/ricing/hypr/hyprland/rules.lua` and must be the solitary window on its monitor. The osu!lazer and Steam game rules use this for unlocked rendering above the panel's 240Hz.
+`hosts/nix/dotfiles/ricing/hypr/hyprland/general.lua` disables
+`general.allow_tearing` globally. This is independent of the TCL's
+fullscreen-only VRR policy.
 
 `hyprctl monitors` names unmet conditions, for example:
 
@@ -47,7 +49,11 @@ solitaryBlockedBy: windowed mode,special workspace,missing candidate
 
 `user settings` is the `allow_tearing` gate. `window settings` is the rule. **`next frame is not torn` is per-frame state, not a configuration failure.** Read this with the game fullscreen and focused. `activelyTearing` shows whether tearing is active. `missing candidate` means no qualifying window, as with an open special workspace.
 
-`render:direct_scanout` is separate and stays `0` in `hosts/nix/dotfiles/ricing/hypr/hyprland/misc.lua`. A window tears without it. Mode `2` with osu!lazer tagged `content = "game"` coincided with two 4-second freezes during gameplay on NVIDIA 615.78.08, each logged by the kernel as `nvidia-drm` `Flip event timeout on head 0`; osu tearing alone ran since August without them. `directScanoutBlockedBy` also uses the label `user settings`, here meaning this mode setting.
+`render:direct_scanout` is separate and stays `0` in
+`hosts/nix/dotfiles/ricing/hypr/hyprland/misc.lua`. Mode `2` with osu!lazer
+tagged `content = "game"` coincided with two 4-second freezes on NVIDIA
+615.78.08, each logged as `nvidia-drm` `Flip event timeout on head 0`.
+`directScanoutBlockedBy` uses `user settings` to refer to this mode setting.
 
 ## Night-light service and IPC
 

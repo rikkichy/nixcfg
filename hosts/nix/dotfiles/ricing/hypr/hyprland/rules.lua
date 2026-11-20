@@ -52,7 +52,6 @@ hl.window_rule({
 
 hl.window_rule({
     match        = { class = "(steam_app_(default|[0-9]+))|gamescope" },
-    immediate    = true,
     idle_inhibit = "always",
 })
 
@@ -60,11 +59,6 @@ hl.window_rule({
 hl.window_rule({
     match            = { class = "steam_app_(1325860|1898830)" },
     render_unfocused = true,
-})
-
-hl.window_rule({
-    match     = { class = "osu!" },
-    immediate = true,
 })
 
 -- Per-app windows are `waydroid.<package>`; the full UI is `Waydroid`.
