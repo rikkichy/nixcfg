@@ -136,8 +136,10 @@ local function update_special_opacity()
         local ws = w.workspace
         local monitor = ws and ws.monitor
         local base = monitor and monitor.active_workspace
+        local class = w.class:lower()
         local transparent = not not (ws and ws.special and base and base.name
-            and base.name:match("^%d+$") and base.fullscreen_mode == 2)
+            and base.name:match("^%d+$") and base.fullscreen_mode == 2
+            and class ~= "spotify" and class ~= "discord" and not class:match("^chrome%-discord%.com"))
         local tagged = false
         for _, tag in ipairs(w.tags) do
             if tag == "special_over_fullscreen" then tagged = true; break end

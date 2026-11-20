@@ -34,6 +34,10 @@ A raw Lua error aborts the rest of a file without a log line. Bad `hl.*` argumen
 - Monitor rules use `desc:` from `hyprctl monitors`, without the trailing port name, not a connector name. An unmatched rule is not an error: the fallback `output = ""` rule takes over at the preferred mode. `mode = "highrr"` sorts refresh before resolution and is wrong as a blanket fallback.
 - `hyprctl dispatch` takes Lua as of 0.56. Legacy `hyprctl dispatch closewindow address:0x…` is a syntax error. Lua form: `hyprctl repl 'hl.dispatch(hl.dsp.window.close({ window = "address:0x…" }))'`. This closes a window. Use only an intended disposable target.
 
+The special-workspace opacity rule in `hyprland/rules.lua` dims overlays
+over fullscreen windows. Spotify and Discord (including the Discord web
+app) are exempt so their windows stay opaque over games.
+
 ## Tearing and direct scanout
 
 `hosts/nix/dotfiles/ricing/hypr/hyprland/general.lua` disables
