@@ -176,20 +176,16 @@ Then run `systemctl --user restart filen-sync` and check
 
 `hosts/nix/modules/system/audio.nix` owns the desktop's PipeWire and WirePlumber policy.
 The Solid State Logic SSL 2+ MkII is class-compliant and needs no helper service or vendor client.
-WirePlumber starts it in the **Pro Audio** profile with UCM disabled: one 6-channel sink
-(`AUX0`–`AUX5`, outputs 1/2 first) and one 8-channel source (`AUX0` is input 1).
-The pinned `alsa-ucm-conf` profile treats the 2+ Mk II as the plain 2 Mk II and fails
-its channel check; upstream commit `4367278` fixes that, but Pro Audio does not use UCM.
-The SSL input and output use timer-based scheduling so the shared graph can
-run in smaller blocks than the hardware interrupt period. This avoids distorted
-osu! playback under concurrent audio. Leave osu!'s output on **Default**:
+WirePlumber uses the **Analog Surround 2.1 Output + Analog Surround 7.1 Input**
+ACP profile, not Pro Audio. UCM stays disabled because the pinned `alsa-ucm-conf`
+misidentifies the 2+ Mk II and rejects its channel counts (fixed upstream in
+`4367278`). Leave osu!'s output on **Default**:
 selecting the USB hardware entry directly bypasses PipeWire and can block
 other apps from using the interface.
 
 PipeWire does not apply a headphone EQ, noise suppression, or a microphone gate.
 In applications that previously selected a virtual device, choose **Default**
-or the physical **SSL 2+ Mk II Pro** input or output in the app's audio settings.
-The raw SSL source exposes inputs 1 and 2 as left and right to stereo clients.
+or the **SSL 2+ Mk II** hardware input or output in the app's audio settings.
 
 Read-only inspection:
 
