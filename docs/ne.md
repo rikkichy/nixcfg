@@ -56,6 +56,12 @@ Bitwarden is the signed App Store build (`masApps`) for Touch ID and browser
 biometric unlock; activation needs an App Store sign-in to install it.
 Homebrew activation neither upgrades nor removes packages (`cleanup = "none"`).
 
+After an approved switch installs FluidVoice, open it and follow its
+[first-launch guide](https://docs.altic.dev/fluidvoice/installation#first-launch-and-onboarding).
+Grant Microphone and Accessibility access, choose a local speech model, and
+leave optional analytics and cloud providers disabled. Test dictation in a text editor.
+The cask does not pin a version. FluidVoice can update itself independently of Homebrew.
+
 Copies of these apps installed outside Nix, such as in `/Applications`, are
 unmanaged; launch the Home Manager copies. Chrome launched
 from Finder may self-update between activations; the next activation restores the pinned bundle.

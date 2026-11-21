@@ -16,6 +16,7 @@
       }
     ];
     casks = [
+      "fluidvoice"
       "helium-browser"
       "marta"
       {
