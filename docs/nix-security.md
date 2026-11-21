@@ -221,9 +221,9 @@ and Nix store. Retain an encrypted offline backup before changing firmware
 trust. `sbctl --microsoft` includes Microsoft's **public** certificates during
 enrollment. It cannot sign our images with Microsoft's private keys.
 
-The native installer can overlook a signing/enrollment subprocess failure.
-No post-install configuration-hash or EFI-signature check runs automatically.
-Successful installation does not prove that the installed boot files are valid.
+Native Limine installation can overlook a signing or configuration-hash enrollment failure.
+The guided installer's signature check does not verify the enrolled configuration hash.
+Manually verify both the installed EFI image and its configuration hash before enabling enforcement.
 Installation is not transactional, so repair failures before rebooting.
 
 ### Firmware enrollment checkpoint

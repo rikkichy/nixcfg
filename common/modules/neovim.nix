@@ -46,11 +46,8 @@ let
     })
     vim.lsp.config("*", { root_markers = { ".git" } })
 
-    local capabilities = vim.lsp.protocol.make_client_capabilities()
-    capabilities.textDocument.completion.completionItem.snippetSupport = true
     local servers = ${lib.generators.toLua { } (lib.mapAttrs serverConfig tooling.servers)}
     for name, config in pairs(servers) do
-      config.capabilities = capabilities
       vim.lsp.config(name, config)
       vim.lsp.enable(name)
     end

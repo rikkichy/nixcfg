@@ -5,9 +5,6 @@ hl.config({
         workspace_swipe_distance                 = 700,
         workspace_swipe_cancel_ratio             = 0.15,
         workspace_swipe_min_speed_to_force       = 5,
-        workspace_swipe_direction_lock           = true,
-        workspace_swipe_direction_lock_threshold = 10,
-        workspace_swipe_create_new               = true,
     },
 })
 
@@ -16,9 +13,7 @@ hl.gesture({ fingers = vars.gestureFingers, direction = "up", action = "special"
 hl.gesture({
     fingers   = vars.gestureFingers,
     direction = "down",
-    action    = function()
-        hl.dispatch(hl.dsp.workspace.toggle_special("special"))
-    end,
+    action    = hl.dsp.workspace.toggle_special("special"),
 })
 hl.gesture({
     fingers   = vars.gestureFingersMore,

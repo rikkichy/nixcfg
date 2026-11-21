@@ -101,8 +101,8 @@ for portable packages, Neovim settings, and language-server ownership.
 
 ## Bootstrap
 
-This configuration targets the existing `rii` account. Homebrew must be installed
-at `/opt/homebrew`. nix-darwin manages its inventory, not the Homebrew installation.
+This configuration targets the existing `rii` account on Apple Silicon.
+Install [Homebrew](https://brew.sh/) at `/opt/homebrew`. nix-darwin manages its inventory, not the Homebrew installation.
 Use an existing terminal for bootstrap. Home Manager installs Ghostty and Neovim during activation.
 
 Install [Nix](https://nixos.org/download/) in an interactive terminal:
@@ -111,9 +111,16 @@ Install [Nix](https://nixos.org/download/) in an interactive terminal:
 curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install | sh
 ```
 
-Open a new terminal. If the initial checkout is at `~/nixcfg`, move it once
-with `sudo mv ~/nixcfg /etc/nixos`. The destination must not already exist.
-Keep the checkout owned by your normal user so lock updates do not require sudo.
+Open a new terminal. Reuse an existing `/etc/nixos` checkout instead of overwriting it.
+If `/etc/nixos` does not exist, move an existing `~/nixcfg` checkout there with `sudo mv ~/nixcfg /etc/nixos`.
+If neither checkout exists and `/etc/nixos` is absent, clone as follows:
+
+```sh
+sudo git clone https://github.com/rikkichy/nixcfg.git /etc/nixos
+sudo chown -R rii:staff /etc/nixos
+```
+
+Keep the checkout owned by `rii` so lock updates do not require sudo.
 Use the committed `flake.lock` for bootstrap. Dependency updates are a separate
 maintenance operation. `path:` includes new files without staging them, but also
 includes ignored files. Keep plaintext secrets and private identities outside
@@ -135,6 +142,7 @@ nix --extra-experimental-features 'nix-command flakes' run --inputs-from path:. 
 If activation reports an existing `/etc` file conflict, inspect and back up that
 specific file. Then follow the reported migration instructions.
 Do not delete existing configuration blindly.
+After activation, follow [shell migration](#updates-and-shell-migration), grant the requested permissions for [BetterGlobeKey](#keyboard) and [noswoosh](#ownership), and [prepare the SSH client](#ssh-agent).
 
 ## Updates and shell migration
 

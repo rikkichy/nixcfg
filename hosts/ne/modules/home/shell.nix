@@ -2,10 +2,7 @@
 
 {
   services.ssh-agent.enable = true;
-  programs.ssh.settings = {
-    "nixos-server".AddKeysToAgent = true;
-    "nixos-server-remote".AddKeysToAgent = true;
-  };
+  programs.ssh.settings."nixos-server nixos-server-remote".AddKeysToAgent = true;
 
   programs.fish.shellInit = ''
     /opt/homebrew/bin/brew shellenv fish | source

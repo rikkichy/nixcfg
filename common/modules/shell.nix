@@ -15,15 +15,8 @@ let
       nixcfgPath
       ;
   };
-  ompTooling = pkgs.writeText "omp-tooling.yml" ''
-    astGrep:
-      enabled: true
-    lsp:
-      diagnosticsOnEdit: true
-      diagnosticsOnWrite: true
-  '';
   omp = pkgs.writeShellScriptBin "omp" ''
-    exec ${lib.getExe pkgs.bun} x --bun --package @oh-my-pi/pi-coding-agent@latest omp --config ${ompTooling} "$@"
+    exec ${lib.getExe pkgs.bun} x --bun --package @oh-my-pi/pi-coding-agent@latest omp --config ${../../.omp/config.yml} "$@"
   '';
   starshipSettings = builtins.fromTOML (builtins.readFile ../dotfiles/starship.toml);
   sovietPrompt = (pkgs.formats.toml { }).generate "starship-soviet.toml" (

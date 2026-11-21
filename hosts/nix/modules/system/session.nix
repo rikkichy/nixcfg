@@ -14,12 +14,7 @@
 
   systemd.user.services.hyprsunset.wantedBy = [ "graphical-session.target" ];
 
-  programs.dconf.enable = true;
-
-  xdg.portal = {
-    enable = true;
-    config.common.default = [ "hyprland" "gtk" ];
-  };
+  xdg.portal.config.common.default = [ "hyprland" "gtk" ];
   # xdph keeps its PipeWire connection; without this, screen share times out after PipeWire restarts.
   systemd.user.services.xdg-desktop-portal-hyprland.partOf = [ "pipewire.service" ];
 

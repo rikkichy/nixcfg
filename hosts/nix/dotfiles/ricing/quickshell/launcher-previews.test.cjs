@@ -15,8 +15,8 @@ const exitBody = qml.split("id: previewWorkers")[1]
 function gallery(mode = "wallpapers") {
     const jobs = [];
     const workers = Array.from({ length: 4 }, () => ({
-        key: "", path: "", running: false,
-        exec(argv) { this.running = true; jobs.push(Array.from(argv)); }
+        key: "", running: false,
+        exec(argv) { this.running = true; this.command = Array.from(argv); jobs.push(this.command); }
     }));
     const host = {
         mode, opened: true, wallpaperMode: true, generation: 1,
@@ -34,12 +34,14 @@ function gallery(mode = "wallpapers") {
     function finish(worker, exitCode = 0, preview = "file:///cached.jpg") {
         worker.running = false;
         worker.preview = preview;
+        let warning;
         Object.assign(worker, {
             launcher: host, exitCode, exitStatus: 0, previewErrors: { text: "" },
-            Qt: { callLater() {} }, console: { warn() {} }
+            Qt: { callLater() {} }, console: { warn(message) { warning = message; } }
         });
         vm.runInNewContext(exitBody, worker);
         host.loadPreviews();
+        return warning;
     }
     return { host, workers, jobs, finish };
 }
@@ -71,6 +73,7 @@ for (const mode of ["wallpapers", "animated-wallpapers"]) {
     finish(workers[0]);
     assert.equal(jobs[4][2], host.results[9].path, "scrolling selects current rows, not an old queue");
     assert.equal(host.previewCache.get(completedKey), "file:///cached.jpg", "completed scroll work remains reusable");
+    assert.equal(finish(workers[0], 1, ""), "Wallpaper preview unavailable: " + host.results[9].path);
     host.generation++;
     host.previewStates = new Map();
     const staleKey = workers[1].key;

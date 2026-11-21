@@ -3,8 +3,6 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    # Keep Darwin nh on an officially cached build of the same release.
-    nixpkgs-nh.url = "github:NixOS/nixpkgs/b4fd65b198c599cbe814fcb9f42d25d021595ec9";
     # Keep the provider's Nixpkgs pin: its release branch has prebuilt kernels.
     nix-cachyos-kernel.url = "github:xddxdd/nix-cachyos-kernel/release";
 
@@ -54,9 +52,8 @@
         extraSpecialArgs = { inherit inputs nixcfgPath; };
       };
 
-      commonOverlay = import ./common/pkgs/overlay.nix;
       overlay = import ./hosts/nix/pkgs/overlay.nix { inherit inputs; };
-      # Reuse the host's final package set, including both overlays and policy.
+      # Reuse the host's final package set, including its overlays and policy.
       desktopPkgs = self.nixosConfigurations.nix.pkgs;
       cacheTargets = {
         inherit (desktopPkgs) tg-ws-proxy google-sans-rounded vpn;
@@ -80,7 +77,6 @@
         specialArgs = { inherit inputs nixcfgPath; };
         modules = [
           ./hosts/nixos-server
-          { nixpkgs.overlays = [ commonOverlay ]; }
           home-manager.nixosModules.home-manager
           {
             home-manager = homeManager // {
@@ -94,7 +90,6 @@
       darwinConfigurations.ne = inputs.nix-darwin.lib.darwinSystem {
         specialArgs = { inherit inputs nixcfgPath; };
         modules = [
-          { nixpkgs.overlays = [ commonOverlay ]; }
           ./hosts/ne
           home-manager.darwinModules.home-manager
           {
@@ -113,7 +108,7 @@
           ./hosts/nix
           ./common/modules/nixos-mihomo-secrets.nix
 
-          { nixpkgs.overlays = [ commonOverlay overlay inputs.nix-cachyos-kernel.overlays.pinned ]; }
+          { nixpkgs.overlays = [ overlay inputs.nix-cachyos-kernel.overlays.pinned ]; }
 
           home-manager.nixosModules.home-manager
           { home-manager = homeManager // { users.ri = import ./hosts/nix/home.nix; }; }
