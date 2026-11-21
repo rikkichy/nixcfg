@@ -51,8 +51,7 @@ Keep state versions fixed unless deliberately performing a compatibility migrati
   nixpkgs lacks a working aarch64-darwin build or signing matters.
 - Neovim comes from the shared module; no macOS GUI editor or file associations
   are managed. Existing Zed file associations are preserved unless the user changes them.
-- Brew declares BetterGlobeKey, maigret, Ollama, helium-browser, Marta, noswoosh, wallspace,
-  Steam and Yubico Authenticator; Bitwarden is an App Store `masApps` entry.
+- See [homebrew.nix](modules/system/homebrew.nix) for the Brew and App Store inventory.
   Ollama is the Brew formula because nixpkgs builds it without the MLX runner.
 - Read [shared guidance](../../common/AGENTS.md) for portable CLI packages, fonts,
   Zed, and project/toolchain boundaries. Do not duplicate them in Brew or expose

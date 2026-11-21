@@ -17,7 +17,6 @@
     ];
     casks = [
       "fluidvoice"
-      "helium-browser"
       "marta"
       {
         name = "mmathys/tap/noswoosh";
