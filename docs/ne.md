@@ -41,7 +41,6 @@ update and audio.com save/export prompts and splash screen are disabled through
 `CustomUserPreferences` in `preferences.nix`, reapplied on every switch. Neovim comes from the shared
 `common/modules/neovim.nix`; no GUI editor or file associations are managed.
 [`homebrew.nix`](../hosts/ne/modules/system/homebrew.nix) owns the Brew inventory.
-Maigret uses Brew because the pinned Nix package is broken.
 Ollama uses the Brew formula because nixpkgs sets `OLLAMA_MLX_BACKENDS=""`; the formula
 links `mlx-c` for the MLX engine and runs `ollama serve` as a Brew service on
 `127.0.0.1:11434` (log: `/opt/homebrew/var/log/ollama.log`). Models stay in `~/.ollama`.

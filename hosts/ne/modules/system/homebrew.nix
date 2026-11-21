@@ -9,7 +9,6 @@
         name = "betterglobekey";
         start_service = true;
       }
-      "maigret"
       {
         name = "ollama";
         start_service = true;
