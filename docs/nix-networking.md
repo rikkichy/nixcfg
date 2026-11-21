@@ -37,7 +37,8 @@ TLS and QUIC SNI sniffing on port 443.
 Mihomo DNS stays disabled. Traffic with hidden or encrypted SNI, or reaching
 those services by literal IP, is classified by IP and goes direct.
 
-Crunchyroll rules cover the [web, API, and legacy VRV domains](https://www.netify.ai/resources/applications/crunchyroll)
+Crunchyroll rules cover the [web, API, and legacy VRV domains](https://www.netify.ai/resources/applications/crunchyroll),
+[`crunchyrollsvc.com` for playback sessions and DRM licensing](https://github.com/anidl/multi-downloader-nx/blob/master/modules/module.api-urls.ts),
 and [dedicated video CDN domains](https://github.com/J1nx888/OptiGate/blob/main/docs/features/crunchyroll.md#default-domains-and-path-rules).
 They do not proxy shared CDN domains wholesale. Crunchyroll
 [does not support VPN use](https://help.crunchyroll.com/hc/en-us/articles/360037400412-Subtitles-are-not-showing-up-on-web),
