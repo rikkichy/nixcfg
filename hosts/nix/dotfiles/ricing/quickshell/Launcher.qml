@@ -521,7 +521,20 @@ PanelWindow {
 
             Text {
                 Layout.fillWidth: true
-                text: launcher.errorMessage || (launcher.utilityMode ? (utilities.busy ? "Working…" : utilities.status || launcher.results.length + " entries") : launcher.wallpaperMode && wallpaperApply.running ? "Applying wallpaper…" : launcher.wallpaperLoading ? "Loading wallpapers…" : (launcher.query ? "Search results" : launcher.wallpaperMode ? "All wallpapers" : launcher.mode === "tools" ? "All tools" : "All apps") + " · " + launcher.results.length)
+                visible: text !== ""
+                text: {
+                    if (launcher.errorMessage)
+                        return launcher.errorMessage;
+                    if (launcher.utilityMode)
+                        return utilities.busy ? "Working…" : utilities.status || launcher.results.length + " entries";
+                    if (!launcher.wallpaperMode)
+                        return "";
+                    if (wallpaperApply.running)
+                        return "Applying wallpaper…";
+                    if (launcher.wallpaperLoading)
+                        return "Loading wallpapers…";
+                    return (launcher.query ? "Search results" : "All wallpapers") + " · " + launcher.results.length;
+                }
                 color: launcher.errorMessage ? Theme.error : Theme.textOnSurfaceVariant
                 font.family: Theme.fontFamily
                 font.pixelSize: 14
