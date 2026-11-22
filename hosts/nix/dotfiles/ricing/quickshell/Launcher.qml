@@ -475,7 +475,7 @@ PanelWindow {
                 Layout.preferredHeight: 56
                 leftPadding: 24
                 rightPadding: clearSearch.visible ? 64 : 24
-                placeholderText: launcher.utilityMode ? (launcher.mode === "emoji" ? "Search emoji to copy" : "Search " + utilities.title.toLocaleLowerCase()) : launcher.wallpaperMode ? "Search wallpapers" : launcher.mode === "tools" ? "Search desktop tools" : "Execute.."
+                placeholderText: launcher.utilityMode ? (launcher.mode === "emoji" ? "Search emoji to copy" : "Search " + utilities.title.toLocaleLowerCase()) : launcher.wallpaperMode ? "Search wallpapers" : launcher.mode === "tools" ? "Execute.." : "Launch.."
                 placeholderTextColor: Theme.textOnSurfaceVariant
                 color: Theme.textOnSurface
                 selectionColor: Theme.primary
