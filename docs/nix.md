@@ -101,7 +101,8 @@ are available through META+ALT.
 Short commands such as `wpp`, `awpp` and `vpnp` remain searchable there.
 Bare META toggles the apps-only Material 3 Expressive grid in Quickshell.
 **META + ALT** opens the same Expressive launcher in Settings mode, including
-native desktop actions. Both modes open with an empty search field directly above the tiles.
+native desktop actions. Both modes open with an empty search field above a
+scrollable grid sized for three rows, or fewer on short screens.
 Press the same chord again to dismiss it; META switches back to applications.
 Tools and desktop actions stay hidden from the main app grid.
 **Color picker** runs Hyprpicker and copies the selected color to the clipboard.

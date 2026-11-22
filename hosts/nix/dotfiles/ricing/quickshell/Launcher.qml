@@ -399,7 +399,7 @@ PanelWindow {
 
     visible: opened
     implicitWidth: Math.max(1, Math.min(wallpaperMode ? 1120 : 820, (screen ? screen.width : 1920) - 112))
-    implicitHeight: Math.max(1, Math.min(wallpaperMode ? 780 : 620, (screen ? screen.height : 1080) - 48))
+    implicitHeight: Math.max(1, Math.min(wallpaperMode ? 780 : utilityMode ? 620 : 468, (screen ? screen.height : 1080) - 48))
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.namespace: Theme.reducedMotion ? "expressive-panel-static" : "expressive-panel"
