@@ -75,8 +75,9 @@ an open special workspace or no occupied destination prevents automatic switchin
 
 Compositor motion lives in `hosts/nix/dotfiles/ricing/hypr/hyprland/animations.lua`.
 Windows spring open from 80% size and shrink to 92% on a 140ms exit.
-Ordinary workspaces page vertically with a more heavily damped spring; special
-workspaces use a vertical slide-fade with 15% travel over 240ms in both directions.
+Ordinary workspaces page vertically with a more heavily damped spring. Special
+workspaces fade and rise from below over 170ms, then fade and drop back over
+120ms. Both directions travel 6% of the screen height.
 Opacity uses non-bouncing curves. Existing shell reduced-motion layer rules
 remain unchanged.
 

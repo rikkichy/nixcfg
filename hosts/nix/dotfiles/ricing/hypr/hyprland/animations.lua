@@ -24,7 +24,9 @@ hl.animation({ leaf = "windowsOut", enabled = true, speed = 1.4, bezier = "empha
 hl.animation({ leaf = "windowsMove", enabled = true, speed = 2.4, bezier = "emphasizedDecel" })
 
 hl.animation({ leaf = "workspaces", enabled = true, speed = 1, spring = "expressivePaging", style = "slidevert" })
-hl.animation({ leaf = "specialWorkspace", enabled = true, speed = 2.4, bezier = "emphasizedDecel", style = "slidefadevert 15%" })
+-- Hyprland reverses slide direction on exit, so "top" sends the drawer back down.
+hl.animation({ leaf = "specialWorkspaceIn", enabled = true, speed = 1.7, bezier = "emphasizedDecel", style = "slidefadevert bottom 6%" })
+hl.animation({ leaf = "specialWorkspaceOut", enabled = true, speed = 1.2, bezier = "emphasizedAccel", style = "slidefadevert top 6%" })
 
 hl.animation({ leaf = "fade", enabled = true, speed = 1.6, bezier = "standard" })
 hl.animation({ leaf = "fadeIn", enabled = true, speed = 1.2, bezier = "standard" })
