@@ -75,6 +75,8 @@ an open special workspace or no occupied destination prevents automatic switchin
 
 Compositor motion lives in `hosts/nix/dotfiles/ricing/hypr/hyprland/animations.lua`.
 Windows spring open from 80% size and shrink to 92% on a 140ms exit.
+Dragging a window adds a subtle wobble, tuned in `hyprland/decoration.lua`.
+The default corner radius is 20px; window-specific rounding rules take precedence.
 Ordinary workspaces page vertically with a more heavily damped spring. Special
 workspaces fade and rise from below over 170ms, then fade and drop back over
 120ms. Both directions travel 6% of the screen height.

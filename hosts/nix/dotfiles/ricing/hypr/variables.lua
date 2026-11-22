@@ -29,7 +29,7 @@ return {
     windowGapsOut              = 10,
     singleWindowGapsOut        = 20,
 
-    windowRounding             = 15,
+    windowRounding             = 20,
     windowBorderSize           = 3,
     activeWindowBorderColour   = "rgba(" .. scheme.primary .. "e6)",
     inactiveWindowBorderColour = "rgba(" .. scheme.onSurfaceVariant .. "11)",
