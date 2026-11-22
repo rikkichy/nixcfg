@@ -13,7 +13,9 @@ hl.gesture({ fingers = vars.gestureFingers, direction = "up", action = "special"
 hl.gesture({
     fingers   = vars.gestureFingers,
     direction = "down",
-    action    = hl.dsp.workspace.toggle_special("special"),
+    action    = function()
+        hl.dispatch(hl.dsp.workspace.toggle_special("special"))
+    end,
 })
 hl.gesture({
     fingers   = vars.gestureFingersMore,
