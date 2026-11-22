@@ -4,14 +4,12 @@ hl.config({
     input = {
         kb_layout          = "us,ru",
         kb_options         = "grp:alt_shift_toggle",
-        numlock_by_default = false,
         repeat_delay       = 250,
         repeat_rate        = 35,
         focus_on_close     = 1,
 
         accel_profile      = "flat",
         force_no_accel     = true,
-        sensitivity        = 0,
 
         touchpad           = {
             natural_scroll       = true,

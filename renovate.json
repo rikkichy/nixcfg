@@ -7,12 +7,5 @@
   "lockFileMaintenance": {
     "enabled": true,
     "schedule": ["before 6am on monday"]
-  },
-  "packageRules": [
-    {
-      "matchManagers": ["nix"],
-      "matchDepNames": ["nixpkgs-nh"],
-      "enabled": false
-    }
-  ]
+  }
 }

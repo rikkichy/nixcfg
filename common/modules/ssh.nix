@@ -21,8 +21,8 @@
         IdentityFile = "~/.ssh/r2";
         IdentitiesOnly = true;
       };
-      "nixos-server" = {
-        HostName = "nixos-server.local";
+      "nixos-server".HostName = "nixos-server.local";
+      "nixos-server nixos-server-remote" = {
         HostKeyAlias = "nixos-server.local";
         User = "ri";
         IdentityFile = "~/.ssh/nixos-server";
@@ -32,11 +32,6 @@
       "nixos-server-remote" = {
         HostName = "127.0.0.1";
         Port = 2222;
-        HostKeyAlias = "nixos-server.local";
-        User = "ri";
-        IdentityFile = "~/.ssh/nixos-server";
-        IdentitiesOnly = true;
-        ForwardAgent = true;
       };
     };
   };

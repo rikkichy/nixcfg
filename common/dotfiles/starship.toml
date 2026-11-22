@@ -73,8 +73,6 @@ $buf\
 $conda\
 $meson\
 $spack\
-$memory_usage\
-$aws\
 $gcloud\
 $openstack\
 $azure\
@@ -173,7 +171,6 @@ style = "italic dimmed yellow"
 
 [git_branch]
 format = " [$branch(:$remote_branch)]($style)"
-symbol = "[△](bold italic bright-blue)"
 style = "italic bright-blue"
 truncation_symbol = "⋯"
 truncation_length = 11
@@ -297,10 +294,6 @@ format = " java [${symbol}(${version} )]($style)"
 [julia]
 symbol = "◎ "
 format = " jl [$symbol($version )]($style)"
-
-[memory_usage]
-symbol = "▪▫▪ "
-format = " mem [${ram}( ${swap})]($style)"
 
 [nim]
 symbol = "▴▲▴ "

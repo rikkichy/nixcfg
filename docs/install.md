@@ -22,7 +22,9 @@ the post-install helper cannot bootstrap an empty target. This requirement does 
 ## Interactive Linux installer
 
 `install.nix` packages `scripts/install.sh` as `nix run path:.#install`.
-On a networked x86_64 NixOS UEFI live ISO, clone into `/etc/nixos`:
+Boot a networked x86_64 NixOS UEFI live ISO with Secure Boot disabled.
+Connect a USB-visible FIDO2 YubiKey. For the server, retain console or KVM access.
+Clone into `/etc/nixos`:
 
 ```sh
 sudo nix-shell -p git --run 'git clone https://github.com/rikkichy/nixcfg.git /etc/nixos'
@@ -124,9 +126,11 @@ Use the [disk](nix-security.md#touch-only-disk-unlock) and
 [sudo](nix-security.md#touch-only-sudo-with-password-fallback) acceptance checklists
 with the selected hostname before relying on touch-only authentication.
 
-Unlock encrypted root at the local console with a server-side FIDO2 token or
-the LUKS recovery passphrase. Ordinary SSH is available only after boot.
-See [encrypted-root console unlock](nixos-server.md#encrypted-root-console-unlock).
+Keep the recovery shell until the installer's final authentication checks succeed.
+Only after successful installation and reboot approval, run `sudo reboot`.
+
+- **Desktop:** Unlock the disk and enter the `ri` session. Follow the [first-login steps](#8-reboot) for the keyring, Flatpak apps, and private VPN inputs. Use the [Secure Boot checkpoints](nix-security.md#secure-boot-with-limine) before changing firmware trust.
+- **Server:** [Unlock encrypted root at the console](nixos-server.md#encrypted-root-console-unlock), then [check SSH and remote sudo](nixos-server.md#ssh-and-remote-sudo) before closing console recovery access.
 
 Use packaged `--help` or read-only `--plan` for the installer surface.
 Help and plan output do not prove disk installation, live PAM, or physical cold boot.

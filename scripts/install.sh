@@ -158,22 +158,21 @@ show_disks() {
   fi
 }
 
-# Menus return a validated index in choice; zero is available only when labelled.
+# Menus return a validated one-based index in choice.
 choose() {
-  local title=$1 zero=$2 label i=0 max
-  shift 2
+  local title=$1 label i=0 max
+  shift
   max=$#
   printf '\n%s\n' "$title"
   for label in "$@"; do
     i=$((i + 1))
     printf '  %s  %s\n' "$i" "$label"
   done
-  [[ -z $zero ]] || printf '  0  %s\n' "$zero"
   while :; do
     printf 'Select: '
     IFS= read -r choice || fail 'Input closed; cancelled.'
-    if [[ $choice =~ ^(0|[1-9][0-9]*)$ && ${#choice} -le ${#max} ]] &&
-      (( choice <= max )) && { (( choice > 0 )) || [[ -n $zero ]]; }; then return; fi
+    if [[ $choice =~ ^[1-9][0-9]*$ && ${#choice} -le ${#max} ]] &&
+      (( choice <= max )); then return; fi
     printf 'Choose a listed number, or Ctrl+C to cancel.\n'
   done
 }
@@ -205,7 +204,7 @@ select_disk() {
     while IFS= read -r row; do labels+=("$(disk_label "$row")"); done < <(jq -c '.[]' <<<"$candidates")
     if [[ $external == false ]]; then labels+=("Show external disks"); fi
     (( ${#labels[@]} > 0 )) || fail 'No unused disks available; use --list-disks for exclusion reasons.'
-    choose 'Installation disk (unused whole disks only)' '' "${labels[@]}"
+    choose 'Installation disk (unused whole disks only)' "${labels[@]}"
     if (( choice > count )); then external=true; continue; fi
     row=$(jq -c --argjson index "$((choice - 1))" '.[$index]' <<<"$candidates")
     disk=$(jq -r '.name' <<<"$row")
@@ -223,7 +222,7 @@ select_fido() {
     labels+=("$description ($device)")
   done <<<"$listing"
   (( ${#devices[@]} > 0 )) || fail 'A USB-visible FIDO2 token is required for disk and sudo enrollment.'
-  choose 'Required YubiKey / FIDO2 (USB forwarding required)' '' "${labels[@]}"
+  choose 'Required YubiKey / FIDO2 (USB forwarding required)' "${labels[@]}"
   fido=${devices[choice-1]}
   fido_visible "$fido" || fail 'Selected FIDO2 device disappeared.'
 }
@@ -422,7 +421,7 @@ main() {
   export SYSTEMD_COLORS=0 SYSTEMD_PAGER=cat
   trap 'report_exit "$?"' EXIT
   trap 'printf "\nInterrupted. Leaving disks, mappings, mounts and recovery files untouched.\n" >&2; exit 130' INT TERM
-  choose 'Host' '' 'nix (AMD/NVIDIA desktop)' 'nixos-server'
+  choose 'Host' 'nix (AMD/NVIDIA desktop)' 'nixos-server'
   case "$choice" in 1) host=nix ;; 2) host=nixos-server ;; esac
   [[ -f $source/hosts/$host/hardware.nix ]] || fail 'Selected host hardware source is missing.'
   printf '\nSource: %s — public configuration/encrypted ciphertext only; no private identities.\n' "$source"

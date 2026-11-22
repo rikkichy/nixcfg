@@ -61,12 +61,6 @@ in
   programs.localsend = {
     enable = true;
     openFirewall = false;
-    # nixpkgs links localsend_app against libz without zlib in its RUNPATH.
-    package = pkgs.localsend.overrideAttrs (o: {
-      postFixup = (o.postFixup or "") + ''
-        patchelf --add-rpath ${pkgs.lib.getLib pkgs.zlib}/lib $out/app/localsend/localsend_app
-      '';
-    });
   };
 
   programs.obs-studio = {

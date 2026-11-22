@@ -11,6 +11,8 @@ final: prev: {
   });
   */
 
+  vpn = final.callPackage ../../../common/pkgs/vpn.nix { };
+
   tg-ws-proxy = final.callPackage ../../../common/pkgs/tg-ws-proxy.nix {
     src = inputs.tg-ws-proxy;
   };

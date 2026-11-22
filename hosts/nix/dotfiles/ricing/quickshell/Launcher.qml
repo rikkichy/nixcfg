@@ -116,13 +116,7 @@ PanelWindow {
         if (!visibilityDirty || visibilityProcess.running)
             return;
         visibilityDirty = false;
-        visibilityProcess.accepted = false;
         visibilityProcess.running = true;
-    }
-
-    function invalidateApplications() {
-        visibilityDirty = true;
-        refresh.restart();
     }
 
     function previewKey(path, revision) {
@@ -162,7 +156,6 @@ PanelWindow {
                 break;
             previewStates.set(entry.previewKey, "");
             worker.key = entry.previewKey;
-            worker.path = entry.path;
             worker.revision = entry.revision;
             worker.generation = generation;
             worker.preview = "";
@@ -243,39 +236,31 @@ PanelWindow {
     }
     Connections {
         target: DesktopEntries
-        function onApplicationsChanged() { launcher.invalidateApplications(); }
-    }
-    Connections {
-        target: DesktopEntries.applications
-        function onValuesChanged() { launcher.invalidateApplications(); }
+        function onApplicationsChanged() {
+            launcher.visibilityDirty = true;
+            refresh.restart();
+        }
     }
     Process {
         id: visibilityProcess
-        property bool accepted: false
         command: ["expressive-apps"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try {
-                    const ids = JSON.parse(text);
-                    if (!ids || !["apps", "tools"].every(mode => Array.isArray(ids[mode]) && ids[mode].every(id => typeof id === "string")))
-                        throw new Error("Invalid desktop-entry lists");
-                    launcher.visibleIds = { apps: new Set(ids.apps), tools: new Set(ids.tools) };
-                    visibilityProcess.accepted = true;
-                } catch (error) {
-                    launcher.visibilityDirty = true;
-                    if (launcher.opened && !launcher.wallpaperMode && !launcher.utilityMode)
-                        launcher.errorMessage = "Could not read installed applications.";
-                    console.warn(error);
-                }
-            }
-        }
+        stdout: StdioCollector { id: visibilityOutput }
         onExited: (exitCode, exitStatus) => {
-            if (exitCode !== 0 || exitStatus !== 0) {
+            // Only an invalidation during this scan schedules another; failure alone waits for the next open.
+            if (launcher.visibilityDirty)
+                refresh.restart();
+            try {
+                if (exitCode !== 0 || exitStatus !== 0)
+                    throw new Error("expressive-apps failed (exit code " + exitCode + ", status " + exitStatus + ")");
+                const ids = JSON.parse(visibilityOutput.text);
+                if (!ids || !["apps", "tools"].every(mode => Array.isArray(ids[mode]) && ids[mode].every(id => typeof id === "string")))
+                    throw new Error("Invalid desktop-entry lists");
+                launcher.visibleIds = { apps: new Set(ids.apps), tools: new Set(ids.tools) };
+            } catch (error) {
                 launcher.visibilityDirty = true;
                 if (launcher.opened && !launcher.wallpaperMode && !launcher.utilityMode)
                     launcher.errorMessage = "Could not read installed applications.";
-            } else if (launcher.visibilityDirty && accepted) {
-                refresh.restart();
+                console.warn(error);
             }
         }
     }
@@ -328,7 +313,6 @@ PanelWindow {
         delegate: Process {
             id: previewWorker
             property string key: ""
-            property string path: ""
             property string revision: ""
             property int generation: -1
             property string preview: ""
@@ -359,12 +343,11 @@ PanelWindow {
                             launcher.previewCache.delete(launcher.previewCache.keys().next().value);
                     } else {
                         launcher.previewCache.delete(key);
-                        console.warn(previewErrors.text.trim() || "Wallpaper preview unavailable: " + path);
+                        console.warn(previewErrors.text.trim() || "Wallpaper preview unavailable: " + command[2]);
                     }
                     launcher.previewStatesChanged();
                 }
                 key = "";
-                path = "";
                 Qt.callLater(launcher.loadPreviews);
             }
         }

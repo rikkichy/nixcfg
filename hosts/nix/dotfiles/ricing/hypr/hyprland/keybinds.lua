@@ -101,29 +101,25 @@ hl.bind(vars.kbCloseWindow, hl.dsp.window.close())
 
 hl.bind(vars.kbForceCloseWindow, hl.dsp.window.kill())
 
-local function toggle_ws(name, apps)
+local function toggle_ws(name, app_class, command)
     return function()
-        for _, app in ipairs(apps or {}) do
-            local running = false
-            for _, w in ipairs(hl.get_windows()) do
-                local class = w.class
-                if class and class:lower():find(app[1], 1, true) then
-                    running = true
-                    break
-                end
+        local running = false
+        for _, w in ipairs(hl.get_windows()) do
+            local class = w.class
+            if class and class:lower():find(app_class, 1, true) then
+                running = true
+                break
             end
-            if not running then hl.dispatch(hl.dsp.exec_cmd(app[2])) end
         end
+        if not running then hl.dispatch(hl.dsp.exec_cmd(command)) end
         hl.dispatch(hl.dsp.workspace.toggle_special(name))
     end
 end
 
-hl.bind(vars.kbSpecialWs, toggle_ws("special"))
-hl.bind(vars.kbSystemMonitorWs, toggle_ws("sysmon", { { "btop", vars.terminal .. " --app-id=btop btop" } }))
-hl.bind(vars.kbMusicWs, toggle_ws("music", { { "spotify", "spotify" } }))
-hl.bind(vars.kbCommunicationWs, toggle_ws("communication", {
-    { "discord", "discord" },
-}))
+hl.bind(vars.kbSpecialWs, hl.dsp.workspace.toggle_special("special"))
+hl.bind(vars.kbSystemMonitorWs, toggle_ws("sysmon", "btop", vars.terminal .. " --app-id=btop btop"))
+hl.bind(vars.kbMusicWs, toggle_ws("music", "spotify", "spotify"))
+hl.bind(vars.kbCommunicationWs, toggle_ws("communication", "discord", "discord"))
 
 hl.bind(vars.kbTerminal, hl.dsp.exec_cmd(vars.terminal))
 hl.bind(vars.kbBrowser, hl.dsp.exec_cmd(vars.browser))
