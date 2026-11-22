@@ -437,10 +437,10 @@ PanelWindow {
             spacing: 16
 
             RowLayout {
+                visible: launcher.wallpaperMode || launcher.utilityMode
                 Layout.fillWidth: true
                 spacing: 12
                 ExpressiveButton {
-                    visible: launcher.wallpaperMode || launcher.utilityMode
                     text: "Settings"
                     description: "Back to Settings"
                     onClicked: launcher.open(launcher.screen, "tools")
@@ -453,7 +453,7 @@ PanelWindow {
                 }
                 Text {
                     Layout.fillWidth: true
-                    text: launcher.utilityMode ? utilities.title : launcher.wallpaperMode ? (launcher.mode === "animated-wallpapers" ? "Animated wallpapers" : "Wallpapers") : launcher.mode === "tools" ? "Settings" : "Applications"
+                    text: launcher.utilityMode ? utilities.title : launcher.mode === "animated-wallpapers" ? "Animated wallpapers" : "Wallpapers"
                     color: Theme.textOnSurface
                     font.family: Theme.fontFamily
                     font.styleName: "Bold Rounded"
