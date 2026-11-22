@@ -86,7 +86,8 @@ named workspaces and fullscreen apps on other monitors do not trigger it.
 `hyprland/rules.lua` maintains a conditional tag through native compositor events;
 removing the tag restores the normal opacity rules, including after fullscreen
 exit, window moves and workspace switches. This applies to focused, unfocused
-and fullscreen windows inside the special workspace. Blur and dimming are unchanged.
+and fullscreen windows inside the special workspace. Hyprland blur is disabled
+globally, including for popups and input methods. The opacity rule does not change dimming.
 
 Window opening adapts [Material 3 Expressive fast spatial spring tokens](https://raw.githubusercontent.com/androidx/androidx/androidx-main/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/ExpressiveMotionTokens.kt).
 Hyprland 0.56.2 uses `dampening = 2 * dampingRatio * sqrt(stiffness * mass)`,

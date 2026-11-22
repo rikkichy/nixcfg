@@ -14,10 +14,10 @@ return {
     workspaceSwipeFingers      = 4,
     gestureFingersMore         = 4,
 
-    blurEnabled                = true,
+    blurEnabled                = false,
     blurSpecialWs              = false,
-    blurPopups                 = true,
-    blurInputMethods           = true,
+    blurPopups                 = false,
+    blurInputMethods           = false,
     blurSize                   = 8,
     blurPasses                 = 2,
     blurXray                   = false,
