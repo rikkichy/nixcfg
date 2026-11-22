@@ -15,7 +15,6 @@ for _, key in ipairs({ "Alt_L", "Alt_R", "Super_L", "Super_R" }) do
     )
 end
 
-hl.bind(vars.kbSession, hl.dsp.exec_cmd("quickshell -c expressive ipc call desktop toggle power"))
 hl.bind(vars.kbClearNotifs, hl.dsp.exec_cmd("quickshell -c expressive ipc call desktop dismissAll"), { locked = true })
 hl.bind(vars.kbShowPanels, hl.dsp.exec_cmd("quickshell -c expressive ipc call desktop toggle sound"))
 

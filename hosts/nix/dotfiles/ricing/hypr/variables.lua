@@ -72,7 +72,6 @@ return {
 
     kbVpnPicker                = "SUPER + SHIFT + V",
 
-    kbSession                  = "CTRL + ALT + Delete",
     kbClearNotifs              = "CTRL + ALT + C",
     kbShowPanels               = "SUPER + K",
 }
