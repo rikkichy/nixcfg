@@ -46,9 +46,9 @@ Use direnv/project flakes for project runtimes. This repository has no
 
 ## Neovim ownership and runtime boundaries
 
-- `common/modules/neovim.nix` owns the editor package and read-only generated
-  `init.lua` on both platforms. Keep it plugin-manager-free and reuse the existing
-  `language-servers.nix` commands rather than installing duplicate runtimes.
+- `common/modules/neovim.nix` owns the editor package and plugin-free default
+  profile. `common/modules/lazyvim.nix` owns the opt-in LazyVim profile. Nix
+  supplies its plugins and parsers. Both profiles use `language-servers.nix`.
 - Neovim's Node provider is tool-scoped; project toolchains and servers for
   languages this repository does not contain come from direnv.
 - Preserve Darwin's Nix-managed rustup with mutable, project-owned toolchains,

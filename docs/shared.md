@@ -143,6 +143,20 @@ QML language-server support belongs to desktop `nix`, with Qt and Quickshell
 imports shared by both clients. Darwin retains QML syntax support.
 The headless server receives the portable servers, without Qt or Quickshell.
 
+### LazyVim
+
+After an approved switch on the desktop or Mac, run `NVIM_APPNAME=lazyvim nvim`.
+This [Neovim profile](https://neovim.io/doc/user/starting.html#%24NVIM_APPNAME)
+has separate configuration and state. Run `nvim` for the unchanged default profile.
+
+[LazyVim](https://www.lazyvim.org/) uses the same Nix-managed language servers.
+[The profile module](../common/modules/lazyvim.nix) pins plugins and parsers through Nixpkgs.
+First launch does not download plugins. Add extras in Nix instead of `:LazyExtras`.
+Mason and project-local `.lazy.lua` specs are disabled.
+
+Press `Space g g` in LazyVim to open Lazygit at the Git root. The shared shell
+already provides `lazygit` and the Fish abbreviation `lg`.
+
 ### OMP startup host context
 
 The shared shell module generates `~/.omp/agent/rules/nixcfg-host.md` from the

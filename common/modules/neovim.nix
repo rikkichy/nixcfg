@@ -23,6 +23,7 @@ let
     root_markers = server.rootMarkers or [ ];
     init_options = server.settings or { };
   };
+  servers = lib.mapAttrs serverConfig tooling.servers;
   initLua = ''
     vim.g.mapleader = " "
     vim.g.maplocalleader = ","
@@ -46,7 +47,7 @@ let
     })
     vim.lsp.config("*", { root_markers = { ".git" } })
 
-    local servers = ${lib.generators.toLua { } (lib.mapAttrs serverConfig tooling.servers)}
+    local servers = ${lib.generators.toLua { } servers}
     for name, config in pairs(servers) do
       vim.lsp.config(name, config)
       vim.lsp.enable(name)
@@ -106,6 +107,8 @@ in
     rustc
     rustfmt
   ];
+  xdg.configFile."lazyvim/init.lua".text = import ./lazyvim.nix { inherit lib pkgs servers; };
+
   programs.neovim = {
     enable = true;
     defaultEditor = true;
@@ -113,7 +116,7 @@ in
     vimAlias = true;
     withNodeJs = true;
     withPython3 = true;
-    extraPackages = lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.qt6.qtdeclarative ];
+    extraPackages = [ pkgs.fd ] ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.qt6.qtdeclarative ];
     initLua = initLua;
   };
 }
