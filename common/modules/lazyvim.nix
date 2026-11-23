@@ -17,6 +17,7 @@ let
     lazydev-nvim
     lualine-nvim
     mini-ai
+    mini-base16
     mini-icons
     mini-pairs
     noice-nvim
@@ -30,7 +31,6 @@ let
     plenary-nvim
     snacks-nvim
     todo-comments-nvim
-    tokyonight-nvim
     trouble-nvim
     ts-comments-nvim
     which-key-nvim
@@ -41,12 +41,6 @@ let
       name = p.pname;
       path = p;
     }) plugins
-    ++ [
-      {
-        name = "catppuccin";
-        path = pkgs.vimPlugins.catppuccin-nvim;
-      }
-    ]
   );
   parsers = pkgs.symlinkJoin {
     name = "lazyvim-parsers";
@@ -98,7 +92,10 @@ in
 
   require("lazy").setup({
     spec = {
-      { "LazyVim/LazyVim", import = "lazyvim.plugins" },
+      { "LazyVim/LazyVim", import = "lazyvim.plugins", opts = { colorscheme = "matugen" } },
+      { "folke/tokyonight.nvim", enabled = false },
+      { "catppuccin/nvim", name = "catppuccin", enabled = false },
+      { "nvim-mini/mini.base16", lazy = true },
       { "mason-org/mason.nvim", enabled = false },
       { "mason-org/mason-lspconfig.nvim", enabled = false },
       { "neovim/nvim-lspconfig", opts = { servers = ${lib.generators.toLua { } lazyServers} } },

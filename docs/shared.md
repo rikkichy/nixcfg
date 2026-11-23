@@ -154,6 +154,11 @@ has separate configuration and state. Run `nvim` for the unchanged default profi
 First launch does not download plugins. Add extras in Nix instead of `:LazyExtras`.
 Mason and project-local `.lazy.lua` specs are disabled.
 
+LazyVim uses the wallpaper palette from Matugen. Generate it with `wallpaper-theme`
+on macOS or select a wallpaper with `wpp`/`awpp` on Linux. Open a new LazyVim
+session or run `:colorscheme matugen` to reload it. Before the first generation,
+LazyVim uses Neovim's built-in colors.
+
 Press `Space g g` in LazyVim to open Lazygit at the Git root. The shared shell
 already provides `lazygit` and the Fish abbreviation `lg`.
 

@@ -1,4 +1,4 @@
-{ lib, pkgs, osConfig, nixcfgPath, ... }:
+{ config, lib, pkgs, osConfig, nixcfgPath, ... }:
 
 let
   tooling = import ./language-servers.nix { inherit lib pkgs osConfig nixcfgPath; };
@@ -108,6 +108,11 @@ in
     rustfmt
   ];
   xdg.configFile."lazyvim/init.lua".text = import ./lazyvim.nix { inherit lib pkgs servers; };
+  xdg.configFile."lazyvim/colors/matugen.lua".source = ../dotfiles/lazyvim/colors/matugen.lua;
+  _module.args.lazyvimPaletteTemplate = {
+    input_path = ../dotfiles/matugen/templates/lazyvim.json;
+    output_path = "${config.xdg.configHome}/lazyvim/matugen.json";
+  };
 
   programs.neovim = {
     enable = true;

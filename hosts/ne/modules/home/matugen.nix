@@ -1,4 +1,4 @@
-{ config, pkgs, spotifyPaletteTemplate, ... }:
+{ config, pkgs, spotifyPaletteTemplate, lazyvimPaletteTemplate, ... }:
 
 let
   matugenConfig = (pkgs.formats.toml { }).generate "matugen-config.toml" {
@@ -37,6 +37,7 @@ let
       output_path = "${config.home.homeDirectory}/Library/Application Support/org.yanex.marta/Themes/Matugen.theme";
     };
     templates.spotify = spotifyPaletteTemplate;
+    templates.lazyvim = lazyvimPaletteTemplate;
   };
   wallpaperTheme = pkgs.writeShellApplication {
     name = "wallpaper-theme";

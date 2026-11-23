@@ -17,10 +17,14 @@ Darwin has an independent `wallpaper-theme` command. It does not use the Linux
 services or OSC delivery. Its lifecycle and mutable Ghostty/Marta
 outputs belong to [Darwin host guidance](../../hosts/ne/AGENTS.md).
 
+Both hosts generate the [LazyVim palette](../../common/dotfiles/matugen/templates/lazyvim.json).
+The editor reads the writable output as JSON, not executable configuration.
+Only the colorscheme code is deployed by Home Manager.
+
 ## Linux generation and write ownership
 
 `matugen` derives a Material palette from the wallpaper and renders files from
-`hosts/nix/dotfiles/ricing/matugen/templates/` and the shared terminal/btop templates.
+`hosts/nix/dotfiles/ricing/matugen/templates/` and the shared templates.
 `hosts/nix/modules/home/matugen.nix` declares each template and destination with
 `pkgs.formats.toml`, installed at `~/.config/matugen/config.toml`.
 Palettes are generated only after display acceptance. See the canonical

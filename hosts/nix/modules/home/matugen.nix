@@ -1,4 +1,4 @@
-{ config, pkgs, lib, spotifyPaletteTemplate, ... }:
+{ config, pkgs, lib, spotifyPaletteTemplate, lazyvimPaletteTemplate, ... }:
 
 let
   terminalColours = "${config.xdg.stateHome}/theme/terminal-colors.conf";
@@ -24,6 +24,7 @@ let
       nvtop = template ../../dotfiles/ricing/matugen/templates/nvtop.colors "${cfg}/nvtop/nvtop.colors";
       qt = template ../../dotfiles/ricing/matugen/templates/qt.colors "${cfg}/qtengine/scheme.colors";
       spotify = spotifyPaletteTemplate;
+      lazyvim = lazyvimPaletteTemplate;
       obsidian = template ../../dotfiles/ricing/matugen/templates/obsidian.css "${cfg}/obsidian/matugen.css";
     };
   };
