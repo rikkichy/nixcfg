@@ -117,9 +117,8 @@ Conflicting managed files are preserved with `.before-home-manager`. Existing
 backups are not overwritten.
 
 Only the desktop and Mac import `common/modules/neovim.nix`, which installs
-Neovim as the default terminal editor with generated Lua configuration, built-in
-completion, LSP integration and format-on-save for the declared languages.
-Edit this module rather than generated store files. Restart Neovim after
+Neovim as the default terminal editor with [LazyVim](#lazyvim) as its default profile.
+Edit the shared modules rather than generated store files. Restart Neovim after
 activation to use the new configuration. The Linux editor shortcut and VPN config
 action open Neovim in Foot. macOS has no managed GUI editor or file associations;
 existing associations remain user-owned. Zed's package, generated settings,
@@ -145,9 +144,10 @@ The headless server receives the portable servers, without Qt or Quickshell.
 
 ### LazyVim
 
-After an approved switch on the desktop or Mac, run `NVIM_APPNAME=lazyvim nvim`.
-This [Neovim profile](https://neovim.io/doc/user/starting.html#%24NVIM_APPNAME)
-has separate configuration and state. Run `nvim` for the unchanged default profile.
+After an approved switch on the desktop or Mac, run `nvim` for LazyVim.
+Run `NVIM_APPNAME=nvim nvim` for the plugin-free profile with built-in completion,
+LSP integration and format-on-save. The two [profiles](https://neovim.io/doc/user/starting.html#%24NVIM_APPNAME)
+keep separate configuration and state.
 
 [LazyVim](https://www.lazyvim.org/) uses the same Nix-managed language servers.
 [The profile module](../common/modules/lazyvim.nix) pins plugins and parsers through Nixpkgs.

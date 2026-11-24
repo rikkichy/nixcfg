@@ -117,6 +117,7 @@ in
   programs.neovim = {
     enable = true;
     defaultEditor = true;
+    extraWrapperArgs = [ "--set-default" "NVIM_APPNAME" "lazyvim" ];
     viAlias = true;
     vimAlias = true;
     withNodeJs = true;
