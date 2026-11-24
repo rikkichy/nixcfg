@@ -179,9 +179,12 @@ ollama create inkling-orca -f /etc/ollama/Inkling.Modelfile
 ollama run inkling-orca "What is 84 * 3 / 2?"
 ```
 
-Expect **126**. While the model is loaded, `ollama ps` should show `100% GPU`
-and an 8192-token context. `ollama stop inkling-orca` frees VRAM without
-deleting the import. The download and the imported library are separate copies.
+Expect **126**. While the model is loaded, `ollama ps` should show a 131072-token
+context unless the client overrides it. At this size some layers may run on the
+CPU; a smaller context leaves more VRAM for GPU inference. After activating a
+changed Modelfile, rerun `ollama create`; switching alone does not update an
+existing import. `ollama stop inkling-orca` frees the model's VRAM without deleting
+the import. The download and the imported library are separate copies.
 
 ### Filen sync
 

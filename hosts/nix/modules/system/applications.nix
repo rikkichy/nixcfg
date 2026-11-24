@@ -103,7 +103,7 @@ in
     FROM ~/Downloads/Inkling-2-Mini-abliterated-Mix-16G.gguf
     RENDERER inkling2
     PARSER inkling2
-    PARAMETER num_ctx 8192
+    PARAMETER num_ctx 131072
   '';
 
   programs.thunar = {
