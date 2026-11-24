@@ -282,6 +282,17 @@ To roll back, remove only the `require` line and run `hyprctl reload`. If the
 screen is unusable, make the same edit from a text console or SSH as `ri` and
 reload the sole Hyprland instance with `hyprctl -i 0 reload`.
 
+## Downloaded Windows games
+
+Keep downloaded games under `~/GamesExternal`, bookmarked in Thunar. In
+Heroic, use **Library → Add Game → Show Wine Settings** and choose
+**Proton-CachyOS** if installed, or get **GE-Proton** from Wine Manager.
+For an installer, use **Run Installer First**, then select the installed
+game's `.exe` in the same entry. For an extracted game, select its `.exe`
+directly. After adding it once, launch it from Heroic's library.
+
+Only run executables you trust: Wine and Proton are not security sandboxes.
+
 ## Desktop hardware performance
 
 `hosts/nix/boot.nix` selects the cached CachyOS ThinLTO kernel built for `-march=znver4`.

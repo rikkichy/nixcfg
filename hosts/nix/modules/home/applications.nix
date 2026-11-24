@@ -74,6 +74,7 @@ in
         "file://${config.home.homeDirectory}/Pictures/Screenshots"
         "file://${config.home.homeDirectory}/Documents"
         "file://${config.home.homeDirectory}/Downloads"
+        "file://${config.home.homeDirectory}/GamesExternal"
       ];
     };
     gtk4.extraConfig.gtk-application-prefer-dark-theme = 0;
