@@ -162,30 +162,6 @@ enables `render_unfocused` for both classes so hidden windows keep receiving
 render callbacks. `hyprland/misc.lua` sets their shared limit to 60 FPS. Application and
 Spout/OBS frame-rate settings remain independent.
 
-### Local models with Ollama
-
-`hosts/nix/modules/system/applications.nix` configures CUDA Ollama on
-`127.0.0.1:11434` with cloud inference disabled. Its model library is stored in
-systemd's private state directory, which the desktop persists across boots.
-Activation does not download model weights.
-
-To use the text-only [OrcaRouter Inkling Mix-16G](https://huggingface.co/orcarouter/Inkling-2-Mini-abliterated-GGUF),
-accept the repository's access conditions and download
-`Inkling-2-Mini-abliterated-Mix-16G.gguf` into `~/Downloads`. After activating
-the desktop configuration, import it once **as your normal user**, then chat:
-
-```sh
-ollama create inkling-orca -f /etc/ollama/Inkling.Modelfile
-ollama run inkling-orca "What is 84 * 3 / 2?"
-```
-
-Expect **126**. While the model is loaded, `ollama ps` should show a 131072-token
-context unless the client overrides it. At this size some layers may run on the
-CPU; a smaller context leaves more VRAM for GPU inference. After activating a
-changed Modelfile, rerun `ollama create`; switching alone does not update an
-existing import. `ollama stop inkling-orca` frees the model's VRAM without deleting
-the import. The download and the imported library are separate copies.
-
 ### Filen sync
 
 The `filen-sync` user service runs the two-way sync pairs declared in

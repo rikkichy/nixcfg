@@ -71,41 +71,6 @@ in
 
   services.gvfs.enable = true;
 
-  services.ollama = {
-    enable = true;
-    # Keep the model blobs inside systemd's persistent DynamicUser state directory.
-    modelsDir = config.services.ollama.home;
-    environmentVariables.OLLAMA_NO_CLOUD = "1";
-    # Inkling GGUF requires a newer llama.cpp runner than nixpkgs' Ollama 0.40.16.
-    package = if pkgs.lib.versionAtLeast pkgs.ollama-cuda.version "0.40.18" then pkgs.ollama-cuda
-      else (pkgs.ollama-cuda.override { cudaArches = [ "sm_86" ]; }).overrideAttrs (final: old: {
-        version = "0.40.18";
-        env = old.env // { CPATH = "${pkgs.cudaPackages.cuda_nvml_dev.include}/include"; };
-        src = pkgs.fetchFromGitHub {
-          owner = "ollama";
-          repo = "ollama";
-          tag = "v${final.version}";
-          hash = "sha256-MO0AsCSNmrjf63NrdYzBDBL/xEftrHAacsf4gSXZf8g=";
-        };
-        passthru = old.passthru // {
-          llamaCppVersion = "b12651";
-          llamaCppSrc = pkgs.fetchFromGitHub {
-            owner = "ggml-org";
-            repo = "llama.cpp";
-            tag = final.passthru.llamaCppVersion;
-            hash = "sha256-GNdA6CFxrkFNSocjHhZT2ML53WkdvTSQBMieitPR1ts=";
-          };
-        };
-      });
-  };
-
-  environment.etc."ollama/Inkling.Modelfile".text = ''
-    FROM ~/Downloads/Inkling-2-Mini-abliterated-Mix-16G.gguf
-    RENDERER inkling2
-    PARSER inkling2
-    PARAMETER num_ctx 131072
-  '';
-
   programs.thunar = {
     enable = true;
     plugins = with pkgs; [
