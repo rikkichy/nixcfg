@@ -17,6 +17,7 @@ and [existing-system manual recovery](install.md#manual-installation--recovery-r
 - [Installation](#installation)
 - [Rebuilds and desktop tools](#rebuilds-and-desktop-tools)
 - [TCL 27X3B display](#tcl-27x3b-display)
+- [osu!lazer and Morasooma](#osulazer-and-morasooma)
 - [Desktop hardware performance](#desktop-hardware-performance)
 - [Console login](#console-login)
 - [Printing](#printing)
@@ -281,6 +282,13 @@ Running a NixOS switch alone does not enable the profile.
 To roll back, remove only the `require` line and run `hyprctl reload`. If the
 screen is unusable, make the same edit from a text console or SSH as `ri` and
 reload the sole Hyprland instance with `hyprctl -i 0 reload`.
+
+## osu!lazer and Morasooma
+
+Vanilla osu! keeps the file and `osu://` associations. Open **Morasooma**
+from the apps grid for its private server. To bring over the existing
+library without doubling its disk usage, follow the
+[reflink setup before the first switch that installs Mosu](reference/osu.md#mosu-profile-and-library).
 
 ## Downloaded Windows games
 

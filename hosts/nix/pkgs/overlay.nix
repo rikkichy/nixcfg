@@ -18,6 +18,7 @@ final: prev: {
   };
 
   waydroid-pinch = final.callPackage ./waydroid-pinch { };
+  mosu = final.callPackage ./mosu.nix { };
 
   google-sans-rounded =
     final.callPackage ./ricing/google-sans-rounded.nix { };

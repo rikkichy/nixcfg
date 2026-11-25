@@ -38,13 +38,14 @@ in
 
 {
   home.activation.osuSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    osudir="${config.home.homeDirectory}/.local/share/osu"
-    run mkdir -p "$osudir"
-    for f in game.ini input.json; do
-      if [ ! -e "$osudir/$f" ]; then
-        run cp ${../../dotfiles/gaming/osu}/"$f" "$osudir/$f"
-        run chmod u+w "$osudir/$f"
-      fi
+    for osudir in "${config.home.homeDirectory}/.local/share/"{osu,morasooma/mosu}; do
+      run mkdir -p "$osudir"
+      for f in game.ini input.json; do
+        if [ ! -e "$osudir/$f" ]; then
+          run cp ${../../dotfiles/gaming/osu}/"$f" "$osudir/$f"
+          run chmod u+w "$osudir/$f"
+        fi
+      done
     done
   '';
 

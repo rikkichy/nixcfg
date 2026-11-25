@@ -29,5 +29,12 @@
     nix-clean = terminalEntry "Clean"
       "nh clean all"
       "user-trash";
+
+    mosu = {
+      name = "Morasooma";
+      exec = "${pkgs.mosu}/bin/mosu";
+      icon = "${pkgs.mosu}/share/pixmaps/mosu.ico";
+      categories = [ "Game" ];
+    };
   };
 }
