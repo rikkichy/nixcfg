@@ -31,6 +31,8 @@
             "stream.dont-remix" = true;
             "node.passive" = true;
             "node.dont-fallback" = true;
+            # Wait for the SSL if PipeWire starts before it is plugged in.
+            "node.linger" = true;
           };
           "playback.props" = {
             "node.name" = "ssl_mic";

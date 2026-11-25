@@ -194,6 +194,8 @@ In Discord, select **SSL Mic (Input 1)** explicitly. This mono source passes
 only the physical input 1, without effects. Do not select the raw **Analog
 Surround 7.1** input for voice chat: it also carries the interface's playback
 loopback channels. Keep playback on the **SSL 2+ Mk II** output.
+The mic-only source stays available but silent while the SSL is disconnected
+and links to input 1 when the SSL appears. It never falls back to another input.
 
 Read-only inspection:
 
@@ -206,7 +208,8 @@ After separately approved activation, use `wpctl status` to confirm the
 voice client captures from **SSL Mic (Input 1)**. Check that it picks up
 speech but does not send playback to the call. Test playback with and
 without voice capture and compare the `ERR` counters in `pw-top`. Check
-idle-to-playback and unplug/replug separately.
+idle-to-playback separately. Unplug and replug the SSL, and confirm the
+mic-only source stays selected and resumes capturing only input 1.
 
 ### Session application startup
 
