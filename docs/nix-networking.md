@@ -51,13 +51,6 @@ does not match these rules. Native gameplay is not guaranteed to use the proxy.
 
 Discord uses the default direct route through Mihomo, not the selected proxy.
 
-GitHub rules send `github.com` and its subdomains through **PROXY**, including
-the `api.github.com` and `codeload.github.com` requests behind flake `github:`
-inputs, because direct transfers to GitHub are slow from this network. With no
-eligible proxy node, GitHub and `nix flake update` fail instead of going direct.
-`githubusercontent.com` is not covered.
-
-
 `hosts/nix/modules/system/mihomo-killswitch.nix` installs an independent
 kernel OUTPUT/FORWARD guard before NetworkManager and Mihomo start. Public
 egress outside the TUN is denied for applications and forwarded containers,

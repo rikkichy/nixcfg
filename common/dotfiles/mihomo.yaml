@@ -160,8 +160,6 @@ rules:
   - DOMAIN-SUFFIX,chatgpt.com,REJECT
   - DOMAIN-SUFFIX,openai.com,PROXY
   - DOMAIN-SUFFIX,openai.com,REJECT
-  - DOMAIN-SUFFIX,github.com,PROXY
-  - DOMAIN-SUFFIX,github.com,REJECT
   - DOMAIN-SUFFIX,instagram.com,INSTAGRAM
   - DOMAIN-SUFFIX,instagram.com,REJECT
   - DOMAIN-SUFFIX,cdninstagram.com,INSTAGRAM
