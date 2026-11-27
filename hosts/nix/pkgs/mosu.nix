@@ -6,11 +6,11 @@
 
 appimageTools.wrapType2 (finalAttrs: {
   pname = "mosu";
-  version = "2026.1126.0";
+  version = "2026.1117.0";
 
   src = fetchurl {
     url = "https://github.com/morasooma/mosu/releases/download/v${finalAttrs.version}/mosu-${finalAttrs.version}-linux-x64.AppImage";
-    hash = "sha256-RrYTvTKPbH5mrrNMQZLtsX5ZzHz1/8KH69p3HoXwqOw=";
+    hash = "sha256-+8xrUd/J522O3h2E6DJHvj/hwtym1O00HLqATpLxrfc=";
   };
 
   extraPkgs = pkgs: [ pkgs.icu ];
