@@ -158,6 +158,8 @@ rules:
   - DOMAIN-SUFFIX,claudeusercontent.com,REJECT
   - DOMAIN-SUFFIX,chatgpt.com,PROXY
   - DOMAIN-SUFFIX,chatgpt.com,REJECT
+  - DOMAIN-SUFFIX,openai.com,PROXY
+  - DOMAIN-SUFFIX,openai.com,REJECT
   - DOMAIN-SUFFIX,github.com,PROXY
   - DOMAIN-SUFFIX,github.com,REJECT
   - DOMAIN-SUFFIX,instagram.com,INSTAGRAM
