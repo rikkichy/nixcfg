@@ -61,8 +61,9 @@ After activation, open a new terminal. OMP settings, credentials, and sessions l
 Homebrew cleanup is disabled; uninstall a duplicate `can1357/tap/omp` formula only with separate approval.
 
 The shared OMP extension [`larp.js`](../common/dotfiles/omp/larp.js) adds `/larp`,
-which toggles the status-bar model label to `Claude Mythos 5.5` for the current
-session's model. Run it again to restore the real label. OMP has no label hook,
+which opens a picker that sets the status-bar model label to `Mythos 5.5`,
+`Selkie 1.6`, or `Ivrie 1.6` for the current session's model.
+Pick `Actual model` to restore the real label. OMP has no label hook,
 so the extension swaps the model's display name, not its id: requests still
 target the real model, but other places that show that model's name, such as
 the model picker and Cursor's display-name metadata, also show the label while

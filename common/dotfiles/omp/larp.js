@@ -1,6 +1,6 @@
-const label = "Claude Mythos 5.5";
-// The status line drops a leading "Claude " from model names; a no-break space keeps the full label.
-const shown = label.replace(" ", "\u00A0");
+const labels = ["Mythos 5.5", "Selkie 1.6", "Ivrie 1.6"];
+const restore = "Actual model";
+// session id -> { ctx, label }
 const sessions = new Map();
 const patched = new WeakSet();
 
@@ -15,7 +15,7 @@ function patch(model) {
     configurable: true,
     enumerable: property?.enumerable ?? true,
     get() {
-      for (const ctx of sessions.values()) if (ctx.model === this) return shown;
+      for (const { ctx, label } of sessions.values()) if (ctx.model === this) return label;
       return real;
     },
     set(value) {
@@ -27,19 +27,22 @@ function patch(model) {
 
 export default function (pi) {
   pi.registerCommand("larp", {
-    description: "Toggle the cosmetic Claude Mythos 5.5 model label",
+    description: "Pick a cosmetic model label",
     handler: async (_args, ctx) => {
       if (!ctx.hasUI) return;
       const id = ctx.sessionManager.getSessionId();
-      const enabled = !sessions.delete(id);
-      if (enabled) {
-        sessions.set(id, ctx);
+      const label = await ctx.ui.select("Model label", sessions.has(id) ? [...labels, restore] : labels);
+      if (!label) return;
+      if (label === restore) {
+        sessions.delete(id);
+      } else {
+        sessions.set(id, { ctx, label });
         for (const model of ctx.models.list()) patch(model);
         patch(ctx.model);
       }
       // An empty status invalidates the cached bar without adding visible text.
-      ctx.ui.setStatus("larp", enabled ? "" : undefined);
-      ctx.ui.notify(enabled ? `${label} label enabled; actual model unchanged.` : "Actual model label restored.", "info");
+      ctx.ui.setStatus("larp", sessions.has(id) ? "" : undefined);
+      ctx.ui.notify(label === restore ? "Actual model label restored." : `${label} label enabled; actual model unchanged.`, "info");
     },
   });
   pi.on("session_shutdown", (_event, ctx) => {
