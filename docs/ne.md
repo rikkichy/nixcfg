@@ -12,7 +12,6 @@ Recovery: [Spotify update-cache protection](#spotify-and-spicetify) ·
 
 - [Ownership](#ownership)
 - [Bootstrap](#bootstrap)
-- [Office 2024](#office-2024)
 - [Updates and shell migration](#updates-and-shell-migration)
 - [SSH agent](#ssh-agent)
 - [Keyboard](#keyboard)
@@ -149,23 +148,6 @@ If activation reports an existing `/etc` file conflict, inspect and back up that
 specific file. Then follow the reported migration instructions.
 Do not delete existing configuration blindly.
 After activation, follow [shell migration](#updates-and-shell-migration), grant the requested permissions for [BetterGlobeKey](#keyboard) and [noswoosh](#ownership), and [prepare the SSH client](#ssh-agent).
-
-## Office 2024
-
-[`office.nix`](../hosts/ne/modules/system/office.nix) pins Microsoft's signed
-installers for Word, Excel, and PowerPoint by build and checksum. An approved
-switch installs missing apps in `/Applications` and reconciles different builds
-to the pins. Quit Office apps before switching.
-
-The installers do not select an edition. For retail Office 2024, [sign in with
-the Microsoft account that owns the license](https://support.microsoft.com/en-us/microsoft-365-activation-licensing/office-install/activate-office-for-mac).
-For LTSC 2024, use Microsoft's [Volume License Serializer](https://learn.microsoft.com/en-us/microsoft-365-apps/mac/volume-license-serializer).
-After switching, open each app and confirm its build and license in its About window.
-
-The installers omit Microsoft AutoUpdate. For the primary user, any existing
-AutoUpdate uses manual mode with the update button disabled. This affects all
-apps that use AutoUpdate, not only Office. To apply Office security fixes,
-update the version and checksum pins and switch again.
 
 ## Updates and shell migration
 
