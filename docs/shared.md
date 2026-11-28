@@ -62,10 +62,12 @@ Homebrew cleanup is disabled; uninstall a duplicate `can1357/tap/omp` formula on
 
 The shared OMP extension [`larp.js`](../common/dotfiles/omp/larp.js) adds `/larp`,
 which toggles the status-bar model label to `Claude Mythos 5.5` for the current
-session without changing the actual model or requests. Run it again to restore
-the real label. It uses OMP's existing segment layout, including hiding the
-longer label when the terminal is too narrow. Home Manager installs it on all
-three hosts; activation requires separate approval, then start a new OMP session.
+session's model. Run it again to restore the real label. OMP has no label hook,
+so the extension swaps the model's display name, not its id: requests still
+target the real model, but other places that show that model's name, such as
+the model picker and Cursor's display-name metadata, also show the label while
+it is on. Home Manager installs it on all three hosts; activation requires
+separate approval, then start a new OMP session.
 To try the source without activation, launch
 `omp -e /etc/nixos/common/dotfiles/omp/larp.js`.
 
