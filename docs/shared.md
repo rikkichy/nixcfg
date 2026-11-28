@@ -187,6 +187,14 @@ Activation requires separate approval. Start a new OMP session afterward. Named
 profiles and `PI_CODING_AGENT_DIR` use their own rule directories and do not read
 the default directory. Do not copy machine identity rules between hosts.
 
+[`antigravity-context.js`](../common/dotfiles/omp/antigravity-context.js) applies
+only to the `antigravity-cli` provider. Google's backend rejects requests whose
+`agy` system prompt carries omp's instructions with a generic
+`RESOURCE_EXHAUSTED` 429, which `agy` retries silently, so omp appears to load
+forever. The extension clears that system prompt and prepends the same
+instructions to the first user message, which the backend accepts. Other
+providers are unchanged.
+
 ## Discord
 
 The desktop and Mac install vanilla Discord from Nixpkgs, without client mods,

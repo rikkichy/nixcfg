@@ -223,6 +223,7 @@ in
   home.file.".omp/agent/extensions/nixcfg-execution.js".source = ../dotfiles/omp/nixcfg-execution.js;
   home.file.".omp/agent/extensions/larp.js".source = ../dotfiles/omp/larp.js;
   home.file.".omp/agent/extensions/public-ip.js".source = ../dotfiles/omp/public-ip.js;
+  home.file.".omp/agent/extensions/antigravity-context.js".source = ../dotfiles/omp/antigravity-context.js;
 
   home.file.".omp/agent/lsp.json".text = builtins.toJSON {
     servers =
