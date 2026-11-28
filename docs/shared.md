@@ -194,9 +194,11 @@ the default directory. Do not copy machine identity rules between hosts.
 only to the `antigravity-cli` provider. Google's backend rejects requests whose
 `agy` system prompt carries omp's instructions with a generic
 `RESOURCE_EXHAUSTED` 429, which `agy` retries silently, so omp appears to load
-forever. The extension clears that system prompt and prepends the same
-instructions to the first user message, which the backend accepts. Other
-providers are unchanged.
+forever. The extension clears that system prompt, pins the initial instructions
+to the first user message in session state, and prepends updated instructions
+only to the new user turn when the system prompt changes so `antigravity-cli`
+can restore its checkpoint across `/restart` instead of replaying the full chat.
+Other providers are unchanged.
 
 ## Discord
 
